@@ -1,70 +1,87 @@
-<p align="center"><img src="outputs/promptshield-mark.svg" width="112" alt="PromptShield logo" /></p>
+<p align="center"><img src="outputs/promptshield-mark.svg" width="156" alt="PromptShield logo" /></p>
 
-# PromptShield
+<h1 align="center">PromptShield</h1>
 
+<p align="center"><strong>Think freely. Share safely.</strong><br />A privacy-first checkpoint for prompts before they reach an AI tool.</p>
 
-Privacy-first protection for people and small teams using AI.
+<p align="center">
+  <a href="dashboard.html"><img src="https://img.shields.io/badge/TRY%20THE%20PERSONAL%20WORKSPACE-b9ff00?style=for-the-badge&labelColor=111311&color=b9ff00" alt="Try the personal workspace" /></a>
+  <img src="https://img.shields.io/badge/STATUS-private%20prototype-111311?style=for-the-badge&labelColor=111311&color=555b52" alt="Private prototype" />
+  <img src="https://img.shields.io/badge/DEFAULT%20LANGUAGE-English-111311?style=for-the-badge&labelColor=111311&color=555b52" alt="English default language" />
+</p>
 
+<p align="center"><a href="#what-it-does">What it does</a> · <a href="#privacy-boundary">Privacy boundary</a> · <a href="#roadmap">Roadmap</a></p>
 
-PromptShield detects sensitive information before it reaches AI tools, explains the risk, and offers a safe redacted version of the prompt.
+---
 
+## What it does
 
-> Early private prototype — not ready for production use.
+PromptShield checks a prompt for common personal data and secrets before you share it with an AI model. It highlights what needs attention and creates a safer redacted version in one click.
 
+### Current personal workspace
+
+Open [`dashboard.html`](dashboard.html) to try the browser-local workspace.
+
+- Paste a prompt and inspect it locally.
+- Review clear findings with the original value visible only on your device.
+- Copy a redacted version.
+- Keep a short local history of recent checks without storing full prompts.
+
+## Detection coverage
+
+| Category | Example |
+| --- | --- |
+| Email address | `name@example.com` |
+| Phone number | International and domestic formats |
+| API key or token | Common provider prefixes and bearer tokens |
+| Card number | 13–16 digit payment card patterns |
+| IPv4 address | Internal and public IPv4 addresses |
+| IBAN | European bank account identifiers |
+| Italian fiscal code | Codice fiscale format |
+| Credential assignment | `password: …`, `secret=…` |
+
+## Privacy boundary
+
+The current prototype is intentionally local-first.
+
+- Prompt text is processed in the browser.
+- No prompt is sent to a server.
+- Local history stores only a short preview, timestamp, and finding count.
+- There is no authentication, hosted API, telemetry, billing, or cloud database yet.
+- This tool is a helpful signal, not a guarantee. Always review a prompt before sharing it.
 
 ## Product direction
 
+PromptShield is being designed for independent professionals and small teams that use AI with real client, business, or personal information.
 
-- English is the default interface language.
-- Additional translations will target the most important user markets first.
-- Detection and redaction should happen locally whenever possible.
-- Cloud AI is optional and receives only already-redacted content.
-- Every blocked or transformed prompt should be explainable to the user.
-
-
-## Initial product flow
-
-
-1. Paste or type a prompt in the PromptShield interface.
-2. Detect PII, credentials, secrets, and company-sensitive data.
-3. Show exactly what was found and why it matters.
-4. Replace sensitive values with safe placeholders.
-5. Let the user copy the protected prompt to the selected AI tool.
-
-
-## Planned architecture
-
-
-- **Frontend:** desktop-first web interface, English-first with i18n from day one.
-- **Backend:** API for accounts, policies, usage and team administration.
-- **Detection:** deterministic rules and Microsoft Presidio, with custom recognizers.
-- **Optional local model:** small local model for ambiguous context classification.
-- **Deployment:** frontend and API on Railway, using a subdomain under `getcertsprint.com`.
-
-
-The final service boundaries and deployment names will be decided before the first public beta.
-
+1. Local detection and explainable redaction.
+2. A clean English-first interface with major-language translations later.
+3. Optional cloud features that receive only already-redacted content.
+4. Personal and Business plans with a 14-day trial.
+5. Railway deployment under a `getcertsprint.com` subdomain.
 
 ## Roadmap
 
-
-- [ ] Define supported sensitive-data categories
-- [ ] Build the local detection and redaction pipeline
-- [ ] Create the English UI shell and translation system
-- [ ] Add explainable detection results
-- [ ] Add a browser extension proof of concept
-- [ ] Connect Railway environments
+- [x] Browser-local scanner MVP
+- [x] Personal workspace proof of concept
+- [x] Typed detection engine
+- [x] Italian and European data patterns
+- [ ] Connect the typed engine directly to the dashboard build
 - [ ] Add authentication and a private beta waitlist
-- [ ] Evaluate detection quality with a labelled test set
+- [ ] Add hosted environments on Railway
+- [ ] Add Stripe trials and subscriptions
+- [ ] Add workspace roles and team policies
+- [ ] Validate detection quality with a labelled test set
 
+## Development
 
-## Privacy principles
+The core detection logic is written in strict TypeScript.
 
+```bash
+npm install
+npm run check
+```
 
-PromptShield must never claim to protect data it has not actually inspected. Raw prompts should not be retained by default, and any optional telemetry must be explicit, minimal, and documented.
+The repository intentionally stays private while the product scope and threat model are validated.
 
-
-## Status
-
-
-Private prototype. The repository is intentionally kept private while the product scope and threat model are being validated.
+See [`SECURITY.md`](SECURITY.md) for the current security boundary.
