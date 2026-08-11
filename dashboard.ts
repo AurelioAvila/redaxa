@@ -89,6 +89,13 @@ function required<T extends Element>(selector: string): T {
 }
 
 function installDashboardPolish(): void {
+  if (!document.querySelector("link[data-promptshield-dashboard]")) {
+    const stylesheet = document.createElement("link");
+    stylesheet.rel = "stylesheet";
+    stylesheet.href = "dashboard.css";
+    stylesheet.dataset.promptshieldDashboard = "true";
+    document.head.append(stylesheet);
+  }
   const style = document.createElement("style");
   style.textContent = `
     .side { position: sticky; top: 0; height: 100vh; }
