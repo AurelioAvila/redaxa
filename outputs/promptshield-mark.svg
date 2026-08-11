@@ -1,6 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title">
-  <title>PromptShield mark</title>
-  <rect width="128" height="128" rx="30" fill="#B9FF00"/>
-  <path fill="#080808" d="M34 28h35c17 0 29 10 29 26 0 12-7 21-18 25l19 21H75L58 80H49v20H34V28Zm15 14v25h19c9 0 14-5 14-13s-5-12-14-12H49Z"/>
-  <path fill="#080808" d="M75 29h20L75 49z" opacity=".55"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title">
+  <title>PromptShield PS mark</title>
+  <rect width="256" height="256" rx="58" fill="#B9FF00"/>
+  <path d="M49 55h67c38 0 63 24 63 59 0 34-25 58-63 58H87v31H49V55Zm38 35v47h27c17 0 26-8 26-24 0-15-9-23-26-23H87Z" fill="#080A07"/>
+  <path d="M194 65c-13-9-29-14-47-14-32 0-54 17-54 42 0 24 17 35 47 42 20 5 26 9 26 17 0 8-8 13-21 13-15 0-29-6-40-17l-23 28c17 19 39 28 64 28 37 0 61-18 61-46 0-27-18-38-48-45-18-4-25-8-25-16 0-7 7-11 18-11 12 0 24 5 34 13l24-34Z" fill="#080A07"/>
+  <path d="M190 63 216 42 206 77Z" fill="#080A07" opacity=".42"/>
 </svg>
