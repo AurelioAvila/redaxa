@@ -1,4 +1,4 @@
-export type FindingKind = "email" | "phone" | "secret" | "card" | "ip" | "iban" | "fiscalCode" | "credential";
+export type FindingKind = "email" | "phone" | "secret" | "card" | "ip" | "iban" | "fiscalCode" | "credential" | "custom";
 
 export interface Finding {
   kind: FindingKind;
@@ -7,11 +7,18 @@ export interface Finding {
   replacement: string;
 }
 
+export interface ScanOptions {
+  includePersonalData: boolean;
+  includeCredentials: boolean;
+  includeFinancialData: boolean;
+  customTerms?: string[];
+}
+
 type Rule = Omit<Finding, "value"> & { pattern: RegExp };
 
 const rules: Rule[] = [
   { kind: "email", label: "Email address", replacement: "[EMAIL]", pattern: /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi },
-  { kind: "phone", label: "Phone number", replacement: "[PHONE]", pattern: /(?<!\w)(?:\+?\d{1,3}[ .-]?)?(?:\(?\d{2,4}\)?[ .-]?)?\d{3,4}[ .-]\d{3,4}(?!\w)/g },
+  { kind: "phone", label: "Phone number", replacement: "[PHONE]", pattern: /(?<![\w.])(?:\+?\d{1,3}[ -]?)?(?:\(?\d{2,4}\)?[ -]?)?\d{3,4}[ -]\d{3,4}(?![\w.])/g },
   { kind: "secret", label: "API key or token", replacement: "[SECRET]", pattern: /\b(?:sk-[A-Za-z0-9_-]{16,}|gh[pousr]_[A-Za-z0-9_]{20,}|AIza[\w-]{20,}|Bearer\s+[A-Za-z0-9._-]{16,})\b/g },
   { kind: "card", label: "Card number", replacement: "[CARD]", pattern: /\b(?:\d[ -]*?){13,16}\b/g },
   { kind: "ip", label: "IPv4 address", replacement: "[IP ADDRESS]", pattern: /\b(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)\b/g },
@@ -20,13 +27,28 @@ const rules: Rule[] = [
   { kind: "credential", label: "Password or credential", replacement: "$1$2[REDACTED]", pattern: /\b(password|passwd|pwd|secret)\s*([:=])\s*([^\s,;]{6,})/gi }
 ];
 
-export function inspectPrompt(text: string): { findings: Finding[]; redactedText: string } {
+export function inspectPrompt(text: string, options: ScanOptions = { includePersonalData: true, includeCredentials: true, includeFinancialData: true }): { findings: Finding[]; redactedText: string } {
   const findings: Finding[] = [];
   let redactedText = text;
   for (const rule of rules) {
+    const enabled =
+      (rule.kind === "email" || rule.kind === "phone" || rule.kind === "ip" || rule.kind === "fiscalCode") ? options.includePersonalData :
+      (rule.kind === "card" || rule.kind === "iban") ? options.includeFinancialData : options.includeCredentials;
+    if (!enabled) continue;
     const found = [...text.matchAll(rule.pattern)].map((match) => match[0]);
     found.forEach((value) => findings.push({ kind: rule.kind, label: rule.label, value, replacement: rule.replacement }));
     redactedText = redactedText.replace(rule.pattern, rule.replacement);
   }
+  const customTerms = [...new Set((options.customTerms ?? []).map((term) => term.trim()).filter((term) => term.length >= 2))];
+  for (const term of customTerms) {
+    const pattern = new RegExp(escapeRegExp(term), "gi");
+    const found = [...text.matchAll(pattern)].map((match) => match[0]);
+    found.forEach((value) => findings.push({ kind: "custom", label: "Custom protected term", value, replacement: "[CUSTOM TERM]" }));
+    redactedText = redactedText.replace(pattern, "[CUSTOM TERM]");
+  }
   return { findings, redactedText };
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

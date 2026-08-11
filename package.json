@@ -2,9 +2,13 @@
   "name": "promptshield",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "build": "tsc",
     "check": "tsc --noEmit",
+    "test": "tsx scanner.test.ts",
     "start": "npm run build && tsx server.ts"
   },
   "devDependencies": {
