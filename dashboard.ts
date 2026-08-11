@@ -1,5 +1,6 @@
 import { inspectPrompt, type Finding, type ScanOptions } from "./scanner.js";
 import { enableAppShell } from "./pwa.js";
+import { enableDesktopCompanion } from "./desktop.js";
 
 type HistoryEntry = { id: string; createdAt: string; findings: number; preview: string };
 type Language = "en" | "it" | "es" | "fr" | "de";
@@ -93,6 +94,9 @@ function installDashboardPolish(): void {
     .side { position: sticky; top: 0; height: 100vh; }
     #pwa-install { position:fixed; right:24px; bottom:24px; z-index:20; border:1px solid #c9ff4c; border-radius:999px; padding:11px 15px; background:var(--lime); color:#080a07; font-weight:850; box-shadow:0 12px 32px #0008; cursor:pointer; }
     #pwa-install:focus-visible { outline:3px solid #fff; outline-offset:3px; }
+    #inspect-clipboard { position:fixed; right:24px; bottom:76px; z-index:20; border:1px solid #405535; border-radius:999px; padding:10px 14px; background:#141b10; color:#e7eddc; font-weight:750; box-shadow:0 12px 32px #0008; cursor:pointer; }
+    #inspect-clipboard:hover { border-color:var(--lime); color:var(--lime); }
+    #inspect-clipboard:focus-visible { outline:3px solid #d5ff73; outline-offset:3px; }
     .link-btn, .primary, .copy { cursor: pointer; transition: transform .16s ease, filter .16s ease, background .16s ease; }
     .link-btn:hover { color: var(--text); }
     .primary:hover { filter: brightness(1.08); transform: translateY(-1px); }
@@ -270,6 +274,11 @@ export function mountDashboard(): void {
   };
 
   required<HTMLButtonElement>("#scan").addEventListener("click", scan);
+  void enableDesktopCompanion((clipboardText) => {
+    prompt.value = clipboardText;
+    updateCharacterCount();
+    scan();
+  });
   prompt.addEventListener("input", updateCharacterCount);
   clearPrompt.addEventListener("click", () => {
     prompt.value = "";

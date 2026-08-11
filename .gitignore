@@ -1,6 +1,7 @@
 node_modules/
 .next/
 dist/
+desktop-dist/
 coverage/
 .env
 .env.*

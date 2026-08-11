@@ -7,13 +7,21 @@
   },
   "scripts": {
     "build": "tsc",
+    "build:desktop": "npm run build && node scripts/build-desktop.mjs",
     "check": "tsc --noEmit",
     "test": "tsx scanner.test.ts",
-    "start": "npm run build && tsx server.ts"
+    "start": "npm run build && tsx server.ts",
+    "tauri": "tauri"
   },
   "devDependencies": {
-    "typescript": "^5.7.3",
+    "@tauri-apps/cli": "^2.11.4",
+    "@types/node": "^22.10.2",
     "tsx": "^4.19.2",
-    "@types/node": "^22.10.2"
+    "typescript": "^5.7.3"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.11.1",
+    "@tauri-apps/plugin-clipboard-manager": "^2.3.2",
+    "@tauri-apps/plugin-global-shortcut": "^2.3.2"
   }
 }
