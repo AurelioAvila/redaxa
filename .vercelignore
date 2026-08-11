@@ -1,0 +1,13 @@
+.git
+.vercel
+node_modules
+src-tauri
+desktop-dist
+public
+dist
+coverage
+*.log
+*.exe
+*.zip
+Dockerfile
+railway.toml
