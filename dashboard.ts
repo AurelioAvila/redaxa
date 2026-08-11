@@ -1,4 +1,4 @@
-import { inspectPrompt, type Finding } from "./scanner";
+import { inspectPrompt, type Finding } from "./scanner.js";
 
 type HistoryEntry = { id: string; createdAt: string; findings: number; preview: string };
 
