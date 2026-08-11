@@ -92,6 +92,7 @@ function installDashboardPolish(): void {
   const style = document.createElement("style");
   style.textContent = `
     .side { position: sticky; top: 0; height: 100vh; }
+    html.preferences-open, html.preferences-open body { overflow:hidden; }
     #pwa-install { position:fixed; right:24px; bottom:24px; z-index:20; border:1px solid #c9ff4c; border-radius:999px; padding:11px 15px; background:var(--lime); color:#080a07; font-weight:850; box-shadow:0 12px 32px #0008; cursor:pointer; }
     #pwa-install:focus-visible { outline:3px solid #fff; outline-offset:3px; }
     #inspect-clipboard { position:fixed; right:24px; bottom:76px; z-index:20; border:1px solid #405535; border-radius:999px; padding:10px 14px; background:#141b10; color:#e7eddc; font-weight:750; box-shadow:0 12px 32px #0008; cursor:pointer; }
@@ -112,9 +113,9 @@ function installDashboardPolish(): void {
     .finding small { display:block; margin-top:3px; color:#777e73; font-size:11px; }
     .nav-item { border:0; width:100%; background:transparent; text-align:left; cursor:pointer; }
     .nav-item:hover:not(.active) { background:#ffffff08; color:var(--text); }
-    .drawer-backdrop { position:fixed; inset:0; z-index:20; background:#0009; opacity:0; pointer-events:none; transition:opacity .18s ease; }
+    .drawer-backdrop { position:fixed; inset:0; z-index:20; display:grid; place-items:center; overflow-y:auto; padding:24px; background:#0009; opacity:0; pointer-events:none; transition:opacity .18s ease; }
     .drawer-backdrop.open { opacity:1; pointer-events:auto; }
-    .drawer { position:absolute; top:50%; left:50%; width:min(460px,calc(100vw - 32px)); transform:translate(-50%,-47%); border:1px solid #3a4335; border-radius:18px; background:#131711; padding:24px; box-shadow:0 30px 90px #000b; }
+    .drawer { position:relative; width:min(460px,100%); max-height:calc(100dvh - 48px); overflow-y:auto; border:1px solid #3a4335; border-radius:18px; background:#131711; padding:24px; box-shadow:0 30px 90px #000b; }
     .drawer h2 { font-size:22px; margin:0 0 8px; }
     .drawer p { color:var(--muted); font-size:13px; line-height:1.5; margin:0 0 20px; }
     .pref-row { display:grid; gap:7px; margin:14px 0; color:#cdd3c8; font-size:13px; font-weight:700; }
@@ -205,8 +206,15 @@ export function mountDashboard(): void {
   clearAfterCopyToggle.checked = preferences.autoClearAfterCopy;
   customTermsInput.value = preferences.customTerms.join("\n");
 
-  const closePreferences = (): void => preferenceDialog.classList.remove("open");
-  const openPreferences = (): void => preferenceDialog.classList.add("open");
+  const closePreferences = (): void => {
+    preferenceDialog.classList.remove("open");
+    document.documentElement.classList.remove("preferences-open");
+  };
+  const openPreferences = (): void => {
+    preferenceDialog.classList.add("open");
+    document.documentElement.classList.add("preferences-open");
+    languageSelect.focus();
+  };
 
   const applyLanguage = (): void => {
     const words = copyByLanguage[preferences.language];
