@@ -13,7 +13,10 @@
     ['Phone number', /(?<!\w)(?:\+?\d{1,3}[ .-]?)?(?:\(?\d{2,4}\)?[ .-]?)?\d{3,4}[ .-]\d{3,4}(?!\w)/g, '[PHONE]'],
     ['API key or token', /\b(?:sk-[A-Za-z0-9_-]{16,}|gh[pousr]_[A-Za-z0-9_]{20,}|AIza[\w-]{20,}|Bearer\s+[A-Za-z0-9._-]{16,})\b/g, '[SECRET]'],
     ['Card number', /\b(?:\d[ -]*?){13,16}\b/g, '[CARD]'],
-    ['IPv4 address', /\b(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)\b/g, '[IP ADDRESS]']
+    ['IPv4 address', /\b(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)\b/g, '[IP ADDRESS]'],
+    ['IBAN', /\b[A-Z]{2}\d{2}(?:[ ]?[A-Z0-9]){11,30}\b/g, '[IBAN]'],
+    ['Italian fiscal code', /\b[A-Z]{6}\d{2}[A-Z]\d{2}[A-Z]\d{3}[A-Z]\b/gi, '[FISCAL CODE]'],
+    ['Password or credential', /\b(password|passwd|pwd|secret)\s*([:=])\s*([^\s,;]{6,})/gi, '$1$2[REDACTED]']
   ];
   const escape = value => value.replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[char]));
   const getHistory = () => { try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; } };
