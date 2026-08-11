@@ -9,5 +9,5 @@
     "rootDir": ".",
     "skipLibCheck": true
   },
-  "include": ["scanner.ts", "dashboard.ts", "desktop.ts", "pwa.ts", "server.ts", "scanner.test.ts"]
+  "include": ["scanner.ts", "dashboard.ts", "desktop.ts", "pwa.ts", "auth.ts", "server.ts", "scanner.test.ts"]
 }

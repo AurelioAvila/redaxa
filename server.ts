@@ -15,6 +15,14 @@ const mimeTypes: Record<string, string> = {
 createServer((request, response) => {
   const pathname = new URL(request.url ?? "/", "http://127.0.0.1").pathname;
 
+  if (pathname === "/api/auth-config") {
+    const url = process.env.SUPABASE_URL;
+    const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY;
+    response.writeHead(200, securityHeaders("application/json; charset=utf-8"));
+    response.end(JSON.stringify({ configured: Boolean(url && publishableKey), url: url ?? null, publishableKey: publishableKey ?? null }));
+    return;
+  }
+
   if (pathname === "/health") {
     response.writeHead(200, securityHeaders("application/json; charset=utf-8"));
     response.end(JSON.stringify({ status: "ok", service: "promptshield", promptStorage: "none" }));
@@ -33,7 +41,7 @@ createServer((request, response) => {
 
   response.writeHead(200, securityHeaders(mimeTypes[extname(filePath)] ?? "application/octet-stream"));
   response.end(readFileSync(filePath));
-}).listen(Number(process.env.PORT ?? 4173), "127.0.0.1");
+}).listen(Number(process.env.PORT ?? 4173), "0.0.0.0");
 
 function pathSeparator(): string {
   return process.platform === "win32" ? "\\" : "/";
