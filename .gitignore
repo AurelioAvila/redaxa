@@ -2,6 +2,9 @@ node_modules/
 .next/
 dist/
 desktop-dist/
+src-tauri/icons/64x64.png
+src-tauri/icons/android/
+src-tauri/icons/ios/
 coverage/
 .env
 .env.*
