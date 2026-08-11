@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title">
+  <title>PromptShield mark</title>
+  <rect width="128" height="128" rx="30" fill="#B9FF00"/>
+  <path fill="#080808" d="M34 28h35c17 0 29 10 29 26 0 12-7 21-18 25l19 21H75L58 80H49v20H34V28Zm15 14v25h19c9 0 14-5 14-13s-5-12-14-12H49Z"/>
+  <path fill="#080808" d="M75 29h20L75 49z" opacity=".55"/>
+</svg>
