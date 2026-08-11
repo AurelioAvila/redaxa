@@ -103,7 +103,47 @@ async function boot(): Promise<void> {
   };
   renderAccount(readSession());
   controls.trigger.addEventListener("click", (event) => { event.preventDefault(); if (!config?.configured) { setMessage("Account setup is being completed. Please try again shortly.", true); } show(); });
-  document.querySelectorAll<HTMLElement>("[data-plan]").forEach((button) => button.addEventListener("click", show));
+  const beginCheckout = async (button: HTMLElement): Promise<void> => {
+    const session = readSession();
+    if (!session?.access_token) {
+      setMode("signup");
+      setMessage("Create your account first to start a secure trial.");
+      show();
+      return;
+    }
+    const plan = button.dataset.plan;
+    const interval = button.dataset.interval;
+    const seats = plan === "business" ? Number(document.querySelector<HTMLSelectElement>("#business-seats")?.value ?? 1) : 1;
+    button.setAttribute("aria-busy", "true");
+    (button as HTMLButtonElement).disabled = true;
+    try {
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ plan, interval, seats })
+      });
+      const payload = await response.json() as { url?: string; error?: string };
+      if (!response.ok || !payload.url) throw new Error(payload.error ?? "Checkout could not be opened.");
+      location.assign(payload.url);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Checkout could not be opened.", true);
+      show();
+    } finally {
+      button.removeAttribute("aria-busy");
+      (button as HTMLButtonElement).disabled = false;
+    }
+  };
+  document.querySelectorAll<HTMLElement>("[data-plan]").forEach((button) => button.addEventListener("click", () => void beginCheckout(button)));
+  document.querySelector<HTMLButtonElement>("#manage-billing")?.addEventListener("click", async () => {
+    const session = readSession();
+    if (!session?.access_token) { setMode("signin"); setMessage("Sign in to manage your subscription."); show(); return; }
+    try {
+      const response = await fetch("/api/portal", { method: "POST", headers: { Authorization: `Bearer ${session.access_token}` } });
+      const payload = await response.json() as { url?: string; error?: string };
+      if (!response.ok || !payload.url) throw new Error(payload.error ?? "Billing management is unavailable.");
+      location.assign(payload.url);
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Billing management is unavailable.", true); show(); }
+  });
   dialog.backdrop.querySelector(".ps-auth-close")?.addEventListener("click", close);
   dialog.backdrop.addEventListener("click", (event) => { if (event.target === dialog.backdrop) close(); });
   controls.signout.addEventListener("click", () => { clearSession(); renderAccount(null); });
