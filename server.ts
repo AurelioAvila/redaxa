@@ -14,7 +14,7 @@ createServer((request, response) => {
   const pathname = new URL(request.url ?? "/", "http://127.0.0.1").pathname;
   const relativePath = pathname === "/" ? "index.html" : pathname.replace(/^\/+/, "");
   const filePath = resolve(root, relativePath);
-  const insideRoot = filePath.startsWith(`${root}\`) || filePath.startsWith(`${root}/`);
+  const insideRoot = filePath.startsWith(root + pathSeparator());
 
   if (!insideRoot || !existsSync(filePath) || !statSync(filePath).isFile()) {
     response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
@@ -28,3 +28,7 @@ createServer((request, response) => {
   });
   response.end(readFileSync(filePath));
 }).listen(Number(process.env.PORT ?? 4173), "127.0.0.1");
+
+function pathSeparator(): string {
+  return process.platform === "win32" ? "\\" : "/";
+}
