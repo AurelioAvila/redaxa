@@ -1,11 +1,13 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "ESNext",
+    "module": "ES2020",
     "moduleResolution": "Bundler",
     "strict": true,
-    "noEmit": true,
+    "noEmit": false,
+    "outDir": "dist",
+    "rootDir": ".",
     "skipLibCheck": true
   },
-  "include": ["*.ts"]
+  "include": ["scanner.ts", "dashboard.ts"]
 }
