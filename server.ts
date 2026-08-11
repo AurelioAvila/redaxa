@@ -1,8 +1,9 @@
 import { createServer } from "node:http";
 import { existsSync, readFileSync, statSync } from "node:fs";
-import { extname, resolve } from "node:path";
+import { dirname, extname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const root = resolve(import.meta.dirname);
+const root = resolve(dirname(fileURLToPath(import.meta.url)));
 const mimeTypes: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
