@@ -201,6 +201,40 @@ async function boot(): Promise<void> {
     controls.email.textContent = email ?? "";
   };
   renderAccount(currentEmail);
+
+  // Supabase's email-confirmation and password-reset links redirect back here
+  // with the session tokens (or an error) in the URL fragment -- nothing was
+  // reading it, so users landed on the homepage with no feedback and had to
+  // sign in manually even though confirmation had already succeeded.
+  if (!desktop && location.hash.includes("access_token")) {
+    const hashParams = new URLSearchParams(location.hash.slice(1));
+    history.replaceState(null, "", location.pathname + location.search);
+    const hashAccessToken = hashParams.get("access_token");
+    const hashRefreshToken = hashParams.get("refresh_token");
+    if (hashAccessToken && hashRefreshToken) {
+      try {
+        const payload = await apiRequest("/api/auth/callback", {
+          access_token: hashAccessToken, refresh_token: hashRefreshToken, expires_in: Number(hashParams.get("expires_in")) || 3600
+        }) as { email?: string };
+        if (payload.email) {
+          currentEmail = payload.email;
+          renderAccount(payload.email);
+          await refreshEntitlement();
+          setMode("signin");
+          setMessage("Email confirmed — you're signed in.");
+          show();
+          window.setTimeout(close, 2500);
+        }
+      } catch { /* falls through with no session; user can sign in normally */ }
+    }
+  } else if (!desktop && location.hash.includes("error")) {
+    const hashParams = new URLSearchParams(location.hash.slice(1));
+    history.replaceState(null, "", location.pathname + location.search);
+    setMode("signin");
+    setMessage(hashParams.get("error_description")?.replace(/\+/g, " ") || "That link is invalid or has expired. Please sign in, or create a new account if you haven't confirmed one yet.", true);
+    show();
+  }
+
   window.promptShieldAuth = {
     hasAccess: () => Boolean(currentEmail) && accountActive,
     requestAccess: (message) => {
