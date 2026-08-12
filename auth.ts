@@ -144,7 +144,11 @@ async function loadSession(): Promise<string | null> {
   } catch { return null; }
 }
 
-function authRedirect(): string { return `${location.origin}/`; }
+// Always point confirmation/reset emails at the web app, never at
+// location.origin -- on desktop that's the Tauri window's own internal
+// origin (tauri://localhost or similar), which an email client can't open
+// and Supabase's redirect allowlist can't match against an http(s) URL.
+function authRedirect(): string { return `${webAppUrl}/`; }
 
 // Scanning is gated on an active trial or subscription, not just being signed
 // in -- checked server-side too (the real enforcement point is whatever calls
