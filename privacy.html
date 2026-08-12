@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="How PromptShield collects, uses, and protects your data." />
+    <title>Privacy policy — PromptShield</title>
+    <style>
+      :root { --ink:#090909; --paper:#f4f3ef; --muted:#a4a4a4; --line:#292929; --acid:#b9ff00; }
+      * { box-sizing:border-box; } body { margin:0; background:var(--ink); color:var(--paper); font-family:Inter, ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+      a { color:var(--acid); } .shell { max-width:720px; margin:auto; padding:60px 28px 100px; }
+      .back { color:var(--muted); font-size:13px; text-decoration:none; } .back:hover { color:var(--paper); }
+      h1 { font-size:clamp(32px,5vw,44px); letter-spacing:-.05em; margin:20px 0 6px; }
+      .updated { color:var(--muted); font-size:13px; margin:0 0 40px; }
+      h2 { font-size:18px; margin:40px 0 10px; letter-spacing:-.02em; }
+      p, li { color:#c9c9c9; font-size:15px; line-height:1.7; }
+      ul { padding-left:20px; }
+      strong { color:var(--paper); }
+      table { width:100%; border-collapse:collapse; margin:14px 0; font-size:14px; }
+      th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); color:#c9c9c9; }
+      th { color:var(--paper); font-weight:700; }
+      @media (max-width:760px) { .shell { padding:40px 20px 80px; } }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <a class="back" href="/">← PromptShield</a>
+      <h1>Privacy policy</h1>
+      <p class="updated">Last updated 13 August 2026</p>
+
+      <p>PromptShield is operated by Aurelio Avila, an individual based in Italy ("we", "us"). This page explains what we collect, why, and how you can control it. If anything here is unclear, email <a href="mailto:aurelio_11@outlook.it">aurelio_11@outlook.it</a>.</p>
+
+      <h2>The short version</h2>
+      <p>The text you paste into the scanner is used only to compute the result you see. It is never written to a database, a log file, an analytics tool, or a backup. We collect the account details needed to run a subscription (email, name, date of birth, billing status) and nothing more — no ad trackers, no analytics scripts, no data sold to anyone.</p>
+
+      <h2>What we collect</h2>
+      <table>
+        <tr><th>Data</th><th>Why</th></tr>
+        <tr><td>Email, first name, last name, date of birth</td><td>Create and secure your account (via Supabase Auth)</td></tr>
+        <tr><td>Prompt text you scan</td><td>Sent over an encrypted connection to compute the scan result, then discarded — never stored, logged, or used for any other purpose</td></tr>
+        <tr><td>Subscription status, Stripe customer ID</td><td>Billing. We never see or store your card number — Stripe collects that directly</td></tr>
+        <tr><td>Scan history (a short local preview and counts by category)</td><td>Stored only in your own browser's local storage, to show you "Recent checks." We never receive this — it never leaves your device</td></tr>
+        <tr><td>Session tokens</td><td>Keep you signed in (httpOnly cookies on the web app; a locally-stored token on the desktop app)</td></tr>
+        <tr><td>Team invite tokens</td><td>If you're on a Business plan, link-based invites so you can add teammates. We don't collect a teammate's email before they join</td></tr>
+      </table>
+
+      <h2>What we don't do</h2>
+      <ul>
+        <li>We don't run analytics, ad pixels, or third-party trackers on this site.</li>
+        <li>We don't sell or rent your data to anyone.</li>
+        <li>We don't use your prompt content to train any model or for any purpose beyond showing you the scan result.</li>
+      </ul>
+
+      <h2>Who we share data with</h2>
+      <p>Only the infrastructure providers required to run the service, each acting as a processor on our behalf:</p>
+      <ul>
+        <li><strong>Supabase</strong> — authentication and account database (EU region).</li>
+        <li><strong>Stripe</strong> — payment processing. Card details are collected and stored by Stripe directly; we never handle them.</li>
+        <li><strong>Vercel</strong> — application hosting.</li>
+      </ul>
+      <p>We do not share your data with advertisers, data brokers, or any other third party.</p>
+
+      <h2>How long we keep it</h2>
+      <p>Account data is kept while your account is active. Prompt text is never stored in the first place — there's nothing to retain or delete. To delete your account and associated billing/account data, email <a href="mailto:aurelio_11@outlook.it">aurelio_11@outlook.it</a>; we'll confirm once it's done.</p>
+
+      <h2>Your rights</h2>
+      <p>Depending on where you live, you may have the right to access, correct, export, or delete your personal data, and to object to or restrict its processing. Contact <a href="mailto:aurelio_11@outlook.it">aurelio_11@outlook.it</a> to exercise any of these. If you're in the EU/EEA, you also have the right to lodge a complaint with your local data protection authority.</p>
+
+      <h2>Age</h2>
+      <p>PromptShield is not directed at children. You must be at least 16 years old, or the age of digital consent in your country if higher, to create an account.</p>
+
+      <h2>Changes to this policy</h2>
+      <p>If this policy changes materially, we'll update the date at the top of this page and, where required, notify you by email.</p>
+    </main>
+  </body>
+</html>

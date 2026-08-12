@@ -7,7 +7,7 @@ const output = resolve(root, "public");
 rmSync(output, { recursive: true, force: true });
 mkdirSync(output, { recursive: true });
 
-for (const file of ["index.html", "dashboard.html", "auth.css", "manifest.webmanifest", "service-worker.js"]) {
+for (const file of ["index.html", "dashboard.html", "privacy.html", "terms.html", "auth.css", "manifest.webmanifest", "service-worker.js"]) {
   cpSync(resolve(root, file), resolve(output, file));
 }
 
