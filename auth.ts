@@ -18,6 +18,13 @@ const apiBase = isTauri() ? webAppUrl : "";
 let config: AuthConfig | null = null;
 let mode: "signup" | "signin" | "recovery" = "signup";
 let currentEmail: string | null = null;
+let accountActive = false;
+
+declare global {
+  interface Window {
+    promptShieldAuth?: { hasAccess(): boolean; requestAccess(message?: string): void };
+  }
+}
 
 function readDesktopSession(): DesktopSession | null {
   try {
@@ -72,7 +79,9 @@ function accountControls(): { trigger: HTMLAnchorElement; account: HTMLDivElemen
 function installDialog(): {
   backdrop: HTMLDivElement; form: HTMLFormElement; title: HTMLElement; description: HTMLElement; submit: HTMLButtonElement;
   firstName: HTMLInputElement; lastName: HTMLInputElement; dateOfBirth: HTMLInputElement; registerFields: HTMLElement;
-  email: HTMLInputElement; password: HTMLInputElement; passwordField: HTMLLabelElement; message: HTMLElement; switcher: HTMLButtonElement;
+  email: HTMLInputElement; password: HTMLInputElement; passwordField: HTMLLabelElement;
+  confirmPassword: HTMLInputElement; confirmPasswordField: HTMLLabelElement;
+  message: HTMLElement; switcher: HTMLButtonElement;
 } {
   const backdrop = document.createElement("div");
   backdrop.className = "ps-auth-backdrop";
@@ -87,6 +96,7 @@ function installDialog(): {
     </div>
     <label class="ps-auth-field">Email<input id="ps-auth-email" type="email" autocomplete="email" required></label>
     <label class="ps-auth-field" id="ps-auth-password-field">Password<input id="ps-auth-password" type="password" autocomplete="new-password" minlength="12" required></label>
+    <label class="ps-auth-field" id="ps-auth-confirm-password-field">Confirm password<input id="ps-auth-confirm-password" type="password" autocomplete="new-password" minlength="12"></label>
     <button class="ps-auth-submit" type="submit">Create account</button></form>
     <p class="ps-auth-message" role="status"></p><p class="ps-auth-switch"><button class="ps-auth-link" type="button">Already have an account? Sign in</button></p></section>`;
   document.body.append(backdrop);
@@ -95,7 +105,9 @@ function installDialog(): {
     submit: backdrop.querySelector(".ps-auth-submit")!, registerFields: backdrop.querySelector("#ps-auth-register-fields")!,
     firstName: backdrop.querySelector("#ps-auth-first-name")!, lastName: backdrop.querySelector("#ps-auth-last-name")!, dateOfBirth: backdrop.querySelector("#ps-auth-dob")!,
     email: backdrop.querySelector("#ps-auth-email")!, password: backdrop.querySelector("#ps-auth-password")!,
-    passwordField: backdrop.querySelector("#ps-auth-password-field")!, message: backdrop.querySelector(".ps-auth-message")!, switcher: backdrop.querySelector(".ps-auth-link")!
+    passwordField: backdrop.querySelector("#ps-auth-password-field")!,
+    confirmPassword: backdrop.querySelector("#ps-auth-confirm-password")!, confirmPasswordField: backdrop.querySelector("#ps-auth-confirm-password-field")!,
+    message: backdrop.querySelector(".ps-auth-message")!, switcher: backdrop.querySelector(".ps-auth-link")!
   };
 }
 
@@ -127,6 +139,26 @@ async function loadSession(): Promise<string | null> {
 
 function authRedirect(): string { return `${location.origin}/`; }
 
+// Scanning is gated on an active trial or subscription, not just being signed
+// in -- checked server-side too (the real enforcement point is whatever calls
+// the paid API), but the UI needs to know this to avoid teasing a scan the
+// account isn't entitled to run.
+async function refreshEntitlement(): Promise<void> {
+  if (!currentEmail) { accountActive = false; return; }
+  try {
+    const headers: Record<string, string> = {};
+    if (isTauri()) {
+      const token = await desktopAccessToken();
+      if (!token) { accountActive = false; return; }
+      headers.Authorization = `Bearer ${token}`;
+    }
+    const response = await fetch(`${apiBase}/api/account`, { headers, cache: "no-store" });
+    if (!response.ok) { accountActive = false; return; }
+    const payload = await response.json() as { active?: boolean };
+    accountActive = Boolean(payload.active);
+  } catch { accountActive = false; }
+}
+
 async function boot(): Promise<void> {
   installStylesheet();
   const desktop = isTauri();
@@ -135,6 +167,8 @@ async function boot(): Promise<void> {
 
   config = await loadConfig().catch(() => ({ configured: false }));
   currentEmail = await loadSession();
+  await refreshEntitlement();
+  window.addEventListener("focus", () => { void refreshEntitlement(); });
   const show = (): void => { dialog.backdrop.classList.add("open"); dialog.email.focus(); };
   const close = (): void => dialog.backdrop.classList.remove("open");
   const setMessage = (message: string, error = false): void => { dialog.message.textContent = message; dialog.message.classList.toggle("error", error); };
@@ -146,6 +180,7 @@ async function boot(): Promise<void> {
     dialog.registerFields.hidden = !signup;
     dialog.firstName.required = signup; dialog.lastName.required = signup; dialog.dateOfBirth.required = signup;
     dialog.passwordField.hidden = recovery; dialog.password.required = !recovery; dialog.password.autocomplete = signup ? "new-password" : "current-password";
+    dialog.confirmPasswordField.hidden = !signup; dialog.confirmPassword.required = signup; dialog.confirmPassword.value = "";
     dialog.submit.textContent = signup ? "Create account" : recovery ? "Send reset link" : "Sign in";
     dialog.switcher.textContent = signup ? "Already have an account? Sign in" : recovery ? "Back to sign in" : "Need a password reset?";
   };
@@ -155,6 +190,20 @@ async function boot(): Promise<void> {
     controls.email.textContent = email ?? "";
   };
   renderAccount(currentEmail);
+  window.promptShieldAuth = {
+    hasAccess: () => Boolean(currentEmail) && accountActive,
+    requestAccess: (message) => {
+      if (!currentEmail) {
+        setMode("signup");
+        setMessage(message ?? "Create your account to start your 7-day free trial.");
+        show();
+        return;
+      }
+      // Already signed in but no active trial/subscription: point at pricing
+      // instead of re-showing a login form the user doesn't need.
+      document.dispatchEvent(new CustomEvent("promptshield:need-upgrade", { detail: { message } }));
+    }
+  };
   controls.trigger.addEventListener("click", (event) => { event.preventDefault(); if (!config?.configured) { setMessage("Account setup is being completed. Please try again shortly.", true); } setMode("signup"); show(); });
 
   const beginCheckout = async (button: HTMLElement): Promise<void> => {
@@ -196,6 +245,7 @@ async function boot(): Promise<void> {
   dialog.backdrop.querySelector(".ps-auth-close")?.addEventListener("click", close);
   dialog.backdrop.addEventListener("click", (event) => { if (event.target === dialog.backdrop) close(); });
   controls.signout.addEventListener("click", () => {
+    accountActive = false;
     if (desktop) {
       const session = readDesktopSession();
       clearDesktopSession();
@@ -211,6 +261,7 @@ async function boot(): Promise<void> {
     dialog.submit.disabled = true; setMessage("");
     try {
       if (mode === "signup") {
+        if (dialog.password.value !== dialog.confirmPassword.value) { setMessage("Passwords do not match.", true); dialog.submit.disabled = false; return; }
         await apiRequest("/api/auth/signup", {
           email: dialog.email.value.trim(), password: dialog.password.value, emailRedirectTo: authRedirect(),
           firstName: dialog.firstName.value.trim(), lastName: dialog.lastName.value.trim(), dateOfBirth: dialog.dateOfBirth.value
@@ -223,7 +274,7 @@ async function boot(): Promise<void> {
         if (desktop && payload.access_token && payload.refresh_token) {
           saveDesktopSession({ email, access_token: payload.access_token, refresh_token: payload.refresh_token, expires_at: Date.now() + (payload.expires_in ?? 3600) * 1000 });
         }
-        renderAccount(email); setMessage("Signed in successfully."); window.setTimeout(close, 700);
+        renderAccount(email); await refreshEntitlement(); setMessage("Signed in successfully."); window.setTimeout(close, 700);
       } else {
         await apiRequest("/api/auth/recover", { email: dialog.email.value.trim(), redirect_to: authRedirect() });
         setMessage("If that account exists, a password-reset link is on its way.");

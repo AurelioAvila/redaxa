@@ -4,7 +4,7 @@ import { enableDesktopCompanion } from "./desktop.js";
 
 type HistoryEntry = { id: string; createdAt: string; findings: number; preview: string };
 type Language = "en" | "it" | "es" | "fr" | "de";
-type ThemeName = "lime" | "violet" | "ocean" | "amber" | "crimson";
+type ThemeName = "lime" | "violet" | "teal" | "amber" | "crimson" | "ocean" | "emerald" | "gold" | "slate" | "indigo" | "coral";
 type Preferences = ScanOptions & { language: Language; theme: ThemeName; scanMode: "standard" | "strict"; saveHistory: boolean; autoClearAfterCopy: boolean; showRawValues: boolean; customTerms: string[] };
 
 const storageKey = "promptshield.personal-history.v1";
@@ -15,10 +15,16 @@ const defaultPreferences: Preferences = { language: "en", theme: "lime", scanMod
 
 const themes: { code: ThemeName; label: string; accent: string; accentInk: string; swatch: [string, string] }[] = [
   { code: "lime", label: "Lime", accent: "#b9ff00", accentInk: "#080a07", swatch: ["#b9ff00", "#6dd400"] },
-  { code: "violet", label: "Violet", accent: "#a78bfa", accentInk: "#0c0a17", swatch: ["#a78bfa", "#f472b6"] },
-  { code: "ocean", label: "Ocean Blue", accent: "#4ea1ff", accentInk: "#05070c", swatch: ["#4ea1ff", "#38bdf8"] },
-  { code: "amber", label: "Amber Dusk", accent: "#ffb84d", accentInk: "#140d02", swatch: ["#ffb84d", "#fbbf24"] },
-  { code: "crimson", label: "Crimson Steel", accent: "#ff5d78", accentInk: "#12060a", swatch: ["#ff5d78", "#fb7185"] }
+  { code: "violet", label: "Violet", accent: "#ff5c8a", accentInk: "#1a0710", swatch: ["#ff5c8a", "#35e0c0"] },
+  { code: "teal", label: "Teal Depths", accent: "#35e0c0", accentInk: "#062019", swatch: ["#35e0c0", "#ff5c8a"] },
+  { code: "amber", label: "Amber Dusk", accent: "#ffb84d", accentInk: "#241202", swatch: ["#ffb84d", "#5bd1ff"] },
+  { code: "crimson", label: "Crimson Steel", accent: "#ff4d6d", accentInk: "#1c0509", swatch: ["#ff4d6d", "#4ce0b3"] },
+  { code: "ocean", label: "Ocean Blue", accent: "#3d8bff", accentInk: "#04101f", swatch: ["#3d8bff", "#ffb74d"] },
+  { code: "emerald", label: "Forest Emerald", accent: "#2ecc71", accentInk: "#052012", swatch: ["#2ecc71", "#ff6f91"] },
+  { code: "gold", label: "Royal Gold", accent: "#e8b923", accentInk: "#201802", swatch: ["#e8b923", "#6f5bff"] },
+  { code: "slate", label: "Slate Mono", accent: "#9aa5b1", accentInk: "#14171a", swatch: ["#9aa5b1", "#6ee7b7"] },
+  { code: "indigo", label: "Indigo Night", accent: "#6c63ff", accentInk: "#0d0a1f", swatch: ["#6c63ff", "#ffc155"] },
+  { code: "coral", label: "Coral Sunset", accent: "#ff7a45", accentInk: "#200902", swatch: ["#ff7a45", "#4dd9e8"] }
 ];
 
 function applyTheme(theme: ThemeName): void {
@@ -232,6 +238,7 @@ export function mountDashboard(): void {
   };
   required<HTMLButtonElement>("#close-plans").addEventListener("click", closePlans);
   plansDialog.addEventListener("click", (event) => { if (event.target === plansDialog) closePlans(); });
+  document.addEventListener("promptshield:need-upgrade", () => openPlans());
   const languageSelect = required<HTMLSelectElement>("#language");
   const scanModeSelect = required<HTMLSelectElement>("#scan-mode");
   const personalToggle = required<HTMLInputElement>("#detect-personal");
@@ -308,6 +315,10 @@ export function mountDashboard(): void {
   const scan = (): void => {
     if (!prompt.value.trim()) {
       prompt.focus();
+      return;
+    }
+    if (!window.promptShieldAuth?.hasAccess()) {
+      window.promptShieldAuth?.requestAccess("Create your account and start your 7-day free trial to inspect prompts.");
       return;
     }
     if (prompt.value.length > maxPromptLength) {

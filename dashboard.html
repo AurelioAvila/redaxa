@@ -40,14 +40,22 @@ html.preferences-open,html.preferences-open body{overflow:hidden}
 .theme-swatch:hover{transform:scale(1.1)}
 .theme-swatch.active{box-shadow:0 0 0 2px #ffffffcc}
 .theme-swatch-lime{background:linear-gradient(135deg,#b9ff00 50%,#6dd400 50%)}
-.theme-swatch-violet{background:linear-gradient(135deg,#a78bfa 50%,#f472b6 50%)}
-.theme-swatch-ocean{background:linear-gradient(135deg,#4ea1ff 50%,#38bdf8 50%)}
-.theme-swatch-amber{background:linear-gradient(135deg,#ffb84d 50%,#fbbf24 50%)}
-.theme-swatch-crimson{background:linear-gradient(135deg,#ff5d78 50%,#fb7185 50%)}
+.theme-swatch-violet{background:linear-gradient(135deg,#ff5c8a 50%,#35e0c0 50%)}
+.theme-swatch-teal{background:linear-gradient(135deg,#35e0c0 50%,#ff5c8a 50%)}
+.theme-swatch-amber{background:linear-gradient(135deg,#ffb84d 50%,#5bd1ff 50%)}
+.theme-swatch-crimson{background:linear-gradient(135deg,#ff4d6d 50%,#4ce0b3 50%)}
+.theme-swatch-ocean{background:linear-gradient(135deg,#3d8bff 50%,#ffb74d 50%)}
+.theme-swatch-emerald{background:linear-gradient(135deg,#2ecc71 50%,#ff6f91 50%)}
+.theme-swatch-gold{background:linear-gradient(135deg,#e8b923 50%,#6f5bff 50%)}
+.theme-swatch-slate{background:linear-gradient(135deg,#9aa5b1 50%,#6ee7b7 50%)}
+.theme-swatch-indigo{background:linear-gradient(135deg,#6c63ff 50%,#ffc155 50%)}
+.theme-swatch-coral{background:linear-gradient(135deg,#ff7a45 50%,#4dd9e8 50%)}
 .plans-drawer{width:min(760px,100%)}
 .plan-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:6px}
 .plan-card{border:1px solid var(--line);border-radius:14px;background:#0e120c;padding:16px;display:flex;flex-direction:column;gap:8px}
-.plan-card.featured{border-color:color-mix(in srgb,var(--accent) 45%,var(--line));background:linear-gradient(160deg,color-mix(in srgb,var(--accent) 8%,#0e120c),#0e120c)}
+.plan-card{transition:border-color .18s ease,background .18s ease,transform .18s ease}
+.plan-card:hover{transform:translateY(-2px)}
+.plan-card.featured:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line));background:linear-gradient(160deg,color-mix(in srgb,var(--accent) 8%,#0e120c),#0e120c)}
 .plan-tag{color:var(--accent);font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
 .plan-card h3{margin:2px 0 0;font-size:18px}
 .plan-price{font-size:22px;font-weight:850}

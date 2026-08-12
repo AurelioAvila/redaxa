@@ -7,7 +7,17 @@ export type BillingAccount = {
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
   has_used_trial: boolean;
+  subscription_status: string | null;
+  current_period_end: string | null;
 };
+
+// A subscription in one of these states is what unlocks the scanner: 'trialing'
+// covers the 7-day trial, 'active' a paid subscription. 'past_due' is
+// deliberately excluded -- a failed payment should stop new scans rather than
+// keep granting access indefinitely.
+export function hasActiveEntitlement(account: BillingAccount | null): boolean {
+  return account?.subscription_status === "trialing" || account?.subscription_status === "active";
+}
 
 export const stripe = new Stripe(required("STRIPE_SECRET_KEY"), { typescript: true });
 
@@ -171,7 +181,7 @@ export async function saveCustomer(userId: string, customerId: string): Promise<
 }
 
 export async function accountFor(userId: string): Promise<BillingAccount | null> {
-  const response = await supabase(`/rest/v1/billing_accounts?user_id=eq.${encodeURIComponent(userId)}&select=stripe_customer_id,stripe_subscription_id,has_used_trial`, { method: "GET" });
+  const response = await supabase(`/rest/v1/billing_accounts?user_id=eq.${encodeURIComponent(userId)}&select=stripe_customer_id,stripe_subscription_id,has_used_trial,subscription_status,current_period_end`, { method: "GET" });
   if (!response.ok) throw new Error("BILLING_STORAGE_ERROR");
   const rows = await response.json() as BillingAccount[];
   return rows[0] ?? null;
