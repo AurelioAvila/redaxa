@@ -1,4 +1,5 @@
 import { isTauri, openInSystemBrowser } from "./desktop.js";
+import type { Finding } from "./scanner.js";
 
 type AuthConfig = { configured: boolean };
 type DesktopSession = { email: string; access_token: string; refresh_token: string; expires_at: number };
@@ -20,9 +21,15 @@ let mode: "signup" | "signin" | "recovery" = "signup";
 let currentEmail: string | null = null;
 let accountActive = false;
 
+type ScanRequestOptions = { includePersonalData?: boolean; includeCredentials?: boolean; includeFinancialData?: boolean; customTerms?: string[] };
+
 declare global {
   interface Window {
-    promptShieldAuth?: { hasAccess(): boolean; requestAccess(message?: string): void };
+    promptShieldAuth?: {
+      hasAccess(): boolean;
+      requestAccess(message?: string): void;
+      scanPrompt(text: string, options?: ScanRequestOptions): Promise<{ findings: Finding[]; redactedText: string }>;
+    };
   }
 }
 
@@ -87,7 +94,7 @@ function installDialog(): {
   backdrop.className = "ps-auth-backdrop";
   backdrop.innerHTML = `<section class="ps-auth-dialog" role="dialog" aria-modal="true" aria-labelledby="ps-auth-title">
     <button class="ps-auth-close" type="button" aria-label="Close account dialog">×</button>
-    <h2 id="ps-auth-title">Create your account</h2><p id="ps-auth-description">Start your 14-day free trial when PromptShield billing launches. Your prompt text stays local.</p>
+    <h2 id="ps-auth-title">Create your account</h2><p id="ps-auth-description">Start your 7-day free trial. Your prompt is checked to power the scan and never stored or logged.</p>
     <form>
     <div id="ps-auth-register-fields">
       <label class="ps-auth-field">First name<input id="ps-auth-first-name" type="text" autocomplete="given-name"></label>
@@ -202,6 +209,10 @@ async function boot(): Promise<void> {
       // Already signed in but no active trial/subscription: point at pricing
       // instead of re-showing a login form the user doesn't need.
       document.dispatchEvent(new CustomEvent("promptshield:need-upgrade", { detail: { message } }));
+    },
+    scanPrompt: async (text, options) => {
+      const payload = await apiRequest("/api/scan", { text, options: options ?? {} }) as { findings?: Finding[]; redactedText?: string };
+      return { findings: payload.findings ?? [], redactedText: payload.redactedText ?? "" };
     }
   };
   controls.trigger.addEventListener("click", (event) => { event.preventDefault(); if (!config?.configured) { setMessage("Account setup is being completed. Please try again shortly.", true); } setMode("signup"); show(); });

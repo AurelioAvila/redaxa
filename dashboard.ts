@@ -1,4 +1,4 @@
-import { inspectPrompt, type Finding, type ScanOptions } from "./scanner.js";
+import type { Finding, ScanOptions } from "./scanner.js";
 import { enableAppShell } from "./pwa.js";
 import { enableDesktopCompanion } from "./desktop.js";
 
@@ -99,9 +99,8 @@ function savePreferences(preferences: Preferences): void {
   localStorage.setItem(preferencesKey, JSON.stringify(preferences));
 }
 
-export function inspectAndStore(text: string, preferences: Preferences) {
-  const result = inspectPrompt(text, preferences);
-  return { ...result, history: preferences.saveHistory ? saveHistory(text, result.findings) : readHistory() };
+export function storeResult(text: string, findings: Finding[], redactedText: string, preferences: Preferences) {
+  return { findings, redactedText, history: preferences.saveHistory ? saveHistory(text, findings) : readHistory() };
 }
 
 function required<T extends Element>(selector: string): T {
@@ -137,7 +136,7 @@ export function mountDashboard(): void {
 
   const meta = document.createElement("div");
   meta.className = "prompt-meta";
-  meta.innerHTML = `<span>Private scan · nothing leaves this browser</span><span id="character-count"><strong>0</strong> / ${maxPromptLength.toLocaleString()}</span>`;
+  meta.innerHTML = `<span>Private scan · never stored or logged</span><span id="character-count"><strong>0</strong> / ${maxPromptLength.toLocaleString()}</span>`;
   prompt.insertAdjacentElement("afterend", meta);
 
   const clearPrompt = document.createElement("button");
@@ -312,7 +311,8 @@ export function mountDashboard(): void {
     characterCount.innerHTML = `<strong>${prompt.value.length.toLocaleString()}</strong> / ${maxPromptLength.toLocaleString()}`;
   };
 
-  const scan = (): void => {
+  const scanButton = required<HTMLButtonElement>("#scan");
+  const scan = async (): Promise<void> => {
     if (!prompt.value.trim()) {
       prompt.focus();
       return;
@@ -324,21 +324,38 @@ export function mountDashboard(): void {
     if (prompt.value.length > maxPromptLength) {
       count.textContent = "!";
       title.textContent = "Prompt is too long";
-      copy.textContent = `Keep it under ${maxPromptLength.toLocaleString()} characters for a local check.`;
+      copy.textContent = `Keep it under ${maxPromptLength.toLocaleString()} characters for a check.`;
       return;
     }
-    const result = inspectAndStore(prompt.value, preferences);
-    count.textContent = String(result.findings.length);
-    title.textContent = result.findings.length ? `${result.findings.length} item${result.findings.length === 1 ? "" : "s"} to review` : "Nothing obvious found";
-    copy.textContent = result.findings.length ? `${preferences.scanMode === "strict" ? "Strict review: " : ""}Review these before sharing your prompt.` : "This is a helpful signal, not a guarantee.";
-    findingsRoot.className = "findings";
-    findingsRoot.innerHTML = result.findings.length ? result.findings.map((finding) => `<div class="finding"><i></i><div><b>${finding.label}</b><span>${escapeHtml(preferences.showRawValues ? finding.value : "Sensitive value hidden")}</span><small>Will be replaced with ${escapeHtml(finding.replacement.replace("$1$2", ""))}</small></div></div>`).join("") : `<div class="empty">No common secrets or personal details were detected. This is a helpful signal, not a guarantee.</div>`;
-    redacted.textContent = result.redactedText;
-    safeRoot.style.display = "block";
-    renderHistory();
+    scanButton.disabled = true;
+    const originalLabel = scanButton.textContent;
+    scanButton.textContent = "Checking…";
+    try {
+      const scanned = await window.promptShieldAuth!.scanPrompt(prompt.value, preferences);
+      const result = storeResult(prompt.value, scanned.findings, scanned.redactedText, preferences);
+      count.textContent = String(result.findings.length);
+      title.textContent = result.findings.length ? `${result.findings.length} item${result.findings.length === 1 ? "" : "s"} to review` : "Nothing obvious found";
+      copy.textContent = result.findings.length ? `${preferences.scanMode === "strict" ? "Strict review: " : ""}Review these before sharing your prompt.` : "This is a helpful signal, not a guarantee.";
+      findingsRoot.className = "findings";
+      findingsRoot.innerHTML = result.findings.length ? result.findings.map((finding) => `<div class="finding"><i></i><div><b>${finding.label}</b><span>${escapeHtml(preferences.showRawValues ? finding.value : "Sensitive value hidden")}</span><small>Will be replaced with ${escapeHtml(finding.replacement.replace("$1$2", ""))}</small></div></div>`).join("") : `<div class="empty">No common secrets or personal details were detected. This is a helpful signal, not a guarantee.</div>`;
+      redacted.textContent = result.redactedText;
+      safeRoot.style.display = "block";
+      renderHistory();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      if (message === "TRIAL_REQUIRED") {
+        window.promptShieldAuth?.requestAccess("Start your 7-day free trial to inspect prompts.");
+      } else {
+        title.textContent = "Check failed";
+        copy.textContent = "We could not run that check. Please try again.";
+      }
+    } finally {
+      scanButton.disabled = false;
+      scanButton.textContent = originalLabel;
+    }
   };
 
-  required<HTMLButtonElement>("#scan").addEventListener("click", scan);
+  scanButton.addEventListener("click", () => { void scan(); });
   void enableDesktopCompanion((clipboardText) => {
     prompt.value = clipboardText;
     updateCharacterCount();

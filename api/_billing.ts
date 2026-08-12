@@ -115,10 +115,23 @@ function bearerToken(headers: Record<string, string | string[] | undefined> | un
   return value?.startsWith("Bearer ") ? value.slice("Bearer ".length) : undefined;
 }
 
+// Only these origins may read cross-origin responses: the production web app and the
+// Tauri desktop shell (which has no origin of its own to allowlist by hostname). Any
+// other Origin still gets a response -- these are unauthenticated-safe endpoints or
+// enforce their own auth -- but the browser will refuse to let a page on another origin
+// read it, since ACAO won't match. Reflecting arbitrary origins was previously harmless
+// (no Access-Control-Allow-Credentials, and session cookies are SameSite=Lax so they
+// never ride along on cross-site fetches) but an explicit allowlist is cheap insurance
+// against that assumption breaking later.
+function allowedOrigins(): Set<string> {
+  return new Set([appUrl(), "tauri://localhost", "http://tauri.localhost"]);
+}
+
 export function corsHeaders(request: { headers?: Record<string, string | string[] | undefined> }): Record<string, string> {
-  const origin = request.headers?.origin;
+  const rawOrigin = request.headers?.origin;
+  const origin = Array.isArray(rawOrigin) ? rawOrigin[0] : rawOrigin;
   return {
-    "Access-Control-Allow-Origin": (Array.isArray(origin) ? origin[0] : origin) ?? "*",
+    "Access-Control-Allow-Origin": origin && allowedOrigins().has(origin) ? origin : appUrl(),
     "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Refresh-Token",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     Vary: "Origin"
