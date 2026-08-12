@@ -269,16 +269,23 @@ async function boot(): Promise<void> {
   dialog.switcher.addEventListener("click", () => setMode(mode === "signup" ? "signin" : mode === "signin" ? "recovery" : "signin"));
   dialog.form.addEventListener("submit", async (event) => {
     event.preventDefault(); if (!config?.configured) { setMessage("Account setup is not configured yet.", true); return; }
+    const restingLabel = dialog.submit.textContent;
     dialog.submit.disabled = true; setMessage("");
     try {
       if (mode === "signup") {
         if (dialog.password.value !== dialog.confirmPassword.value) { setMessage("Passwords do not match.", true); dialog.submit.disabled = false; return; }
+        dialog.submit.textContent = "Creating account…";
         await apiRequest("/api/auth/signup", {
           email: dialog.email.value.trim(), password: dialog.password.value, emailRedirectTo: authRedirect(),
           firstName: dialog.firstName.value.trim(), lastName: dialog.lastName.value.trim(), dateOfBirth: dialog.dateOfBirth.value
         });
-        setMessage("Check your email to confirm your account, then sign in."); setMode("signin");
+        // setMode() resets the status message, so it must run before the
+        // "check your email" message is set -- not after, or the message is
+        // wiped the instant it appears and the user never sees it.
+        setMode("signin");
+        setMessage("Account created. Check your email for a confirmation link, then sign in here.");
       } else if (mode === "signin") {
+        dialog.submit.textContent = "Signing in…";
         const payload = await apiRequest("/api/auth/signin", { email: dialog.email.value.trim(), password: dialog.password.value }) as
           { email?: string; access_token?: string; refresh_token?: string; expires_in?: number };
         const email = payload.email ?? dialog.email.value.trim();
@@ -287,10 +294,15 @@ async function boot(): Promise<void> {
         }
         renderAccount(email); await refreshEntitlement(); setMessage("Signed in successfully."); window.setTimeout(close, 700);
       } else {
+        dialog.submit.textContent = "Sending link…";
         await apiRequest("/api/auth/recover", { email: dialog.email.value.trim(), redirect_to: authRedirect() });
+        dialog.submit.textContent = restingLabel;
         setMessage("If that account exists, a password-reset link is on its way.");
       }
-    } catch (error) { setMessage(error instanceof Error ? error.message : "We could not complete that request.", true); }
+    } catch (error) {
+      dialog.submit.textContent = restingLabel;
+      setMessage(error instanceof Error ? error.message : "We could not complete that request.", true);
+    }
     finally { dialog.submit.disabled = false; }
   });
 }

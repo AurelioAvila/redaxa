@@ -2,7 +2,7 @@ import type { Finding, ScanOptions } from "./scanner.js";
 import { enableAppShell } from "./pwa.js";
 import { enableDesktopCompanion } from "./desktop.js";
 
-type HistoryEntry = { id: string; createdAt: string; findings: number; preview: string };
+type HistoryEntry = { id: string; createdAt: string; findings: number; preview: string; byKind: Record<string, number> };
 type Language = "en" | "it" | "es" | "fr" | "de";
 type ThemeName = "lime" | "violet" | "teal" | "amber" | "crimson" | "ocean" | "emerald" | "gold" | "slate" | "indigo" | "coral";
 type Preferences = ScanOptions & { language: Language; theme: ThemeName; scanMode: "standard" | "strict"; saveHistory: boolean; autoClearAfterCopy: boolean; showRawValues: boolean; customTerms: string[] };
@@ -49,14 +49,22 @@ const settingsByLanguage: Record<Language, string[]> = {
   de: ["Persönliche Einstellungen", "Diese Einstellungen bleiben in diesem Browser. Sie erstellen kein Konto und laden keine Prompts hoch.", "Oberflächensprache", "Prüfmodus", "Personenbezogene Daten erkennen", "API-Schlüssel und Zugangsdaten erkennen", "Karten und IBAN erkennen", "Lokale Prüfzusammenfassungen speichern", "Erkannten Wert anzeigen", "Prompt nach dem Kopieren leeren", "Schließen", "Einstellungen speichern", "Eigene geschützte Begriffe"]
 };
 
+const findingLabels: Record<string, string> = { email: "Email", phone: "Phone", secret: "API key", card: "Card", ip: "IP address", iban: "IBAN", fiscalCode: "Fiscal code", credential: "Credential", custom: "Custom term" };
+
 export function saveHistory(text: string, findings: Finding[]): HistoryEntry[] {
+  const byKind: Record<string, number> = {};
+  for (const finding of findings) byKind[finding.kind] = (byKind[finding.kind] ?? 0) + 1;
   const entry: HistoryEntry = {
     id: crypto.randomUUID(),
     createdAt: new Date().toISOString(),
     findings: findings.length,
-    preview: text.replace(/\s+/g, " ").trim().slice(0, 76)
+    preview: text.replace(/\s+/g, " ").trim().slice(0, 76),
+    byKind
   };
-  const history = [entry, ...readHistory()].slice(0, 8);
+  // Stores more than the 8 shown in the "Recent checks" list so the weekly
+  // analytics panel has enough data to be useful. Never stores raw finding
+  // values, only counts by kind, to stay consistent with zero-retention scanning.
+  const history = [entry, ...readHistory()].slice(0, 40);
   localStorage.setItem(storageKey, JSON.stringify(history));
   return history;
 }
@@ -191,6 +199,7 @@ export function mountDashboard(): void {
     applyTheme(code);
     savePreferences(preferences);
     themeRow.querySelectorAll(".theme-swatch").forEach((swatch) => swatch.classList.toggle("active", swatch === button));
+    renderOnboarding();
   });
 
   const plansDialog = document.createElement("div");
@@ -318,14 +327,51 @@ export function mountDashboard(): void {
     "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#039;", "\"": "&quot;"
   }[character] ?? character));
 
+  const onboardingKey = "promptshield.onboarding-dismissed.v1";
+  const onboardingSection = document.querySelector<HTMLElement>("#onboarding");
+  const renderOnboarding = (): void => {
+    if (!onboardingSection) return;
+    if (localStorage.getItem(onboardingKey) === "1") { onboardingSection.style.display = "none"; return; }
+    const tasks: Record<string, boolean> = {
+      check: readHistory().length > 0,
+      terms: preferences.customTerms.length > 0,
+      theme: preferences.theme !== defaultPreferences.theme
+    };
+    onboardingSection.querySelectorAll<HTMLElement>("#onboarding-list li[data-task]").forEach((item) => {
+      item.classList.toggle("done", Boolean(tasks[item.dataset.task ?? ""]));
+    });
+    onboardingSection.style.display = Object.values(tasks).every(Boolean) ? "none" : "block";
+  };
+  document.querySelector("#onboarding-close")?.addEventListener("click", () => {
+    localStorage.setItem(onboardingKey, "1");
+    if (onboardingSection) onboardingSection.style.display = "none";
+  });
+
   const sideStatCount = document.querySelector<HTMLElement>("#side-stat strong");
+  const analyticsRoot = document.querySelector<HTMLElement>("#analytics-bars");
+  const analyticsEmpty = document.querySelector<HTMLElement>("#analytics-empty");
+
   const renderHistory = (): void => {
     const history = readHistory();
-    historyRoot.innerHTML = history.length ? history.map((entry) => `<article class="entry"><strong>${entry.findings} item${entry.findings === 1 ? "" : "s"} reviewed</strong><span>${escapeHtml(entry.preview)}</span><em>${new Date(entry.createdAt).toLocaleString()}</em></article>`).join("") : `<div class="entry"><strong>No checks yet</strong><span>Your last eight check summaries will appear here.</span></div>`;
-    if (sideStatCount) {
-      const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-      sideStatCount.textContent = String(history.filter((entry) => new Date(entry.createdAt).getTime() >= weekAgo).length);
+    const visible = history.slice(0, 8);
+    historyRoot.innerHTML = visible.length ? visible.map((entry) => {
+      const breakdown = Object.entries(entry.byKind).map(([kind, n]) => `${findingLabels[kind] ?? kind} × ${n}`).join(", ");
+      return `<article class="entry" data-id="${entry.id}" tabindex="0" role="button" aria-expanded="false"><strong>${entry.findings} item${entry.findings === 1 ? "" : "s"} reviewed</strong><span>${escapeHtml(entry.preview)}</span><em>${new Date(entry.createdAt).toLocaleString()}</em><div class="entry-detail">${breakdown ? escapeHtml(breakdown) : "Nothing flagged in this check."}</div></article>`;
+    }).join("") : `<div class="entry"><strong>No checks yet</strong><span>Your last eight check summaries will appear here.</span></div>`;
+
+    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const weekly = history.filter((entry) => new Date(entry.createdAt).getTime() >= weekAgo);
+    if (sideStatCount) sideStatCount.textContent = String(weekly.length);
+
+    if (analyticsRoot && analyticsEmpty) {
+      const totals: Record<string, number> = {};
+      for (const entry of weekly) for (const [kind, n] of Object.entries(entry.byKind)) totals[kind] = (totals[kind] ?? 0) + n;
+      const rows = Object.entries(totals).sort((a, b) => b[1] - a[1]).slice(0, 5);
+      const max = rows.length ? rows[0][1] : 0;
+      analyticsEmpty.style.display = rows.length ? "none" : "block";
+      analyticsRoot.innerHTML = rows.map(([kind, n]) => `<div class="analytics-row"><span class="analytics-label">${findingLabels[kind] ?? kind}</span><div class="analytics-track"><div class="analytics-fill" style="width:${Math.max(6, Math.round((n / max) * 100))}%"></div></div><span class="analytics-value">${n}</span></div>`).join("");
     }
+    renderOnboarding();
   };
 
   const updateCharacterCount = (): void => {
@@ -392,6 +438,19 @@ export function mountDashboard(): void {
     clearHistory();
     renderHistory();
   });
+  const toggleEntry = (entry: HTMLElement): void => {
+    const open = entry.classList.toggle("open");
+    entry.setAttribute("aria-expanded", String(open));
+  };
+  historyRoot.addEventListener("click", (event) => {
+    const entry = (event.target as HTMLElement).closest<HTMLElement>(".entry[data-id]");
+    if (entry) toggleEntry(entry);
+  });
+  historyRoot.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    const entry = (event.target as HTMLElement).closest<HTMLElement>(".entry[data-id]");
+    if (entry) { event.preventDefault(); toggleEntry(entry); }
+  });
   navItems.forEach((item) => {
     const activate = (): void => {
       const index = navItems.indexOf(item);
@@ -415,6 +474,7 @@ export function mountDashboard(): void {
     preferences.customTerms = customTermsInput.value.split(/\r?\n/).map((term) => term.trim()).filter(Boolean).slice(0, 30);
     savePreferences(preferences);
     applyLanguage();
+    renderOnboarding();
     closePreferences();
   });
   preferenceDialog.addEventListener("click", (event) => { if (event.target === preferenceDialog) closePreferences(); });
