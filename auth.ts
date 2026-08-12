@@ -90,6 +90,7 @@ function installDialog(): {
   email: HTMLInputElement; password: HTMLInputElement; passwordField: HTMLLabelElement;
   confirmPassword: HTMLInputElement; confirmPasswordField: HTMLLabelElement;
   message: HTMLElement; switcher: HTMLButtonElement; legal: HTMLElement;
+  resendRow: HTMLElement; resend: HTMLButtonElement;
 } {
   const backdrop = document.createElement("div");
   backdrop.className = "ps-auth-backdrop";
@@ -107,6 +108,7 @@ function installDialog(): {
     <label class="ps-auth-field" id="ps-auth-confirm-password-field">Confirm password<input id="ps-auth-confirm-password" type="password" autocomplete="new-password" minlength="12"></label>
     <button class="ps-auth-submit" type="submit">Create account</button></form>
     <p class="ps-auth-message" role="status"></p><p class="ps-auth-switch"><button class="ps-auth-link" type="button">Already have an account? Sign in</button></p>
+    <p class="ps-auth-switch" id="ps-auth-resend-row" hidden><button class="ps-auth-link" type="button" id="ps-auth-resend">Resend confirmation email</button></p>
     <p class="ps-auth-legal" id="ps-auth-legal">By creating an account you agree to our <a href="/terms.html" target="_blank" rel="noopener">Terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</p></section>`;
   document.body.append(backdrop);
   return {
@@ -117,7 +119,8 @@ function installDialog(): {
     passwordField: backdrop.querySelector("#ps-auth-password-field")!,
     confirmPassword: backdrop.querySelector("#ps-auth-confirm-password")!, confirmPasswordField: backdrop.querySelector("#ps-auth-confirm-password-field")!,
     message: backdrop.querySelector(".ps-auth-message")!, switcher: backdrop.querySelector(".ps-auth-link")!,
-    legal: backdrop.querySelector("#ps-auth-legal")!
+    legal: backdrop.querySelector("#ps-auth-legal")!,
+    resendRow: backdrop.querySelector("#ps-auth-resend-row")!, resend: backdrop.querySelector("#ps-auth-resend")!
   };
 }
 
@@ -196,6 +199,7 @@ async function boot(): Promise<void> {
     dialog.passwordField.hidden = recovery; dialog.password.required = !recovery; dialog.password.autocomplete = signup ? "new-password" : "current-password";
     dialog.confirmPasswordField.hidden = !signup; dialog.confirmPassword.required = signup; dialog.confirmPassword.value = "";
     dialog.legal.hidden = !signup;
+    dialog.resendRow.hidden = mode !== "signin";
     dialog.submit.textContent = signup ? "Create account" : recovery ? "Send reset link" : "Sign in";
     dialog.switcher.textContent = signup ? "Already have an account? Sign in" : recovery ? "Back to sign in" : "Need a password reset?";
   };
@@ -349,6 +353,22 @@ async function boot(): Promise<void> {
     }
   });
   dialog.switcher.addEventListener("click", () => setMode(mode === "signup" ? "signin" : mode === "signin" ? "recovery" : "signin"));
+  dialog.resend.addEventListener("click", async () => {
+    const email = dialog.email.value.trim();
+    if (!email) { setMessage("Enter your email address first.", true); dialog.email.focus(); return; }
+    dialog.resend.disabled = true;
+    const originalLabel = dialog.resend.textContent;
+    dialog.resend.textContent = "Sending…";
+    try {
+      await apiRequest("/api/auth/signup", { email, resend: true, emailRedirectTo: authRedirect() });
+      setMessage("If that account exists and isn't confirmed yet, a new confirmation email is on its way.");
+    } catch {
+      setMessage("We could not resend that email. Please try again shortly.", true);
+    } finally {
+      dialog.resend.disabled = false;
+      dialog.resend.textContent = originalLabel;
+    }
+  });
   dialog.form.addEventListener("submit", async (event) => {
     event.preventDefault(); if (!config?.configured) { setMessage("Account setup is not configured yet.", true); return; }
     const restingLabel = dialog.submit.textContent;

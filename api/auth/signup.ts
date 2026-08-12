@@ -16,8 +16,36 @@ export default async function handler(request: RequestLike, response: ResponseLi
   if (request.method === "OPTIONS") { response.status(204).end(); return; }
   if (request.method !== "POST") { response.setHeader("Allow", "POST"); response.status(405).end(); return; }
   try {
-    const body = (request.body ?? {}) as { email?: unknown; password?: unknown; emailRedirectTo?: unknown; firstName?: unknown; lastName?: unknown; dateOfBirth?: unknown };
+    const body = (request.body ?? {}) as { email?: unknown; password?: unknown; emailRedirectTo?: unknown; firstName?: unknown; lastName?: unknown; dateOfBirth?: unknown; resend?: unknown };
     const email = typeof body.email === "string" ? body.email.trim() : "";
+
+    // Resend: same flow as a fresh signup, but only needs an email -- used
+    // when the original confirmation link expired or never arrived. Folded
+    // into this endpoint rather than a new file: Vercel's Hobby plan caps a
+    // deployment at 12 serverless functions and this project is already there.
+    if (body.resend === true) {
+      if (!email) { response.status(400).json({ error: "Enter your email address." }); return; }
+      const ip = clientIp(request.headers);
+      if (rateLimited(`resend:ip:${ip}`, 5, 15 * 60_000) || rateLimited(`resend:email:${email.toLowerCase()}`, 3, 15 * 60_000)) {
+        response.status(200).json({ ok: true });
+        return;
+      }
+      const url = required("SUPABASE_URL").replace(/\/$/, "");
+      const publishableKey = required("SUPABASE_PUBLISHABLE_KEY");
+      await fetch(`${url}/auth/v1/resend`, {
+        method: "POST",
+        headers: { apikey: publishableKey, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "signup", email,
+          options: typeof body.emailRedirectTo === "string" ? { email_redirect_to: body.emailRedirectTo } : undefined
+        })
+      }).catch(() => undefined);
+      // Always report success, same reasoning as recover.ts: this endpoint
+      // must not be usable to enumerate which emails have an account.
+      response.status(200).json({ ok: true });
+      return;
+    }
+
     const password = typeof body.password === "string" ? body.password : "";
     const firstName = typeof body.firstName === "string" ? body.firstName.trim() : "";
     const lastName = typeof body.lastName === "string" ? body.lastName.trim() : "";
