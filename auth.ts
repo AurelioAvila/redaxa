@@ -75,21 +75,27 @@ async function apiRequest(path: string, body?: Record<string, unknown>, method: 
 
 function accountControls(): { trigger: HTMLAnchorElement; login: HTMLAnchorElement; account: HTMLDivElement; email: HTMLSpanElement; signout: HTMLButtonElement } {
   const trigger = document.querySelector<HTMLAnchorElement>(".small-btn")!;
+  const outerParent = trigger.parentElement!;
   trigger.href = "#account";
   trigger.textContent = "Create account";
   // Previously "Create account" was the only visible entry point -- an
   // already-registered user had no obvious way in and had to click through
   // to the signup dialog just to find the small "Already have an account?"
-  // link. Add a real, equally visible "Log in" control next to it.
+  // link. Add a real, equally visible "Log in" control next to it, in its
+  // own horizontal row so it doesn't stack under Create account on pages
+  // whose layout is a vertical flex column (the dashboard's top-right).
   const login = document.createElement("a");
   login.className = "small-btn ghost";
   login.href = "#account";
   login.textContent = "Log in";
-  trigger.insertAdjacentElement("beforebegin", login);
+  const buttonRow = document.createElement("div");
+  buttonRow.className = "ps-auth-buttons";
+  trigger.insertAdjacentElement("beforebegin", buttonRow);
+  buttonRow.append(login, trigger);
   const account = document.createElement("div");
   account.className = "ps-account";
   account.innerHTML = '<span class="ps-account-email"></span><button class="ps-signout" type="button">Sign out</button>';
-  trigger.parentElement?.append(account);
+  outerParent.append(account);
   return { trigger, login, account, email: account.querySelector<HTMLSpanElement>(".ps-account-email")!, signout: account.querySelector<HTMLButtonElement>(".ps-signout")! };
 }
 
@@ -99,7 +105,7 @@ function installDialog(): {
   email: HTMLInputElement; password: HTMLInputElement; passwordField: HTMLLabelElement;
   confirmPassword: HTMLInputElement; confirmPasswordField: HTMLLabelElement;
   message: HTMLElement; switcher: HTMLButtonElement; legal: HTMLElement;
-  resendRow: HTMLElement; resend: HTMLButtonElement;
+  resendRow: HTMLElement; resend: HTMLButtonElement; forgot: HTMLButtonElement;
 } {
   const backdrop = document.createElement("div");
   backdrop.className = "ps-auth-backdrop";
@@ -112,9 +118,14 @@ function installDialog(): {
       <label class="ps-auth-field">Last name<input id="ps-auth-last-name" type="text" autocomplete="family-name"></label>
       <label class="ps-auth-field">Date of birth<input id="ps-auth-dob" type="date" autocomplete="bday"></label>
     </div>
-    <label class="ps-auth-field">Email<input id="ps-auth-email" type="email" autocomplete="email" required></label>
-    <label class="ps-auth-field" id="ps-auth-password-field">Password<input id="ps-auth-password" type="password" autocomplete="new-password" minlength="12" required></label>
-    <label class="ps-auth-field" id="ps-auth-confirm-password-field">Confirm password<input id="ps-auth-confirm-password" type="password" autocomplete="new-password" minlength="12"></label>
+    <label class="ps-auth-field">Email<input id="ps-auth-email" name="email" type="email" autocomplete="username" required></label>
+    <label class="ps-auth-field" id="ps-auth-password-field">
+      <div class="ps-auth-field-head">Password<button type="button" class="ps-auth-forgot" id="ps-auth-forgot" hidden>Forgot password?</button></div>
+      <div class="ps-auth-pw-wrap"><input id="ps-auth-password" name="password" type="password" autocomplete="new-password" minlength="12" required><button type="button" class="ps-auth-toggle-pw" data-for="ps-auth-password">Show</button></div>
+    </label>
+    <label class="ps-auth-field" id="ps-auth-confirm-password-field">Confirm password
+      <div class="ps-auth-pw-wrap"><input id="ps-auth-confirm-password" name="confirm-password" type="password" autocomplete="new-password" minlength="12"><button type="button" class="ps-auth-toggle-pw" data-for="ps-auth-confirm-password">Show</button></div>
+    </label>
     <button class="ps-auth-submit" type="submit">Create account</button></form>
     <p class="ps-auth-message" role="status"></p><p class="ps-auth-switch"><button class="ps-auth-link" type="button">Already have an account? Sign in</button></p>
     <p class="ps-auth-switch" id="ps-auth-resend-row" hidden><button class="ps-auth-link" type="button" id="ps-auth-resend">Resend confirmation email</button></p>
@@ -129,7 +140,8 @@ function installDialog(): {
     confirmPassword: backdrop.querySelector("#ps-auth-confirm-password")!, confirmPasswordField: backdrop.querySelector("#ps-auth-confirm-password-field")!,
     message: backdrop.querySelector(".ps-auth-message")!, switcher: backdrop.querySelector(".ps-auth-link")!,
     legal: backdrop.querySelector("#ps-auth-legal")!,
-    resendRow: backdrop.querySelector("#ps-auth-resend-row")!, resend: backdrop.querySelector("#ps-auth-resend")!
+    resendRow: backdrop.querySelector("#ps-auth-resend-row")!, resend: backdrop.querySelector("#ps-auth-resend")!,
+    forgot: backdrop.querySelector("#ps-auth-forgot")!
   };
 }
 
@@ -209,8 +221,9 @@ async function boot(): Promise<void> {
     dialog.confirmPasswordField.hidden = !signup; dialog.confirmPassword.required = signup; dialog.confirmPassword.value = "";
     dialog.legal.hidden = !signup;
     dialog.resendRow.hidden = mode !== "signin";
+    dialog.forgot.hidden = mode !== "signin";
     dialog.submit.textContent = signup ? "Create account" : recovery ? "Send reset link" : "Sign in";
-    dialog.switcher.textContent = signup ? "Already have an account? Sign in" : recovery ? "Back to sign in" : "Need a password reset?";
+    dialog.switcher.textContent = signup ? "Already have an account? Sign in" : recovery ? "Back to sign in" : "New here? Create an account";
   };
   const renderAccount = (email: string | null): void => {
     currentEmail = email;
@@ -362,7 +375,17 @@ async function boot(): Promise<void> {
       void apiRequest("/api/auth/signout").catch(() => undefined).finally(() => renderAccount(null));
     }
   });
-  dialog.switcher.addEventListener("click", () => setMode(mode === "signup" ? "signin" : mode === "signin" ? "recovery" : "signin"));
+  dialog.switcher.addEventListener("click", () => setMode(mode === "recovery" ? "signin" : mode === "signup" ? "signin" : "signup"));
+  dialog.forgot.addEventListener("click", () => setMode("recovery"));
+  dialog.backdrop.addEventListener("click", (event) => {
+    const toggle = (event.target as HTMLElement).closest<HTMLButtonElement>(".ps-auth-toggle-pw");
+    if (!toggle?.dataset.for) return;
+    const input = dialog.backdrop.querySelector<HTMLInputElement>(`#${toggle.dataset.for}`);
+    if (!input) return;
+    const showing = input.type === "text";
+    input.type = showing ? "password" : "text";
+    toggle.textContent = showing ? "Show" : "Hide";
+  });
   dialog.resend.addEventListener("click", async () => {
     const email = dialog.email.value.trim();
     if (!email) { setMessage("Enter your email address first.", true); dialog.email.focus(); return; }
