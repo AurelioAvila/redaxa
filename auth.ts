@@ -87,11 +87,19 @@ async function boot(): Promise<void> {
     // No embedded login/checkout here: the desktop shell has no domain of its own to
     // hold a session cookie, so every account/billing action hands off to the hosted
     // web app in the user's regular browser instead.
-    controls.trigger.textContent = "Manage account";
-    const openWebApp = (event: Event): void => { event.preventDefault(); void openInSystemBrowser(webAppUrl); };
-    controls.trigger.addEventListener("click", openWebApp);
-    document.querySelectorAll<HTMLElement>("[data-plan]").forEach((button) => button.addEventListener("click", openWebApp));
-    document.querySelector<HTMLButtonElement>("#manage-billing")?.addEventListener("click", openWebApp);
+    controls.trigger.textContent = "Sign in / Create account";
+    controls.trigger.title = "Opens promptshield-beta.vercel.app in your default browser";
+    const openWebApp = (url: string) => (event: Event): void => { event.preventDefault(); void openInSystemBrowser(url); };
+    controls.trigger.addEventListener("click", openWebApp(`${webAppUrl}/#account`));
+    document.querySelectorAll<HTMLElement>("[data-plan]").forEach((button) => {
+      button.title = "Opens promptshield-beta.vercel.app in your default browser";
+      button.addEventListener("click", openWebApp(`${webAppUrl}/#pricing`));
+    });
+    const manageBilling = document.querySelector<HTMLButtonElement>("#manage-billing");
+    if (manageBilling) {
+      manageBilling.title = "Opens promptshield-beta.vercel.app in your default browser";
+      manageBilling.addEventListener("click", openWebApp(`${webAppUrl}/#pricing`));
+    }
     return;
   }
 

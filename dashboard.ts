@@ -4,21 +4,36 @@ import { enableDesktopCompanion } from "./desktop.js";
 
 type HistoryEntry = { id: string; createdAt: string; findings: number; preview: string };
 type Language = "en" | "it" | "es" | "fr" | "de";
-type Preferences = ScanOptions & { language: Language; scanMode: "standard" | "strict"; saveHistory: boolean; autoClearAfterCopy: boolean; showRawValues: boolean; customTerms: string[] };
+type ThemeName = "lime" | "violet" | "ocean" | "amber" | "crimson";
+type Preferences = ScanOptions & { language: Language; theme: ThemeName; scanMode: "standard" | "strict"; saveHistory: boolean; autoClearAfterCopy: boolean; showRawValues: boolean; customTerms: string[] };
 
 const storageKey = "promptshield.personal-history.v1";
 const preferencesKey = "promptshield.personal-preferences.v1";
 const maxPromptLength = 10_000;
 
-const defaultPreferences: Preferences = { language: "en", scanMode: "standard", includePersonalData: true, includeCredentials: true, includeFinancialData: true, saveHistory: true, autoClearAfterCopy: false, showRawValues: true, customTerms: [] };
+const defaultPreferences: Preferences = { language: "en", theme: "lime", scanMode: "standard", includePersonalData: true, includeCredentials: true, includeFinancialData: true, saveHistory: true, autoClearAfterCopy: false, showRawValues: true, customTerms: [] };
+
+const themes: { code: ThemeName; label: string; accent: string; accentInk: string }[] = [
+  { code: "lime", label: "Lime", accent: "#b9ff00", accentInk: "#080a07" },
+  { code: "violet", label: "Violet", accent: "#a78bfa", accentInk: "#0c0a17" },
+  { code: "ocean", label: "Ocean Blue", accent: "#4ea1ff", accentInk: "#05070c" },
+  { code: "amber", label: "Amber Dusk", accent: "#ffb84d", accentInk: "#140d02" },
+  { code: "crimson", label: "Crimson Steel", accent: "#ff5d78", accentInk: "#12060a" }
+];
+
+function applyTheme(theme: ThemeName): void {
+  const match = themes.find((candidate) => candidate.code === theme) ?? themes[0];
+  document.documentElement.style.setProperty("--accent", match.accent);
+  document.documentElement.style.setProperty("--accent-ink", match.accentInk);
+}
 
 const languageNames: Record<Language, string> = { en: "English", it: "Italiano", es: "Español", fr: "Français", de: "Deutsch" };
 const copyByLanguage: Record<Language, Record<string, string>> = {
-  en: { workspace: "Workspace", privateCheck: "Private check", recent: "Recent checks", account: "Account", preferences: "Preferences", eyebrow: "Personal workspace", title: "Your private AI checkpoint.", subtitle: "Review a prompt before it reaches any AI tool.", scan: "Inspect prompt →", sample: "Use sample", clear: "Clear", history: "Recent local checks", clearHistory: "Clear history", placeholder: "Paste your prompt here…" },
-  it: { workspace: "Spazio di lavoro", privateCheck: "Controllo privato", recent: "Controlli recenti", account: "Account", preferences: "Impostazioni", eyebrow: "Spazio personale", title: "Il tuo controllo AI privato.", subtitle: "Rivedi un prompt prima di inviarlo a uno strumento AI.", scan: "Controlla prompt →", sample: "Usa esempio", clear: "Svuota", history: "Controlli locali recenti", clearHistory: "Cancella cronologia", placeholder: "Incolla qui il tuo prompt…" },
-  es: { workspace: "Espacio de trabajo", privateCheck: "Revisión privada", recent: "Revisiones recientes", account: "Cuenta", preferences: "Preferencias", eyebrow: "Espacio personal", title: "Tu punto de control privado para IA.", subtitle: "Revisa un prompt antes de enviarlo a una herramienta de IA.", scan: "Revisar prompt →", sample: "Usar ejemplo", clear: "Limpiar", history: "Revisiones locales recientes", clearHistory: "Borrar historial", placeholder: "Pega tu prompt aquí…" },
-  fr: { workspace: "Espace de travail", privateCheck: "Vérification privée", recent: "Vérifications récentes", account: "Compte", preferences: "Préférences", eyebrow: "Espace personnel", title: "Votre contrôle IA privé.", subtitle: "Vérifiez un prompt avant de l’envoyer à un outil d’IA.", scan: "Vérifier le prompt →", sample: "Utiliser l’exemple", clear: "Effacer", history: "Vérifications locales récentes", clearHistory: "Effacer l’historique", placeholder: "Collez votre prompt ici…" },
-  de: { workspace: "Arbeitsbereich", privateCheck: "Private Prüfung", recent: "Letzte Prüfungen", account: "Konto", preferences: "Einstellungen", eyebrow: "Persönlicher Bereich", title: "Ihr privater KI-Prüfpunkt.", subtitle: "Prüfen Sie einen Prompt, bevor er ein KI-Tool erreicht.", scan: "Prompt prüfen →", sample: "Beispiel verwenden", clear: "Leeren", history: "Letzte lokale Prüfungen", clearHistory: "Verlauf löschen", placeholder: "Prompt hier einfügen…" }
+  en: { workspace: "Workspace", privateCheck: "Private check", recent: "Recent checks", account: "Account", plans: "Plans & pricing", preferences: "Preferences", eyebrow: "Personal workspace", title: "Your private AI checkpoint.", subtitle: "Review a prompt before it reaches any AI tool.", scan: "Inspect prompt →", sample: "Use sample", clear: "Clear", history: "Recent local checks", clearHistory: "Clear history", placeholder: "Paste your prompt here…" },
+  it: { workspace: "Spazio di lavoro", privateCheck: "Controllo privato", recent: "Controlli recenti", account: "Account", plans: "Piani e prezzi", preferences: "Impostazioni", eyebrow: "Spazio personale", title: "Il tuo controllo AI privato.", subtitle: "Rivedi un prompt prima di inviarlo a uno strumento AI.", scan: "Controlla prompt →", sample: "Usa esempio", clear: "Svuota", history: "Controlli locali recenti", clearHistory: "Cancella cronologia", placeholder: "Incolla qui il tuo prompt…" },
+  es: { workspace: "Espacio de trabajo", privateCheck: "Revisión privada", recent: "Revisiones recientes", account: "Cuenta", plans: "Planes y precios", preferences: "Preferencias", eyebrow: "Espacio personal", title: "Tu punto de control privado para IA.", subtitle: "Revisa un prompt antes de enviarlo a una herramienta de IA.", scan: "Revisar prompt →", sample: "Usar ejemplo", clear: "Limpiar", history: "Revisiones locales recientes", clearHistory: "Borrar historial", placeholder: "Pega tu prompt aquí…" },
+  fr: { workspace: "Espace de travail", privateCheck: "Vérification privée", recent: "Vérifications récentes", account: "Compte", plans: "Offres et tarifs", preferences: "Préférences", eyebrow: "Espace personnel", title: "Votre contrôle IA privé.", subtitle: "Vérifiez un prompt avant de l’envoyer à un outil d’IA.", scan: "Vérifier le prompt →", sample: "Utiliser l’exemple", clear: "Effacer", history: "Vérifications locales récentes", clearHistory: "Effacer l’historique", placeholder: "Collez votre prompt ici…" },
+  de: { workspace: "Arbeitsbereich", privateCheck: "Private Prüfung", recent: "Letzte Prüfungen", account: "Konto", plans: "Tarife & Preise", preferences: "Einstellungen", eyebrow: "Persönlicher Bereich", title: "Ihr privater KI-Prüfpunkt.", subtitle: "Prüfen Sie einen Prompt, bevor er ein KI-Tool erreicht.", scan: "Prompt prüfen →", sample: "Beispiel verwenden", clear: "Leeren", history: "Letzte lokale Prüfungen", clearHistory: "Verlauf löschen", placeholder: "Prompt hier einfügen…" }
 };
 const settingsByLanguage: Record<Language, string[]> = {
   en: ["Personal preferences", "These settings stay in this browser. They do not create an online account or upload prompt content.", "Interface language", "Inspection mode", "Detect personal data (email, phone, IP, fiscal code)", "Detect API keys and credentials", "Detect cards and IBANs", "Keep local check summaries", "Show the detected value on screen", "Clear the prompt after copying its safer version", "Close", "Save preferences", "Custom protected terms"],
@@ -59,6 +74,7 @@ function readPreferences(): Preferences {
       return {
         ...defaultPreferences,
         language: ["en", "it", "es", "fr", "de"].includes(String(candidate.language)) ? candidate.language as Language : "en",
+        theme: themes.some((t) => t.code === candidate.theme) ? candidate.theme as ThemeName : "lime",
         scanMode: candidate.scanMode === "strict" ? "strict" : "standard",
         includePersonalData: candidate.includePersonalData !== false,
         includeCredentials: candidate.includeCredentials !== false,
@@ -100,10 +116,10 @@ function installDashboardPolish(): void {
   style.textContent = `
     .side { position: sticky; top: 0; height: 100vh; }
     html.preferences-open, html.preferences-open body { overflow:hidden; }
-    #pwa-install { position:fixed; right:24px; bottom:24px; z-index:20; border:1px solid #c9ff4c; border-radius:999px; padding:11px 15px; background:var(--lime); color:#080a07; font-weight:850; box-shadow:0 12px 32px #0008; cursor:pointer; }
+    #pwa-install { position:fixed; right:24px; bottom:24px; z-index:20; border:1px solid var(--accent); border-radius:999px; padding:11px 15px; background:var(--accent); color:var(--accent-ink); font-weight:850; box-shadow:0 12px 32px #0008; cursor:pointer; }
     #pwa-install:focus-visible { outline:3px solid #fff; outline-offset:3px; }
     #inspect-clipboard { position:fixed; right:24px; bottom:76px; z-index:20; border:1px solid #405535; border-radius:999px; padding:10px 14px; background:#141b10; color:#e7eddc; font-weight:750; box-shadow:0 12px 32px #0008; cursor:pointer; }
-    #inspect-clipboard:hover { border-color:var(--lime); color:var(--lime); }
+    #inspect-clipboard:hover { border-color:var(--accent); color:var(--accent); }
     #inspect-clipboard:focus-visible { outline:3px solid #d5ff73; outline-offset:3px; }
     .link-btn, .primary, .copy { cursor: pointer; transition: transform .16s ease, filter .16s ease, background .16s ease; }
     .link-btn:hover { color: var(--text); }
@@ -112,7 +128,7 @@ function installDashboardPolish(): void {
     .copy:hover { background: #30382a; }
     .link-btn:focus-visible, .primary:focus-visible, .copy:focus-visible { outline: 3px solid #d5ff73; outline-offset: 3px; }
     .prompt-meta { display:flex; justify-content:space-between; gap:12px; margin-top:10px; color:var(--muted); font-size:11px; }
-    .prompt-meta strong { color:var(--lime); font-weight:750; }
+    .prompt-meta strong { color:var(--accent); font-weight:750; }
     .secondary { border:1px solid #40483c; border-radius:7px; background:transparent; color:#bdc5b8; padding:7px 9px; font-size:12px; cursor:pointer; }
     .secondary:hover { border-color:#68755f; color:var(--text); background:#181d16; }
     .history-title { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px; }
@@ -129,9 +145,21 @@ function installDashboardPolish(): void {
     .pref-row select { border:1px solid #3b4437; border-radius:8px; background:#0b0e09; color:var(--text); padding:10px; }
     .term-editor { width:100%; min-height:82px; resize:vertical; border:1px solid #3b4437; border-radius:8px; background:#0b0e09; color:var(--text); padding:10px; line-height:1.45; }
     .switch { display:flex; gap:10px; align-items:center; margin:12px 0; color:#cdd3c8; font-size:13px; cursor:pointer; }
-    .switch input { accent-color:var(--lime); width:16px; height:16px; }
+    .switch input { accent-color:var(--accent); width:16px; height:16px; }
     .drawer-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:22px; }
-    .plan-note { margin:16px 0 0; border:1px solid #405535; border-radius:10px; background:#b9ff000c; color:#d8e5cf; padding:12px; font-size:12px; line-height:1.5; }
+    .plan-note { margin:16px 0 0; border:1px solid #405535; border-radius:10px; background:color-mix(in srgb, var(--accent) 5%, transparent); color:#d8e5cf; padding:12px; font-size:12px; line-height:1.5; }
+    .plans-drawer { width:min(760px,100%); }
+    .plan-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:6px; }
+    .plan-card { border:1px solid var(--line); border-radius:14px; background:#0e120c; padding:16px; display:flex; flex-direction:column; gap:8px; }
+    .plan-card.featured { border-color:color-mix(in srgb, var(--accent) 45%, var(--line)); background:linear-gradient(160deg, color-mix(in srgb, var(--accent) 8%, #0e120c), #0e120c); }
+    .plan-tag { color:var(--accent); font-size:10px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+    .plan-card h3 { margin:2px 0 0; font-size:18px; }
+    .plan-price { font-size:22px; font-weight:850; }
+    .plan-price small { font-size:12px; font-weight:600; color:var(--muted); }
+    .plan-card p { margin:0; color:var(--muted); font-size:12px; line-height:1.5; flex:1; }
+    .plan-card select { border:1px solid #3b4437; border-radius:8px; background:#0b0e09; color:var(--text); padding:8px; }
+    .plan-card button { width:100%; }
+    @media(max-width:760px) { .plan-grid { grid-template-columns:1fr; } }
   `;
   document.head.append(style);
 }
@@ -169,6 +197,7 @@ export function mountDashboard(): void {
   const clearHistoryButton = required<HTMLButtonElement>("#clear-history");
   const characterCount = required<HTMLElement>("#character-count");
   const preferences = readPreferences();
+  applyTheme(preferences.theme);
 
   navItems.forEach((item) => {
     item.setAttribute("role", "button");
@@ -182,6 +211,7 @@ export function mountDashboard(): void {
       <h2 id="preferences-title">Personal preferences</h2>
       <p>These settings stay in this browser. They do not create an online account or upload prompt content.</p>
       <label class="pref-row">Interface language<select id="language"><option value="en">English</option><option value="it">Italiano</option><option value="es">Español</option><option value="fr">Français</option><option value="de">Deutsch</option></select></label>
+      <label class="pref-row theme-pref-row">Theme<select id="theme-select"></select></label>
       <label class="pref-row">Inspection mode<select id="scan-mode"><option value="standard">Standard — balanced local checks</option><option value="strict">Strict — careful review mode</option></select></label>
       <label class="switch"><input id="detect-personal" type="checkbox" checked> Detect personal data (email, phone, IP, fiscal code)</label>
       <label class="switch"><input id="detect-credentials" type="checkbox" checked> Detect API keys and credentials</label>
@@ -190,10 +220,70 @@ export function mountDashboard(): void {
       <label class="switch"><input id="show-raw" type="checkbox" checked> Show the detected value on screen</label>
       <label class="switch"><input id="clear-after-copy" type="checkbox"> Clear the prompt after copying its safer version</label>
       <label class="pref-row">Custom protected terms<textarea class="term-editor" id="custom-terms" maxlength="1500" placeholder="One term per line, for example: Acme Client"></textarea></label>
-      <div class="plan-note"><strong>Personal plan preview</strong><br>When the hosted beta is ready, Personal will include a 14-day trial. No billing or account is active in this local prototype.</div>
       <div class="drawer-actions"><button class="secondary" id="close-preferences" type="button">Close</button><button class="primary" id="save-preferences" type="button">Save preferences</button></div>
     </section>`;
   document.body.append(preferenceDialog);
+  // A colored-circle swatch picker (the PC Tweaker look) rendered as an invisible
+  // sliver in the desktop WebView2 build regardless of markup approach tried
+  // (native <button>, appearance:none, inline styles, plain <span>) even though the
+  // click targets stayed correctly positioned the whole time. A <select> uses the
+  // exact control type that was already confirmed rendering correctly elsewhere in
+  // this same drawer (language, inspection mode), trading some visual flair for a
+  // theme picker that is guaranteed visible and usable on every platform.
+  const themeSelect = required<HTMLSelectElement>("#theme-select");
+  themeSelect.innerHTML = themes.map((theme) => `<option value="${theme.code}">${theme.label}</option>`).join("");
+  themeSelect.value = preferences.theme;
+  themeSelect.addEventListener("change", () => {
+    const code = themes.some((theme) => theme.code === themeSelect.value) ? themeSelect.value as ThemeName : "lime";
+    preferences.theme = code;
+    applyTheme(code);
+    savePreferences(preferences);
+  });
+
+  const plansDialog = document.createElement("div");
+  plansDialog.className = "drawer-backdrop";
+  plansDialog.innerHTML = `
+    <section class="drawer plans-drawer" role="dialog" aria-modal="true" aria-labelledby="plans-title">
+      <h2 id="plans-title">Plans &amp; pricing</h2>
+      <p>Every plan starts with a 7-day trial. Use code <b>SHIELD</b> for 20% off your first monthly payment.</p>
+      <div class="plan-grid">
+        <article class="plan-card">
+          <div class="plan-tag">For individuals</div>
+          <h3>Personal</h3>
+          <div class="plan-price">€7.99 <small>/ month</small></div>
+          <p>For independent professionals who use AI with real client and personal information.</p>
+          <button type="button" class="primary" data-plan="personal" data-interval="monthly">Start 7-day trial</button>
+          <button type="button" class="secondary" data-plan="personal" data-interval="yearly">€79.90 yearly</button>
+        </article>
+        <article class="plan-card featured">
+          <div class="plan-tag">For teams · up to 3 users</div>
+          <h3>Business</h3>
+          <div class="plan-price">€14.99 <small>/ user / month</small></div>
+          <p>Team controls and a clear privacy boundary for growing teams. Choose one to three seats.</p>
+          <label class="pref-row">Seats<select id="business-seats"><option value="1">1 user</option><option value="2">2 users</option><option value="3">3 users</option></select></label>
+          <button type="button" class="primary" data-plan="business" data-interval="monthly">Start 7-day trial</button>
+          <button type="button" class="secondary" data-plan="business" data-interval="yearly">€149.90 yearly / user</button>
+        </article>
+        <article class="plan-card">
+          <div class="plan-tag">Already subscribed?</div>
+          <h3>Manage billing</h3>
+          <p>Update your payment method, download invoices, or cancel renewal whenever you need to.</p>
+          <button type="button" class="secondary" id="manage-billing">Manage subscription</button>
+        </article>
+      </div>
+      <div class="drawer-actions"><button class="secondary" id="close-plans" type="button">Close</button></div>
+    </section>`;
+  document.body.append(plansDialog);
+  const closePlans = (): void => {
+    plansDialog.classList.remove("open");
+    document.documentElement.classList.remove("preferences-open");
+  };
+  const openPlans = (): void => {
+    plansDialog.classList.add("open");
+    document.documentElement.classList.add("preferences-open");
+  };
+  required<HTMLButtonElement>("#close-plans").addEventListener("click", closePlans);
+  plansDialog.addEventListener("click", (event) => { if (event.target === plansDialog) closePlans(); });
   const languageSelect = required<HTMLSelectElement>("#language");
   const scanModeSelect = required<HTMLSelectElement>("#scan-mode");
   const personalToggle = required<HTMLInputElement>("#detect-personal");
@@ -231,7 +321,8 @@ export function mountDashboard(): void {
     document.querySelectorAll<HTMLElement>(".nav-label")[1].textContent = words.account;
     navItems[0].lastChild!.textContent = words.privateCheck;
     navItems[1].lastChild!.textContent = words.recent;
-    navItems[2].lastChild!.textContent = words.preferences;
+    navItems[2].lastChild!.textContent = words.plans;
+    navItems[3].lastChild!.textContent = words.preferences;
     required<HTMLElement>(".eyebrow").textContent = words.eyebrow;
     required<HTMLElement>(".top h1").textContent = words.title;
     required<HTMLElement>(".top p").textContent = words.subtitle;
@@ -244,7 +335,7 @@ export function mountDashboard(): void {
     languageSelect.setAttribute("aria-label", `Interface language: ${languageNames[preferences.language]}`);
     required<HTMLElement>("#preferences-title").textContent = settings[0];
     required<HTMLElement>(".drawer p").textContent = settings[1];
-    const prefRows = Array.from(document.querySelectorAll<HTMLElement>(".pref-row"));
+    const prefRows = Array.from(document.querySelectorAll<HTMLElement>(".pref-row:not(.theme-pref-row)"));
     prefRows.slice(0, 2).forEach((row, index) => { if (row.firstChild) row.firstChild.textContent = settings[index + 2]; });
     if (prefRows[2]?.firstChild) prefRows[2].firstChild.textContent = settings[12];
     const switches = Array.from(document.querySelectorAll<HTMLElement>(".switch"));
@@ -308,7 +399,8 @@ export function mountDashboard(): void {
     const activate = (): void => {
       const index = navItems.indexOf(item);
       if (index === 1) historyCard.scrollIntoView({ behavior: "smooth", block: "start" });
-      if (index === 2) openPreferences();
+      if (index === 2) openPlans();
+      if (index === 3) openPreferences();
     };
     item.addEventListener("click", activate);
     item.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); activate(); } });

@@ -1,4 +1,4 @@
-const CACHE_NAME = "promptshield-shell-v1";
+const CACHE_NAME = "promptshield-shell-v2";
 const APP_SHELL = ["/", "/index.html", "/dashboard.html", "/manifest.webmanifest", "/outputs/promptshield-mark.svg", "/dist/dashboard.js", "/dist/scanner.js", "/dist/pwa.js"];
 
 self.addEventListener("install", (event) => {
@@ -11,10 +11,20 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+// Network-first: the point of the cache is to keep the app usable offline, not to
+// let a stale build outlive a rebuild. A cache-first version of this shipped
+// earlier and kept serving an old dashboard.js forever, invisibly, until the cache
+// was cleared by hand.
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
-  event.respondWith(caches.match(event.request).then((cached) => cached || fetch(event.request).then((response) => {
-    if (new URL(event.request.url).origin === self.location.origin && response.ok) caches.open(CACHE_NAME).then((cache) => cache.put(event.request, response.clone()));
-    return response;
-  })));
+  const url = new URL(event.request.url);
+  if (url.origin !== self.location.origin) return;
+  event.respondWith(
+    fetch(event.request)
+      .then((response) => {
+        if (response.ok) caches.open(CACHE_NAME).then((cache) => cache.put(event.request, response.clone()));
+        return response;
+      })
+      .catch(() => caches.match(event.request).then((cached) => cached ?? Response.error()))
+  );
 });
