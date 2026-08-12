@@ -58,7 +58,7 @@ function installDialog(): { backdrop: HTMLDivElement; form: HTMLFormElement; tit
 function installStylesheet(): void {
   const stylesheet = document.createElement("link");
   stylesheet.rel = "stylesheet";
-  stylesheet.href = "/auth.css";
+  stylesheet.href = "auth.css";
   document.head.append(stylesheet);
 }
 
