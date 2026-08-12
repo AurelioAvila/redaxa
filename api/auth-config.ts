@@ -13,12 +13,9 @@ export default function handler(request: RequestLike, response: ResponseLike): v
     return;
   }
 
-  const url = process.env.SUPABASE_URL;
-  const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY;
+  // Only a boolean is exposed: the browser talks to Supabase exclusively through the
+  // /api/auth/* proxy endpoints now, so it has no need for the project URL or key.
+  const configured = Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_PUBLISHABLE_KEY);
   response.setHeader("Cache-Control", "no-store");
-  response.status(200).json({
-    configured: Boolean(url && publishableKey),
-    url: url ?? null,
-    publishableKey: publishableKey ?? null
-  });
+  response.status(200).json({ configured });
 }

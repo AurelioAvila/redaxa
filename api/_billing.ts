@@ -20,6 +20,66 @@ function required(name: string): string {
 function supabaseUrl(): string { return required("SUPABASE_URL").replace(/\/$/, ""); }
 function serviceKey(): string { return required("SUPABASE_SERVICE_ROLE_KEY"); }
 
+// The browser never holds the Supabase access/refresh tokens directly. They are set as
+// httpOnly cookies by the /api/auth/* endpoints so an XSS bug cannot exfiltrate a session.
+export const ACCESS_COOKIE = "ps_at";
+export const REFRESH_COOKIE = "ps_rt";
+
+export function parseCookies(header: string | string[] | undefined): Record<string, string> {
+  const value = Array.isArray(header) ? header.join("; ") : header;
+  const out: Record<string, string> = {};
+  if (!value) return out;
+  for (const part of value.split(";")) {
+    const index = part.indexOf("=");
+    if (index === -1) continue;
+    const key = part.slice(0, index).trim();
+    if (!key) continue;
+    try { out[key] = decodeURIComponent(part.slice(index + 1).trim()); } catch { out[key] = part.slice(index + 1).trim(); }
+  }
+  return out;
+}
+
+function cookieAttributes(maxAgeSeconds: number | null): string {
+  const secure = process.env.NODE_ENV === "production" || process.env.VERCEL === "1" ? "; Secure" : "";
+  const age = maxAgeSeconds === null ? "; Max-Age=0" : maxAgeSeconds > 0 ? `; Max-Age=${maxAgeSeconds}` : "";
+  return `Path=/; HttpOnly; SameSite=Lax${secure}${age}`;
+}
+
+export function setSessionCookies(response: { setHeader(name: string, value: string | string[]): void; getHeader?(name: string): unknown }, accessToken: string, refreshToken: string, expiresIn: number): void {
+  const refreshMaxAge = 60 * 60 * 24 * 30;
+  response.setHeader("Set-Cookie", [
+    `${ACCESS_COOKIE}=${encodeURIComponent(accessToken)}; ${cookieAttributes(expiresIn)}`,
+    `${REFRESH_COOKIE}=${encodeURIComponent(refreshToken)}; ${cookieAttributes(refreshMaxAge)}`
+  ]);
+}
+
+export function clearSessionCookies(response: { setHeader(name: string, value: string | string[]): void }): void {
+  response.setHeader("Set-Cookie", [
+    `${ACCESS_COOKIE}=; ${cookieAttributes(null)}`,
+    `${REFRESH_COOKIE}=; ${cookieAttributes(null)}`
+  ]);
+}
+
+export async function refreshSession(refreshToken: string): Promise<{ access_token: string; refresh_token: string; expires_in: number; user?: { email?: string } } | null> {
+  const response = await fetch(`${supabaseUrl()}/auth/v1/token?grant_type=refresh_token`, {
+    method: "POST",
+    headers: { apikey: required("SUPABASE_PUBLISHABLE_KEY"), "Content-Type": "application/json" },
+    body: JSON.stringify({ refresh_token: refreshToken })
+  });
+  if (!response.ok) return null;
+  return response.json() as Promise<{ access_token: string; refresh_token: string; expires_in: number; user?: { email?: string } }>;
+}
+
+export async function supabaseAuthUser(accessToken: string): Promise<{ id: string; email: string } | null> {
+  const response = await fetch(`${supabaseUrl()}/auth/v1/user`, {
+    headers: { apikey: required("SUPABASE_PUBLISHABLE_KEY"), Authorization: `Bearer ${accessToken}` }
+  });
+  if (!response.ok) return null;
+  const body = await response.json() as { id?: string; email?: string };
+  if (!body.id || !body.email) return null;
+  return { id: body.id, email: body.email };
+}
+
 async function supabase(path: string, init: RequestInit = {}): Promise<Response> {
   return fetch(`${supabaseUrl()}${path}`, {
     ...init,
@@ -32,18 +92,28 @@ async function supabase(path: string, init: RequestInit = {}): Promise<Response>
   });
 }
 
-export async function requireUser(request: { headers?: Record<string, string | string[] | undefined> }): Promise<BillingUser> {
-  const raw = request.headers?.authorization;
-  const authorization = Array.isArray(raw) ? raw[0] : raw;
-  if (!authorization?.startsWith("Bearer ")) throw new Error("UNAUTHORIZED");
-  const token = authorization.slice("Bearer ".length);
-  const response = await fetch(`${supabaseUrl()}/auth/v1/user`, {
-    headers: { apikey: required("SUPABASE_PUBLISHABLE_KEY"), Authorization: `Bearer ${token}` }
-  });
-  if (!response.ok) throw new Error("UNAUTHORIZED");
-  const body = await response.json() as { id?: string; email?: string };
-  if (!body.id || !body.email) throw new Error("UNAUTHORIZED");
-  return { id: body.id, email: body.email };
+export async function requireUser(
+  request: { headers?: Record<string, string | string[] | undefined> },
+  response?: { setHeader(name: string, value: string | string[]): void }
+): Promise<BillingUser> {
+  const cookies = parseCookies(request.headers?.cookie);
+  const accessToken = cookies[ACCESS_COOKIE];
+  if (accessToken) {
+    const user = await supabaseAuthUser(accessToken);
+    if (user) return user;
+  }
+  const refreshToken = cookies[REFRESH_COOKIE];
+  if (refreshToken && response) {
+    const refreshed = await refreshSession(refreshToken);
+    if (refreshed) {
+      const user = await supabaseAuthUser(refreshed.access_token);
+      if (user) {
+        setSessionCookies(response, refreshed.access_token, refreshed.refresh_token, refreshed.expires_in);
+        return user;
+      }
+    }
+  }
+  throw new Error("UNAUTHORIZED");
 }
 
 export async function reserveCheckout(userId: string): Promise<BillingAccount> {

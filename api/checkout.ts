@@ -1,7 +1,8 @@
 import { appUrl, parseJson, releaseCheckout, requireUser, reserveCheckout, saveCustomer, stripe } from "./_billing.js";
+import { clientIp, rateLimited } from "./_rateLimit.js";
 
 type RequestLike = { method?: string; body?: unknown; headers?: Record<string, string | string[] | undefined> };
-type ResponseLike = { setHeader(name: string, value: string): void; status(code: number): ResponseLike; json(value: unknown): void; end(): void };
+type ResponseLike = { setHeader(name: string, value: string | string[]): void; status(code: number): ResponseLike; json(value: unknown): void; end(): void };
 
 const priceFor = (plan: string, interval: string): string | null => {
   const prices: Record<string, string | undefined> = {
@@ -16,7 +17,11 @@ const priceFor = (plan: string, interval: string): string | null => {
 export default async function handler(request: RequestLike, response: ResponseLike): Promise<void> {
   if (request.method !== "POST") { response.setHeader("Allow", "POST"); response.status(405).end(); return; }
   try {
-    const user = await requireUser(request);
+    const user = await requireUser(request, response);
+    if (rateLimited(`checkout:user:${user.id}`, 10, 15 * 60_000) || rateLimited(`checkout:ip:${clientIp(request.headers)}`, 30, 15 * 60_000)) {
+      response.status(429).json({ error: "Too many attempts. Please wait a few minutes and try again." });
+      return;
+    }
     const body = parseJson(request.body);
     const plan = body.plan === "business" ? "business" : body.plan === "personal" ? "personal" : null;
     const interval = body.interval === "yearly" ? "yearly" : body.interval === "monthly" ? "monthly" : null;

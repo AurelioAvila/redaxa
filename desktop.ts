@@ -1,7 +1,19 @@
 type ClipboardReader = () => Promise<string>;
 
-function isTauri(): boolean {
+export function isTauri(): boolean {
   return "__TAURI_INTERNALS__" in window;
+}
+
+// The desktop shell has no domain of its own, so account creation and billing are
+// never handled in the embedded webview: they open the user's regular browser against
+// the hosted web app instead. This avoids needing cross-origin cookies (which would
+// require SameSite=None and a dedicated CSRF token to stay safe) and matches how
+// Slack/Discord-style desktop apps hand off auth.
+export async function openInSystemBrowser(url: string): Promise<boolean> {
+  if (!isTauri()) return false;
+  const shell = await import("@tauri-apps/plugin-shell");
+  await shell.open(url);
+  return true;
 }
 
 async function nativeClipboardReader(): Promise<ClipboardReader | null> {

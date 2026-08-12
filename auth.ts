@@ -1,35 +1,26 @@
-type AuthConfig = { configured: boolean; url: string | null; publishableKey: string | null };
-type Session = { access_token: string; refresh_token: string; expires_at?: number; user?: { email?: string } };
+import { isTauri, openInSystemBrowser } from "./desktop.js";
 
-const sessionKey = "promptshield.auth.session.v1";
+type AuthConfig = { configured: boolean };
+
+// The desktop build has no server of its own; account creation and billing always
+// happen on the hosted web app, opened in the user's system browser.
+const webAppUrl = "https://promptshield-beta.vercel.app";
+
+// Session tokens live only in httpOnly cookies set by the server (/api/auth/*). The
+// browser never holds them, so an XSS bug in this page cannot steal a signed-in session.
 let config: AuthConfig | null = null;
 let mode: "signup" | "signin" | "recovery" = "signup";
+let currentEmail: string | null = null;
 
-function apiUrl(path: string): string {
-  if (!config?.url) throw new Error("Account setup is not available yet.");
-  return `${config.url.replace(/\/$/, "")}/auth/v1${path}`;
-}
-
-function readSession(): Session | null {
-  try {
-    const value: unknown = JSON.parse(localStorage.getItem(sessionKey) ?? "null");
-    return value && typeof value === "object" ? value as Session : null;
-  } catch { return null; }
-}
-
-function saveSession(session: Session): void { localStorage.setItem(sessionKey, JSON.stringify(session)); }
-function clearSession(): void { localStorage.removeItem(sessionKey); }
-
-async function authRequest(path: string, body: Record<string, unknown>): Promise<Record<string, unknown>> {
-  if (!config?.publishableKey) throw new Error("Account setup is not available yet.");
-  const response = await fetch(apiUrl(path), {
+async function apiRequest(path: string, body: Record<string, unknown> = {}): Promise<Record<string, unknown>> {
+  const response = await fetch(path, {
     method: "POST",
-    headers: { "Content-Type": "application/json", apikey: config.publishableKey, Authorization: `Bearer ${config.publishableKey}` },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body)
   });
   const payload: unknown = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const message = typeof payload === "object" && payload !== null && "msg" in payload ? String(payload.msg) : "We could not complete that request.";
+    const message = typeof payload === "object" && payload !== null && "error" in payload ? String((payload as { error?: unknown }).error) : "We could not complete that request.";
     throw new Error(message);
   }
   return payload as Record<string, unknown>;
@@ -73,16 +64,39 @@ function installStylesheet(): void {
 
 async function loadConfig(): Promise<AuthConfig> {
   const response = await fetch("/api/auth-config", { cache: "no-store" });
-  if (!response.ok) return { configured: false, url: null, publishableKey: null };
+  if (!response.ok) return { configured: false };
   return response.json() as Promise<AuthConfig>;
+}
+
+async function loadSession(): Promise<string | null> {
+  try {
+    const response = await fetch("/api/auth/session", { cache: "no-store" });
+    if (!response.ok) return null;
+    const payload = await response.json() as { email?: string | null };
+    return payload.email ?? null;
+  } catch { return null; }
 }
 
 function authRedirect(): string { return `${location.origin}/`; }
 
 async function boot(): Promise<void> {
   installStylesheet();
-  config = await loadConfig().catch(() => ({ configured: false, url: null, publishableKey: null }));
   const controls = accountControls();
+
+  if (isTauri()) {
+    // No embedded login/checkout here: the desktop shell has no domain of its own to
+    // hold a session cookie, so every account/billing action hands off to the hosted
+    // web app in the user's regular browser instead.
+    controls.trigger.textContent = "Manage account";
+    const openWebApp = (event: Event): void => { event.preventDefault(); void openInSystemBrowser(webAppUrl); };
+    controls.trigger.addEventListener("click", openWebApp);
+    document.querySelectorAll<HTMLElement>("[data-plan]").forEach((button) => button.addEventListener("click", openWebApp));
+    document.querySelector<HTMLButtonElement>("#manage-billing")?.addEventListener("click", openWebApp);
+    return;
+  }
+
+  config = await loadConfig().catch(() => ({ configured: false }));
+  currentEmail = await loadSession();
   const dialog = installDialog();
   const show = (): void => { dialog.backdrop.classList.add("open"); dialog.email.focus(); };
   const close = (): void => dialog.backdrop.classList.remove("open");
@@ -96,16 +110,15 @@ async function boot(): Promise<void> {
     dialog.submit.textContent = signup ? "Create account" : recovery ? "Send reset link" : "Sign in";
     dialog.switcher.textContent = signup ? "Already have an account? Sign in" : recovery ? "Back to sign in" : "Need a password reset?";
   };
-  const renderAccount = (session: Session | null): void => {
-    const email = session?.user?.email;
+  const renderAccount = (email: string | null): void => {
+    currentEmail = email;
     controls.account.classList.toggle("open", Boolean(email)); controls.trigger.hidden = Boolean(email);
     controls.email.textContent = email ?? "";
   };
-  renderAccount(readSession());
+  renderAccount(currentEmail);
   controls.trigger.addEventListener("click", (event) => { event.preventDefault(); if (!config?.configured) { setMessage("Account setup is being completed. Please try again shortly.", true); } show(); });
   const beginCheckout = async (button: HTMLElement): Promise<void> => {
-    const session = readSession();
-    if (!session?.access_token) {
+    if (!currentEmail) {
       setMode("signup");
       setMessage("Create your account first to start a secure trial.");
       show();
@@ -117,17 +130,12 @@ async function boot(): Promise<void> {
     button.setAttribute("aria-busy", "true");
     (button as HTMLButtonElement).disabled = true;
     try {
-      const response = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ plan, interval, seats })
-      });
-      const payload = await response.json() as { url?: string; error?: string };
-      if (!response.ok || !payload.url) throw new Error(payload.error ?? "Checkout could not be opened.");
+      const payload = await apiRequest("/api/checkout", { plan, interval, seats }) as { url?: string };
+      if (!payload.url) throw new Error("Checkout could not be opened.");
       location.assign(payload.url);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Checkout could not be opened.", true);
-      show();
+      if (error instanceof Error && error.message === "UNAUTHORIZED") { renderAccount(null); setMode("signin"); setMessage("Please sign in again to continue."); show(); }
+      else { setMessage(error instanceof Error ? error.message : "Checkout could not be opened.", true); show(); }
     } finally {
       button.removeAttribute("aria-busy");
       (button as HTMLButtonElement).disabled = false;
@@ -135,31 +143,34 @@ async function boot(): Promise<void> {
   };
   document.querySelectorAll<HTMLElement>("[data-plan]").forEach((button) => button.addEventListener("click", () => void beginCheckout(button)));
   document.querySelector<HTMLButtonElement>("#manage-billing")?.addEventListener("click", async () => {
-    const session = readSession();
-    if (!session?.access_token) { setMode("signin"); setMessage("Sign in to manage your subscription."); show(); return; }
+    if (!currentEmail) { setMode("signin"); setMessage("Sign in to manage your subscription."); show(); return; }
     try {
-      const response = await fetch("/api/portal", { method: "POST", headers: { Authorization: `Bearer ${session.access_token}` } });
-      const payload = await response.json() as { url?: string; error?: string };
-      if (!response.ok || !payload.url) throw new Error(payload.error ?? "Billing management is unavailable.");
+      const payload = await apiRequest("/api/portal") as { url?: string };
+      if (!payload.url) throw new Error("Billing management is unavailable.");
       location.assign(payload.url);
-    } catch (error) { setMessage(error instanceof Error ? error.message : "Billing management is unavailable.", true); show(); }
+    } catch (error) {
+      if (error instanceof Error && error.message === "UNAUTHORIZED") { renderAccount(null); setMode("signin"); setMessage("Please sign in again to continue."); show(); }
+      else { setMessage(error instanceof Error ? error.message : "Billing management is unavailable.", true); show(); }
+    }
   });
   dialog.backdrop.querySelector(".ps-auth-close")?.addEventListener("click", close);
   dialog.backdrop.addEventListener("click", (event) => { if (event.target === dialog.backdrop) close(); });
-  controls.signout.addEventListener("click", () => { clearSession(); renderAccount(null); });
+  controls.signout.addEventListener("click", () => {
+    void apiRequest("/api/auth/signout").catch(() => undefined).finally(() => renderAccount(null));
+  });
   dialog.switcher.addEventListener("click", () => setMode(mode === "signup" ? "signin" : mode === "signin" ? "recovery" : "signin"));
   dialog.form.addEventListener("submit", async (event) => {
     event.preventDefault(); if (!config?.configured) { setMessage("Account setup is not configured yet.", true); return; }
     dialog.submit.disabled = true; setMessage("");
     try {
       if (mode === "signup") {
-        await authRequest("/signup", { email: dialog.email.value.trim(), password: dialog.password.value, options: { emailRedirectTo: authRedirect() } });
+        await apiRequest("/api/auth/signup", { email: dialog.email.value.trim(), password: dialog.password.value, emailRedirectTo: authRedirect() });
         setMessage("Check your email to confirm your account, then sign in."); setMode("signin");
       } else if (mode === "signin") {
-        const payload = await authRequest("/token?grant_type=password", { email: dialog.email.value.trim(), password: dialog.password.value });
-        const session = payload as unknown as Session; saveSession(session); renderAccount(session); setMessage("Signed in successfully."); window.setTimeout(close, 700);
+        const payload = await apiRequest("/api/auth/signin", { email: dialog.email.value.trim(), password: dialog.password.value }) as { email?: string };
+        renderAccount(payload.email ?? dialog.email.value.trim()); setMessage("Signed in successfully."); window.setTimeout(close, 700);
       } else {
-        await authRequest("/recover", { email: dialog.email.value.trim(), redirect_to: authRedirect() });
+        await apiRequest("/api/auth/recover", { email: dialog.email.value.trim(), redirect_to: authRedirect() });
         setMessage("If that account exists, a password-reset link is on its way.");
       }
     } catch (error) { setMessage(error instanceof Error ? error.message : "We could not complete that request.", true); }
