@@ -9,6 +9,18 @@ export type BillingAccount = {
   has_used_trial: boolean;
   subscription_status: string | null;
   current_period_end: string | null;
+  plan: string | null;
+  seat_count: number;
+};
+
+export type TeamInvite = {
+  id: string;
+  owner_user_id: string;
+  token: string;
+  status: "pending" | "accepted" | "revoked";
+  member_user_id: string | null;
+  created_at: string;
+  accepted_at: string | null;
 };
 
 // A subscription in one of these states is what unlocks the scanner: 'trialing'
@@ -194,9 +206,85 @@ export async function saveCustomer(userId: string, customerId: string): Promise<
 }
 
 export async function accountFor(userId: string): Promise<BillingAccount | null> {
-  const response = await supabase(`/rest/v1/billing_accounts?user_id=eq.${encodeURIComponent(userId)}&select=stripe_customer_id,stripe_subscription_id,has_used_trial,subscription_status,current_period_end`, { method: "GET" });
+  const response = await supabase(`/rest/v1/billing_accounts?user_id=eq.${encodeURIComponent(userId)}&select=stripe_customer_id,stripe_subscription_id,has_used_trial,subscription_status,current_period_end,plan,seat_count`, { method: "GET" });
   if (!response.ok) throw new Error("BILLING_STORAGE_ERROR");
   const rows = await response.json() as BillingAccount[];
+  return rows[0] ?? null;
+}
+
+// A user is entitled to scan either because their own account has an active
+// trial/subscription, or because they accepted an invite onto a business
+// team whose owner still has an active seat for them. Membership does not
+// grant access if the owner's subscription lapses.
+export async function effectiveEntitlement(userId: string): Promise<{ active: boolean; role: "owner" | "member" | null; ownerEmail: string | null; account: BillingAccount | null }> {
+  const account = await accountFor(userId);
+  if (hasActiveEntitlement(account)) return { active: true, role: "owner", ownerEmail: null, account };
+  const membership = await teamMembershipFor(userId);
+  if (!membership) return { active: false, role: null, ownerEmail: null, account };
+  const ownerAccount = await accountFor(membership.owner_user_id);
+  if (!hasActiveEntitlement(ownerAccount) || ownerAccount?.plan !== "business") return { active: false, role: "member", ownerEmail: null, account };
+  const ownerUser = await supabaseUserById(membership.owner_user_id);
+  return { active: true, role: "member", ownerEmail: ownerUser?.email ?? null, account };
+}
+
+async function supabaseUserById(userId: string): Promise<{ email?: string } | null> {
+  const response = await supabase(`/auth/v1/admin/users/${encodeURIComponent(userId)}`, { method: "GET" });
+  if (!response.ok) return null;
+  return response.json() as Promise<{ email?: string }>;
+}
+
+export async function teamMembershipFor(userId: string): Promise<TeamInvite | null> {
+  const response = await supabase(`/rest/v1/team_invites?member_user_id=eq.${encodeURIComponent(userId)}&status=eq.accepted&select=*`, { method: "GET" });
+  if (!response.ok) throw new Error("TEAM_STORAGE_ERROR");
+  const rows = await response.json() as TeamInvite[];
+  return rows[0] ?? null;
+}
+
+export async function teamInvitesFor(ownerUserId: string): Promise<TeamInvite[]> {
+  const response = await supabase(`/rest/v1/team_invites?owner_user_id=eq.${encodeURIComponent(ownerUserId)}&status=in.(pending,accepted)&select=*&order=created_at.asc`, { method: "GET" });
+  if (!response.ok) throw new Error("TEAM_STORAGE_ERROR");
+  return response.json() as Promise<TeamInvite[]>;
+}
+
+export async function createTeamInvite(ownerUserId: string): Promise<TeamInvite> {
+  const token = crypto.randomUUID().replace(/-/g, "");
+  const response = await supabase("/rest/v1/team_invites", {
+    method: "POST",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify({ owner_user_id: ownerUserId, token })
+  });
+  if (!response.ok) throw new Error("TEAM_STORAGE_ERROR");
+  const rows = await response.json() as TeamInvite[];
+  return rows[0];
+}
+
+export async function revokeTeamInvite(ownerUserId: string, inviteId: string): Promise<void> {
+  const response = await supabase(`/rest/v1/team_invites?id=eq.${encodeURIComponent(inviteId)}&owner_user_id=eq.${encodeURIComponent(ownerUserId)}&status=eq.pending`, {
+    method: "PATCH", body: JSON.stringify({ status: "revoked" })
+  });
+  if (!response.ok) throw new Error("TEAM_STORAGE_ERROR");
+}
+
+export async function inviteByToken(token: string): Promise<TeamInvite | null> {
+  const response = await supabase(`/rest/v1/team_invites?token=eq.${encodeURIComponent(token)}&select=*`, { method: "GET" });
+  if (!response.ok) throw new Error("TEAM_STORAGE_ERROR");
+  const rows = await response.json() as TeamInvite[];
+  return rows[0] ?? null;
+}
+
+// Atomic: the WHERE clause only matches a still-pending invite, so two
+// concurrent accept attempts on the same token can't both succeed. Callers
+// must reject owner_user_id === memberUserId themselves first -- this alone
+// would let an owner "accept" their own invite since the WHERE clause has no
+// opinion about who the member is.
+export async function acceptTeamInvite(token: string, memberUserId: string): Promise<TeamInvite | null> {
+  const response = await supabase(`/rest/v1/team_invites?token=eq.${encodeURIComponent(token)}&status=eq.pending`, {
+    method: "PATCH",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify({ member_user_id: memberUserId, status: "accepted", accepted_at: new Date().toISOString() })
+  });
+  if (!response.ok) throw new Error("TEAM_STORAGE_ERROR");
+  const rows = await response.json() as TeamInvite[];
   return rows[0] ?? null;
 }
 

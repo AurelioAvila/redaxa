@@ -1,4 +1,4 @@
-import { accountFor, corsHeaders, hasActiveEntitlement, requireUser } from "./_billing.js";
+import { corsHeaders, effectiveEntitlement, requireUser } from "./_billing.js";
 import { clientIp, rateLimited } from "./_rateLimit.js";
 import { inspectPrompt, type ScanOptions } from "../scanner.js";
 
@@ -15,8 +15,8 @@ export default async function handler(request: RequestLike, response: ResponseLi
   if (request.method !== "POST") { response.setHeader("Allow", "POST"); response.status(405).end(); return; }
   try {
     const user = await requireUser(request, response);
-    const account = await accountFor(user.id);
-    if (!hasActiveEntitlement(account)) { response.status(402).json({ error: "TRIAL_REQUIRED" }); return; }
+    const entitlement = await effectiveEntitlement(user.id);
+    if (!entitlement.active) { response.status(402).json({ error: "TRIAL_REQUIRED" }); return; }
     if (rateLimited(`scan:user:${user.id}`, 120, 60_000) || rateLimited(`scan:ip:${clientIp(request.headers)}`, 240, 60_000)) {
       response.status(429).json({ error: "Too many checks. Please slow down." });
       return;

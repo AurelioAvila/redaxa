@@ -29,6 +29,7 @@ declare global {
       hasAccess(): boolean;
       requestAccess(message?: string): void;
       scanPrompt(text: string, options?: ScanRequestOptions): Promise<{ findings: Finding[]; redactedText: string }>;
+      request(path: string, body?: Record<string, unknown>, method?: "GET" | "POST"): Promise<Record<string, unknown>>;
     };
   }
 }
@@ -57,13 +58,13 @@ async function desktopAccessToken(): Promise<string | null> {
   return payload.access_token;
 }
 
-async function apiRequest(path: string, body: Record<string, unknown> = {}): Promise<Record<string, unknown>> {
+async function apiRequest(path: string, body?: Record<string, unknown>, method: "GET" | "POST" = "POST"): Promise<Record<string, unknown>> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (isTauri()) {
     const token = await desktopAccessToken();
     if (token) headers.Authorization = `Bearer ${token}`;
   }
-  const response = await fetch(`${apiBase}${path}`, { method: "POST", headers, body: JSON.stringify(body) });
+  const response = await fetch(`${apiBase}${path}`, { method, headers, body: method === "GET" ? undefined : JSON.stringify(body ?? {}) });
   const payload: unknown = await response.json().catch(() => ({}));
   if (!response.ok) {
     const message = typeof payload === "object" && payload !== null && "error" in payload ? String((payload as { error?: unknown }).error) : "We could not complete that request.";
@@ -202,6 +203,31 @@ async function boot(): Promise<void> {
   };
   renderAccount(currentEmail);
 
+  // Team invite links (?invite=TOKEN) point at a teammate who may not have an
+  // account yet -- the token is parked in localStorage so it survives the
+  // signup -> email confirmation -> redirect round trip, then consumed the
+  // moment we know who's signed in. Defined before the confirmation-hash
+  // handling below so that flow can also trigger it on first sign-in.
+  const pendingInviteKey = "promptshield.pending-invite.v1";
+  const acceptPendingInvite = async (): Promise<void> => {
+    if (desktop) return;
+    const token = localStorage.getItem(pendingInviteKey);
+    if (!token || !currentEmail) return;
+    localStorage.removeItem(pendingInviteKey);
+    try {
+      await apiRequest("/api/team?action=accept", { token });
+      await refreshEntitlement();
+      setMode("signin");
+      setMessage("You've joined the team.");
+      show();
+      window.setTimeout(close, 2500);
+    } catch (error) {
+      setMode("signin");
+      setMessage(error instanceof Error ? error.message : "We could not accept that invite.", true);
+      show();
+    }
+  };
+
   // Supabase's email-confirmation and password-reset links redirect back here
   // with the session tokens (or an error) in the URL fragment -- nothing was
   // reading it, so users landed on the homepage with no feedback and had to
@@ -220,10 +246,14 @@ async function boot(): Promise<void> {
           currentEmail = payload.email;
           renderAccount(payload.email);
           await refreshEntitlement();
-          setMode("signin");
-          setMessage("Email confirmed — you're signed in.");
-          show();
-          window.setTimeout(close, 2500);
+          if (localStorage.getItem(pendingInviteKey)) {
+            await acceptPendingInvite();
+          } else {
+            setMode("signin");
+            setMessage("Email confirmed — you're signed in.");
+            show();
+            window.setTimeout(close, 2500);
+          }
         }
       } catch { /* falls through with no session; user can sign in normally */ }
     }
@@ -233,6 +263,16 @@ async function boot(): Promise<void> {
     setMode("signin");
     setMessage(hashParams.get("error_description")?.replace(/\+/g, " ") || "That link is invalid or has expired. Please sign in, or create a new account if you haven't confirmed one yet.", true);
     show();
+  }
+
+  if (!desktop) {
+    const inviteToken = new URLSearchParams(location.search).get("invite");
+    if (inviteToken) {
+      localStorage.setItem(pendingInviteKey, inviteToken);
+      history.replaceState(null, "", location.pathname + location.hash);
+      if (currentEmail) await acceptPendingInvite();
+      else { setMode("signup"); setMessage("Create your account to join the team."); show(); }
+    }
   }
 
   window.promptShieldAuth = {
@@ -251,7 +291,8 @@ async function boot(): Promise<void> {
     scanPrompt: async (text, options) => {
       const payload = await apiRequest("/api/scan", { text, options: options ?? {} }) as { findings?: Finding[]; redactedText?: string };
       return { findings: payload.findings ?? [], redactedText: payload.redactedText ?? "" };
-    }
+    },
+    request: (path, body, method) => apiRequest(path, body, method)
   };
   controls.trigger.addEventListener("click", (event) => { event.preventDefault(); if (!config?.configured) { setMessage("Account setup is being completed. Please try again shortly.", true); } setMode("signup"); show(); });
 
@@ -268,7 +309,7 @@ async function boot(): Promise<void> {
     button.setAttribute("aria-busy", "true");
     (button as HTMLButtonElement).disabled = true;
     try {
-      const payload = await apiRequest("/api/checkout", { plan, interval, seats }) as { url?: string };
+      const payload = await apiRequest("/api/billing", { plan, interval, seats }) as { url?: string };
       if (!payload.url) throw new Error("Checkout could not be opened.");
       if (desktop) void openInSystemBrowser(payload.url); else location.assign(payload.url);
     } catch (error) {
@@ -283,7 +324,7 @@ async function boot(): Promise<void> {
   document.querySelector<HTMLButtonElement>("#manage-billing")?.addEventListener("click", async () => {
     if (!currentEmail) { setMode("signin"); setMessage("Sign in to manage your subscription."); show(); return; }
     try {
-      const payload = await apiRequest("/api/portal") as { url?: string };
+      const payload = await apiRequest("/api/billing?action=portal") as { url?: string };
       if (!payload.url) throw new Error("Billing management is unavailable.");
       if (desktop) void openInSystemBrowser(payload.url); else location.assign(payload.url);
     } catch (error) {
@@ -330,7 +371,9 @@ async function boot(): Promise<void> {
         if (desktop && payload.access_token && payload.refresh_token) {
           saveDesktopSession({ email, access_token: payload.access_token, refresh_token: payload.refresh_token, expires_at: Date.now() + (payload.expires_in ?? 3600) * 1000 });
         }
-        renderAccount(email); await refreshEntitlement(); setMessage("Signed in successfully."); window.setTimeout(close, 700);
+        renderAccount(email); await refreshEntitlement();
+        if (localStorage.getItem(pendingInviteKey)) { await acceptPendingInvite(); }
+        else { setMessage("Signed in successfully."); window.setTimeout(close, 700); }
       } else {
         dialog.submit.textContent = "Sending link…";
         await apiRequest("/api/auth/recover", { email: dialog.email.value.trim(), redirect_to: authRedirect() });

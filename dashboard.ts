@@ -238,6 +238,13 @@ export function mountDashboard(): void {
           <div class="plan-actions"><button type="button" class="secondary" id="manage-billing">Manage subscription</button></div>
         </article>
       </div>
+      <section id="team-section" class="team-section" hidden>
+        <h3>Team</h3>
+        <p id="team-seats"></p>
+        <ul id="team-invite-list"></ul>
+        <button type="button" class="secondary" id="team-invite-btn">Create invite link</button>
+        <div id="team-invite-result"></div>
+      </section>
       <div class="drawer-actions"><button class="secondary" id="close-plans" type="button">Close</button></div>
     </section>`;
   document.body.append(plansDialog);
@@ -245,9 +252,48 @@ export function mountDashboard(): void {
     plansDialog.classList.remove("open");
     document.documentElement.classList.remove("preferences-open");
   };
+  const teamSection = required<HTMLElement>("#team-section");
+  const teamSeats = required<HTMLElement>("#team-seats");
+  const teamInviteList = required<HTMLUListElement>("#team-invite-list");
+  const teamInviteBtn = required<HTMLButtonElement>("#team-invite-btn");
+  const teamInviteResult = required<HTMLElement>("#team-invite-result");
+  const loadTeam = async (): Promise<void> => {
+    if (!window.promptShieldAuth?.hasAccess()) { teamSection.hidden = true; return; }
+    try {
+      const data = await window.promptShieldAuth.request("/api/team?action=list", undefined, "GET") as {
+        seatCount?: number; seatsUsed?: number; invites?: { id: string; status: string; createdAt: string; acceptedAt: string | null }[];
+      };
+      if (!data.invites || (data.seatCount ?? 1) <= 1) { teamSection.hidden = true; return; }
+      teamSection.hidden = false;
+      teamSeats.textContent = `${data.seatsUsed} of ${data.seatCount} seats used.`;
+      teamInviteBtn.disabled = (data.seatsUsed ?? 1) >= (data.seatCount ?? 1);
+      teamInviteList.innerHTML = data.invites.map((invite) => `<li data-id="${invite.id}"><span>${invite.status === "accepted" ? "Teammate joined" : "Invite pending"} · ${new Date(invite.createdAt).toLocaleDateString()}</span>${invite.status === "pending" ? `<button type="button" class="secondary" data-revoke="${invite.id}">Revoke</button>` : ""}</li>`).join("") || `<li class="empty">No invites yet.</li>`;
+    } catch { teamSection.hidden = true; }
+  };
+  teamInviteBtn.addEventListener("click", async () => {
+    teamInviteBtn.disabled = true;
+    try {
+      const payload = await window.promptShieldAuth!.request("/api/team", {}, "POST") as { url?: string; error?: string };
+      if (payload.url) {
+        teamInviteResult.innerHTML = `<input type="text" readonly value="${payload.url}"><button type="button" class="secondary" id="team-copy-link">Copy link</button>`;
+        document.querySelector("#team-copy-link")?.addEventListener("click", () => { void navigator.clipboard.writeText(payload.url ?? ""); });
+        await loadTeam();
+      }
+    } catch (error) {
+      teamInviteResult.textContent = error instanceof Error ? error.message : "We could not create an invite.";
+    } finally { teamInviteBtn.disabled = false; }
+  });
+  teamInviteList.addEventListener("click", async (event) => {
+    const inviteId = (event.target as HTMLElement).dataset.revoke;
+    if (!inviteId) return;
+    await window.promptShieldAuth?.request("/api/team?action=revoke", { inviteId }, "POST").catch(() => undefined);
+    await loadTeam();
+  });
+
   const openPlans = (): void => {
     plansDialog.classList.add("open");
     document.documentElement.classList.add("preferences-open");
+    void loadTeam();
   };
   required<HTMLButtonElement>("#close-plans").addEventListener("click", closePlans);
   plansDialog.addEventListener("click", (event) => { if (event.target === plansDialog) closePlans(); });

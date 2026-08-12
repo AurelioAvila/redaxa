@@ -1,9 +1,12 @@
-import { appUrl, corsHeaders, parseJson, releaseCheckout, requireUser, reserveCheckout, saveCustomer, stripe } from "./_billing.js";
+import { accountFor, appUrl, corsHeaders, parseJson, releaseCheckout, requireUser, reserveCheckout, saveCustomer, stripe } from "./_billing.js";
 import { clientIp, rateLimited } from "./_rateLimit.js";
 
-type RequestLike = { method?: string; body?: unknown; headers?: Record<string, string | string[] | undefined> };
+type RequestLike = { method?: string; body?: unknown; query?: Record<string, string | string[] | undefined>; headers?: Record<string, string | string[] | undefined> };
 type ResponseLike = { setHeader(name: string, value: string | string[]): void; status(code: number): ResponseLike; json(value: unknown): void; end(): void };
 
+// Consolidated with the portal action (Vercel's Hobby plan caps a deployment
+// at 12 serverless functions): ?action=portal opens the Stripe billing
+// portal, anything else starts a checkout session.
 const priceFor = (plan: string, interval: string): string | null => {
   const prices: Record<string, string | undefined> = {
     "personal:monthly": process.env.STRIPE_PRICE_PERSONAL_MONTHLY,
@@ -19,6 +22,23 @@ export default async function handler(request: RequestLike, response: ResponseLi
   for (const [name, value] of Object.entries(cors)) response.setHeader(name, value);
   if (request.method === "OPTIONS") { response.status(204).end(); return; }
   if (request.method !== "POST") { response.setHeader("Allow", "POST"); response.status(405).end(); return; }
+
+  const action = Array.isArray(request.query?.action) ? request.query?.action[0] : request.query?.action;
+
+  if (action === "portal") {
+    try {
+      const user = await requireUser(request, response);
+      const account = await accountFor(user.id);
+      if (!account?.stripe_customer_id) { response.status(400).json({ error: "No subscription is attached to this account yet." }); return; }
+      const session = await stripe.billingPortal.sessions.create({ customer: account.stripe_customer_id, return_url: `${appUrl()}/?billing=managed` });
+      response.status(200).json({ url: session.url });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "PORTAL_ERROR";
+      response.status(message === "UNAUTHORIZED" ? 401 : 500).json({ error: message === "UNAUTHORIZED" ? "UNAUTHORIZED" : "We could not open billing management." });
+    }
+    return;
+  }
+
   try {
     const user = await requireUser(request, response);
     if (rateLimited(`checkout:user:${user.id}`, 10, 15 * 60_000) || rateLimited(`checkout:ip:${clientIp(request.headers)}`, 30, 15 * 60_000)) {
