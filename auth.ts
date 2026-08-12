@@ -73,15 +73,24 @@ async function apiRequest(path: string, body?: Record<string, unknown>, method: 
   return payload as Record<string, unknown>;
 }
 
-function accountControls(): { trigger: HTMLAnchorElement; account: HTMLDivElement; email: HTMLSpanElement; signout: HTMLButtonElement } {
+function accountControls(): { trigger: HTMLAnchorElement; login: HTMLAnchorElement; account: HTMLDivElement; email: HTMLSpanElement; signout: HTMLButtonElement } {
   const trigger = document.querySelector<HTMLAnchorElement>(".small-btn")!;
   trigger.href = "#account";
   trigger.textContent = "Create account";
+  // Previously "Create account" was the only visible entry point -- an
+  // already-registered user had no obvious way in and had to click through
+  // to the signup dialog just to find the small "Already have an account?"
+  // link. Add a real, equally visible "Log in" control next to it.
+  const login = document.createElement("a");
+  login.className = "small-btn ghost";
+  login.href = "#account";
+  login.textContent = "Log in";
+  trigger.insertAdjacentElement("beforebegin", login);
   const account = document.createElement("div");
   account.className = "ps-account";
   account.innerHTML = '<span class="ps-account-email"></span><button class="ps-signout" type="button">Sign out</button>';
   trigger.parentElement?.append(account);
-  return { trigger, account, email: account.querySelector<HTMLSpanElement>(".ps-account-email")!, signout: account.querySelector<HTMLButtonElement>(".ps-signout")! };
+  return { trigger, login, account, email: account.querySelector<HTMLSpanElement>(".ps-account-email")!, signout: account.querySelector<HTMLButtonElement>(".ps-signout")! };
 }
 
 function installDialog(): {
@@ -205,7 +214,7 @@ async function boot(): Promise<void> {
   };
   const renderAccount = (email: string | null): void => {
     currentEmail = email;
-    controls.account.classList.toggle("open", Boolean(email)); controls.trigger.hidden = Boolean(email);
+    controls.account.classList.toggle("open", Boolean(email)); controls.trigger.hidden = Boolean(email); controls.login.hidden = Boolean(email);
     controls.email.textContent = email ?? "";
   };
   renderAccount(currentEmail);
@@ -302,6 +311,7 @@ async function boot(): Promise<void> {
     request: (path, body, method) => apiRequest(path, body, method)
   };
   controls.trigger.addEventListener("click", (event) => { event.preventDefault(); if (!config?.configured) { setMessage("Account setup is being completed. Please try again shortly.", true); } setMode("signup"); show(); });
+  controls.login.addEventListener("click", (event) => { event.preventDefault(); if (!config?.configured) { setMessage("Account setup is being completed. Please try again shortly.", true); } setMode("signin"); show(); });
 
   const beginCheckout = async (button: HTMLElement): Promise<void> => {
     if (!currentEmail) {
