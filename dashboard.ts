@@ -205,8 +205,10 @@ export function mountDashboard(): void {
           <h3>Personal</h3>
           <div class="plan-price">€7.99 <small>/ month</small></div>
           <p>For independent professionals who use AI with real client and personal information.</p>
-          <button type="button" class="primary" data-plan="personal" data-interval="monthly">Start 7-day trial</button>
-          <button type="button" class="secondary" data-plan="personal" data-interval="yearly">€79.90 yearly</button>
+          <div class="plan-actions">
+            <button type="button" class="primary" data-plan="personal" data-interval="monthly">Start 7-day trial</button>
+            <button type="button" class="secondary" data-plan="personal" data-interval="yearly">€79.90 yearly</button>
+          </div>
         </article>
         <article class="plan-card featured">
           <div class="plan-tag">For teams · up to 3 users</div>
@@ -214,14 +216,17 @@ export function mountDashboard(): void {
           <div class="plan-price">€14.99 <small>/ user / month</small></div>
           <p>Team controls and a clear privacy boundary for growing teams. Choose one to three seats.</p>
           <label class="pref-row">Seats<select id="business-seats"><option value="1">1 user</option><option value="2">2 users</option><option value="3">3 users</option></select></label>
-          <button type="button" class="primary" data-plan="business" data-interval="monthly">Start 7-day trial</button>
-          <button type="button" class="secondary" data-plan="business" data-interval="yearly">€149.90 yearly / user</button>
+          <div class="plan-actions">
+            <button type="button" class="primary" data-plan="business" data-interval="monthly">Start 7-day trial</button>
+            <button type="button" class="secondary" data-plan="business" data-interval="yearly">€149.90 yearly / user</button>
+          </div>
         </article>
         <article class="plan-card">
           <div class="plan-tag">Already subscribed?</div>
           <h3>Manage billing</h3>
+          <div class="plan-price">&nbsp;</div>
           <p>Update your payment method, download invoices, or cancel renewal whenever you need to.</p>
-          <button type="button" class="secondary" id="manage-billing">Manage subscription</button>
+          <div class="plan-actions"><button type="button" class="secondary" id="manage-billing">Manage subscription</button></div>
         </article>
       </div>
       <div class="drawer-actions"><button class="secondary" id="close-plans" type="button">Close</button></div>
@@ -298,13 +303,29 @@ export function mountDashboard(): void {
     required<HTMLButtonElement>("#save-preferences").textContent = settings[11];
   };
 
+  // Sidebar nav items previously only had their label text swapped by
+  // applyLanguage() -- clicking them did nothing. Wire them to the actions
+  // their labels promise.
+  const setActiveNav = (active: HTMLElement): void => {
+    navItems.forEach((item) => item.classList.toggle("active", item === active));
+  };
+  navItems[0].addEventListener("click", () => { setActiveNav(navItems[0]); prompt.focus(); });
+  navItems[1].addEventListener("click", () => { setActiveNav(navItems[0]); historyCard.scrollIntoView({ behavior: "smooth", block: "start" }); });
+  navItems[2].addEventListener("click", () => { openPlans(); });
+  navItems[3].addEventListener("click", () => { openPreferences(); });
+
   const escapeHtml = (value: string): string => value.replace(/[&<>'"]/g, (character) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#039;", "\"": "&quot;"
   }[character] ?? character));
 
+  const sideStatCount = document.querySelector<HTMLElement>("#side-stat strong");
   const renderHistory = (): void => {
     const history = readHistory();
     historyRoot.innerHTML = history.length ? history.map((entry) => `<article class="entry"><strong>${entry.findings} item${entry.findings === 1 ? "" : "s"} reviewed</strong><span>${escapeHtml(entry.preview)}</span><em>${new Date(entry.createdAt).toLocaleString()}</em></article>`).join("") : `<div class="entry"><strong>No checks yet</strong><span>Your last eight check summaries will appear here.</span></div>`;
+    if (sideStatCount) {
+      const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+      sideStatCount.textContent = String(history.filter((entry) => new Date(entry.createdAt).getTime() >= weekAgo).length);
+    }
   };
 
   const updateCharacterCount = (): void => {
