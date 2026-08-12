@@ -92,10 +92,38 @@ async function supabase(path: string, init: RequestInit = {}): Promise<Response>
   });
 }
 
+// The desktop app has no domain of its own to hold a cookie, so it authenticates
+// with a Supabase access token it stores itself and sends as `Authorization:
+// Bearer`, matching how PC Tweaker's and Social Dashboard's desktop builds work.
+// This is intentionally a *different* trust model from the web dashboard's
+// httpOnly cookie (which stays immune to token theft via XSS): a Bearer token
+// requires the caller to already possess it, so allowing it cross-origin here
+// does not expose the cookie-based web session to anyone.
+function bearerToken(headers: Record<string, string | string[] | undefined> | undefined): string | undefined {
+  const raw = headers?.authorization;
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  return value?.startsWith("Bearer ") ? value.slice("Bearer ".length) : undefined;
+}
+
+export function corsHeaders(request: { headers?: Record<string, string | string[] | undefined> }): Record<string, string> {
+  const origin = request.headers?.origin;
+  return {
+    "Access-Control-Allow-Origin": (Array.isArray(origin) ? origin[0] : origin) ?? "*",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Refresh-Token",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    Vary: "Origin"
+  };
+}
+
 export async function requireUser(
   request: { headers?: Record<string, string | string[] | undefined> },
   response?: { setHeader(name: string, value: string | string[]): void }
 ): Promise<BillingUser> {
+  const bearer = bearerToken(request.headers);
+  if (bearer) {
+    const user = await supabaseAuthUser(bearer);
+    if (user) return user;
+  }
   const cookies = parseCookies(request.headers?.cookie);
   const accessToken = cookies[ACCESS_COOKIE];
   if (accessToken) {

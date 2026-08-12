@@ -1,4 +1,4 @@
-type RequestLike = { method?: string };
+type RequestLike = { method?: string; headers?: Record<string, string | string[] | undefined> };
 type ResponseLike = {
   setHeader(name: string, value: string): void;
   status(code: number): ResponseLike;
@@ -7,6 +7,9 @@ type ResponseLike = {
 };
 
 export default function handler(request: RequestLike, response: ResponseLike): void {
+  const origin = request.headers?.origin;
+  response.setHeader("Access-Control-Allow-Origin", (Array.isArray(origin) ? origin[0] : origin) ?? "*");
+  if (request.method === "OPTIONS") { response.status(204).end(); return; }
   if (request.method !== "GET") {
     response.setHeader("Allow", "GET");
     response.status(405).end();

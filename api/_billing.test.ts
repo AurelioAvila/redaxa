@@ -66,6 +66,20 @@ await withMockFetch(
   }
 );
 
+// requireUser: desktop-style Authorization: Bearer header resolves the user
+// directly, without needing (or touching) any cookie.
+await withMockFetch(
+  async (url, init) => {
+    assert.match(url, /\/auth\/v1\/user$/);
+    assert.equal(bearerToken(init), "bearer-token");
+    return new Response(JSON.stringify({ id: "user-2", email: "desktop@example.com" }), { status: 200 });
+  },
+  async () => {
+    const user = await billing.requireUser({ headers: { authorization: "Bearer bearer-token" } });
+    assert.deepEqual(user, { id: "user-2", email: "desktop@example.com" });
+  }
+);
+
 // requireUser: expired access token + valid refresh token silently refreshes and rewrites cookies
 await withMockFetch(
   async (url, init) => {

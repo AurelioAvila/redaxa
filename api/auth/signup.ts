@@ -1,3 +1,4 @@
+import { corsHeaders } from "../_billing.js";
 import { clientIp, rateLimited } from "../_rateLimit.js";
 
 type RequestLike = { method?: string; body?: unknown; headers?: Record<string, string | string[] | undefined> };
@@ -10,12 +11,21 @@ function required(name: string): string {
 }
 
 export default async function handler(request: RequestLike, response: ResponseLike): Promise<void> {
+  const cors = corsHeaders(request);
+  for (const [name, value] of Object.entries(cors)) response.setHeader(name, value);
+  if (request.method === "OPTIONS") { response.status(204).end(); return; }
   if (request.method !== "POST") { response.setHeader("Allow", "POST"); response.status(405).end(); return; }
   try {
-    const body = (request.body ?? {}) as { email?: unknown; password?: unknown; emailRedirectTo?: unknown };
+    const body = (request.body ?? {}) as { email?: unknown; password?: unknown; emailRedirectTo?: unknown; firstName?: unknown; lastName?: unknown; dateOfBirth?: unknown };
     const email = typeof body.email === "string" ? body.email.trim() : "";
     const password = typeof body.password === "string" ? body.password : "";
+    const firstName = typeof body.firstName === "string" ? body.firstName.trim() : "";
+    const lastName = typeof body.lastName === "string" ? body.lastName.trim() : "";
+    const dateOfBirth = typeof body.dateOfBirth === "string" ? body.dateOfBirth : "";
     if (!email || password.length < 12) { response.status(400).json({ error: "Enter a valid email and a password of at least 12 characters." }); return; }
+    if (!firstName) { response.status(400).json({ error: "First name is required." }); return; }
+    if (!lastName) { response.status(400).json({ error: "Last name is required." }); return; }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth)) { response.status(400).json({ error: "Date of birth is required." }); return; }
     const ip = clientIp(request.headers);
     if (rateLimited(`signup:ip:${ip}`, 10, 15 * 60_000)) {
       response.status(429).json({ error: "Too many attempts. Please wait a few minutes and try again." });
@@ -26,7 +36,12 @@ export default async function handler(request: RequestLike, response: ResponseLi
     const upstream = await fetch(`${url}/auth/v1/signup`, {
       method: "POST",
       headers: { apikey: publishableKey, "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, options: typeof body.emailRedirectTo === "string" ? { email_redirect_to: body.emailRedirectTo } : undefined })
+      body: JSON.stringify({
+        email,
+        password,
+        data: { first_name: firstName, last_name: lastName, date_of_birth: dateOfBirth },
+        options: typeof body.emailRedirectTo === "string" ? { email_redirect_to: body.emailRedirectTo } : undefined
+      })
     });
     const payload = await upstream.json().catch(() => ({})) as { msg?: string; error_description?: string };
     if (!upstream.ok) { response.status(upstream.status).json({ error: payload.msg ?? payload.error_description ?? "We could not create that account." }); return; }

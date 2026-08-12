@@ -13,12 +13,12 @@ const maxPromptLength = 10_000;
 
 const defaultPreferences: Preferences = { language: "en", theme: "lime", scanMode: "standard", includePersonalData: true, includeCredentials: true, includeFinancialData: true, saveHistory: true, autoClearAfterCopy: false, showRawValues: true, customTerms: [] };
 
-const themes: { code: ThemeName; label: string; accent: string; accentInk: string }[] = [
-  { code: "lime", label: "Lime", accent: "#b9ff00", accentInk: "#080a07" },
-  { code: "violet", label: "Violet", accent: "#a78bfa", accentInk: "#0c0a17" },
-  { code: "ocean", label: "Ocean Blue", accent: "#4ea1ff", accentInk: "#05070c" },
-  { code: "amber", label: "Amber Dusk", accent: "#ffb84d", accentInk: "#140d02" },
-  { code: "crimson", label: "Crimson Steel", accent: "#ff5d78", accentInk: "#12060a" }
+const themes: { code: ThemeName; label: string; accent: string; accentInk: string; swatch: [string, string] }[] = [
+  { code: "lime", label: "Lime", accent: "#b9ff00", accentInk: "#080a07", swatch: ["#b9ff00", "#6dd400"] },
+  { code: "violet", label: "Violet", accent: "#a78bfa", accentInk: "#0c0a17", swatch: ["#a78bfa", "#f472b6"] },
+  { code: "ocean", label: "Ocean Blue", accent: "#4ea1ff", accentInk: "#05070c", swatch: ["#4ea1ff", "#38bdf8"] },
+  { code: "amber", label: "Amber Dusk", accent: "#ffb84d", accentInk: "#140d02", swatch: ["#ffb84d", "#fbbf24"] },
+  { code: "crimson", label: "Crimson Steel", accent: "#ff5d78", accentInk: "#12060a", swatch: ["#ff5d78", "#fb7185"] }
 ];
 
 function applyTheme(theme: ThemeName): void {
@@ -104,68 +104,18 @@ function required<T extends Element>(selector: string): T {
   return element;
 }
 
-function installDashboardPolish(): void {
-  if (!document.querySelector("link[data-promptshield-dashboard]")) {
-    const stylesheet = document.createElement("link");
-    stylesheet.rel = "stylesheet";
-    stylesheet.href = "dashboard.css";
-    stylesheet.dataset.promptshieldDashboard = "true";
-    document.head.append(stylesheet);
-  }
-  const style = document.createElement("style");
-  style.textContent = `
-    .side { position: sticky; top: 0; height: 100vh; }
-    html.preferences-open, html.preferences-open body { overflow:hidden; }
-    #pwa-install { position:fixed; right:24px; bottom:24px; z-index:20; border:1px solid var(--accent); border-radius:999px; padding:11px 15px; background:var(--accent); color:var(--accent-ink); font-weight:850; box-shadow:0 12px 32px #0008; cursor:pointer; }
-    #pwa-install:focus-visible { outline:3px solid #fff; outline-offset:3px; }
-    #inspect-clipboard { position:fixed; right:24px; bottom:76px; z-index:20; border:1px solid #405535; border-radius:999px; padding:10px 14px; background:#141b10; color:#e7eddc; font-weight:750; box-shadow:0 12px 32px #0008; cursor:pointer; }
-    #inspect-clipboard:hover { border-color:var(--accent); color:var(--accent); }
-    #inspect-clipboard:focus-visible { outline:3px solid #d5ff73; outline-offset:3px; }
-    .link-btn, .primary, .copy { cursor: pointer; transition: transform .16s ease, filter .16s ease, background .16s ease; }
-    .link-btn:hover { color: var(--text); }
-    .primary:hover { filter: brightness(1.08); transform: translateY(-1px); }
-    .primary:active { transform: translateY(0); }
-    .copy:hover { background: #30382a; }
-    .link-btn:focus-visible, .primary:focus-visible, .copy:focus-visible { outline: 3px solid #d5ff73; outline-offset: 3px; }
-    .prompt-meta { display:flex; justify-content:space-between; gap:12px; margin-top:10px; color:var(--muted); font-size:11px; }
-    .prompt-meta strong { color:var(--accent); font-weight:750; }
-    .secondary { border:1px solid #40483c; border-radius:7px; background:transparent; color:#bdc5b8; padding:7px 9px; font-size:12px; cursor:pointer; }
-    .secondary:hover { border-color:#68755f; color:var(--text); background:#181d16; }
-    .history-title { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px; }
-    .history-title h2 { margin:0; }
-    .finding small { display:block; margin-top:3px; color:#777e73; font-size:11px; }
-    .nav-item { border:0; width:100%; background:transparent; text-align:left; cursor:pointer; }
-    .nav-item:hover:not(.active) { background:#ffffff08; color:var(--text); }
-    .drawer-backdrop { position:fixed; inset:0; z-index:20; display:grid; place-items:center; overflow-y:auto; padding:24px; background:#0009; opacity:0; pointer-events:none; transition:opacity .18s ease; }
-    .drawer-backdrop.open { opacity:1; pointer-events:auto; }
-    .drawer { position:relative; width:min(460px,100%); max-height:calc(100dvh - 48px); overflow-y:auto; border:1px solid #3a4335; border-radius:18px; background:#131711; padding:24px; box-shadow:0 30px 90px #000b; }
-    .drawer h2 { font-size:22px; margin:0 0 8px; }
-    .drawer p { color:var(--muted); font-size:13px; line-height:1.5; margin:0 0 20px; }
-    .pref-row { display:grid; gap:7px; margin:14px 0; color:#cdd3c8; font-size:13px; font-weight:700; }
-    .pref-row select { border:1px solid #3b4437; border-radius:8px; background:#0b0e09; color:var(--text); padding:10px; }
-    .term-editor { width:100%; min-height:82px; resize:vertical; border:1px solid #3b4437; border-radius:8px; background:#0b0e09; color:var(--text); padding:10px; line-height:1.45; }
-    .switch { display:flex; gap:10px; align-items:center; margin:12px 0; color:#cdd3c8; font-size:13px; cursor:pointer; }
-    .switch input { accent-color:var(--accent); width:16px; height:16px; }
-    .drawer-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:22px; }
-    .plan-note { margin:16px 0 0; border:1px solid #405535; border-radius:10px; background:color-mix(in srgb, var(--accent) 5%, transparent); color:#d8e5cf; padding:12px; font-size:12px; line-height:1.5; }
-    .plans-drawer { width:min(760px,100%); }
-    .plan-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:6px; }
-    .plan-card { border:1px solid var(--line); border-radius:14px; background:#0e120c; padding:16px; display:flex; flex-direction:column; gap:8px; }
-    .plan-card.featured { border-color:color-mix(in srgb, var(--accent) 45%, var(--line)); background:linear-gradient(160deg, color-mix(in srgb, var(--accent) 8%, #0e120c), #0e120c); }
-    .plan-tag { color:var(--accent); font-size:10px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
-    .plan-card h3 { margin:2px 0 0; font-size:18px; }
-    .plan-price { font-size:22px; font-weight:850; }
-    .plan-price small { font-size:12px; font-weight:600; color:var(--muted); }
-    .plan-card p { margin:0; color:var(--muted); font-size:12px; line-height:1.5; flex:1; }
-    .plan-card select { border:1px solid #3b4437; border-radius:8px; background:#0b0e09; color:var(--text); padding:8px; }
-    .plan-card button { width:100%; }
-    @media(max-width:760px) { .plan-grid { grid-template-columns:1fr; } }
-  `;
-  document.head.append(style);
-}
-
 export function mountDashboard(): void {
-  installDashboardPolish();
+  // All dashboard-specific CSS lives in dashboard.html's own <style> tag rather
+  // than being injected here at runtime. Tauri computes CSP hashes only for
+  // inline <style>/script content present in the HTML at build time; per the CSP
+  // spec, once a directive has hash-sources, 'unsafe-inline' is ignored entirely
+  // for that directive (not merely supplemented) -- so a <style> tag created here
+  // at runtime, and any style="" attribute set via innerHTML, was silently
+  // dropped in the desktop build even though tauri.conf.json declares
+  // 'unsafe-inline' for style-src. The web build has no such hashes and was
+  // never affected, which is why this only showed up on desktop. Confirmed by
+  // reading document.styleSheets from inside the running desktop app: the
+  // dynamically created sheet was entirely absent.
   enableAppShell();
   const prompt = required<HTMLTextAreaElement>("#prompt");
   const findingsRoot = required<HTMLElement>("#findings");
@@ -211,7 +161,7 @@ export function mountDashboard(): void {
       <h2 id="preferences-title">Personal preferences</h2>
       <p>These settings stay in this browser. They do not create an online account or upload prompt content.</p>
       <label class="pref-row">Interface language<select id="language"><option value="en">English</option><option value="it">Italiano</option><option value="es">Español</option><option value="fr">Français</option><option value="de">Deutsch</option></select></label>
-      <label class="pref-row theme-pref-row">Theme<select id="theme-select"></select></label>
+      <div class="pref-row theme-pref-row">Theme<div class="theme-row" id="theme-row"></div></div>
       <label class="pref-row">Inspection mode<select id="scan-mode"><option value="standard">Standard — balanced local checks</option><option value="strict">Strict — careful review mode</option></select></label>
       <label class="switch"><input id="detect-personal" type="checkbox" checked> Detect personal data (email, phone, IP, fiscal code)</label>
       <label class="switch"><input id="detect-credentials" type="checkbox" checked> Detect API keys and credentials</label>
@@ -223,21 +173,19 @@ export function mountDashboard(): void {
       <div class="drawer-actions"><button class="secondary" id="close-preferences" type="button">Close</button><button class="primary" id="save-preferences" type="button">Save preferences</button></div>
     </section>`;
   document.body.append(preferenceDialog);
-  // A colored-circle swatch picker (the PC Tweaker look) rendered as an invisible
-  // sliver in the desktop WebView2 build regardless of markup approach tried
-  // (native <button>, appearance:none, inline styles, plain <span>) even though the
-  // click targets stayed correctly positioned the whole time. A <select> uses the
-  // exact control type that was already confirmed rendering correctly elsewhere in
-  // this same drawer (language, inspection mode), trading some visual flair for a
-  // theme picker that is guaranteed visible and usable on every platform.
-  const themeSelect = required<HTMLSelectElement>("#theme-select");
-  themeSelect.innerHTML = themes.map((theme) => `<option value="${theme.code}">${theme.label}</option>`).join("");
-  themeSelect.value = preferences.theme;
-  themeSelect.addEventListener("change", () => {
-    const code = themes.some((theme) => theme.code === themeSelect.value) ? themeSelect.value as ThemeName : "lime";
+  // Same swatch-picker pattern as PC Tweaker, but the per-theme color comes from a
+  // static CSS class (theme-swatch-lime, etc., defined in dashboard.html) instead
+  // of an inline style="" attribute -- see the note above mountDashboard() for why.
+  const themeRow = required<HTMLElement>("#theme-row");
+  themeRow.innerHTML = themes.map((theme) => `<button type="button" class="theme-swatch theme-swatch-${theme.code}${theme.code === preferences.theme ? " active" : ""}" data-theme="${theme.code}" title="${theme.label}" aria-label="${theme.label} theme"></button>`).join("");
+  themeRow.addEventListener("click", (event) => {
+    const button = (event.target as HTMLElement).closest<HTMLButtonElement>(".theme-swatch");
+    const code = button?.dataset.theme as ThemeName | undefined;
+    if (!code) return;
     preferences.theme = code;
     applyTheme(code);
     savePreferences(preferences);
+    themeRow.querySelectorAll(".theme-swatch").forEach((swatch) => swatch.classList.toggle("active", swatch === button));
   });
 
   const plansDialog = document.createElement("div");

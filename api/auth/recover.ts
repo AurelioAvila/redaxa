@@ -1,3 +1,4 @@
+import { corsHeaders } from "../_billing.js";
 import { clientIp, rateLimited } from "../_rateLimit.js";
 
 type RequestLike = { method?: string; body?: unknown; headers?: Record<string, string | string[] | undefined> };
@@ -10,6 +11,9 @@ function required(name: string): string {
 }
 
 export default async function handler(request: RequestLike, response: ResponseLike): Promise<void> {
+  const cors = corsHeaders(request);
+  for (const [name, value] of Object.entries(cors)) response.setHeader(name, value);
+  if (request.method === "OPTIONS") { response.status(204).end(); return; }
   if (request.method !== "POST") { response.setHeader("Allow", "POST"); response.status(405).end(); return; }
   try {
     const body = (request.body ?? {}) as { email?: unknown; redirect_to?: unknown };

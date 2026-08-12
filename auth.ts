@@ -1,23 +1,55 @@
 import { isTauri, openInSystemBrowser } from "./desktop.js";
 
 type AuthConfig = { configured: boolean };
+type DesktopSession = { email: string; access_token: string; refresh_token: string; expires_at: number };
 
-// The desktop build has no server of its own; account creation and billing always
-// happen on the hosted web app, opened in the user's system browser.
+// The desktop build has no domain/cookie jar of its own, so it authenticates the
+// same way PC Tweaker and Social Dashboard do: sign in/register happens in this
+// same embedded form (not a browser handoff), and the resulting Supabase access
+// token is held by the app itself and sent as `Authorization: Bearer` on every
+// API call. This is a different trust model from the web dashboard's httpOnly
+// cookie (a stolen Bearer token requires the caller to already have it, so it
+// doesn't reopen the XSS-session-theft risk the cookie migration closed), and it
+// only applies to the desktop build.
 const webAppUrl = "https://promptshield-beta.vercel.app";
+const desktopSessionKey = "promptshield.desktop.session.v1";
+const apiBase = isTauri() ? webAppUrl : "";
 
-// Session tokens live only in httpOnly cookies set by the server (/api/auth/*). The
-// browser never holds them, so an XSS bug in this page cannot steal a signed-in session.
 let config: AuthConfig | null = null;
 let mode: "signup" | "signin" | "recovery" = "signup";
 let currentEmail: string | null = null;
 
-async function apiRequest(path: string, body: Record<string, unknown> = {}): Promise<Record<string, unknown>> {
-  const response = await fetch(path, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
+function readDesktopSession(): DesktopSession | null {
+  try {
+    const value: unknown = JSON.parse(localStorage.getItem(desktopSessionKey) ?? "null");
+    return value && typeof value === "object" ? value as DesktopSession : null;
+  } catch { return null; }
+}
+function saveDesktopSession(session: DesktopSession): void { localStorage.setItem(desktopSessionKey, JSON.stringify(session)); }
+function clearDesktopSession(): void { localStorage.removeItem(desktopSessionKey); }
+
+// Returns a Bearer token good for at least 30 more seconds, transparently
+// refreshing (and re-persisting) it first if the stored one is stale or absent.
+async function desktopAccessToken(): Promise<string | null> {
+  const session = readDesktopSession();
+  if (!session) return null;
+  if (session.expires_at > Date.now() + 30_000) return session.access_token;
+  const response = await fetch(`${apiBase}/api/auth/session`, {
+    headers: { Authorization: `Bearer ${session.access_token}`, "X-Refresh-Token": session.refresh_token }
   });
+  const payload = await response.json().catch(() => ({})) as { email?: string | null; access_token?: string; refresh_token?: string; expires_in?: number };
+  if (!payload.email || !payload.access_token || !payload.refresh_token) { clearDesktopSession(); return null; }
+  saveDesktopSession({ email: payload.email, access_token: payload.access_token, refresh_token: payload.refresh_token, expires_at: Date.now() + (payload.expires_in ?? 3600) * 1000 });
+  return payload.access_token;
+}
+
+async function apiRequest(path: string, body: Record<string, unknown> = {}): Promise<Record<string, unknown>> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (isTauri()) {
+    const token = await desktopAccessToken();
+    if (token) headers.Authorization = `Bearer ${token}`;
+  }
+  const response = await fetch(`${apiBase}${path}`, { method: "POST", headers, body: JSON.stringify(body) });
   const payload: unknown = await response.json().catch(() => ({}));
   if (!response.ok) {
     const message = typeof payload === "object" && payload !== null && "error" in payload ? String((payload as { error?: unknown }).error) : "We could not complete that request.";
@@ -37,20 +69,32 @@ function accountControls(): { trigger: HTMLAnchorElement; account: HTMLDivElemen
   return { trigger, account, email: account.querySelector<HTMLSpanElement>(".ps-account-email")!, signout: account.querySelector<HTMLButtonElement>(".ps-signout")! };
 }
 
-function installDialog(): { backdrop: HTMLDivElement; form: HTMLFormElement; title: HTMLElement; description: HTMLElement; submit: HTMLButtonElement; email: HTMLInputElement; password: HTMLInputElement; passwordField: HTMLLabelElement; message: HTMLElement; switcher: HTMLButtonElement } {
+function installDialog(): {
+  backdrop: HTMLDivElement; form: HTMLFormElement; title: HTMLElement; description: HTMLElement; submit: HTMLButtonElement;
+  firstName: HTMLInputElement; lastName: HTMLInputElement; dateOfBirth: HTMLInputElement; registerFields: HTMLElement;
+  email: HTMLInputElement; password: HTMLInputElement; passwordField: HTMLLabelElement; message: HTMLElement; switcher: HTMLButtonElement;
+} {
   const backdrop = document.createElement("div");
   backdrop.className = "ps-auth-backdrop";
   backdrop.innerHTML = `<section class="ps-auth-dialog" role="dialog" aria-modal="true" aria-labelledby="ps-auth-title">
     <button class="ps-auth-close" type="button" aria-label="Close account dialog">×</button>
     <h2 id="ps-auth-title">Create your account</h2><p id="ps-auth-description">Start your 14-day free trial when PromptShield billing launches. Your prompt text stays local.</p>
-    <form><label class="ps-auth-field">Email<input id="ps-auth-email" type="email" autocomplete="email" required></label>
+    <form>
+    <div id="ps-auth-register-fields">
+      <label class="ps-auth-field">First name<input id="ps-auth-first-name" type="text" autocomplete="given-name"></label>
+      <label class="ps-auth-field">Last name<input id="ps-auth-last-name" type="text" autocomplete="family-name"></label>
+      <label class="ps-auth-field">Date of birth<input id="ps-auth-dob" type="date" autocomplete="bday"></label>
+    </div>
+    <label class="ps-auth-field">Email<input id="ps-auth-email" type="email" autocomplete="email" required></label>
     <label class="ps-auth-field" id="ps-auth-password-field">Password<input id="ps-auth-password" type="password" autocomplete="new-password" minlength="12" required></label>
     <button class="ps-auth-submit" type="submit">Create account</button></form>
     <p class="ps-auth-message" role="status"></p><p class="ps-auth-switch"><button class="ps-auth-link" type="button">Already have an account? Sign in</button></p></section>`;
   document.body.append(backdrop);
   return {
     backdrop, form: backdrop.querySelector("form")!, title: backdrop.querySelector("#ps-auth-title")!, description: backdrop.querySelector("#ps-auth-description")!,
-    submit: backdrop.querySelector(".ps-auth-submit")!, email: backdrop.querySelector("#ps-auth-email")!, password: backdrop.querySelector("#ps-auth-password")!,
+    submit: backdrop.querySelector(".ps-auth-submit")!, registerFields: backdrop.querySelector("#ps-auth-register-fields")!,
+    firstName: backdrop.querySelector("#ps-auth-first-name")!, lastName: backdrop.querySelector("#ps-auth-last-name")!, dateOfBirth: backdrop.querySelector("#ps-auth-dob")!,
+    email: backdrop.querySelector("#ps-auth-email")!, password: backdrop.querySelector("#ps-auth-password")!,
     passwordField: backdrop.querySelector("#ps-auth-password-field")!, message: backdrop.querySelector(".ps-auth-message")!, switcher: backdrop.querySelector(".ps-auth-link")!
   };
 }
@@ -63,14 +107,18 @@ function installStylesheet(): void {
 }
 
 async function loadConfig(): Promise<AuthConfig> {
-  const response = await fetch("/api/auth-config", { cache: "no-store" });
+  const response = await fetch(`${apiBase}/api/auth-config`, { cache: "no-store" });
   if (!response.ok) return { configured: false };
   return response.json() as Promise<AuthConfig>;
 }
 
 async function loadSession(): Promise<string | null> {
+  if (isTauri()) {
+    const token = await desktopAccessToken();
+    return token ? readDesktopSession()?.email ?? null : null;
+  }
   try {
-    const response = await fetch("/api/auth/session", { cache: "no-store" });
+    const response = await fetch(`${apiBase}/api/auth/session`, { cache: "no-store" });
     if (!response.ok) return null;
     const payload = await response.json() as { email?: string | null };
     return payload.email ?? null;
@@ -81,31 +129,12 @@ function authRedirect(): string { return `${location.origin}/`; }
 
 async function boot(): Promise<void> {
   installStylesheet();
+  const desktop = isTauri();
   const controls = accountControls();
-
-  if (isTauri()) {
-    // No embedded login/checkout here: the desktop shell has no domain of its own to
-    // hold a session cookie, so every account/billing action hands off to the hosted
-    // web app in the user's regular browser instead.
-    controls.trigger.textContent = "Sign in / Create account";
-    controls.trigger.title = "Opens promptshield-beta.vercel.app in your default browser";
-    const openWebApp = (url: string) => (event: Event): void => { event.preventDefault(); void openInSystemBrowser(url); };
-    controls.trigger.addEventListener("click", openWebApp(`${webAppUrl}/#account`));
-    document.querySelectorAll<HTMLElement>("[data-plan]").forEach((button) => {
-      button.title = "Opens promptshield-beta.vercel.app in your default browser";
-      button.addEventListener("click", openWebApp(`${webAppUrl}/#pricing`));
-    });
-    const manageBilling = document.querySelector<HTMLButtonElement>("#manage-billing");
-    if (manageBilling) {
-      manageBilling.title = "Opens promptshield-beta.vercel.app in your default browser";
-      manageBilling.addEventListener("click", openWebApp(`${webAppUrl}/#pricing`));
-    }
-    return;
-  }
+  const dialog = installDialog();
 
   config = await loadConfig().catch(() => ({ configured: false }));
   currentEmail = await loadSession();
-  const dialog = installDialog();
   const show = (): void => { dialog.backdrop.classList.add("open"); dialog.email.focus(); };
   const close = (): void => dialog.backdrop.classList.remove("open");
   const setMessage = (message: string, error = false): void => { dialog.message.textContent = message; dialog.message.classList.toggle("error", error); };
@@ -114,6 +143,8 @@ async function boot(): Promise<void> {
     const signup = mode === "signup"; const recovery = mode === "recovery";
     dialog.title.textContent = signup ? "Create your account" : recovery ? "Reset your password" : "Welcome back";
     dialog.description.textContent = signup ? "Use a password with at least 12 characters. We will send a verification email." : recovery ? "We will email you a secure link to choose a new password." : "Sign in to continue with your private workspace.";
+    dialog.registerFields.hidden = !signup;
+    dialog.firstName.required = signup; dialog.lastName.required = signup; dialog.dateOfBirth.required = signup;
     dialog.passwordField.hidden = recovery; dialog.password.required = !recovery; dialog.password.autocomplete = signup ? "new-password" : "current-password";
     dialog.submit.textContent = signup ? "Create account" : recovery ? "Send reset link" : "Sign in";
     dialog.switcher.textContent = signup ? "Already have an account? Sign in" : recovery ? "Back to sign in" : "Need a password reset?";
@@ -124,7 +155,8 @@ async function boot(): Promise<void> {
     controls.email.textContent = email ?? "";
   };
   renderAccount(currentEmail);
-  controls.trigger.addEventListener("click", (event) => { event.preventDefault(); if (!config?.configured) { setMessage("Account setup is being completed. Please try again shortly.", true); } show(); });
+  controls.trigger.addEventListener("click", (event) => { event.preventDefault(); if (!config?.configured) { setMessage("Account setup is being completed. Please try again shortly.", true); } setMode("signup"); show(); });
+
   const beginCheckout = async (button: HTMLElement): Promise<void> => {
     if (!currentEmail) {
       setMode("signup");
@@ -140,9 +172,9 @@ async function boot(): Promise<void> {
     try {
       const payload = await apiRequest("/api/checkout", { plan, interval, seats }) as { url?: string };
       if (!payload.url) throw new Error("Checkout could not be opened.");
-      location.assign(payload.url);
+      if (desktop) void openInSystemBrowser(payload.url); else location.assign(payload.url);
     } catch (error) {
-      if (error instanceof Error && error.message === "UNAUTHORIZED") { renderAccount(null); setMode("signin"); setMessage("Please sign in again to continue."); show(); }
+      if (error instanceof Error && error.message === "UNAUTHORIZED") { renderAccount(null); clearDesktopSession(); setMode("signin"); setMessage("Please sign in again to continue."); show(); }
       else { setMessage(error instanceof Error ? error.message : "Checkout could not be opened.", true); show(); }
     } finally {
       button.removeAttribute("aria-busy");
@@ -155,16 +187,23 @@ async function boot(): Promise<void> {
     try {
       const payload = await apiRequest("/api/portal") as { url?: string };
       if (!payload.url) throw new Error("Billing management is unavailable.");
-      location.assign(payload.url);
+      if (desktop) void openInSystemBrowser(payload.url); else location.assign(payload.url);
     } catch (error) {
-      if (error instanceof Error && error.message === "UNAUTHORIZED") { renderAccount(null); setMode("signin"); setMessage("Please sign in again to continue."); show(); }
+      if (error instanceof Error && error.message === "UNAUTHORIZED") { renderAccount(null); clearDesktopSession(); setMode("signin"); setMessage("Please sign in again to continue."); show(); }
       else { setMessage(error instanceof Error ? error.message : "Billing management is unavailable.", true); show(); }
     }
   });
   dialog.backdrop.querySelector(".ps-auth-close")?.addEventListener("click", close);
   dialog.backdrop.addEventListener("click", (event) => { if (event.target === dialog.backdrop) close(); });
   controls.signout.addEventListener("click", () => {
-    void apiRequest("/api/auth/signout").catch(() => undefined).finally(() => renderAccount(null));
+    if (desktop) {
+      const session = readDesktopSession();
+      clearDesktopSession();
+      renderAccount(null);
+      if (session) void fetch(`${apiBase}/api/auth/signout`, { method: "POST", headers: { Authorization: `Bearer ${session.access_token}` } }).catch(() => undefined);
+    } else {
+      void apiRequest("/api/auth/signout").catch(() => undefined).finally(() => renderAccount(null));
+    }
   });
   dialog.switcher.addEventListener("click", () => setMode(mode === "signup" ? "signin" : mode === "signin" ? "recovery" : "signin"));
   dialog.form.addEventListener("submit", async (event) => {
@@ -172,11 +211,19 @@ async function boot(): Promise<void> {
     dialog.submit.disabled = true; setMessage("");
     try {
       if (mode === "signup") {
-        await apiRequest("/api/auth/signup", { email: dialog.email.value.trim(), password: dialog.password.value, emailRedirectTo: authRedirect() });
+        await apiRequest("/api/auth/signup", {
+          email: dialog.email.value.trim(), password: dialog.password.value, emailRedirectTo: authRedirect(),
+          firstName: dialog.firstName.value.trim(), lastName: dialog.lastName.value.trim(), dateOfBirth: dialog.dateOfBirth.value
+        });
         setMessage("Check your email to confirm your account, then sign in."); setMode("signin");
       } else if (mode === "signin") {
-        const payload = await apiRequest("/api/auth/signin", { email: dialog.email.value.trim(), password: dialog.password.value }) as { email?: string };
-        renderAccount(payload.email ?? dialog.email.value.trim()); setMessage("Signed in successfully."); window.setTimeout(close, 700);
+        const payload = await apiRequest("/api/auth/signin", { email: dialog.email.value.trim(), password: dialog.password.value }) as
+          { email?: string; access_token?: string; refresh_token?: string; expires_in?: number };
+        const email = payload.email ?? dialog.email.value.trim();
+        if (desktop && payload.access_token && payload.refresh_token) {
+          saveDesktopSession({ email, access_token: payload.access_token, refresh_token: payload.refresh_token, expires_at: Date.now() + (payload.expires_in ?? 3600) * 1000 });
+        }
+        renderAccount(email); setMessage("Signed in successfully."); window.setTimeout(close, 700);
       } else {
         await apiRequest("/api/auth/recover", { email: dialog.email.value.trim(), redirect_to: authRedirect() });
         setMessage("If that account exists, a password-reset link is on its way.");

@@ -1,4 +1,4 @@
-import { setSessionCookies } from "../_billing.js";
+import { corsHeaders, setSessionCookies } from "../_billing.js";
 import { clientIp, rateLimited } from "../_rateLimit.js";
 
 type RequestLike = { method?: string; body?: unknown; headers?: Record<string, string | string[] | undefined> };
@@ -11,6 +11,9 @@ function required(name: string): string {
 }
 
 export default async function handler(request: RequestLike, response: ResponseLike): Promise<void> {
+  const cors = corsHeaders(request);
+  for (const [name, value] of Object.entries(cors)) response.setHeader(name, value);
+  if (request.method === "OPTIONS") { response.status(204).end(); return; }
   if (request.method !== "POST") { response.setHeader("Allow", "POST"); response.status(405).end(); return; }
   try {
     const body = (request.body ?? {}) as { email?: unknown; password?: unknown };
@@ -35,7 +38,14 @@ export default async function handler(request: RequestLike, response: ResponseLi
       return;
     }
     setSessionCookies(response, payload.access_token, payload.refresh_token, payload.expires_in ?? 3600);
-    response.status(200).json({ email: payload.user?.email ?? email });
+    // Cookies drive the web dashboard; the desktop app has no cookie jar of its
+    // own, so it reads the tokens from the body instead and holds them itself.
+    response.status(200).json({
+      email: payload.user?.email ?? email,
+      access_token: payload.access_token,
+      refresh_token: payload.refresh_token,
+      expires_in: payload.expires_in ?? 3600
+    });
   } catch {
     response.status(500).json({ error: "Sign-in is not available right now." });
   }
