@@ -24,6 +24,7 @@ export default async function handler(request: RequestLike, response: ResponseLi
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "ACCOUNT_ERROR";
+    if (message !== "UNAUTHORIZED") console.error("account load error:", error);
     response.status(message === "UNAUTHORIZED" ? 401 : 500).json({ error: message === "UNAUTHORIZED" ? "UNAUTHORIZED" : "We could not load your account." });
   }
 }

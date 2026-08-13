@@ -63,7 +63,9 @@ export default async function handler(request: RequestLike, response: ResponseLi
       const session = await stripe.checkout.sessions.create({
         customer: customerId,
         mode: "subscription",
-        payment_method_types: ["card"],
+        // Not passing payment_method_types: this Stripe account has Managed
+        // Payments on (the newer default), which rejects an explicit list
+        // and picks methods itself.
         line_items: [{ price, quantity: seats }],
         allow_promotion_codes: interval === "monthly",
         subscription_data: {
@@ -82,6 +84,7 @@ export default async function handler(request: RequestLike, response: ResponseLi
   } catch (error) {
     const message = error instanceof Error ? error.message : "CHECKOUT_ERROR";
     const status = message === "UNAUTHORIZED" ? 401 : message === "ACTIVE_SUBSCRIPTION" ? 409 : message === "CHECKOUT_IN_PROGRESS" ? 429 : 500;
+    if (status === 500) console.error("billing checkout error:", error);
     response.status(status).json({ error: status === 500 ? "We could not start checkout. Please try again." : message });
   }
 }

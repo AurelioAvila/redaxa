@@ -187,6 +187,7 @@ export async function reserveCheckout(userId: string): Promise<BillingAccount> {
     const detail = await response.text();
     if (detail.includes("active subscription")) throw new Error("ACTIVE_SUBSCRIPTION");
     if (detail.includes("already being prepared")) throw new Error("CHECKOUT_IN_PROGRESS");
+    console.error("reserveCheckout RPC failed:", response.status, detail);
     throw new Error("BILLING_STORAGE_ERROR");
   }
   return response.json() as Promise<BillingAccount>;
@@ -202,7 +203,10 @@ export async function saveCustomer(userId: string, customerId: string): Promise<
   const response = await supabase(`/rest/v1/billing_accounts?user_id=eq.${encodeURIComponent(userId)}`, {
     method: "PATCH", body: JSON.stringify({ stripe_customer_id: customerId })
   });
-  if (!response.ok) throw new Error("BILLING_STORAGE_ERROR");
+  if (!response.ok) {
+    console.error("saveCustomer PATCH failed:", response.status, await response.text());
+    throw new Error("BILLING_STORAGE_ERROR");
+  }
 }
 
 export async function accountFor(userId: string): Promise<BillingAccount | null> {
@@ -299,7 +303,10 @@ export async function patchAccount(userId: string, updates: Json): Promise<void>
   const response = await supabase(`/rest/v1/billing_accounts?user_id=eq.${encodeURIComponent(userId)}`, {
     method: "PATCH", body: JSON.stringify({ ...updates, updated_at: new Date().toISOString() })
   });
-  if (!response.ok) throw new Error("BILLING_STORAGE_ERROR");
+  if (!response.ok) {
+    console.error("patchAccount PATCH failed:", response.status, await response.text());
+    throw new Error("BILLING_STORAGE_ERROR");
+  }
 }
 
 export async function claimStripeEvent(eventId: string, eventType: string): Promise<"claimed" | "completed" | "in_progress"> {
