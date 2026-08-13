@@ -118,4 +118,16 @@ const streetAddress = inspectPrompt("Ship it to 221 Baker Street by Friday.", {
 assert.deepEqual(streetAddress.findings.map((finding) => finding.kind), ["address"]);
 assert.match(streetAddress.redactedText, /\[ADDRESS\]/);
 
+// Regression test: with every category on at once (the real default used by
+// the dashboard and the browser extension, not the narrow single-category
+// slices above), the phone rule previously ran before the IBAN rule and ate
+// a digit group in the middle of the IBAN, so the IBAN pattern never
+// matched the full, uncorrupted string. Caught via the browser extension
+// against a real IBAN on claude.ai.
+const ibanWithEverythingOn = inspectPrompt("My IBAN is GB29 NWBK 6016 1331 9268 19", {
+  includePersonalData: true, includeCredentials: true, includeFinancialData: true
+});
+assert.deepEqual(ibanWithEverythingOn.findings.map((finding) => finding.kind), ["iban"]);
+assert.match(ibanWithEverythingOn.redactedText, /\[IBAN\]/);
+
 console.log("PromptShield scanner tests passed.");
