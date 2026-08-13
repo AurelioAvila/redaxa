@@ -296,6 +296,7 @@ export function mountDashboard(): void {
     void loadTeam();
   };
   required<HTMLButtonElement>("#close-plans").addEventListener("click", closePlans);
+  document.querySelector("#side-fill-cta")?.addEventListener("click", (event) => { event.preventDefault(); openPlans(); });
   plansDialog.addEventListener("click", (event) => { if (event.target === plansDialog) closePlans(); });
   document.addEventListener("promptshield:need-upgrade", () => openPlans());
   const languageSelect = required<HTMLSelectElement>("#language");
