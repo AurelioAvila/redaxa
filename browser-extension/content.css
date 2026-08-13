@@ -46,3 +46,21 @@
   margin-top: 12px; width: 100%; border: 0; border-radius: 8px; padding: 9px;
   background: #b9ff00; color: #0a0c08; font-weight: 700; cursor: pointer;
 }
+
+#promptshield-intercept {
+  position: fixed; inset: 0; z-index: 2147483647;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex; align-items: center; justify-content: center;
+}
+.ps-intercept-card {
+  width: 340px; max-height: 80vh; overflow: auto;
+  background: #0d0f0c; color: #f4f6f1;
+  border: 1px solid #2b3128; border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  font: 13px/1.5 system-ui, sans-serif;
+}
+.ps-int-secondary {
+  margin-top: 8px; width: 100%; border: 1px solid #2b3128; border-radius: 8px; padding: 9px;
+  background: transparent; color: #f4f6f1; font-weight: 600; cursor: pointer;
+}
+.ps-int-secondary:hover { border-color: #b9ff00; color: #b9ff00; }

@@ -112,4 +112,78 @@ function escapeHtml(value) {
   return value.replace(/[&<>'"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#039;", '"': "&quot;" }[c] ?? c));
 }
 
+// The manual "Check" button only helps if the user remembers to press it --
+// the actual differentiator is catching the moment they hit send. Every one
+// of the supported sites sends on a plain Enter keypress (no Shift), so a
+// capture-phase keydown listener on the composer is the one interception
+// point that works identically across ChatGPT/Claude/Gemini/Copilot/
+// Perplexity, without needing a per-site "Send button" selector that breaks
+// on redesigns. Button-click sends aren't intercepted (lower-value, higher
+// breakage risk); Enter covers the overwhelming majority of real sends.
+let bypassNextEnter = false;
+
+function resendEnter(composer) {
+  bypassNextEnter = true;
+  composer.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", code: "Enter", bubbles: true, cancelable: true }));
+}
+
+function showInterceptDialog(composer, result, onProceed) {
+  document.getElementById("promptshield-intercept")?.remove();
+  const overlay = document.createElement("div");
+  overlay.id = "promptshield-intercept";
+  const list = result.findings.map((f) => `<div class="ps-finding"><b>${escapeHtml(f.label)}</b></div>`).join("");
+  overlay.innerHTML = `
+    <div class="ps-intercept-card">
+      <div class="ps-panel-head">Before you send this…</div>
+      <div class="ps-panel-body">
+        <p class="ps-count">${result.findings.length} item${result.findings.length === 1 ? "" : "s"} look sensitive</p>
+        ${list}
+        <button type="button" class="ps-use-redacted" id="ps-int-redact">Auto-redact and send</button>
+        <button type="button" class="ps-int-secondary" id="ps-int-edit">Let me edit it</button>
+        <button type="button" class="ps-int-secondary" id="ps-int-send">Send as-is anyway</button>
+      </div>
+    </div>`;
+  document.body.append(overlay);
+  overlay.querySelector("#ps-int-redact")?.addEventListener("click", () => {
+    setComposerText(composer, result.redactedText);
+    overlay.remove();
+    window.setTimeout(() => resendEnter(composer), 30);
+  });
+  overlay.querySelector("#ps-int-send")?.addEventListener("click", () => { overlay.remove(); resendEnter(composer); });
+  overlay.querySelector("#ps-int-edit")?.addEventListener("click", () => { overlay.remove(); composer.focus(); });
+}
+
+function attachSendInterception(composer) {
+  if (!composer || composer.dataset.promptshieldIntercepted) return;
+  composer.dataset.promptshieldIntercepted = "1";
+  composer.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
+    if (bypassNextEnter) { bypassNextEnter = false; return; }
+    const text = composerText(composer).trim();
+    if (!text) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    (async () => {
+      // Fails open on purpose: if sign-in/subscription/network checks don't
+      // come back cleanly, the user's message still sends. A scanning outage
+      // must never be able to silently block someone from using ChatGPT/
+      // Claude/etc. -- that would turn a privacy helper into an outage.
+      try {
+        const status = await send({ type: "STATUS" });
+        if (!status.signedIn || !status.active) { resendEnter(composer); return; }
+        const result = await send({
+          type: "SCAN", text,
+          options: { includePersonalData: true, includeCredentials: true, includeFinancialData: true }
+        });
+        if (!result.findings.length) { resendEnter(composer); return; }
+        showInterceptDialog(composer, result, () => resendEnter(composer));
+      } catch { resendEnter(composer); }
+    })();
+  }, true);
+}
+
 if (!document.getElementById("promptshield-check-btn")) buildUI();
+attachSendInterception(findComposer());
+// Composers on SPA chat sites are frequently replaced (route change, new
+// chat), so keep re-attaching to whatever element is current.
+new MutationObserver(() => attachSendInterception(findComposer())).observe(document.body, { childList: true, subtree: true });
