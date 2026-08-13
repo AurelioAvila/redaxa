@@ -163,8 +163,14 @@ async function loadConfig(): Promise<AuthConfig> {
 
 async function loadSession(): Promise<string | null> {
   if (isTauri()) {
-    const token = await desktopAccessToken();
-    return token ? readDesktopSession()?.email ?? null : null;
+    // A transient network failure here (e.g. a CORS/connectivity hiccup
+    // during token refresh) must not throw past this point -- an uncaught
+    // rejection here would stop the rest of boot() from running, including
+    // wiring up the login dialog's own event listeners.
+    try {
+      const token = await desktopAccessToken();
+      return token ? readDesktopSession()?.email ?? null : null;
+    } catch { return readDesktopSession()?.email ?? null; }
   }
   try {
     const response = await fetch(`${apiBase}/api/auth/session`, { cache: "no-store" });

@@ -149,7 +149,15 @@ function bearerToken(headers: Record<string, string | string[] | undefined> | un
 // never ride along on cross-site fetches) but an explicit allowlist is cheap insurance
 // against that assumption breaking later.
 function allowedOrigins(): Set<string> {
-  return new Set([appUrl(), "tauri://localhost", "http://tauri.localhost"]);
+  // Tauri v2 on Windows/Linux serves the app over the https scheme
+  // (https://tauri.localhost), not http -- macOS/iOS use the tauri://
+  // custom scheme instead. A CORS preflight (triggered whenever
+  // desktopAccessToken() sends Authorization/X-Refresh-Token headers to
+  // refresh an expired access token) silently fails if the origin isn't
+  // an exact match, which read as "have to click Log in, then it just
+  // works" -- the app looked logged out until something (focus, a click)
+  // happened to hit a code path that didn't need the cross-origin fetch.
+  return new Set([appUrl(), "tauri://localhost", "https://tauri.localhost", "http://tauri.localhost"]);
 }
 
 export function corsHeaders(request: { headers?: Record<string, string | string[] | undefined> }): Record<string, string> {
