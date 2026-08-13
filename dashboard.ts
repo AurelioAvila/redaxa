@@ -49,7 +49,7 @@ const settingsByLanguage: Record<Language, string[]> = {
   de: ["Persönliche Einstellungen", "Diese Einstellungen bleiben in diesem Browser. Sie erstellen kein Konto und laden keine Prompts hoch.", "Oberflächensprache", "Prüfmodus", "Personenbezogene Daten erkennen", "API-Schlüssel und Zugangsdaten erkennen", "Karten und IBAN erkennen", "Lokale Prüfzusammenfassungen speichern", "Erkannten Wert anzeigen", "Prompt nach dem Kopieren leeren", "Schließen", "Einstellungen speichern", "Eigene geschützte Begriffe"]
 };
 
-const findingLabels: Record<string, string> = { email: "Email", phone: "Phone", secret: "API key", card: "Card", ip: "IP address", iban: "IBAN", fiscalCode: "Fiscal code", credential: "Credential", custom: "Custom term" };
+const findingLabels: Record<string, string> = { email: "Email", phone: "Phone", secret: "API key", card: "Card", ip: "IP address", iban: "IBAN", fiscalCode: "Fiscal code", credential: "Credential", ssn: "SSN", crypto: "Wallet address", privateKey: "Private key", custom: "Custom term" };
 
 export function saveHistory(text: string, findings: Finding[]): HistoryEntry[] {
   const byKind: Record<string, number> = {};

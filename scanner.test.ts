@@ -57,4 +57,45 @@ const shortCode = inspectPrompt("Your order code is 12-3456", {
 });
 assert.deepEqual(shortCode.findings, []);
 
+// Newer key formats that a plain "sk-" prefix check misses entirely --
+// Stripe secret keys use an underscore, not a dash, after "sk".
+const stripeKey = inspectPrompt("Use sk_live_51H8x9zAbCdEfGhIjKlMnOpQrSt for the integration", {
+  includePersonalData: false, includeCredentials: true, includeFinancialData: false
+});
+assert.deepEqual(stripeKey.findings.map((finding) => finding.kind), ["secret"]);
+assert.match(stripeKey.redactedText, /\[SECRET\]/);
+
+const awsKey = inspectPrompt("AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE", {
+  includePersonalData: false, includeCredentials: true, includeFinancialData: false
+});
+assert.deepEqual(awsKey.findings.map((finding) => finding.kind), ["secret"]);
+
+const jwt = inspectPrompt("token: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U", {
+  includePersonalData: false, includeCredentials: true, includeFinancialData: false
+});
+assert.deepEqual(jwt.findings.map((finding) => finding.kind), ["secret"]);
+
+const privateKey = inspectPrompt("-----BEGIN RSA PRIVATE KEY-----\nMIIBOgIBAAJBAK...\n-----END RSA PRIVATE KEY-----", {
+  includePersonalData: false, includeCredentials: true, includeFinancialData: false
+});
+assert.deepEqual(privateKey.findings.map((finding) => finding.kind), ["privateKey"]);
+assert.match(privateKey.redactedText, /\[PRIVATE KEY\]/);
+
+// SSNs are filtered against the reserved area/group/serial ranges so ordinary
+// dash-grouped numbers (invoice codes, etc.) of the same shape aren't flagged.
+const validSsn = inspectPrompt("SSN: 219-09-9999", {
+  includePersonalData: true, includeCredentials: false, includeFinancialData: false
+});
+assert.deepEqual(validSsn.findings.map((finding) => finding.kind), ["ssn"]);
+
+const invalidSsn = inspectPrompt("Invoice ref: 000-12-3456", {
+  includePersonalData: true, includeCredentials: false, includeFinancialData: false
+});
+assert.deepEqual(invalidSsn.findings, []);
+
+const cryptoWallet = inspectPrompt("Send funds to 0x71C7656EC7ab88b098defB751B7401B5f6d8976a", {
+  includePersonalData: false, includeCredentials: false, includeFinancialData: true
+});
+assert.deepEqual(cryptoWallet.findings.map((finding) => finding.kind), ["crypto"]);
+
 console.log("PromptShield scanner tests passed.");
