@@ -106,6 +106,7 @@ function installDialog(): {
   confirmPassword: HTMLInputElement; confirmPasswordField: HTMLLabelElement;
   message: HTMLElement; switcher: HTMLButtonElement; legal: HTMLElement;
   resendRow: HTMLElement; resend: HTMLButtonElement; forgot: HTMLButtonElement;
+  rememberRow: HTMLElement; remember: HTMLInputElement;
 } {
   const backdrop = document.createElement("div");
   backdrop.className = "ps-auth-backdrop";
@@ -126,6 +127,7 @@ function installDialog(): {
     <label class="ps-auth-field" id="ps-auth-confirm-password-field">Confirm password
       <div class="ps-auth-pw-wrap"><input id="ps-auth-confirm-password" name="confirm-password" type="password" autocomplete="new-password" minlength="12"><button type="button" class="ps-auth-toggle-pw" data-for="ps-auth-confirm-password">Show</button></div>
     </label>
+    <label class="ps-auth-remember" id="ps-auth-remember-row" hidden><input type="checkbox" id="ps-auth-remember" checked> Remember me on this device</label>
     <button class="ps-auth-submit" type="submit">Create account</button></form>
     <p class="ps-auth-message" role="status"></p><p class="ps-auth-switch"><button class="ps-auth-link" type="button">Already have an account? Sign in</button></p>
     <p class="ps-auth-switch" id="ps-auth-resend-row" hidden><button class="ps-auth-link" type="button" id="ps-auth-resend">Resend confirmation email</button></p>
@@ -141,7 +143,8 @@ function installDialog(): {
     message: backdrop.querySelector(".ps-auth-message")!, switcher: backdrop.querySelector(".ps-auth-link")!,
     legal: backdrop.querySelector("#ps-auth-legal")!,
     resendRow: backdrop.querySelector("#ps-auth-resend-row")!, resend: backdrop.querySelector("#ps-auth-resend")!,
-    forgot: backdrop.querySelector("#ps-auth-forgot")!
+    forgot: backdrop.querySelector("#ps-auth-forgot")!,
+    rememberRow: backdrop.querySelector("#ps-auth-remember-row")!, remember: backdrop.querySelector("#ps-auth-remember")!
   };
 }
 
@@ -220,7 +223,9 @@ async function boot(): Promise<void> {
     dialog.passwordField.hidden = recovery; dialog.password.required = !recovery; dialog.password.autocomplete = signup ? "new-password" : "current-password";
     dialog.confirmPasswordField.hidden = !signup; dialog.confirmPassword.required = signup; dialog.confirmPassword.value = "";
     dialog.legal.hidden = !signup;
-    dialog.resendRow.hidden = mode !== "signin";
+    dialog.rememberRow.hidden = mode !== "signin";
+    dialog.resendRow.hidden = !signup;
+    if (signup) resendCooldownTicker();
     dialog.forgot.hidden = mode !== "signin";
     dialog.submit.textContent = signup ? "Create account" : recovery ? "Send reset link" : "Sign in";
     dialog.switcher.textContent = signup ? "Already have an account? Sign in" : recovery ? "Back to sign in" : "New here? Create an account";
@@ -289,8 +294,10 @@ async function boot(): Promise<void> {
   } else if (!desktop && location.hash.includes("error")) {
     const hashParams = new URLSearchParams(location.hash.slice(1));
     history.replaceState(null, "", location.pathname + location.search);
-    setMode("signin");
-    setMessage(hashParams.get("error_description")?.replace(/\+/g, " ") || "That link is invalid or has expired. Please sign in, or create a new account if you haven't confirmed one yet.", true);
+    // Signup mode, not signin: this is almost always an expired confirmation
+    // link, and resend now lives on the signup screen, not the login one.
+    setMode("signup");
+    setMessage(hashParams.get("error_description")?.replace(/\+/g, " ") || "That link is invalid or has expired. Enter your email below and resend a confirmation, or sign in if you're already confirmed.", true);
     show();
   }
 
@@ -386,11 +393,34 @@ async function boot(): Promise<void> {
     input.type = showing ? "password" : "text";
     toggle.textContent = showing ? "Show" : "Hide";
   });
+  // One free manual resend right after the automatic signup email, then a
+  // 600s cooldown per email before another is allowed -- tracked client-side
+  // (the server also rate-limits independently as a backstop).
+  const resendCooldownKey = "promptshield.resend-cooldown.v1";
+  const resendCooldownSeconds = 600;
+  const readResendCooldown = (): Record<string, number> => {
+    try { return JSON.parse(localStorage.getItem(resendCooldownKey) ?? "{}") as Record<string, number>; } catch { return {}; }
+  };
+  const resendCooldownTicker = (): void => {
+    const email = dialog.email.value.trim().toLowerCase();
+    const availableAt = email ? readResendCooldown()[email] ?? 0 : 0;
+    const remaining = Math.ceil((availableAt - Date.now()) / 1000);
+    if (remaining > 0) {
+      dialog.resend.disabled = true;
+      dialog.resend.textContent = `Resend available in ${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, "0")}`;
+      window.setTimeout(resendCooldownTicker, 1000);
+    } else {
+      dialog.resend.disabled = false;
+      dialog.resend.textContent = "Resend confirmation email";
+    }
+  };
   dialog.resend.addEventListener("click", async () => {
     const email = dialog.email.value.trim();
     if (!email) { setMessage("Enter your email address first.", true); dialog.email.focus(); return; }
+    const cooldowns = readResendCooldown();
+    const key = email.toLowerCase();
+    if ((cooldowns[key] ?? 0) > Date.now()) { resendCooldownTicker(); return; }
     dialog.resend.disabled = true;
-    const originalLabel = dialog.resend.textContent;
     dialog.resend.textContent = "Sending…";
     try {
       await apiRequest("/api/auth/signup", { email, resend: true, emailRedirectTo: authRedirect() });
@@ -398,8 +428,9 @@ async function boot(): Promise<void> {
     } catch {
       setMessage("We could not resend that email. Please try again shortly.", true);
     } finally {
-      dialog.resend.disabled = false;
-      dialog.resend.textContent = originalLabel;
+      cooldowns[key] = Date.now() + resendCooldownSeconds * 1000;
+      localStorage.setItem(resendCooldownKey, JSON.stringify(cooldowns));
+      resendCooldownTicker();
     }
   });
   dialog.form.addEventListener("submit", async (event) => {
@@ -414,14 +445,14 @@ async function boot(): Promise<void> {
           email: dialog.email.value.trim(), password: dialog.password.value, emailRedirectTo: authRedirect(),
           firstName: dialog.firstName.value.trim(), lastName: dialog.lastName.value.trim(), dateOfBirth: dialog.dateOfBirth.value
         });
-        // setMode() resets the status message, so it must run before the
-        // "check your email" message is set -- not after, or the message is
-        // wiped the instant it appears and the user never sees it.
-        setMode("signin");
+        // Stays in signup mode (not switched to signin) so the resend
+        // option -- which only makes sense right after registering -- is
+        // right there instead of requiring a trip to the login screen.
         setMessage("Account created. Check your email for a confirmation link, then sign in here.");
+        resendCooldownTicker();
       } else if (mode === "signin") {
         dialog.submit.textContent = "Signing in…";
-        const payload = await apiRequest("/api/auth/signin", { email: dialog.email.value.trim(), password: dialog.password.value }) as
+        const payload = await apiRequest("/api/auth/signin", { email: dialog.email.value.trim(), password: dialog.password.value, remember: dialog.remember.checked }) as
           { email?: string; access_token?: string; refresh_token?: string; expires_in?: number };
         const email = payload.email ?? dialog.email.value.trim();
         if (desktop && payload.access_token && payload.refresh_token) {

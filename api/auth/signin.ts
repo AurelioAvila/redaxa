@@ -16,9 +16,10 @@ export default async function handler(request: RequestLike, response: ResponseLi
   if (request.method === "OPTIONS") { response.status(204).end(); return; }
   if (request.method !== "POST") { response.setHeader("Allow", "POST"); response.status(405).end(); return; }
   try {
-    const body = (request.body ?? {}) as { email?: unknown; password?: unknown };
+    const body = (request.body ?? {}) as { email?: unknown; password?: unknown; remember?: unknown };
     const email = typeof body.email === "string" ? body.email.trim() : "";
     const password = typeof body.password === "string" ? body.password : "";
+    const remember = body.remember !== false;
     if (!email || !password) { response.status(400).json({ error: "Enter your email and password." }); return; }
     const ip = clientIp(request.headers);
     if (rateLimited(`signin:ip:${ip}`, 20, 5 * 60_000) || rateLimited(`signin:email:${email.toLowerCase()}`, 8, 5 * 60_000)) {
@@ -37,7 +38,7 @@ export default async function handler(request: RequestLike, response: ResponseLi
       response.status(upstream.status || 401).json({ error: payload.msg ?? payload.error_description ?? "Incorrect email or password." });
       return;
     }
-    setSessionCookies(response, payload.access_token, payload.refresh_token, payload.expires_in ?? 3600);
+    setSessionCookies(response, payload.access_token, payload.refresh_token, payload.expires_in ?? 3600, remember);
     // Cookies drive the web dashboard; the desktop app has no cookie jar of its
     // own, so it reads the tokens from the body instead and holds them itself.
     response.status(200).json({

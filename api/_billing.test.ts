@@ -38,11 +38,21 @@ assert.deepEqual(billing.parseCookies(["ps_at=one", "ps_rt=two"]), { ps_at: "one
   const response = mockResponse();
   billing.setSessionCookies(response, "access-token", "refresh-token", 3600);
   const cookies = response.headers["Set-Cookie"] as string[];
-  assert.equal(cookies.length, 2);
+  assert.equal(cookies.length, 3);
   assert.match(cookies[0], /^ps_at=access-token;.*HttpOnly/);
   assert.match(cookies[0], /SameSite=Lax/);
   assert.match(cookies[0], /Max-Age=3600/);
   assert.match(cookies[1], /^ps_rt=refresh-token;.*HttpOnly/);
+  assert.match(cookies[2], /^ps_rem=1;.*HttpOnly/);
+}
+
+// setSessionCookies with remember=false issues session cookies (no Max-Age) instead
+{
+  const response = mockResponse();
+  billing.setSessionCookies(response, "access-token", "refresh-token", 3600, false);
+  const cookies = response.headers["Set-Cookie"] as string[];
+  assert.equal(cookies.length, 3);
+  for (const cookie of cookies) assert.ok(!cookie.includes("Max-Age"), `expected no Max-Age in: ${cookie}`);
 }
 
 // clearSessionCookies expires both cookies immediately

@@ -1,4 +1,4 @@
-import { ACCESS_COOKIE, REFRESH_COOKIE, clearSessionCookies, corsHeaders, parseCookies, refreshSession, setSessionCookies, supabaseAuthUser } from "../_billing.js";
+import { ACCESS_COOKIE, REFRESH_COOKIE, REMEMBER_COOKIE, clearSessionCookies, corsHeaders, parseCookies, refreshSession, setSessionCookies, supabaseAuthUser } from "../_billing.js";
 
 type RequestLike = { method?: string; headers?: Record<string, string | string[] | undefined> };
 type ResponseLike = { setHeader(name: string, value: string | string[]): void; status(code: number): ResponseLike; json(value: unknown): void; end(): void };
@@ -61,7 +61,7 @@ export default async function handler(request: RequestLike, response: ResponseLi
     if (refreshed) {
       const user = await supabaseAuthUser(refreshed.access_token);
       if (user) {
-        setSessionCookies(response, refreshed.access_token, refreshed.refresh_token, refreshed.expires_in);
+        setSessionCookies(response, refreshed.access_token, refreshed.refresh_token, refreshed.expires_in, cookies[REMEMBER_COOKIE] === "1");
         response.status(200).json({ email: user.email });
         return;
       }

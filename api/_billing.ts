@@ -46,6 +46,13 @@ function serviceKey(): string { return required("SUPABASE_SERVICE_ROLE_KEY"); }
 // httpOnly cookies by the /api/auth/* endpoints so an XSS bug cannot exfiltrate a session.
 export const ACCESS_COOKIE = "ps_at";
 export const REFRESH_COOKIE = "ps_rt";
+// Marker cookie recording whether the session should persist across
+// browser restarts, given the same Max-Age treatment as the refresh
+// cookie itself. Without this, a silent token refresh (which happens on
+// almost every request once the short-lived access token expires) would
+// have no way to know the original "Remember me" choice and would always
+// re-issue a 30-day persistent cookie, silently overriding "don't remember".
+export const REMEMBER_COOKIE = "ps_rem";
 
 export function parseCookies(header: string | string[] | undefined): Record<string, string> {
   const value = Array.isArray(header) ? header.join("; ") : header;
@@ -67,18 +74,24 @@ function cookieAttributes(maxAgeSeconds: number | null): string {
   return `Path=/; HttpOnly; SameSite=Lax${secure}${age}`;
 }
 
-export function setSessionCookies(response: { setHeader(name: string, value: string | string[]): void; getHeader?(name: string): unknown }, accessToken: string, refreshToken: string, expiresIn: number): void {
+// remember=false issues session cookies (no Max-Age -- gone when the
+// browser closes) instead of the normal 30-day persistent cookie, for
+// "Remember me" left unchecked at sign-in. The access cookie is always
+// short-lived either way since requireUser() transparently refreshes it.
+export function setSessionCookies(response: { setHeader(name: string, value: string | string[]): void; getHeader?(name: string): unknown }, accessToken: string, refreshToken: string, expiresIn: number, remember = true): void {
   const refreshMaxAge = 60 * 60 * 24 * 30;
   response.setHeader("Set-Cookie", [
-    `${ACCESS_COOKIE}=${encodeURIComponent(accessToken)}; ${cookieAttributes(expiresIn)}`,
-    `${REFRESH_COOKIE}=${encodeURIComponent(refreshToken)}; ${cookieAttributes(refreshMaxAge)}`
+    `${ACCESS_COOKIE}=${encodeURIComponent(accessToken)}; ${cookieAttributes(remember ? expiresIn : 0)}`,
+    `${REFRESH_COOKIE}=${encodeURIComponent(refreshToken)}; ${cookieAttributes(remember ? refreshMaxAge : 0)}`,
+    `${REMEMBER_COOKIE}=1; ${cookieAttributes(remember ? refreshMaxAge : 0)}`
   ]);
 }
 
 export function clearSessionCookies(response: { setHeader(name: string, value: string | string[]): void }): void {
   response.setHeader("Set-Cookie", [
     `${ACCESS_COOKIE}=; ${cookieAttributes(null)}`,
-    `${REFRESH_COOKIE}=; ${cookieAttributes(null)}`
+    `${REFRESH_COOKIE}=; ${cookieAttributes(null)}`,
+    `${REMEMBER_COOKIE}=; ${cookieAttributes(null)}`
   ]);
 }
 
@@ -171,7 +184,7 @@ export async function requireUser(
     if (refreshed) {
       const user = await supabaseAuthUser(refreshed.access_token);
       if (user) {
-        setSessionCookies(response, refreshed.access_token, refreshed.refresh_token, refreshed.expires_in);
+        setSessionCookies(response, refreshed.access_token, refreshed.refresh_token, refreshed.expires_in, cookies[REMEMBER_COOKIE] === "1");
         return user;
       }
     }
