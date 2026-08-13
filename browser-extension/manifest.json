@@ -37,7 +37,7 @@
       ],
       "js": ["content.js"],
       "css": ["content.css"],
-      "run_at": "document_start"
+      "run_at": "document_idle"
     }
   ]
 }
