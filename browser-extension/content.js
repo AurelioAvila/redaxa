@@ -114,17 +114,29 @@ function escapeHtml(value) {
 
 // The manual "Check" button only helps if the user remembers to press it --
 // the actual differentiator is catching the moment they hit send. Every one
-// of the supported sites sends on a plain Enter keypress (no Shift), so a
-// capture-phase keydown listener on the composer is the one interception
-// point that works identically across ChatGPT/Claude/Gemini/Copilot/
-// Perplexity, without needing a per-site "Send button" selector that breaks
-// on redesigns. Button-click sends aren't intercepted (lower-value, higher
-// breakage risk); Enter covers the overwhelming majority of real sends.
+// of the supported sites sends on a plain Enter keypress (no Shift).
+//
+// First cut of this attached the listener to the composer element itself
+// once the page had settled ("document_idle"). That shipped a real bug: on
+// a real ChatGPT send, the message went out immediately and the "before you
+// send" dialog only appeared afterwards. Root cause is capture-phase
+// ordering -- capture listeners run outside-in (window, then document, then
+// down to the target), so ChatGPT's own document-level capture listener
+// (already registered by the time our "document_idle" script ran) fired and
+// submitted the message before our element-level listener ever got a turn.
+// stopImmediatePropagation() on our event was too late to matter.
+//
+// Fix: run at "document_start" (see manifest.json) and attach on `window`
+// itself -- the outermost point in the capture chain -- before the page's
+// own scripts have had a chance to execute and register anything. This
+// guarantees we see the Enter keydown first, so preventDefault/
+// stopImmediatePropagation actually stop the site's own submit handler
+// from ever running.
 let bypassNextEnter = false;
 
-function resendEnter(composer) {
+function resendEnter(target) {
   bypassNextEnter = true;
-  composer.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", code: "Enter", bubbles: true, cancelable: true }));
+  target.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", code: "Enter", bubbles: true, cancelable: true }));
 }
 
 function showInterceptDialog(composer, result, onProceed) {
@@ -153,37 +165,37 @@ function showInterceptDialog(composer, result, onProceed) {
   overlay.querySelector("#ps-int-edit")?.addEventListener("click", () => { overlay.remove(); composer.focus(); });
 }
 
-function attachSendInterception(composer) {
-  if (!composer || composer.dataset.promptshieldIntercepted) return;
-  composer.dataset.promptshieldIntercepted = "1";
-  composer.addEventListener("keydown", (event) => {
-    if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
-    if (bypassNextEnter) { bypassNextEnter = false; return; }
-    const text = composerText(composer).trim();
-    if (!text) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    (async () => {
-      // Fails open on purpose: if sign-in/subscription/network checks don't
-      // come back cleanly, the user's message still sends. A scanning outage
-      // must never be able to silently block someone from using ChatGPT/
-      // Claude/etc. -- that would turn a privacy helper into an outage.
-      try {
-        const status = await send({ type: "STATUS" });
-        if (!status.signedIn || !status.active) { resendEnter(composer); return; }
-        const result = await send({
-          type: "SCAN", text,
-          options: { includePersonalData: true, includeCredentials: true, includeFinancialData: true }
-        });
-        if (!result.findings.length) { resendEnter(composer); return; }
-        showInterceptDialog(composer, result, () => resendEnter(composer));
-      } catch { resendEnter(composer); }
-    })();
-  }, true);
-}
+window.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
+  if (bypassNextEnter) { bypassNextEnter = false; return; }
+  // Only act when Enter was pressed inside the actual prompt composer, not
+  // some unrelated field (search box, rename dialog, etc.) on the same page.
+  const composer = findComposer();
+  if (!composer || (event.target !== composer && !composer.contains(event.target))) return;
+  const text = composerText(composer).trim();
+  if (!text) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  (async () => {
+    // Fails open on purpose: if sign-in/subscription/network checks don't
+    // come back cleanly, the user's message still sends. A scanning outage
+    // must never be able to silently block someone from using ChatGPT/
+    // Claude/etc. -- that would turn a privacy helper into an outage.
+    try {
+      const status = await send({ type: "STATUS" });
+      if (!status.signedIn || !status.active) { resendEnter(composer); return; }
+      const result = await send({
+        type: "SCAN", text,
+        options: { includePersonalData: true, includeCredentials: true, includeFinancialData: true }
+      });
+      if (!result.findings.length) { resendEnter(composer); return; }
+      showInterceptDialog(composer, result, () => resendEnter(composer));
+    } catch { resendEnter(composer); }
+  })();
+}, true);
 
-if (!document.getElementById("promptshield-check-btn")) buildUI();
-attachSendInterception(findComposer());
-// Composers on SPA chat sites are frequently replaced (route change, new
-// chat), so keep re-attaching to whatever element is current.
-new MutationObserver(() => attachSendInterception(findComposer())).observe(document.body, { childList: true, subtree: true });
+function initUI() {
+  if (!document.getElementById("promptshield-check-btn")) buildUI();
+}
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initUI);
+else initUI();
