@@ -30,7 +30,10 @@
       "matches": [
         "https://chat.openai.com/*",
         "https://chatgpt.com/*",
-        "https://claude.ai/*"
+        "https://claude.ai/*",
+        "https://gemini.google.com/*",
+        "https://copilot.microsoft.com/*",
+        "https://www.perplexity.ai/*"
       ],
       "js": ["content.js"],
       "css": ["content.css"],

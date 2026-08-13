@@ -6,7 +6,11 @@ function findComposer() {
   const known = [
     "#prompt-textarea",
     "div.ProseMirror[contenteditable='true']",
-    "textarea[data-testid='chat-input']"
+    "textarea[data-testid='chat-input']",
+    "rich-textarea .ql-editor[contenteditable='true']",
+    "div.ql-editor[contenteditable='true']",
+    "#userInput",
+    "textarea#composer-background"
   ];
   for (const selector of known) {
     const el = document.querySelector(selector);
