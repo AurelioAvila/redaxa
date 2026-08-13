@@ -13,7 +13,6 @@ type DesktopSession = { email: string; access_token: string; refresh_token: stri
 // doesn't reopen the XSS-session-theft risk the cookie migration closed), and it
 // only applies to the desktop build.
 const webAppUrl = "https://promptshield-beta.vercel.app";
-const desktopSessionKey = "promptshield.desktop.session.v1";
 const apiBase = isTauri() ? webAppUrl : "";
 
 let config: AuthConfig | null = null;
@@ -34,27 +33,64 @@ declare global {
   }
 }
 
-function readDesktopSession(): DesktopSession | null {
-  try {
-    const value: unknown = JSON.parse(localStorage.getItem(desktopSessionKey) ?? "null");
-    return value && typeof value === "object" ? value as DesktopSession : null;
-  } catch { return null; }
+// Persisted via the OS credential store (Windows Credential Manager, through a
+// Rust `keyring` command), not the webview's localStorage: localStorage is a
+// plain, unencrypted file on disk, readable by any other local process or user
+// account, which would let a stolen refresh token be lifted without ever
+// touching the running app. `secureStore*` below are the only functions that
+// touch this value; everything else in the file goes through them.
+let sessionCache: DesktopSession | null | undefined;
+
+async function secureStoreGet(): Promise<string | null> {
+  const invoke = (window as unknown as { __TAURI_INTERNALS__?: { invoke: (cmd: string, args?: Record<string, unknown>) => Promise<unknown> } }).__TAURI_INTERNALS__?.invoke;
+  if (!invoke) return null;
+  const value = await invoke("secure_store_get").catch(() => null);
+  return typeof value === "string" ? value : null;
 }
-function saveDesktopSession(session: DesktopSession): void { localStorage.setItem(desktopSessionKey, JSON.stringify(session)); }
-function clearDesktopSession(): void { localStorage.removeItem(desktopSessionKey); }
+async function secureStoreSet(value: string): Promise<void> {
+  const invoke = (window as unknown as { __TAURI_INTERNALS__?: { invoke: (cmd: string, args?: Record<string, unknown>) => Promise<unknown> } }).__TAURI_INTERNALS__?.invoke;
+  await invoke?.("secure_store_set", { value }).catch(() => undefined);
+}
+async function secureStoreDelete(): Promise<void> {
+  const invoke = (window as unknown as { __TAURI_INTERNALS__?: { invoke: (cmd: string, args?: Record<string, unknown>) => Promise<unknown> } }).__TAURI_INTERNALS__?.invoke;
+  await invoke?.("secure_store_delete").catch(() => undefined);
+}
+
+async function readDesktopSession(): Promise<DesktopSession | null> {
+  if (sessionCache !== undefined) return sessionCache;
+  try {
+    const raw = await secureStoreGet();
+    const value: unknown = JSON.parse(raw ?? "null");
+    sessionCache = value && typeof value === "object" ? value as DesktopSession : null;
+  } catch { sessionCache = null; }
+  return sessionCache;
+}
+async function saveDesktopSession(session: DesktopSession): Promise<void> {
+  sessionCache = session;
+  await secureStoreSet(JSON.stringify(session));
+}
+async function clearDesktopSession(): Promise<void> {
+  sessionCache = null;
+  await secureStoreDelete();
+}
+// One synchronous read of the in-memory cache, for call sites (like the
+// sign-out button handler) that need the current session's fields without
+// awaiting -- readDesktopSession()/loadSession() populate the cache during
+// boot(), so by the time a user can click anything it is already warm.
+function cachedDesktopSession(): DesktopSession | null { return sessionCache ?? null; }
 
 // Returns a Bearer token good for at least 30 more seconds, transparently
 // refreshing (and re-persisting) it first if the stored one is stale or absent.
 async function desktopAccessToken(): Promise<string | null> {
-  const session = readDesktopSession();
+  const session = await readDesktopSession();
   if (!session) return null;
   if (session.expires_at > Date.now() + 30_000) return session.access_token;
   const response = await fetch(`${apiBase}/api/auth/session`, {
     headers: { Authorization: `Bearer ${session.access_token}`, "X-Refresh-Token": session.refresh_token }
   });
   const payload = await response.json().catch(() => ({})) as { email?: string | null; access_token?: string; refresh_token?: string; expires_in?: number };
-  if (!payload.email || !payload.access_token || !payload.refresh_token) { clearDesktopSession(); return null; }
-  saveDesktopSession({ email: payload.email, access_token: payload.access_token, refresh_token: payload.refresh_token, expires_at: Date.now() + (payload.expires_in ?? 3600) * 1000 });
+  if (!payload.email || !payload.access_token || !payload.refresh_token) { await clearDesktopSession(); return null; }
+  await saveDesktopSession({ email: payload.email, access_token: payload.access_token, refresh_token: payload.refresh_token, expires_at: Date.now() + (payload.expires_in ?? 3600) * 1000 });
   return payload.access_token;
 }
 
@@ -169,8 +205,8 @@ async function loadSession(): Promise<string | null> {
     // wiring up the login dialog's own event listeners.
     try {
       const token = await desktopAccessToken();
-      return token ? readDesktopSession()?.email ?? null : null;
-    } catch { return readDesktopSession()?.email ?? null; }
+      return token ? (await readDesktopSession())?.email ?? null : null;
+    } catch { return (await readDesktopSession())?.email ?? null; }
   }
   try {
     const response = await fetch(`${apiBase}/api/auth/session`, { cache: "no-store" });
@@ -356,7 +392,7 @@ async function boot(): Promise<void> {
       if (!payload.url) throw new Error("Checkout could not be opened.");
       if (desktop) void openInSystemBrowser(payload.url); else location.assign(payload.url);
     } catch (error) {
-      if (error instanceof Error && error.message === "UNAUTHORIZED") { renderAccount(null); clearDesktopSession(); setMode("signin"); setMessage("Please sign in again to continue."); show(); }
+      if (error instanceof Error && error.message === "UNAUTHORIZED") { renderAccount(null); void clearDesktopSession(); setMode("signin"); setMessage("Please sign in again to continue."); show(); }
       else { setMessage(error instanceof Error ? error.message : "Checkout could not be opened.", true); show(); }
     } finally {
       button.removeAttribute("aria-busy");
@@ -371,7 +407,7 @@ async function boot(): Promise<void> {
       if (!payload.url) throw new Error("Billing management is unavailable.");
       if (desktop) void openInSystemBrowser(payload.url); else location.assign(payload.url);
     } catch (error) {
-      if (error instanceof Error && error.message === "UNAUTHORIZED") { renderAccount(null); clearDesktopSession(); setMode("signin"); setMessage("Please sign in again to continue."); show(); }
+      if (error instanceof Error && error.message === "UNAUTHORIZED") { renderAccount(null); void clearDesktopSession(); setMode("signin"); setMessage("Please sign in again to continue."); show(); }
       else { setMessage(error instanceof Error ? error.message : "Billing management is unavailable.", true); show(); }
     }
   });
@@ -380,8 +416,8 @@ async function boot(): Promise<void> {
   controls.signout.addEventListener("click", () => {
     accountActive = false;
     if (desktop) {
-      const session = readDesktopSession();
-      clearDesktopSession();
+      const session = cachedDesktopSession();
+      void clearDesktopSession();
       renderAccount(null);
       if (session) void fetch(`${apiBase}/api/auth/signout`, { method: "POST", headers: { Authorization: `Bearer ${session.access_token}` } }).catch(() => undefined);
     } else {
@@ -462,7 +498,7 @@ async function boot(): Promise<void> {
           { email?: string; access_token?: string; refresh_token?: string; expires_in?: number };
         const email = payload.email ?? dialog.email.value.trim();
         if (desktop && payload.access_token && payload.refresh_token) {
-          saveDesktopSession({ email, access_token: payload.access_token, refresh_token: payload.refresh_token, expires_at: Date.now() + (payload.expires_in ?? 3600) * 1000 });
+          await saveDesktopSession({ email, access_token: payload.access_token, refresh_token: payload.refresh_token, expires_at: Date.now() + (payload.expires_in ?? 3600) * 1000 });
         }
         renderAccount(email); await refreshEntitlement();
         if (localStorage.getItem(pendingInviteKey)) { await acceptPendingInvite(); }

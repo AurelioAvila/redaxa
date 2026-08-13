@@ -1,4 +1,4 @@
-import { corsHeaders, setSessionCookies, supabaseAuthUser } from "../_billing.js";
+import { corsHeaders, refreshSession, setSessionCookies, supabaseAuthUser } from "../_billing.js";
 
 type RequestLike = { method?: string; body?: unknown; headers?: Record<string, string | string[] | undefined> };
 type ResponseLike = { setHeader(name: string, value: string | string[]): void; status(code: number): ResponseLike; json(value: unknown): void; end(): void };
@@ -21,7 +21,15 @@ export default async function handler(request: RequestLike, response: ResponseLi
     if (!accessToken || !refreshToken) { response.status(400).json({ error: "Missing session tokens." }); return; }
     const user = await supabaseAuthUser(accessToken);
     if (!user) { response.status(401).json({ error: "UNAUTHORIZED" }); return; }
-    setSessionCookies(response, accessToken, refreshToken, typeof body.expires_in === "number" ? body.expires_in : 3600);
+    // access_token and refresh_token arrive as two independent client-supplied
+    // values -- confirm the refresh_token actually belongs to this same user
+    // before trusting it, rather than pairing two unrelated tokens into cookies.
+    const refreshed = await refreshSession(refreshToken);
+    if (!refreshed || !refreshed.user?.email || refreshed.user.email !== user.email) {
+      response.status(401).json({ error: "UNAUTHORIZED" });
+      return;
+    }
+    setSessionCookies(response, refreshed.access_token, refreshed.refresh_token, refreshed.expires_in ?? 3600);
     response.status(200).json({ email: user.email });
   } catch {
     response.status(500).json({ error: "We could not complete sign-in." });

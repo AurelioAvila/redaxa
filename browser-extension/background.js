@@ -93,7 +93,12 @@ async function handleMessage(message) {
   }
 }
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  // No externally_connectable is declared, so only this extension's own
+  // content scripts/popup can reach onMessage -- but check the sender id
+  // explicitly anyway, so this stays safe if externally_connectable is
+  // ever added later for an unrelated reason.
+  if (sender.id !== chrome.runtime.id) return false;
   handleMessage(message)
     .then((result) => sendResponse({ ok: true, result }))
     .catch((error) => sendResponse({ ok: false, error: error instanceof Error ? error.message : "Unexpected error." }));
