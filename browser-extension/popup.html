@@ -1,0 +1,47 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>PromptShield</title>
+    <style>
+      :root { --ink:#090a08; --paper:#f4f6f1; --accent:#b9ff00; --muted:#9da49a; --line:#2b3128; }
+      * { box-sizing:border-box; }
+      body { margin:0; width:280px; background:var(--ink); color:var(--paper); font-family:system-ui,-apple-system,"Segoe UI",sans-serif; padding:18px; }
+      h1 { font-size:15px; margin:0 0 4px; letter-spacing:-.02em; }
+      p { color:var(--muted); font-size:12px; line-height:1.5; margin:0 0 14px; }
+      label { display:block; font-size:12px; font-weight:600; margin:10px 0 5px; }
+      input { width:100%; border:1px solid var(--line); border-radius:8px; background:#0e100d; color:var(--paper); padding:9px 10px; font:inherit; font-size:13px; }
+      button { width:100%; border:0; border-radius:8px; padding:10px; font-weight:700; font-size:13px; cursor:pointer; margin-top:12px; }
+      .primary { background:var(--accent); color:#0a0c08; }
+      .secondary { background:transparent; border:1px solid var(--line); color:var(--paper); }
+      .msg { font-size:12px; margin-top:10px; min-height:16px; color:#ff9d8a; }
+      .status { display:none; }
+      .status.show { display:block; }
+      .status .row { display:flex; justify-content:space-between; align-items:center; font-size:13px; margin-bottom:6px; }
+      .pill { display:inline-flex; align-items:center; gap:6px; padding:5px 9px; border-radius:999px; background:#12180e; border:1px solid #3d4b34; font-size:11px; }
+      .pill i { width:6px; height:6px; border-radius:50%; background:var(--accent); }
+      .form { display:none; }
+      .form.show { display:block; }
+    </style>
+  </head>
+  <body>
+    <h1>PromptShield</h1>
+    <p>Scans your ChatGPT/Claude prompts for secrets and personal data before you send them.</p>
+
+    <div class="status" id="status">
+      <div class="row"><span id="status-email"></span><span class="pill"><i></i>Active</span></div>
+      <button class="secondary" id="sign-out">Sign out</button>
+    </div>
+
+    <form class="form" id="form">
+      <label for="email">Email</label>
+      <input id="email" type="email" autocomplete="username" required />
+      <label for="password">Password</label>
+      <input id="password" type="password" autocomplete="current-password" required />
+      <button class="primary" type="submit">Sign in</button>
+      <p class="msg" id="msg"></p>
+    </form>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

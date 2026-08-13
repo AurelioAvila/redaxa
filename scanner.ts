@@ -1,4 +1,4 @@
-export type FindingKind = "email" | "phone" | "secret" | "card" | "ip" | "iban" | "fiscalCode" | "credential" | "ssn" | "crypto" | "privateKey" | "custom";
+export type FindingKind = "email" | "phone" | "secret" | "card" | "ip" | "iban" | "fiscalCode" | "credential" | "ssn" | "crypto" | "privateKey" | "name" | "address" | "custom";
 
 export interface Finding {
   kind: FindingKind;
@@ -67,10 +67,28 @@ function ssnValid(raw: string): boolean {
   return true;
 }
 
+// Contextual, not just pattern-matching: a bare "John Smith" is too common to
+// safely flag on its own, but one right after a greeting is almost always
+// the actual recipient's name. The stoplist keeps generic salutations
+// ("Dear Team", "Hi there") from being misread as a name.
+const salutationStoplist = new Set(["team", "all", "everyone", "sir", "madam", "customer", "support", "there", "folks", "friend", "valued", "user", "member", "guys", "colleagues", "reader"]);
+function nameValid(raw: string): boolean {
+  return !salutationStoplist.has(raw.split(/\s/)[0].toLowerCase());
+}
+
 const rules: Rule[] = [
   { kind: "email", label: "Email address", replacement: "[EMAIL]", pattern: /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi },
   { kind: "phone", label: "Phone number", replacement: "[PHONE]", pattern: /(?<![\w.])(?:\+?\d{1,3}[ -]?)?(?:\(?\d{2,4}\)?[ -]?)?\d{3,4}[ -]\d{3,4}(?![\w.])/g, validate: phoneValid },
   { kind: "ssn", label: "Social Security Number", replacement: "[SSN]", pattern: /\b\d{3}-\d{2}-\d{4}\b/g, validate: ssnValid },
+  {
+    kind: "name", label: "Personal name", replacement: "[NAME]",
+    pattern: /(?<=\b(?:Dear|Hi|Hello|Hey)[ \t])[A-Z][a-z]+(?:[ \t][A-Z][a-z]+)?(?=[ \t]*[,:])/g,
+    validate: nameValid
+  },
+  {
+    kind: "address", label: "Street address", replacement: "[ADDRESS]",
+    pattern: /\b\d{1,5}\s[A-Z][a-zA-Z]{2,}(?:\s[A-Z][a-zA-Z]{2,})?\s(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Lane|Ln|Drive|Dr|Court|Ct|Way|Place|Pl)\.?\b/g
+  },
   {
     kind: "secret", label: "API key or token", replacement: "[SECRET]",
     pattern: /\b(?:sk-[A-Za-z0-9_-]{16,}|sk_(?:live|test)_[A-Za-z0-9]{10,}|pk_(?:live|test)_[A-Za-z0-9]{10,}|rk_live_[A-Za-z0-9]{10,}|gh[pousr]_[A-Za-z0-9_]{20,}|AIza[\w-]{20,}|AKIA[0-9A-Z]{16}|xox[baprs]-[A-Za-z0-9-]{10,}|eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}|Bearer\s+[A-Za-z0-9._-]{16,})\b/g
@@ -89,7 +107,7 @@ export function inspectPrompt(text: string, options: ScanOptions = { includePers
   let redactedText = text;
   for (const rule of rules) {
     const enabled =
-      (rule.kind === "email" || rule.kind === "phone" || rule.kind === "ip" || rule.kind === "fiscalCode" || rule.kind === "ssn") ? options.includePersonalData :
+      (rule.kind === "email" || rule.kind === "phone" || rule.kind === "ip" || rule.kind === "fiscalCode" || rule.kind === "ssn" || rule.kind === "name" || rule.kind === "address") ? options.includePersonalData :
       (rule.kind === "card" || rule.kind === "iban" || rule.kind === "crypto") ? options.includeFinancialData : options.includeCredentials;
     if (!enabled) continue;
     if (rule.validate) {

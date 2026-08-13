@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "PromptShield",
+  "short_name": "PromptShield",
+  "version": "0.1.0",
+  "description": "Catches personal data and secrets in your prompt before you send it to ChatGPT or Claude.",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://promptshield-beta.vercel.app/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "PromptShield"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://chat.openai.com/*",
+        "https://chatgpt.com/*",
+        "https://claude.ai/*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+#promptshield-check-btn {
+  position: fixed;
+  right: 22px;
+  bottom: 88px;
+  z-index: 2147483000;
+  border: 1px solid #3d4b34;
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: #0d0f0c;
+  color: #f4f6f1;
+  font: 600 13px system-ui, sans-serif;
+  cursor: pointer;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+}
+#promptshield-check-btn:hover { border-color: #b9ff00; color: #b9ff00; }
+
+#promptshield-panel {
+  position: fixed;
+  right: 22px;
+  bottom: 138px;
+  z-index: 2147483000;
+  width: 300px;
+  max-height: 60vh;
+  overflow: auto;
+  background: #0d0f0c;
+  color: #f4f6f1;
+  border: 1px solid #2b3128;
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+  display: none;
+  font: 13px/1.5 system-ui, sans-serif;
+}
+#promptshield-panel.open { display: block; }
+.ps-panel-head {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 14px; border-bottom: 1px solid #2b3128; font-weight: 700;
+}
+.ps-panel-head button { border: 0; background: transparent; color: #9da49a; font-size: 18px; cursor: pointer; }
+.ps-panel-body { padding: 12px 14px; }
+.ps-empty { color: #9da49a; margin: 0; }
+.ps-loading { color: #9da49a; margin: 0; }
+.ps-count { margin: 0 0 8px; font-weight: 700; }
+.ps-finding { padding: 8px 0; border-top: 1px solid #2b3128; }
+.ps-finding b { font-size: 12.5px; }
+.ps-use-redacted {
+  margin-top: 12px; width: 100%; border: 0; border-radius: 8px; padding: 9px;
+  background: #b9ff00; color: #0a0c08; font-weight: 700; cursor: pointer;
+}

@@ -98,4 +98,24 @@ const cryptoWallet = inspectPrompt("Send funds to 0x71C7656EC7ab88b098defB751B74
 });
 assert.deepEqual(cryptoWallet.findings.map((finding) => finding.kind), ["crypto"]);
 
+// Contextual detection: a name is only flagged right after a greeting, and
+// generic salutations ("Dear Team") must not be mistaken for a real name.
+const greetingName = inspectPrompt("Dear John Smith, please review the attached contract.", {
+  includePersonalData: true, includeCredentials: false, includeFinancialData: false
+});
+assert.deepEqual(greetingName.findings.map((finding) => finding.kind), ["name"]);
+assert.equal(greetingName.findings[0]?.value, "John Smith");
+assert.match(greetingName.redactedText, /Dear \[NAME\],/);
+
+const genericGreeting = inspectPrompt("Hi team, quick update on the roadmap.", {
+  includePersonalData: true, includeCredentials: false, includeFinancialData: false
+});
+assert.deepEqual(genericGreeting.findings, []);
+
+const streetAddress = inspectPrompt("Ship it to 221 Baker Street by Friday.", {
+  includePersonalData: true, includeCredentials: false, includeFinancialData: false
+});
+assert.deepEqual(streetAddress.findings.map((finding) => finding.kind), ["address"]);
+assert.match(streetAddress.redactedText, /\[ADDRESS\]/);
+
 console.log("PromptShield scanner tests passed.");

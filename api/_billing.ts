@@ -160,11 +160,25 @@ function allowedOrigins(): Set<string> {
   return new Set([appUrl(), "tauri://localhost", "https://tauri.localhost", "http://tauri.localhost"]);
 }
 
+// The browser extension's background service worker runs at a
+// chrome-extension://<id> origin, and the id differs between a locally
+// loaded/unpacked build and the eventual Web Store listing, so it can't be
+// pinned to one exact origin the way the desktop app's fixed schemes can.
+// Allowing the whole chrome-extension:// (and moz-extension:// for a future
+// Firefox port) scheme is still safe: every endpoint that returns anything
+// sensitive requires a valid Bearer token, which only exists in a given
+// extension's own isolated chrome.storage.local after its user explicitly
+// signs in through it -- no other extension or page can obtain one just by
+// being able to read a CORS response.
+function isExtensionOrigin(origin: string): boolean {
+  return origin.startsWith("chrome-extension://") || origin.startsWith("moz-extension://");
+}
+
 export function corsHeaders(request: { headers?: Record<string, string | string[] | undefined> }): Record<string, string> {
   const rawOrigin = request.headers?.origin;
   const origin = Array.isArray(rawOrigin) ? rawOrigin[0] : rawOrigin;
   return {
-    "Access-Control-Allow-Origin": origin && allowedOrigins().has(origin) ? origin : appUrl(),
+    "Access-Control-Allow-Origin": origin && (allowedOrigins().has(origin) || isExtensionOrigin(origin)) ? origin : appUrl(),
     "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Refresh-Token",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     Vary: "Origin"
