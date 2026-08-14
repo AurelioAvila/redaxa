@@ -1,23 +1,37 @@
 <p align="center">
-  <img src="src-tauri/icons/128x128.png" width="112" alt="PromptShield logo">
-</p>
-
-<h1 align="center">PromptShield</h1>
-
-<p align="center">
-  <strong>Catch what you're about to leak, before it leaves.</strong><br>
-  Emails, secrets, cards, IBANs, private keys — flagged and redactable before you paste into ChatGPT, Claude, Gemini, Copilot or Perplexity.
+  <img src=".github/banner.svg" alt="PromptShield — catch what you're about to leak, before it leaves">
 </p>
 
 <p align="center">
   <a href="../../releases/latest"><img src="https://img.shields.io/badge/Download-Windows%2010%2F11-0078D4?style=for-the-badge&logo=windows&logoColor=white" alt="Download for Windows"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-3DA639?style=for-the-badge" alt="MIT License"></a>
   <a href="../../releases"><img src="https://img.shields.io/github/v/release/AurelioAvila/promptshield?display_name=tag&style=for-the-badge&color=7C3AED" alt="Latest release"></a>
+  <a href="https://promptshield-beta.vercel.app"><img src="https://img.shields.io/badge/Web_app-live-b9ff00?style=for-the-badge&logoColor=0a0c08" alt="Web app"></a>
 </p>
 
-**[⬇ Download for Windows](../../releases/latest)** · [Web app](https://promptshield-beta.vercel.app) ·
-[Changelog](CHANGELOG.md) · [Privacy Policy](https://promptshield-beta.vercel.app/privacy.html) ·
-[Terms](https://promptshield-beta.vercel.app/terms.html)
+<p align="center">
+  <b><a href="../../releases/latest">⬇ Download for Windows</a></b> &nbsp;·&nbsp;
+  <a href="https://promptshield-beta.vercel.app">Web app</a> &nbsp;·&nbsp;
+  <a href="CHANGELOG.md">Changelog</a> &nbsp;·&nbsp;
+  <a href="https://promptshield-beta.vercel.app/privacy.html">Privacy Policy</a> &nbsp;·&nbsp;
+  <a href="https://promptshield-beta.vercel.app/terms.html">Terms</a>
+</p>
+
+<p align="center">
+  <sub>No install needed to try it — the web app runs the same detection engine as the desktop app and browser extension.</sub>
+</p>
+
+---
+
+## Why
+
+You're about to paste a stack trace, a config file, or a client email into
+ChatGPT. Somewhere in there is an API key, a card number, or someone's
+email address you didn't mean to send. PromptShield catches it in the
+half-second before you hit enter — not with a vague "this might be
+sensitive" guess, but with real validation: a Luhn check on card numbers, a
+mod-97 checksum on IBANs, reserved-range filtering on SSNs. Copy-pasting
+into a text box and hoping isn't a strategy. This is.
 
 ---
 
