@@ -11,6 +11,15 @@ for (const file of ["index.html", "dashboard.html", "privacy.html", "terms.html"
   cpSync(resolve(root, file), resolve(output, file));
 }
 
-cpSync(resolve(root, "dist"), resolve(output, "dist"), { recursive: true });
+// scanner.js/scanner.test.js are deliberately left out of the public bundle:
+// only dashboard.ts/auth.ts import *types* from scanner.ts (erased at compile
+// time), never the runtime module, so nothing legitimate needs it shipped as
+// a static file -- and shipping it anyway would let anyone call inspectPrompt()
+// straight from the browser console, fully bypassing the trial/subscription
+// gate that api/scan.ts enforces server-side.
+cpSync(resolve(root, "dist"), resolve(output, "dist"), {
+  recursive: true,
+  filter: (src) => !/[\\/]scanner(\.test)?\.js(\.map)?$/.test(src)
+});
 mkdirSync(resolve(output, "outputs"), { recursive: true });
 cpSync(resolve(root, "outputs", "promptshield-mark.svg"), resolve(output, "outputs", "promptshield-mark.svg"));

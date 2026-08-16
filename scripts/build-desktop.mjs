@@ -12,5 +12,11 @@ for (const file of ["dashboard.html", "auth.css", "manifest.webmanifest", "servi
 }
 // The desktop product opens the focused workspace, not the public marketing landing page.
 cpSync(resolve(root, "dashboard.html"), resolve(output, "index.html"));
-cpSync(resolve(root, "dist"), resolve(output, "dist"), { recursive: true });
+// See build-web.mjs: scanner.js is intentionally excluded so the desktop
+// webview's DevTools console can't call inspectPrompt() directly and bypass
+// the server-enforced trial/subscription check in api/scan.ts.
+cpSync(resolve(root, "dist"), resolve(output, "dist"), {
+  recursive: true,
+  filter: (src) => !/[\\/]scanner(\.test)?\.js(\.map)?$/.test(src)
+});
 cpSync(resolve(root, "outputs"), resolve(output, "outputs"), { recursive: true });
