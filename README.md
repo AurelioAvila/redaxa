@@ -58,10 +58,15 @@ excluded so invoice numbers don't trip it.
 
 ## Privacy
 
-The scan itself runs server-side (so the same detection logic works
-identically across the web app, desktop app and browser extension) — but
-the request body is used only to compute the response and is never logged,
-stored, or forwarded anywhere; see [`api/scan.ts`](api/scan.ts) and the full
+**Your prompt text is sent to PromptShield's own backend to be scanned — it
+is not processed entirely on-device.** That's a deliberate tradeoff, not a
+hidden detail: running the same detection logic server-side is what lets
+the web app, desktop app and browser extension all give identical results.
+What that scan does *not* do: your text is never sent to a third-party AI
+or classification service as part of scanning (`api/scan.ts` is regex/Luhn/
+mod-97 logic, no outbound calls), and the request body is used only to
+compute the response — never logged, stored, or forwarded anywhere; see
+[`api/scan.ts`](api/scan.ts) and the full
 [privacy policy](https://promptshield-beta.vercel.app/privacy.html). No
 analytics, no ad trackers, no selling data. The desktop app never handles
 your password directly for long — auth tokens live in Windows Credential
@@ -92,6 +97,12 @@ sensitive data will be caught — detection has irreducible false negatives,
 and you're always the one who decides what actually gets sent. Team sharing
 and cloud sync of scan history are not implemented; history stays in the
 browser's local storage only.
+
+Secret/credential detection matches known vendor prefixes (`sk-`, `AIza`,
+`AKIA`, `ghp_`/`gho_`, `xox*-`, JWTs, `Bearer` tokens) — a generic
+high-entropy API key without a recognizable prefix won't be flagged. If
+your workflow involves custom or in-house token formats, add them as a
+custom term rather than relying on the built-in credential patterns.
 
 ## Architecture notes
 
