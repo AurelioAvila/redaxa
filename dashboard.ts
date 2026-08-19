@@ -356,6 +356,46 @@ export function mountDashboard(): void {
   const resultsScroll = required<HTMLElement>("#results-scroll");
   const resultsFoot = required<HTMLElement>("#results-foot");
   const workspace = required<HTMLElement>(".workspace");
+
+  // #pwa-install and #inspect-clipboard float at the viewport's bottom-right
+  // corner. The results panel is capped to calc(100vh - 48px) and can be that
+  // tall in BOTH its pre-scan preview state and its live-result state, on
+  // perfectly ordinary viewport heights -- a fixed "hide while state X" rule
+  // guessed wrong in both directions when checked against real content
+  // (verified: the preview demo's own bottom chip row collided with the pill
+  // at 1280x800 with nothing scrolled). Measuring the actual overlap is the
+  // only version of this that doesn't need re-guessing every time the layout
+  // changes.
+  // Debounced with setTimeout rather than requestAnimationFrame: rAF only
+  // fires on a rendered/visible tab, and this must still run (e.g. right
+  // after a scan while the tab could be backgrounded) rather than silently
+  // never correct the pill's visibility.
+  let cornerCheckTimer: number | null = null;
+  const measureCornerOverlap = (): void => {
+    const cardRect = resultsCard.getBoundingClientRect();
+    const vw = window.innerWidth, vh = window.innerHeight;
+    // Mirrors the pills' own fixed footprint (right:24/bottom:24, ~140x96
+    // combined) without needing to read two separate elements that may not
+    // exist yet (#inspect-clipboard is desktop-app-only).
+    const cornerLeft = vw - 164, cornerTop = vh - 120;
+    const overlaps = cardRect.right > cornerLeft && cardRect.bottom > cornerTop
+      && cardRect.left < vw && cardRect.top < vh;
+    document.body.classList.toggle("corner-blocked", overlaps);
+  };
+  const avoidCornerOverlap = (): void => {
+    if (cornerCheckTimer !== null) return;
+    cornerCheckTimer = window.setTimeout(() => { cornerCheckTimer = null; measureCornerOverlap(); }, 16);
+  };
+  window.addEventListener("resize", avoidCornerOverlap);
+  window.addEventListener("scroll", avoidCornerOverlap, { passive: true });
+  resultsScroll.addEventListener("scroll", avoidCornerOverlap, { passive: true });
+  // Belt-and-braces: browsers throttle or drop scroll events for a tab that
+  // isn't actually compositing frames (backgrounded, minimized, some embedded
+  // contexts) -- confirmed live, not hypothetical: window.scrollTo() in this
+  // exact app, in this environment, did not raise 'scroll' at all in testing.
+  // A slow poll costs nothing while idle and guarantees the corner pills
+  // never get stuck hidden (or stuck overlapping) if the event never arrives.
+  window.setInterval(measureCornerOverlap, 800);
   const historyRoot = required<HTMLElement>("#history");
   const historyCard = required<HTMLElement>("#history-card");
   const scanButton = required<HTMLButtonElement>("#scan");
@@ -855,12 +895,19 @@ export function mountDashboard(): void {
   // then moves to the "Results" heading so keyboard and screen-reader users
   // land on the new content rather than staying in the textarea.
   const revealResults = (): void => {
+    avoidCornerOverlap();
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const singleColumn = window.matchMedia("(max-width: 1180px)").matches;
     const target = singleColumn ? resultsCard : workspace;
     target.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
     resultsScroll.scrollTop = 0;
     resultsTitle.focus({ preventScroll: true });
+    // scrollIntoView's own motion doesn't reliably raise a 'scroll' event in
+    // every embedding context, so the corner-overlap measurement above (taken
+    // before the scroll) can go stale once the smooth scroll settles. Re-check
+    // once the animation has had time to finish, in addition to the ordinary
+    // scroll listener.
+    window.setTimeout(avoidCornerOverlap, reduceMotion ? 50 : 450);
   };
 
   const scan = async (): Promise<void> => {
@@ -1005,6 +1052,7 @@ export function mountDashboard(): void {
   syncScanButton();
   syncChipSelection();
   applyLanguage();
+  avoidCornerOverlap();
 }
 
 type ScanRequestOptions = { includePersonalData?: boolean; includeCredentials?: boolean; includeFinancialData?: boolean; customTerms?: string[] };

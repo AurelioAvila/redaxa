@@ -347,6 +347,14 @@ html.preferences-open #pwa-install,html.preferences-open #inspect-clipboard{disp
   box-shadow:0 12px 32px #0008;cursor:pointer;
 }
 #inspect-clipboard:hover{border-color:var(--accent);color:var(--accent)}
+/* Covers the live-result state (see revealResults()/renderRiskCopy() in
+   dashboard.ts, which toggle a "corner-blocked" class on <body> based on an
+   actual measured overlap against #results-card -- both this state and the
+   pre-scan preview demo can render tall enough on ordinary viewport heights
+   to reach this same corner, and a fixed pixel guess at "tall enough" was
+   wrong in both directions when tested against real content). */
+body.corner-blocked #pwa-install,
+body.corner-blocked #inspect-clipboard{display:none}
 
 /* ---------- drawers (built by dashboard.ts) ---------- */
 .drawer-backdrop{position:fixed;inset:0;z-index:30;display:grid;place-items:center;overflow-y:auto;padding:24px;background:#000a;opacity:0;pointer-events:none;transition:opacity .18s ease}
@@ -437,11 +445,6 @@ html.preferences-open #pwa-install,html.preferences-open #inspect-clipboard{disp
   .prompt-meta{flex-direction:column;align-items:flex-start;gap:6px}
   #pwa-install,#inspect-clipboard{left:16px;right:16px;text-align:center}
   #inspect-clipboard{bottom:74px}
-  /* The results action bar is sticky at the bottom on narrow screens, which is
-     exactly where the floating install pill lives. Lift the pill above it while
-     a result is on screen so neither one covers the other. */
-  body:has(#results-foot:not([hidden])) #pwa-install{bottom:92px}
-  body:has(#results-foot:not([hidden])) #inspect-clipboard{bottom:142px}
 }
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style></head>
