@@ -130,4 +130,21 @@ const ibanWithEverythingOn = inspectPrompt("My IBAN is GB29 NWBK 6016 1331 9268 
 assert.deepEqual(ibanWithEverythingOn.findings.map((finding) => finding.kind), ["iban"]);
 assert.match(ibanWithEverythingOn.redactedText, /\[IBAN\]/);
 
+// Regression test: a phone number that ends a sentence was silently missed,
+// because the trailing boundary rejected *any* following dot rather than only
+// a dot that continues a numeric run. The comma-terminated variant matched all
+// along, which is why the gap survived the original tests.
+const phoneEndingSentence = inspectPrompt("Call me at +39 02 5555 0180.", {
+  includePersonalData: true, includeCredentials: false, includeFinancialData: false
+});
+assert.deepEqual(phoneEndingSentence.findings.map((finding) => finding.kind), ["phone"]);
+assert.match(phoneEndingSentence.redactedText, /\[PHONE\]\./);
+
+// ...but a dot that is followed by more digits still means "part of a longer
+// dotted number", not the end of a sentence, so it must stay unmatched.
+const dottedRun = inspectPrompt("Build 10 2024.1234.5678 shipped", {
+  includePersonalData: true, includeCredentials: false, includeFinancialData: false
+});
+assert.deepEqual(dottedRun.findings, []);
+
 console.log("PromptShield scanner tests passed.");

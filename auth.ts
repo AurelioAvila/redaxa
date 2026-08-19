@@ -156,7 +156,10 @@ function installDialog(): {
       <label class="ps-auth-field">Date of birth<input id="ps-auth-dob" type="date" autocomplete="bday"></label>
     </div>
     <label class="ps-auth-field">Email<input id="ps-auth-email" name="email" type="email" autocomplete="username" required></label>
-    <label class="ps-auth-field" id="ps-auth-password-field">
+    <!-- Explicit for=: a label's implicit target is its first labelable
+         descendant, which here was the "Forgot password?" button, leaving the
+         password input with no accessible name at all. -->
+    <label class="ps-auth-field" id="ps-auth-password-field" for="ps-auth-password">
       <div class="ps-auth-field-head">Password<button type="button" class="ps-auth-forgot" id="ps-auth-forgot" hidden>Forgot password?</button></div>
       <div class="ps-auth-pw-wrap"><input id="ps-auth-password" name="password" type="password" autocomplete="new-password" minlength="12" required><button type="button" class="ps-auth-toggle-pw" data-for="ps-auth-password">Show</button></div>
     </label>

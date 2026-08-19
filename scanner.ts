@@ -105,7 +105,12 @@ const rules: Rule[] = [
   // testing a real IBAN through the browser extension with every category
   // enabled at once (the actual default), not just the narrow single-
   // category combinations the original unit tests exercised.
-  { kind: "phone", label: "Phone number", replacement: "[PHONE]", pattern: /(?<![\w.])(?:\+?\d{1,3}[ -]?)?(?:\(?\d{2,4}\)?[ -]?)?\d{3,4}[ -]\d{3,4}(?![\w.])/g, validate: phoneValid },
+  // The trailing boundary is `(?!\w)(?!\.\d)`, not `(?![\w.])`: the latter
+  // rejected any following dot at all, so a phone number ending a sentence
+  // ("call me at +39 02 5555 0180.") was silently never flagged, while the
+  // very same number followed by a comma was. The dot only means "this is a
+  // longer dotted-numeric run, keep out" when a digit follows it.
+  { kind: "phone", label: "Phone number", replacement: "[PHONE]", pattern: /(?<![\w.])(?:\+?\d{1,3}[ -]?)?(?:\(?\d{2,4}\)?[ -]?)?\d{3,4}[ -]\d{3,4}(?!\w)(?!\.\d)/g, validate: phoneValid },
   { kind: "ip", label: "IPv4 address", replacement: "[IP ADDRESS]", pattern: /\b(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)\b/g },
   { kind: "credential", label: "Password or credential", replacement: "$1$2[REDACTED]", pattern: /\b(password|passwd|pwd|secret)\s*([:=])\s*([^\s,;]{6,})/gi }
 ];
