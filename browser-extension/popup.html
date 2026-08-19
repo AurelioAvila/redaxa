@@ -22,6 +22,9 @@
       .pill i { width:6px; height:6px; border-radius:50%; background:var(--accent); }
       .form { display:none; }
       .form.show { display:block; }
+      .links { display:flex; justify-content:space-between; margin-top:10px; }
+      .link-btn { width:auto; background:transparent; border:0; color:var(--muted); font-size:11.5px; font-weight:600; padding:0; margin:0; text-decoration:underline; cursor:pointer; }
+      .link-btn:hover { color:var(--paper); }
     </style>
   </head>
   <body>
@@ -39,6 +42,10 @@
       <label for="password">Password</label>
       <input id="password" type="password" autocomplete="current-password" required />
       <button class="primary" type="submit">Sign in</button>
+      <div class="links">
+        <button type="button" class="link-btn" id="create-account">Create account</button>
+        <button type="button" class="link-btn" id="forgot-password">Forgot password?</button>
+      </div>
       <p class="msg" id="msg"></p>
     </form>
 

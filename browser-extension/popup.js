@@ -43,4 +43,17 @@ document.getElementById("sign-out").addEventListener("click", async () => {
   await render();
 });
 
+// The popup is 280px wide -- no room for a real signup/recovery form, so
+// hand those off to the hosted dashboard, which already has the full flow
+// (name/DOB fields, password confirmation, email verification, reset links).
+const DASHBOARD_URL = "https://promptshield-beta.vercel.app/dashboard.html";
+
+document.getElementById("create-account").addEventListener("click", () => {
+  chrome.tabs.create({ url: `${DASHBOARD_URL}?auth=signup` });
+});
+
+document.getElementById("forgot-password").addEventListener("click", () => {
+  chrome.tabs.create({ url: `${DASHBOARD_URL}?auth=recovery` });
+});
+
 void render();

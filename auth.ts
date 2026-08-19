@@ -411,6 +411,17 @@ async function boot(): Promise<void> {
       if (currentEmail) await acceptPendingInvite();
       else { setMode("signup"); setMessage("Create your account to join the team."); show(); }
     }
+
+    // Lets external entry points (the browser extension popup, which has no
+    // room for its own signup/recovery forms) deep-link straight into the
+    // right mode instead of dumping the user on a plain sign-in screen.
+    const authParam = new URLSearchParams(location.search).get("auth");
+    if (authParam === "signup" || authParam === "recovery") {
+      const url = new URL(location.href);
+      url.searchParams.delete("auth");
+      history.replaceState(null, "", url.pathname + url.search + url.hash);
+      if (!currentEmail) { setMode(authParam); show(); }
+    }
   }
 
   window.promptShieldAuth = {
