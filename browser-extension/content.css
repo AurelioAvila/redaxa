@@ -64,3 +64,10 @@
   background: transparent; color: #f4f6f1; font-weight: 600; cursor: pointer;
 }
 .ps-int-secondary:hover { border-color: #b9ff00; color: #b9ff00; }
+.ps-int-head {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 16px; border-bottom: 1px solid #2b3128; font-weight: 700;
+}
+.ps-int-x { border: 0; background: transparent; color: #9da49a; font-size: 20px; cursor: pointer; }
+.ps-int-body { padding: 14px 16px; }
+.ps-int-body .ps-use-redacted { margin-top: 4px; }
