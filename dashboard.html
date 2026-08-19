@@ -58,16 +58,19 @@ body{
 
 .side-foot{margin-top:auto;padding-top:20px;display:grid;gap:12px}
 .usage{padding:12px 13px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface-1)}
-.usage-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:9px}
-.usage-head span{color:var(--text-3);font-size:11px}
-.usage-head b{color:var(--text);font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
-.usage-track{height:5px;border-radius:99px;background:#1e231b;overflow:hidden}
+.usage-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.usage-head span{color:var(--text-2);font-size:11.5px;font-weight:650}
+.usage-head b{color:var(--text);font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.usage-track{height:5px;margin-top:9px;border-radius:99px;background:#1e231b;overflow:hidden}
 .usage-fill{height:100%;border-radius:99px;background:var(--accent);transition:width .3s ease}
-.side-fill{padding:13px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface-1)}
-.side-fill b{display:block;font-size:12px;margin-bottom:5px}
+.usage-note{margin:8px 0 0;color:var(--text-3);font-size:11px;line-height:1.5}
+/* Deliberately quieter than the composer CTA: informative, not a second
+   competing primary action in the corner of the eye. */
+.side-fill{padding:13px;border:1px solid var(--line);border-radius:var(--r);background:transparent}
+.side-fill b{display:block;font-size:11.5px;color:var(--text-2);margin-bottom:5px}
 .side-fill span{display:block;color:var(--text-3);font-size:11.5px;line-height:1.5}
-.side-fill a{display:inline-block;margin-top:9px;color:var(--accent);font-size:11.5px;font-weight:700;text-decoration:none}
-.side-fill a:hover{text-decoration:underline}
+.side-fill a{display:inline-block;margin-top:9px;color:var(--text-2);font-size:11.5px;font-weight:700;text-decoration:underline;text-underline-offset:3px}
+.side-fill a:hover{color:var(--accent)}
 .privacy{display:flex;gap:8px;padding:0 4px;color:var(--text-3);font-size:11px;line-height:1.5}
 .privacy .dot{flex:0 0 6px;width:6px;height:6px;margin-top:5px;border-radius:50%;background:var(--ok)}
 .privacy a{color:var(--text-2);text-decoration:underline;text-underline-offset:3px}
@@ -94,6 +97,9 @@ main{width:100%;max-width:1280px;margin:0 auto;padding:36px 44px 96px}
 }
 #onboarding-list{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;align-items:center;gap:8px 22px}
 #onboarding-list li{display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--text-2)}
+/* Needed because the display:flex above would otherwise beat the UA rule for
+   [hidden] and keep completed tasks on screen. */
+#onboarding-list li[hidden]{display:none}
 #onboarding-list li i.ico{display:flex;align-items:center;justify-content:center;width:18px;height:18px;flex:0 0 18px;border:1.5px solid #3b4234;border-radius:50%;background:var(--inset);color:#5c6455}
 /* The tick is only drawn once the task is actually done -- showing it on every
    row made all three read as already completed. */
@@ -106,7 +112,7 @@ main{width:100%;max-width:1280px;margin:0 auto;padding:36px 44px 96px}
 #onboarding-list li[data-task="check"] i.ico{border-color:color-mix(in srgb,var(--accent) 55%,transparent);color:var(--accent)}
 #onboarding-list li.done i.ico{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,var(--inset));color:var(--accent)}
 #onboarding-list li.done b{color:var(--text-3);text-decoration:line-through}
-.onboarding-close{position:absolute;top:50%;right:12px;transform:translateY(-50%);width:26px;height:26px;border:0;border-radius:7px;background:transparent;color:var(--text-3);font-size:17px;line-height:1;cursor:pointer}
+.onboarding-close{position:absolute;top:50%;right:10px;transform:translateY(-50%);width:32px;height:32px;border:0;border-radius:8px;background:transparent;color:var(--text-3);font-size:18px;line-height:1;cursor:pointer}
 .onboarding-close:hover{background:#ffffff0d;color:var(--text)}
 
 /* ---------- layout ---------- */
@@ -142,11 +148,20 @@ main{width:100%;max-width:1280px;margin:0 auto;padding:36px 44px 96px}
 .samples-label{display:block;margin-bottom:9px;color:var(--text-3);font-size:10.5px;font-weight:750;letter-spacing:.09em;text-transform:uppercase}
 .sample-row{display:flex;flex-wrap:wrap;gap:7px}
 .sample-chip{
-  padding:7px 12px;border:1px solid var(--line-strong);border-radius:999px;
+  display:inline-flex;align-items:center;gap:6px;min-height:34px;
+  padding:7px 13px;border:1px solid var(--line-strong);border-radius:999px;
   background:transparent;color:var(--text-2);font:inherit;font-size:12px;cursor:pointer;
   transition:border-color .14s ease,color .14s ease,background .14s ease;
 }
-.sample-chip:hover{border-color:color-mix(in srgb,var(--accent) 45%,transparent);color:var(--text);background:#ffffff08}
+.sample-chip:hover{border-color:color-mix(in srgb,var(--accent) 45%,transparent);color:var(--text);background:#ffffff0a}
+.sample-chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* Selected state carries a tick as well as colour, so "which example am I
+   looking at" survives for anyone who cannot separate the two greens. */
+.sample-chip[aria-pressed="true"]{
+  border-color:var(--accent);color:var(--accent);
+  background:color-mix(in srgb,var(--accent) 12%,transparent);font-weight:650;
+}
+.sample-chip[aria-pressed="true"]::before{content:"✓";font-size:11px;font-weight:800}
 .actions{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-top:18px}
 .ghost-btn{
   border:1px solid var(--line-strong);border-radius:var(--r-sm);
@@ -170,10 +185,20 @@ main{width:100%;max-width:1280px;margin:0 auto;padding:36px 44px 96px}
 /* ---------- results ---------- */
 .results{padding:24px;position:sticky;top:24px}
 .preview-note{
-  display:block;margin-bottom:12px;padding:7px 10px;
+  display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:7px 10px;
   border:1px dashed var(--line-strong);border-radius:8px;
-  color:var(--text-3);font-size:11px;letter-spacing:.02em;
+  color:var(--text-2);font-size:11px;letter-spacing:.02em;
 }
+.preview-note b{
+  flex:0 0 auto;padding:2px 6px;border-radius:4px;
+  background:#2a3120;color:var(--text-2);
+  font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+}
+/* The demo result is dialled back so it reads as an illustration, not as
+   something the app just found in the user's own text. It lifts to full
+   strength on hover so it stays inspectable. */
+.preview-demo{opacity:.72;transition:opacity .16s ease}
+#res-preview:hover .preview-demo{opacity:1}
 .risk-banner{display:flex;align-items:center;gap:12px;padding:13px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface-2)}
 .risk-mark{
   display:grid;place-items:center;width:38px;height:38px;flex:0 0 38px;border-radius:10px;
@@ -193,7 +218,10 @@ main{width:100%;max-width:1280px;margin:0 auto;padding:36px 44px 96px}
   margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:var(--r);
   background:var(--inset);color:var(--text-2);
   font:12px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere;
+  max-height:150px;overflow-y:auto;
 }
+.snippet-label{display:block;margin-top:16px;color:var(--text-3);font-size:10.5px;font-weight:750;letter-spacing:.09em;text-transform:uppercase}
+.snippet-label + .snippet{margin-top:8px}
 .snippet mark{
   background:color-mix(in srgb,var(--danger) 20%,transparent);
   color:#ffd9cd;border-radius:3px;padding:1px 3px;
@@ -273,8 +301,11 @@ html.preferences-open #pwa-install,html.preferences-open #inspect-clipboard{disp
   box-shadow:0 12px 32px #0008;cursor:pointer;transition:border-color .14s ease,color .14s ease;
 }
 #pwa-install:hover{border-color:var(--accent);color:var(--accent)}
-#pwa-install.promoted{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:800}
-#pwa-install.promoted:hover{filter:brightness(1.07);color:var(--accent-ink)}
+/* Gains prominence once a check has run, but stays an outline: a second lime
+   fill would compete with "Copy redacted prompt", the action that actually
+   matters on a result. */
+#pwa-install.promoted{border-color:var(--accent);color:var(--accent)}
+#pwa-install.promoted:hover{background:color-mix(in srgb,var(--accent) 12%,transparent)}
 #inspect-clipboard{
   position:fixed;right:24px;bottom:76px;z-index:20;
   border:1px solid var(--line-strong);border-radius:999px;padding:10px 14px;
@@ -390,8 +421,10 @@ html.preferences-open #pwa-install,html.preferences-open #inspect-clipboard{disp
     </nav>
 
     <div class="side-foot">
-      <div class="usage" id="usage">
-        <div class="usage-head"><span data-i18n="usageLabel">Checks this week</span><b id="usage-count">0</b></div>
+      <div class="usage" id="plan-status">
+        <div class="usage-head"><span id="plan-status-label" data-i18n="planNone">No active plan</span><b id="plan-status-value"></b></div>
+        <div class="usage-track" id="plan-track" hidden><div class="usage-fill" id="plan-fill"></div></div>
+        <p class="usage-note" id="plan-status-note" data-i18n="planNoneNote">Start a 7-day free trial to run checks.</p>
       </div>
       <div class="side-fill" id="side-fill">
         <b data-i18n="freeTrialBadge">What a plan unlocks</b>
@@ -450,10 +483,10 @@ html.preferences-open #pwa-install,html.preferences-open #inspect-clipboard{disp
         <div class="samples">
           <span class="samples-label" data-i18n="tryLabel">Try an example</span>
           <div class="sample-row">
-            <button class="sample-chip" type="button" data-sample="brief" data-i18n="sampleBrief">Client brief</button>
-            <button class="sample-chip" type="button" data-sample="apikey" data-i18n="sampleApiKey">API key</button>
-            <button class="sample-chip" type="button" data-sample="email" data-i18n="sampleEmail">Email draft</button>
-            <button class="sample-chip" type="button" data-sample="personal" data-i18n="samplePersonal">Personal details</button>
+            <button class="sample-chip" type="button" aria-pressed="false" data-sample="brief" data-i18n="sampleBrief">Client brief</button>
+            <button class="sample-chip" type="button" aria-pressed="false" data-sample="apikey" data-i18n="sampleApiKey">API key</button>
+            <button class="sample-chip" type="button" aria-pressed="false" data-sample="email" data-i18n="sampleEmail">Email draft</button>
+            <button class="sample-chip" type="button" aria-pressed="false" data-sample="personal" data-i18n="samplePersonal">Personal details</button>
           </div>
         </div>
 
@@ -471,7 +504,8 @@ html.preferences-open #pwa-install,html.preferences-open #inspect-clipboard{disp
         </div>
 
         <div id="res-preview">
-          <span class="preview-note" data-i18n="previewLabel">Example — this is what a check gives you</span>
+          <span class="preview-note"><b data-i18n="previewBadge">Preview</b><span data-i18n="previewLabel">example result — not your prompt</span></span>
+          <div class="preview-demo">
           <div class="risk-banner risk-high">
             <span class="risk-mark" aria-hidden="true">3</span>
             <div>
@@ -486,6 +520,7 @@ html.preferences-open #pwa-install,html.preferences-open #inspect-clipboard{disp
           <div class="res-hint">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/></svg>
             <span data-i18n="redactBeforeSharing">Redact before sharing</span>
+          </div>
           </div>
           <p class="preview-foot" data-i18n="previewFoot">Paste your own prompt on the left to run a real check.</p>
           <div class="detects">
@@ -504,6 +539,8 @@ html.preferences-open #pwa-install,html.preferences-open #inspect-clipboard{disp
               <span id="risk-copy">We will check for common personal data and secrets.</span>
             </div>
           </div>
+          <span class="snippet-label" id="snippet-label" hidden data-i18n="foundInPrompt">Found in your prompt</span>
+          <div class="snippet" id="result-snippet" hidden></div>
           <div class="findings" id="findings"></div>
           <div class="safe" id="safe">
             <h3 data-i18n="saferVersion">Safer version</h3>

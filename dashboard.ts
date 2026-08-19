@@ -1,4 +1,5 @@
 import type { Finding, ScanOptions } from "./scanner.js";
+import type { AccountState } from "./auth.js";
 import { enableAppShell } from "./pwa.js";
 import { enableDesktopCompanion } from "./desktop.js";
 
@@ -45,7 +46,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     tryLabel: "Try an example", sampleBrief: "Client brief", sampleApiKey: "API key", sampleEmail: "Email draft", samplePersonal: "Personal details",
     metaLabel: "Private scan — your prompt is never stored or logged.", howPrivacyWorks: "How privacy works", interfaceLanguage: "Interface language",
     scanModeStandard: "Standard — balanced checks", scanModeStrict: "Strict — careful review mode",
-    resultsTitle: "Results", previewLabel: "Example — this is what a check gives you", previewItems: "3 sensitive items in this prompt",
+    resultsTitle: "Results", previewItems: "3 sensitive items in this prompt",
     redactBeforeSharing: "Redact before sharing", previewFoot: "Paste your own prompt on the left to run a real check.", detectsLabel: "Also detects",
     riskHigh: "High risk", riskMedium: "Review before sharing", riskNone: "No risks found",
     actionHigh: "{n} sensitive item found. Replace it, or copy the redacted version below.|{n} sensitive items found. Replace them, or copy the redacted version below.",
@@ -71,7 +72,8 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     businessTag: "For teams · up to 3 users", businessName: "Business", businessDesc: "Team controls and a clear privacy boundary for growing teams. Choose one to three seats.",
     seatsLabel: "Seats", seat1: "1 user", seat2: "2 users", seat3: "3 users", yearlyBusiness: "€149.90 yearly / user",
     manageTag: "Already subscribed?", manageTitle: "Manage billing", manageDesc: "Update your payment method, download invoices, or cancel renewal whenever you need to.", manageBtn: "Manage subscription",
-    teamTitle: "Team", teamSeatsUsed: "{used} of {total} seats used.", inviteCreate: "Create invite link", copyLink: "Copy link", noInvites: "No invites yet.", teammateJoined: "Teammate joined", invitePending: "Invite pending", revoke: "Revoke", couldNotCreateInvite: "We could not create an invite."
+    teamTitle: "Team", teamSeatsUsed: "{used} of {total} seats used.", inviteCreate: "Create invite link", copyLink: "Copy link", noInvites: "No invites yet.", teammateJoined: "Teammate joined", invitePending: "Invite pending", revoke: "Revoke", couldNotCreateInvite: "We could not create an invite.",
+    previewBadge: "Preview", previewLabel: "example result — not your prompt", planNone: "No active plan", planNoneNote: "Start a 7-day free trial to run checks.", planTrial: "Free trial", planTrialNote: "Your trial covers unlimited checks. Add a plan to keep them running.", planActive: "Active plan", planActiveNote: "Unlimited checks and custom protected terms are on.", planDayOf: "Day {day} of {total}", planEndsToday: "Ends today", planDaysLeft: "{n} day left|{n} days left", foundInPrompt: "Found in your prompt"
   },
   it: {
     workspace: "Spazio di lavoro", privateCheck: "Controlla un prompt", recent: "Controlli recenti", account: "Account", plans: "Piani e prezzi", preferences: "Impostazioni",
@@ -82,7 +84,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     tryLabel: "Prova un esempio", sampleBrief: "Brief cliente", sampleApiKey: "Chiave API", sampleEmail: "Bozza email", samplePersonal: "Dati personali",
     metaLabel: "Controllo privato — il prompt non viene mai salvato né registrato.", howPrivacyWorks: "Come funziona la privacy", interfaceLanguage: "Lingua dell'interfaccia",
     scanModeStandard: "Standard — controlli bilanciati", scanModeStrict: "Rigorosa — modalità di revisione attenta",
-    resultsTitle: "Risultati", previewLabel: "Esempio — ecco cosa ottieni da un controllo", previewItems: "3 elementi sensibili in questo prompt",
+    resultsTitle: "Risultati", previewItems: "3 elementi sensibili in questo prompt",
     redactBeforeSharing: "Rimuovi i dati prima di condividere", previewFoot: "Incolla il tuo prompt a sinistra per eseguire un controllo reale.", detectsLabel: "Rileva anche",
     riskHigh: "Rischio alto", riskMedium: "Rivedi prima di condividere", riskNone: "Nessun rischio rilevato",
     actionHigh: "{n} elemento sensibile trovato. Sostituiscilo o copia la versione sicura qui sotto.|{n} elementi sensibili trovati. Sostituiscili o copia la versione sicura qui sotto.",
@@ -108,7 +110,8 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     businessTag: "Per team · fino a 3 utenti", businessName: "Business", businessDesc: "Controlli di team e un confine di privacy chiaro per team in crescita. Scegli da uno a tre posti.",
     seatsLabel: "Posti", seat1: "1 utente", seat2: "2 utenti", seat3: "3 utenti", yearlyBusiness: "€149,90 all'anno / utente",
     manageTag: "Già abbonato?", manageTitle: "Gestisci fatturazione", manageDesc: "Aggiorna il metodo di pagamento, scarica le fatture o annulla il rinnovo quando vuoi.", manageBtn: "Gestisci abbonamento",
-    teamTitle: "Team", teamSeatsUsed: "{used} di {total} posti utilizzati.", inviteCreate: "Crea link di invito", copyLink: "Copia link", noInvites: "Nessun invito ancora.", teammateJoined: "Collega entrato", invitePending: "Invito in sospeso", revoke: "Revoca", couldNotCreateInvite: "Non è stato possibile creare un invito."
+    teamTitle: "Team", teamSeatsUsed: "{used} di {total} posti utilizzati.", inviteCreate: "Crea link di invito", copyLink: "Copia link", noInvites: "Nessun invito ancora.", teammateJoined: "Collega entrato", invitePending: "Invito in sospeso", revoke: "Revoca", couldNotCreateInvite: "Non è stato possibile creare un invito.",
+    previewBadge: "Anteprima", previewLabel: "risultato di esempio — non il tuo prompt", planNone: "Nessun piano attivo", planNoneNote: "Avvia la prova gratuita di 7 giorni per eseguire controlli.", planTrial: "Prova gratuita", planTrialNote: "La prova include controlli illimitati. Aggiungi un piano per non interromperli.", planActive: "Piano attivo", planActiveNote: "Controlli illimitati e termini protetti personalizzati sono attivi.", planDayOf: "Giorno {day} di {total}", planEndsToday: "Scade oggi", planDaysLeft: "{n} giorno rimasto|{n} giorni rimasti", foundInPrompt: "Trovato nel tuo prompt"
   },
   es: {
     workspace: "Espacio de trabajo", privateCheck: "Revisar un prompt", recent: "Revisiones recientes", account: "Cuenta", plans: "Planes y precios", preferences: "Preferencias",
@@ -119,7 +122,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     tryLabel: "Prueba un ejemplo", sampleBrief: "Brief de cliente", sampleApiKey: "Clave API", sampleEmail: "Borrador de correo", samplePersonal: "Datos personales",
     metaLabel: "Revisión privada — tu prompt nunca se guarda ni se registra.", howPrivacyWorks: "Cómo funciona la privacidad", interfaceLanguage: "Idioma de la interfaz",
     scanModeStandard: "Estándar — revisiones equilibradas", scanModeStrict: "Estricto — modo de revisión cuidadosa",
-    resultsTitle: "Resultados", previewLabel: "Ejemplo — esto es lo que obtienes de una revisión", previewItems: "3 elementos sensibles en este prompt",
+    resultsTitle: "Resultados", previewItems: "3 elementos sensibles en este prompt",
     redactBeforeSharing: "Oculta los datos antes de compartir", previewFoot: "Pega tu propio prompt a la izquierda para hacer una revisión real.", detectsLabel: "También detecta",
     riskHigh: "Riesgo alto", riskMedium: "Revisa antes de compartir", riskNone: "Sin riesgos detectados",
     actionHigh: "{n} elemento sensible encontrado. Sustitúyelo o copia la versión segura de abajo.|{n} elementos sensibles encontrados. Sustitúyelos o copia la versión segura de abajo.",
@@ -145,7 +148,8 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     businessTag: "Para equipos · hasta 3 usuarios", businessName: "Business", businessDesc: "Controles de equipo y un límite de privacidad claro para equipos en crecimiento. Elige entre uno y tres puestos.",
     seatsLabel: "Puestos", seat1: "1 usuario", seat2: "2 usuarios", seat3: "3 usuarios", yearlyBusiness: "149,90 € al año / usuario",
     manageTag: "¿Ya estás suscrito?", manageTitle: "Gestionar facturación", manageDesc: "Actualiza tu método de pago, descarga facturas o cancela la renovación cuando quieras.", manageBtn: "Gestionar suscripción",
-    teamTitle: "Equipo", teamSeatsUsed: "{used} de {total} puestos usados.", inviteCreate: "Crear enlace de invitación", copyLink: "Copiar enlace", noInvites: "Aún no hay invitaciones.", teammateJoined: "Compañero incorporado", invitePending: "Invitación pendiente", revoke: "Revocar", couldNotCreateInvite: "No se pudo crear la invitación."
+    teamTitle: "Equipo", teamSeatsUsed: "{used} de {total} puestos usados.", inviteCreate: "Crear enlace de invitación", copyLink: "Copiar enlace", noInvites: "Aún no hay invitaciones.", teammateJoined: "Compañero incorporado", invitePending: "Invitación pendiente", revoke: "Revocar", couldNotCreateInvite: "No se pudo crear la invitación.",
+    previewBadge: "Vista previa", previewLabel: "resultado de ejemplo — no es tu prompt", planNone: "Sin plan activo", planNoneNote: "Comienza la prueba gratuita de 7 días para hacer revisiones.", planTrial: "Prueba gratuita", planTrialNote: "Tu prueba incluye revisiones ilimitadas. Añade un plan para no interrumpirlas.", planActive: "Plan activo", planActiveNote: "Revisiones ilimitadas y términos protegidos propios están activos.", planDayOf: "Día {day} de {total}", planEndsToday: "Termina hoy", planDaysLeft: "Queda {n} día|Quedan {n} días", foundInPrompt: "Encontrado en tu prompt"
   },
   fr: {
     workspace: "Espace de travail", privateCheck: "Vérifier un prompt", recent: "Vérifications récentes", account: "Compte", plans: "Offres et tarifs", preferences: "Préférences",
@@ -156,7 +160,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     tryLabel: "Essayez un exemple", sampleBrief: "Brief client", sampleApiKey: "Clé API", sampleEmail: "Brouillon d’e-mail", samplePersonal: "Données personnelles",
     metaLabel: "Vérification privée — votre prompt n’est jamais stocké ni enregistré.", howPrivacyWorks: "Comment fonctionne la confidentialité", interfaceLanguage: "Langue de l’interface",
     scanModeStandard: "Standard — vérifications équilibrées", scanModeStrict: "Stricte — mode de révision attentive",
-    resultsTitle: "Résultats", previewLabel: "Exemple — voici ce que donne une vérification", previewItems: "3 éléments sensibles dans ce prompt",
+    resultsTitle: "Résultats", previewItems: "3 éléments sensibles dans ce prompt",
     redactBeforeSharing: "Masquez les données avant de partager", previewFoot: "Collez votre propre prompt à gauche pour lancer une vraie vérification.", detectsLabel: "Détecte aussi",
     riskHigh: "Risque élevé", riskMedium: "Vérifiez avant de partager", riskNone: "Aucun risque détecté",
     actionHigh: "{n} élément sensible trouvé. Remplacez-le ou copiez la version sécurisée ci-dessous.|{n} éléments sensibles trouvés. Remplacez-les ou copiez la version sécurisée ci-dessous.",
@@ -182,7 +186,8 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     businessTag: "Pour les équipes · jusqu’à 3 utilisateurs", businessName: "Business", businessDesc: "Des contrôles d’équipe et une limite de confidentialité claire pour les équipes en croissance. Choisissez de un à trois postes.",
     seatsLabel: "Postes", seat1: "1 utilisateur", seat2: "2 utilisateurs", seat3: "3 utilisateurs", yearlyBusiness: "149,90 € par an / utilisateur",
     manageTag: "Déjà abonné ?", manageTitle: "Gérer la facturation", manageDesc: "Mettez à jour votre moyen de paiement, téléchargez vos factures ou annulez le renouvellement quand vous le souhaitez.", manageBtn: "Gérer l’abonnement",
-    teamTitle: "Équipe", teamSeatsUsed: "{used} poste(s) utilisé(s) sur {total}.", inviteCreate: "Créer un lien d’invitation", copyLink: "Copier le lien", noInvites: "Aucune invitation pour l’instant.", teammateJoined: "Coéquipier ajouté", invitePending: "Invitation en attente", revoke: "Révoquer", couldNotCreateInvite: "Impossible de créer une invitation."
+    teamTitle: "Équipe", teamSeatsUsed: "{used} poste(s) utilisé(s) sur {total}.", inviteCreate: "Créer un lien d’invitation", copyLink: "Copier le lien", noInvites: "Aucune invitation pour l’instant.", teammateJoined: "Coéquipier ajouté", invitePending: "Invitation en attente", revoke: "Révoquer", couldNotCreateInvite: "Impossible de créer une invitation.",
+    previewBadge: "Aperçu", previewLabel: "résultat d’exemple — pas votre prompt", planNone: "Aucune offre active", planNoneNote: "Démarrez l’essai gratuit de 7 jours pour lancer des vérifications.", planTrial: "Essai gratuit", planTrialNote: "Votre essai couvre des vérifications illimitées. Ajoutez une offre pour les poursuivre.", planActive: "Offre active", planActiveNote: "Vérifications illimitées et termes protégés personnalisés sont actifs.", planDayOf: "Jour {day} sur {total}", planEndsToday: "Se termine aujourd’hui", planDaysLeft: "{n} jour restant|{n} jours restants", foundInPrompt: "Trouvé dans votre prompt"
   },
   de: {
     workspace: "Arbeitsbereich", privateCheck: "Prompt prüfen", recent: "Letzte Prüfungen", account: "Konto", plans: "Tarife & Preise", preferences: "Einstellungen",
@@ -193,7 +198,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     tryLabel: "Beispiel ausprobieren", sampleBrief: "Kunden-Briefing", sampleApiKey: "API-Schlüssel", sampleEmail: "E-Mail-Entwurf", samplePersonal: "Persönliche Daten",
     metaLabel: "Private Prüfung — Ihr Prompt wird nie gespeichert oder protokolliert.", howPrivacyWorks: "So funktioniert der Datenschutz", interfaceLanguage: "Oberflächensprache",
     scanModeStandard: "Standard — ausgewogene Prüfungen", scanModeStrict: "Streng — sorgfältiger Prüfmodus",
-    resultsTitle: "Ergebnisse", previewLabel: "Beispiel — das liefert eine Prüfung", previewItems: "3 sensible Elemente in diesem Prompt",
+    resultsTitle: "Ergebnisse", previewItems: "3 sensible Elemente in diesem Prompt",
     redactBeforeSharing: "Vor dem Teilen schwärzen", previewFoot: "Fügen Sie links Ihren eigenen Prompt ein, um eine echte Prüfung zu starten.", detectsLabel: "Erkennt außerdem",
     riskHigh: "Hohes Risiko", riskMedium: "Vor dem Teilen prüfen", riskNone: "Keine Risiken gefunden",
     actionHigh: "{n} sensibles Element gefunden. Ersetzen Sie es oder kopieren Sie die sichere Version unten.|{n} sensible Elemente gefunden. Ersetzen Sie sie oder kopieren Sie die sichere Version unten.",
@@ -219,7 +224,8 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     businessTag: "Für Teams · bis zu 3 Nutzer", businessName: "Business", businessDesc: "Teamkontrollen und eine klare Datenschutzgrenze für wachsende Teams. Wählen Sie ein bis drei Plätze.",
     seatsLabel: "Plätze", seat1: "1 Nutzer", seat2: "2 Nutzer", seat3: "3 Nutzer", yearlyBusiness: "149,90 € jährlich / Nutzer",
     manageTag: "Bereits abonniert?", manageTitle: "Abrechnung verwalten", manageDesc: "Aktualisieren Sie Ihre Zahlungsmethode, laden Sie Rechnungen herunter oder kündigen Sie die Verlängerung jederzeit.", manageBtn: "Abonnement verwalten",
-    teamTitle: "Team", teamSeatsUsed: "{used} von {total} Plätzen belegt.", inviteCreate: "Einladungslink erstellen", copyLink: "Link kopieren", noInvites: "Noch keine Einladungen.", teammateJoined: "Teammitglied beigetreten", invitePending: "Einladung ausstehend", revoke: "Widerrufen", couldNotCreateInvite: "Die Einladung konnte nicht erstellt werden."
+    teamTitle: "Team", teamSeatsUsed: "{used} von {total} Plätzen belegt.", inviteCreate: "Einladungslink erstellen", copyLink: "Link kopieren", noInvites: "Noch keine Einladungen.", teammateJoined: "Teammitglied beigetreten", invitePending: "Einladung ausstehend", revoke: "Widerrufen", couldNotCreateInvite: "Die Einladung konnte nicht erstellt werden.",
+    previewBadge: "Vorschau", previewLabel: "Beispielergebnis — nicht Ihr Prompt", planNone: "Kein aktiver Tarif", planNoneNote: "Starten Sie die 7-tägige Testphase, um Prüfungen auszuführen.", planTrial: "Kostenlose Testphase", planTrialNote: "Ihre Testphase umfasst unbegrenzte Prüfungen. Wählen Sie einen Tarif, um sie fortzusetzen.", planActive: "Aktiver Tarif", planActiveNote: "Unbegrenzte Prüfungen und eigene geschützte Begriffe sind aktiv.", planDayOf: "Tag {day} von {total}", planEndsToday: "Endet heute", planDaysLeft: "noch {n} Tag|noch {n} Tage", foundInPrompt: "In Ihrem Prompt gefunden"
   }
 };
 const settingsByLanguage: Record<Language, string[]> = {
@@ -351,6 +357,13 @@ export function mountDashboard(): void {
   const clearPrompt = required<HTMLButtonElement>("#clear-prompt");
   const clearHistoryButton = required<HTMLButtonElement>("#clear-history");
   const characterCount = required<HTMLElement>("#character-count");
+  const snippetLabel = required<HTMLElement>("#snippet-label");
+  const resultSnippet = required<HTMLElement>("#result-snippet");
+  const planLabel = required<HTMLElement>("#plan-status-label");
+  const planValue = required<HTMLElement>("#plan-status-value");
+  const planNote = required<HTMLElement>("#plan-status-note");
+  const planTrack = required<HTMLElement>("#plan-track");
+  const planFill = required<HTMLElement>("#plan-fill");
   const activityEmpty = required<HTMLElement>("#analytics-empty");
   const activityBody = required<HTMLElement>("#activity-body");
   const analyticsRoot = required<HTMLElement>("#analytics-bars");
@@ -596,6 +609,7 @@ export function mountDashboard(): void {
     required<HTMLElement>("#close-plans").textContent = settings[10];
 
     updateCharacterCount();
+    renderPlanStatus();
     renderHistory();
     if (!resLive.hidden) renderRiskCopy();
   };
@@ -632,8 +646,10 @@ export function mountDashboard(): void {
       terms: preferences.customTerms.length > 0,
       theme: preferences.theme !== defaultPreferences.theme
     };
+    // Completed steps are removed rather than struck through: a checklist that
+    // keeps showing "Run your first check" after the first check is just noise.
     onboardingSection.querySelectorAll<HTMLElement>("#onboarding-list li[data-task]").forEach((item) => {
-      item.classList.toggle("done", Boolean(tasks[item.dataset.task ?? ""]));
+      item.hidden = Boolean(tasks[item.dataset.task ?? ""]);
     });
     onboardingSection.hidden = Object.values(tasks).every(Boolean);
   };
@@ -642,7 +658,41 @@ export function mountDashboard(): void {
     if (onboardingSection) onboardingSection.hidden = true;
   });
 
-  const usageCount = document.querySelector<HTMLElement>("#usage-count");
+  // The sidebar reports the real plan/trial state rather than a checks-used
+  // quota: there is no free monthly allowance in the billing code (api/scan.ts
+  // returns 402 without an active trial or subscription), so a "N / 10 free
+  // checks" meter would promise a tier that does not exist.
+  const trialLengthDays = 7;
+  let accountState: AccountState | null = null;
+  const renderPlanStatus = (): void => {
+    const w = words();
+    if (accountState?.status === "trialing" && accountState.currentPeriodEnd) {
+      const daysLeft = Math.max(0, Math.ceil((new Date(accountState.currentPeriodEnd).getTime() - Date.now()) / 86_400_000));
+      const dayNumber = Math.min(trialLengthDays, Math.max(1, trialLengthDays - daysLeft + 1));
+      planLabel.textContent = w.planTrial;
+      planValue.textContent = daysLeft <= 0 ? w.planEndsToday : plural(w.planDaysLeft, daysLeft);
+      planTrack.hidden = false;
+      planFill.style.width = `${Math.round((dayNumber / trialLengthDays) * 100)}%`;
+      planTrack.setAttribute("aria-label", format(w.planDayOf, { day: dayNumber, total: trialLengthDays }));
+      planNote.textContent = w.planTrialNote;
+      return;
+    }
+    planTrack.hidden = true;
+    if (accountState?.active) {
+      planLabel.textContent = w.planActive;
+      planValue.textContent = accountState.plan ? accountState.plan.charAt(0).toUpperCase() + accountState.plan.slice(1) : "";
+      planNote.textContent = w.planActiveNote;
+    } else {
+      planLabel.textContent = w.planNone;
+      planValue.textContent = "";
+      planNote.textContent = w.planNoneNote;
+    }
+  };
+  document.addEventListener("promptshield:account", (event) => {
+    accountState = (event as CustomEvent<AccountState | null>).detail;
+    renderPlanStatus();
+  });
+
   const metricChecked = document.querySelector<HTMLElement>("#metric-checked");
   const metricItems = document.querySelector<HTMLElement>("#metric-items");
   const metricTop = document.querySelector<HTMLElement>("#metric-top");
@@ -667,7 +717,6 @@ export function mountDashboard(): void {
 
     const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
     const weekly = history.filter((entry) => new Date(entry.createdAt).getTime() >= weekAgo);
-    if (usageCount) usageCount.textContent = String(weekly.length);
 
     // Empty bar charts and zeroed metric tiles say nothing; hide the whole
     // activity body until there is at least one check to describe.
@@ -693,10 +742,67 @@ export function mountDashboard(): void {
     characterCount.innerHTML = `<strong>${num(prompt.value.length)}</strong> / ${num(maxPromptLength)}`;
   };
   const syncScanButton = (): void => { scanButton.disabled = !prompt.value.trim(); };
+  // Derived from the textarea contents rather than tracked in a variable, so
+  // the selected chip clears itself as soon as the user edits or replaces the
+  // sample, instead of lying about what is in the box.
+  const sampleChips = Array.from(document.querySelectorAll<HTMLButtonElement>(".sample-chip"));
+  const syncChipSelection = (): void => {
+    sampleChips.forEach((chip) => {
+      const sample = samplePrompts[chip.dataset.sample ?? ""];
+      chip.setAttribute("aria-pressed", String(Boolean(sample) && sample === prompt.value));
+    });
+  };
 
   // Kept out of scan() so a language switch can re-render an on-screen result
   // without re-running the check.
-  let lastResult: { findings: Finding[]; redactedText: string } | null = null;
+  let lastResult: { findings: Finding[]; redactedText: string; sourceText: string } | null = null;
+
+  // Shows the user's own text with each detected value marked, so the result
+  // answers "where in my prompt?" and not just "how many". Honours the
+  // "show the detected value on screen" preference.
+  const buildSnippet = (source: string, findings: Finding[]): string => {
+    const ranges: { start: number; end: number }[] = [];
+    for (const finding of findings) {
+      if (!finding.value) continue;
+      let from = 0;
+      for (;;) {
+        const at = source.indexOf(finding.value, from);
+        if (at === -1) break;
+        if (!ranges.some((range) => at < range.end && at + finding.value.length > range.start)) {
+          ranges.push({ start: at, end: at + finding.value.length });
+          break;
+        }
+        from = at + 1;
+      }
+    }
+    if (!ranges.length) return "";
+    ranges.sort((a, b) => a.start - b.start);
+
+    // Long prompts are windowed around the first detection so the marked text
+    // stays the visible part instead of scrolling off the bottom.
+    const windowSize = 420;
+    let offset = 0;
+    let text = source;
+    if (source.length > windowSize) {
+      offset = Math.max(0, ranges[0].start - 60);
+      text = source.slice(offset, offset + windowSize);
+    }
+    const visible = ranges
+      .map((range) => ({ start: range.start - offset, end: range.end - offset }))
+      .filter((range) => range.start >= 0 && range.end <= text.length);
+
+    let html = offset > 0 ? "… " : "";
+    let cursor = 0;
+    for (const range of visible) {
+      html += escapeHtml(text.slice(cursor, range.start));
+      const raw = text.slice(range.start, range.end);
+      html += `<mark>${escapeHtml(preferences.showRawValues ? raw : "•".repeat(Math.min(10, raw.length)))}</mark>`;
+      cursor = range.end;
+    }
+    html += escapeHtml(text.slice(cursor));
+    if (offset + text.length < source.length) html += " …";
+    return html;
+  };
   const renderRiskCopy = (): void => {
     if (!lastResult) return;
     const level = riskLevel(lastResult.findings);
@@ -707,6 +813,11 @@ export function mountDashboard(): void {
     copy.textContent = level === "high" ? plural(words().actionHigh, n)
       : level === "medium" ? plural(words().actionMedium, n)
       : words().actionNone;
+
+    const snippet = buildSnippet(lastResult.sourceText, lastResult.findings);
+    resultSnippet.innerHTML = snippet;
+    resultSnippet.hidden = !snippet;
+    snippetLabel.hidden = !snippet;
 
     const groups = new Map<string, Finding[]>();
     for (const finding of lastResult.findings) {
@@ -745,6 +856,8 @@ export function mountDashboard(): void {
       title.textContent = words().promptTooLong;
       copy.textContent = format(words().keepUnder, { max: num(maxPromptLength) });
       findingsRoot.innerHTML = "";
+      resultSnippet.hidden = true;
+      snippetLabel.hidden = true;
       safeRoot.style.display = "none";
       return;
     }
@@ -753,7 +866,7 @@ export function mountDashboard(): void {
     try {
       const scanned = await window.promptShieldAuth!.scanPrompt(prompt.value, preferences);
       const result = storeResult(prompt.value, scanned.findings, scanned.redactedText, preferences);
-      lastResult = { findings: result.findings, redactedText: result.redactedText };
+      lastResult = { findings: result.findings, redactedText: result.redactedText, sourceText: prompt.value };
       showResults();
       renderRiskCopy();
       redacted.textContent = result.redactedText;
@@ -770,6 +883,8 @@ export function mountDashboard(): void {
         title.textContent = words().checkFailed;
         copy.textContent = words().couldNotRunCheck;
         findingsRoot.innerHTML = "";
+        resultSnippet.hidden = true;
+        snippetLabel.hidden = true;
         safeRoot.style.display = "none";
       }
     } finally {
@@ -779,20 +894,21 @@ export function mountDashboard(): void {
   };
 
   scanButton.addEventListener("click", () => { void scan(); });
-  prompt.addEventListener("input", () => { updateCharacterCount(); syncScanButton(); });
+  prompt.addEventListener("input", () => { updateCharacterCount(); syncScanButton(); syncChipSelection(); });
   prompt.addEventListener("keydown", (event) => {
     if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) { event.preventDefault(); void scan(); }
   });
   const kbdKey = document.querySelector<HTMLElement>("#kbd-key");
   if (kbdKey && /Mac|iPhone|iPad/.test(navigator.userAgent)) kbdKey.textContent = "⌘";
 
-  document.querySelectorAll<HTMLButtonElement>(".sample-chip").forEach((chip) => {
+  sampleChips.forEach((chip) => {
     chip.addEventListener("click", () => {
       const sample = samplePrompts[chip.dataset.sample ?? ""];
       if (!sample) return;
       prompt.value = sample;
       updateCharacterCount();
       syncScanButton();
+      syncChipSelection();
       prompt.focus();
     });
   });
@@ -801,12 +917,14 @@ export function mountDashboard(): void {
     prompt.value = clipboardText;
     updateCharacterCount();
     syncScanButton();
+    syncChipSelection();
     void scan();
   });
   clearPrompt.addEventListener("click", () => {
     prompt.value = "";
     updateCharacterCount();
     syncScanButton();
+    syncChipSelection();
     prompt.focus();
   });
   clearHistoryButton.addEventListener("click", () => {
@@ -851,6 +969,7 @@ export function mountDashboard(): void {
       prompt.value = "";
       updateCharacterCount();
       syncScanButton();
+      syncChipSelection();
     }
     window.setTimeout(() => { button.textContent = words().copySafer; }, 1400);
   });
@@ -858,6 +977,7 @@ export function mountDashboard(): void {
   if (readHistory().length) document.getElementById("pwa-install")?.classList.add("promoted");
   updateCharacterCount();
   syncScanButton();
+  syncChipSelection();
   applyLanguage();
 }
 

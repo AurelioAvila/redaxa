@@ -109,7 +109,7 @@ async function apiRequest(path: string, body?: Record<string, unknown>, method: 
   return payload as Record<string, unknown>;
 }
 
-function accountControls(): { trigger: HTMLAnchorElement; login: HTMLAnchorElement; account: HTMLDivElement; email: HTMLSpanElement; signout: HTMLButtonElement } {
+function accountControls(): { trigger: HTMLAnchorElement; login: HTMLAnchorElement; account: HTMLDivElement; email: HTMLSpanElement; signout: HTMLButtonElement; avatars: HTMLElement[]; closeMenu: () => void } {
   const trigger = document.querySelector<HTMLAnchorElement>(".small-btn")!;
   const outerParent = trigger.parentElement!;
   trigger.href = "#account";
@@ -128,11 +128,52 @@ function accountControls(): { trigger: HTMLAnchorElement; login: HTMLAnchorEleme
   buttonRow.className = "ps-auth-buttons";
   trigger.insertAdjacentElement("beforebegin", buttonRow);
   buttonRow.append(login, trigger);
+  // A full email address plus a permanent "Sign out" button spent the most
+  // prominent slot in the header on the two things a signed-in user needs
+  // least often. Collapsed into an initials avatar that opens a menu; the
+  // address and sign-out live inside it.
   const account = document.createElement("div");
   account.className = "ps-account";
-  account.innerHTML = '<span class="ps-account-email"></span><button class="ps-signout" type="button">Sign out</button>';
+  account.innerHTML = `
+    <button class="ps-avatar-btn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Account menu">
+      <span class="ps-avatar" aria-hidden="true"></span>
+    </button>
+    <div class="ps-account-menu" role="menu" hidden>
+      <div class="ps-account-menu-head">
+        <span class="ps-avatar ps-avatar-lg" aria-hidden="true"></span>
+        <span class="ps-account-email"></span>
+      </div>
+      <button class="ps-signout" type="button" role="menuitem">Sign out</button>
+    </div>`;
   outerParent.append(account);
-  return { trigger, login, account, email: account.querySelector<HTMLSpanElement>(".ps-account-email")!, signout: account.querySelector<HTMLButtonElement>(".ps-signout")! };
+
+  const avatarButton = account.querySelector<HTMLButtonElement>(".ps-avatar-btn")!;
+  const menu = account.querySelector<HTMLElement>(".ps-account-menu")!;
+  const setMenuOpen = (open: boolean): void => {
+    menu.hidden = !open;
+    avatarButton.setAttribute("aria-expanded", String(open));
+  };
+  avatarButton.addEventListener("click", (event) => { event.stopPropagation(); setMenuOpen(menu.hidden); });
+  document.addEventListener("click", (event) => { if (!account.contains(event.target as Node)) setMenuOpen(false); });
+  document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !menu.hidden) { setMenuOpen(false); avatarButton.focus(); } });
+  account.querySelector(".ps-signout")?.addEventListener("click", () => setMenuOpen(false));
+
+  return {
+    trigger, login, account,
+    email: account.querySelector<HTMLSpanElement>(".ps-account-email")!,
+    signout: account.querySelector<HTMLButtonElement>(".ps-signout")!,
+    avatars: Array.from(account.querySelectorAll<HTMLElement>(".ps-avatar")),
+    closeMenu: () => setMenuOpen(false)
+  };
+}
+
+// "m.rossi@acme.com" -> "MR", "canadesino91@gmail.com" -> "C". Derived from the
+// address because the dashboard never receives the first/last name fields.
+function initialsFor(email: string): string {
+  const local = email.split("@")[0] ?? "";
+  const parts = local.split(/[._\-+]/).filter(Boolean);
+  const letters = parts.slice(0, 2).map((part) => part[0]).join("");
+  return (letters || local[0] || "?").toUpperCase();
 }
 
 function installDialog(): {
@@ -229,20 +270,34 @@ function authRedirect(): string { return `${webAppUrl}/`; }
 // in -- checked server-side too (the real enforcement point is whatever calls
 // the paid API), but the UI needs to know this to avoid teasing a scan the
 // account isn't entitled to run.
+// The dashboard renders the plan/trial state in its sidebar. Rather than have
+// it issue its own /api/account request (and race this one), the single
+// response already fetched here is published as an event.
+export type AccountState = { active: boolean; status: string | null; currentPeriodEnd: string | null; plan: string | null };
+function publishAccountState(state: AccountState | null): void {
+  document.dispatchEvent(new CustomEvent("promptshield:account", { detail: state }));
+}
+
 async function refreshEntitlement(): Promise<void> {
-  if (!currentEmail) { accountActive = false; return; }
+  if (!currentEmail) { accountActive = false; publishAccountState(null); return; }
   try {
     const headers: Record<string, string> = {};
     if (isTauri()) {
       const token = await desktopAccessToken();
-      if (!token) { accountActive = false; return; }
+      if (!token) { accountActive = false; publishAccountState(null); return; }
       headers.Authorization = `Bearer ${token}`;
     }
     const response = await fetch(`${apiBase}/api/account`, { headers, cache: "no-store" });
-    if (!response.ok) { accountActive = false; return; }
-    const payload = await response.json() as { active?: boolean };
+    if (!response.ok) { accountActive = false; publishAccountState(null); return; }
+    const payload = await response.json() as { active?: boolean; status?: string | null; currentPeriodEnd?: string | null; plan?: string | null };
     accountActive = Boolean(payload.active);
-  } catch { accountActive = false; }
+    publishAccountState({
+      active: accountActive,
+      status: payload.status ?? null,
+      currentPeriodEnd: payload.currentPeriodEnd ?? null,
+      plan: payload.plan ?? null
+    });
+  } catch { accountActive = false; publishAccountState(null); }
 }
 
 async function boot(): Promise<void> {
@@ -279,6 +334,8 @@ async function boot(): Promise<void> {
     currentEmail = email;
     controls.account.classList.toggle("open", Boolean(email)); controls.trigger.hidden = Boolean(email); controls.login.hidden = Boolean(email);
     controls.email.textContent = email ?? "";
+    controls.avatars.forEach((avatar) => { avatar.textContent = email ? initialsFor(email) : ""; });
+    if (!email) { controls.closeMenu(); publishAccountState(null); }
   };
   renderAccount(currentEmail);
 
