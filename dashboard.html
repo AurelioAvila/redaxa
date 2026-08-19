@@ -116,7 +116,14 @@ main{width:100%;max-width:1280px;margin:0 auto;padding:36px 44px 96px}
 .onboarding-close:hover{background:#ffffff0d;color:var(--text)}
 
 /* ---------- layout ---------- */
-.grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(320px,.75fr);gap:18px;margin-top:20px;align-items:start}
+/* The composer and the results panel are their own section so that the
+   panel's sticky travel is bounded by the analysis area. When they shared one
+   grid with "Your activity" and "Recent local checks", the results column was
+   a grid item spanning only the first row but sized to its full content, which
+   left a tall dead zone under the composer and kept the panel alongside
+   sections it has nothing to do with. */
+.workspace{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(320px,.75fr);gap:18px;margin-top:20px;align-items:start}
+.stack{display:grid;gap:18px;margin-top:18px}
 .card{border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface-1)}
 .card-head{display:flex;align-items:center;gap:11px;margin-bottom:16px}
 .card-head h2{flex:1;margin:0;font-size:15px;font-weight:700;letter-spacing:-.02em}
@@ -183,7 +190,34 @@ main{width:100%;max-width:1280px;margin:0 auto;padding:36px 44px 96px}
 .kbd{padding:2px 5px;border:1px solid var(--line-strong);border-radius:5px;background:var(--surface-2);font:inherit;font-size:10.5px;color:var(--text-2)}
 
 /* ---------- results ---------- */
-.results{padding:24px;position:sticky;top:24px}
+/* Capped to the viewport with its own internal scroll: the panel now stays
+   entirely on screen no matter how many detections come back, instead of
+   growing to two screens tall and dragging the layout with it. */
+.results{
+  position:sticky;top:24px;
+  display:flex;flex-direction:column;
+  max-height:calc(100vh - 48px);
+  padding:0;overflow:hidden;
+}
+.results-head{flex:0 0 auto;padding:22px 22px 0}
+.results-head .card-head{margin-bottom:14px}
+/* The heading is the scroll/focus target after a check. Sizing it to its text
+   keeps the focus ring around the word "Results" instead of stretching it
+   across the whole panel, where it reads as a rendering fault. */
+.results-head .card-head h2{flex:0 1 auto}
+.results-head .risk-banner{margin-bottom:16px}
+.results-scroll{
+  flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;
+  padding:0 22px 18px;
+  scrollbar-width:thin;scrollbar-color:#3d4535 transparent;
+}
+.results-scroll::-webkit-scrollbar{width:11px}
+.results-scroll::-webkit-scrollbar-track{background:transparent}
+.results-scroll::-webkit-scrollbar-thumb{background:#3d4535;border-radius:99px;border:3px solid var(--surface-1)}
+.results-scroll::-webkit-scrollbar-thumb:hover{background:#525c47}
+.results-scroll:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.results-foot{flex:0 0 auto;padding:14px 22px;border-top:1px solid var(--line);background:var(--surface-1)}
+.results-foot .copy{margin-top:0}
 .preview-note{
   display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:7px 10px;
   border:1px dashed var(--line-strong);border-radius:8px;
@@ -263,7 +297,7 @@ main{width:100%;max-width:1280px;margin:0 auto;padding:36px 44px 96px}
 .empty{padding:16px;border:1px dashed var(--line-strong);border-radius:var(--r);color:var(--text-3);font-size:12.5px;line-height:1.55}
 
 /* ---------- activity ---------- */
-.activity{grid-column:1/-1;padding:22px}
+.activity{padding:22px}
 .metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 .metric{padding:14px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface-2)}
 .metric span{display:block;color:var(--text-3);font-size:11px;line-height:1.4}
@@ -277,7 +311,7 @@ main{width:100%;max-width:1280px;margin:0 auto;padding:36px 44px 96px}
 .analytics-value{flex:0 0 24px;text-align:right;color:var(--text-3);font-variant-numeric:tabular-nums}
 
 /* ---------- history ---------- */
-.history{grid-column:1/-1;padding:22px}
+.history{padding:22px}
 .history-title{display:flex;flex:1;justify-content:space-between;align-items:center;gap:12px}
 .history-title h2{margin:0;font-size:15px;font-weight:700}
 .history-list{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
@@ -368,9 +402,16 @@ html.preferences-open #pwa-install,html.preferences-open #inspect-clipboard{disp
 
 /* ---------- responsive ---------- */
 @media(max-width:1180px){
-  .grid{grid-template-columns:minmax(0,1fr)}
-  .results{position:static}
+  .workspace{grid-template-columns:minmax(0,1fr)}
   main{padding:32px 30px 90px}
+  /* One column: the panel flows under the input and scrolls with the page, so
+     no sticky positioning and no height cap. The action bar sticks to the
+     bottom of the viewport while the panel is on screen, then scrolls away
+     with it. */
+  .results{position:static;max-height:none;overflow:visible}
+  .results-scroll{overflow:visible;min-height:0}
+  .results-foot{position:sticky;bottom:0;border-radius:0 0 var(--r-lg) var(--r-lg)}
+  #res-live{padding-bottom:4px}
 }
 @media(max-width:900px){
   .app{display:block}
@@ -388,10 +429,19 @@ html.preferences-open #pwa-install,html.preferences-open #inspect-clipboard{disp
   .actions{flex-direction:column-reverse;align-items:stretch}
   .actions .primary,.actions .ghost-btn{width:100%;padding:14px}
   .kbd-hint{display:none}
-  .composer,.results,.activity,.history{padding:18px}
+  .composer,.activity,.history{padding:18px}
+  .results{padding:0}
+  .results-head{padding:18px 18px 0}
+  .results-scroll{padding:0 18px 14px}
+  .results-foot{padding:12px 18px}
   .prompt-meta{flex-direction:column;align-items:flex-start;gap:6px}
   #pwa-install,#inspect-clipboard{left:16px;right:16px;text-align:center}
   #inspect-clipboard{bottom:74px}
+  /* The results action bar is sticky at the bottom on narrow screens, which is
+     exactly where the floating install pill lives. Lift the pill above it while
+     a result is on screen so neither one covers the other. */
+  body:has(#results-foot:not([hidden])) #pwa-install{bottom:92px}
+  body:has(#results-foot:not([hidden])) #inspect-clipboard{bottom:142px}
 }
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style></head>
@@ -465,7 +515,7 @@ html.preferences-open #pwa-install,html.preferences-open #inspect-clipboard{disp
       </ul>
     </section>
 
-    <section class="grid">
+    <section class="workspace">
       <article class="card composer">
         <h2 id="composer-title" data-i18n="composerTitle">Check your prompt before sharing it with AI</h2>
         <p class="composer-sub" data-i18n="composerSub">Paste anything you are about to send to ChatGPT, Claude, Gemini or Copilot.</p>
@@ -497,12 +547,22 @@ html.preferences-open #pwa-install,html.preferences-open #inspect-clipboard{disp
         </div>
       </article>
 
-      <aside class="card results" id="results-card" aria-live="polite">
-        <div class="card-head">
-          <span class="card-icon accent" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4.3-4.3"/></svg></span>
-          <h2 data-i18n="resultsTitle">Results</h2>
+      <aside class="card results" id="results-card">
+        <div class="results-head">
+          <div class="card-head">
+            <span class="card-icon accent" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4.3-4.3"/></svg></span>
+            <h2 id="results-title" tabindex="-1" data-i18n="resultsTitle">Results</h2>
+          </div>
+          <div class="risk-banner" id="risk-banner" hidden>
+            <span class="risk-mark" id="risk-count" aria-hidden="true">&#8212;</span>
+            <div>
+              <b id="risk-title">Ready to inspect</b>
+              <span id="risk-copy">We will check for common personal data and secrets.</span>
+            </div>
+          </div>
         </div>
 
+        <div class="results-scroll" id="results-scroll" tabindex="0" role="group" aria-labelledby="results-title">
         <div id="res-preview">
           <span class="preview-note"><b data-i18n="previewBadge">Preview</b><span data-i18n="previewLabel">example result — not your prompt</span></span>
           <div class="preview-demo">
@@ -532,24 +592,23 @@ html.preferences-open #pwa-install,html.preferences-open #inspect-clipboard{disp
         </div>
 
         <div id="res-live" hidden>
-          <div class="risk-banner" id="risk-banner">
-            <span class="risk-mark" id="risk-count" aria-hidden="true">—</span>
-            <div>
-              <b id="risk-title">Ready to inspect</b>
-              <span id="risk-copy">We will check for common personal data and secrets.</span>
-            </div>
-          </div>
           <span class="snippet-label" id="snippet-label" hidden data-i18n="foundInPrompt">Found in your prompt</span>
           <div class="snippet" id="result-snippet" hidden></div>
           <div class="findings" id="findings"></div>
           <div class="safe" id="safe">
             <h3 data-i18n="saferVersion">Safer version</h3>
             <pre id="redacted"></pre>
-            <button class="copy" type="button" id="copy" data-i18n="copySafer">Copy redacted prompt</button>
           </div>
         </div>
-      </aside>
+        </div>
 
+        <div class="results-foot" id="results-foot" hidden>
+          <button class="copy" type="button" id="copy" data-i18n="copySafer">Copy redacted prompt</button>
+        </div>
+      </aside>
+    </section>
+
+    <section class="stack">
       <section class="card activity" id="activity-card">
         <div class="card-head">
           <span class="card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19V10"/><path d="M12 19V5"/><path d="M19 19v-6"/></svg></span>

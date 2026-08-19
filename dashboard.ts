@@ -351,6 +351,11 @@ export function mountDashboard(): void {
   const copy = required<HTMLElement>("#risk-copy");
   const resPreview = required<HTMLElement>("#res-preview");
   const resLive = required<HTMLElement>("#res-live");
+  const resultsCard = required<HTMLElement>("#results-card");
+  const resultsTitle = required<HTMLElement>("#results-title");
+  const resultsScroll = required<HTMLElement>("#results-scroll");
+  const resultsFoot = required<HTMLElement>("#results-foot");
+  const workspace = required<HTMLElement>(".workspace");
   const historyRoot = required<HTMLElement>("#history");
   const historyCard = required<HTMLElement>("#history-card");
   const scanButton = required<HTMLButtonElement>("#scan");
@@ -834,12 +839,28 @@ export function mountDashboard(): void {
       return `<div class="fgroup"><div class="fgroup-head"><b>${escapeHtml(labels()[kind] ?? kind)}</b><span class="fgroup-count">${items.length}</span></div>${rows}</div>`;
     }).join("");
     safeRoot.style.display = n ? "block" : "none";
+    resultsFoot.hidden = !n;
   };
 
   const showResults = (): void => {
     resPreview.hidden = true;
     resLive.hidden = false;
+    riskBanner.hidden = false;
     document.getElementById("pwa-install")?.classList.add("promoted");
+  };
+
+  // After a check the answer must be on screen without hunting for it. On the
+  // two-column layout the whole analysis area is brought into view; in one
+  // column the results panel itself is, since it sits below the input. Focus
+  // then moves to the "Results" heading so keyboard and screen-reader users
+  // land on the new content rather than staying in the textarea.
+  const revealResults = (): void => {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const singleColumn = window.matchMedia("(max-width: 1180px)").matches;
+    const target = singleColumn ? resultsCard : workspace;
+    target.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+    resultsScroll.scrollTop = 0;
+    resultsTitle.focus({ preventScroll: true });
   };
 
   const scan = async (): Promise<void> => {
@@ -859,6 +880,8 @@ export function mountDashboard(): void {
       resultSnippet.hidden = true;
       snippetLabel.hidden = true;
       safeRoot.style.display = "none";
+      resultsFoot.hidden = true;
+      revealResults();
       return;
     }
     scanButton.disabled = true;
@@ -871,6 +894,7 @@ export function mountDashboard(): void {
       renderRiskCopy();
       redacted.textContent = result.redactedText;
       renderHistory();
+      revealResults();
     } catch (error) {
       const message = error instanceof Error ? error.message : "";
       if (message === "TRIAL_REQUIRED") {
@@ -886,6 +910,8 @@ export function mountDashboard(): void {
         resultSnippet.hidden = true;
         snippetLabel.hidden = true;
         safeRoot.style.display = "none";
+        resultsFoot.hidden = true;
+        revealResults();
       }
     } finally {
       scanButton.textContent = words().scan;
