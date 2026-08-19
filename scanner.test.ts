@@ -147,4 +147,27 @@ const dottedRun = inspectPrompt("Build 10 2024.1234.5678 shipped", {
 });
 assert.deepEqual(dottedRun.findings, []);
 
+// Regression test: casual chat rarely includes the colon a strict
+// "password: x" pattern required, so "password albert00" (typed live through
+// the browser extension) went completely undetected. A credential-shaped
+// token after "password" (contains a digit, or mixes case) must now be
+// flagged even with no separator at all.
+const casualPassword = inspectPrompt("password albert00", {
+  includePersonalData: false, includeCredentials: true, includeFinancialData: false
+});
+assert.deepEqual(casualPassword.findings.map((finding) => finding.kind), ["credential"]);
+assert.match(casualPassword.redactedText, /password \[REDACTED\]/);
+
+// ...but plain English words that happen to follow "password" in an ordinary
+// sentence must not be misread as a leaked credential.
+const passwordSentence = inspectPrompt("Please reset your password before Friday.", {
+  includePersonalData: false, includeCredentials: true, includeFinancialData: false
+});
+assert.deepEqual(passwordSentence.findings, []);
+
+const passwordAdvice = inspectPrompt("Meglio usare una password unica e lunga.", {
+  includePersonalData: false, includeCredentials: true, includeFinancialData: false
+});
+assert.deepEqual(passwordAdvice.findings, []);
+
 console.log("PromptShield scanner tests passed.");

@@ -14,7 +14,7 @@ export interface ScanOptions {
   customTerms?: string[];
 }
 
-type Rule = Omit<Finding, "value"> & { pattern: RegExp; validate?: (value: string) => boolean };
+type Rule = Omit<Finding, "value"> & { pattern: RegExp; validate?: (value: string, groups?: string[]) => boolean };
 
 function luhnValid(raw: string): boolean {
   const digits = raw.replace(/[ -]/g, "");
@@ -76,6 +76,18 @@ function nameValid(raw: string): boolean {
   return !salutationStoplist.has(raw.split(/\s/)[0].toLowerCase());
 }
 
+// "password: hunter2" (explicit separator) is unambiguous on its own. Plain
+// "password hunter2" (people rarely type the colon in casual chat) is only
+// trusted when the following token actually looks credential-shaped -- has a
+// digit, or mixes case -- so ordinary sentences like "password reset" or
+// "password is required" aren't misread as a leaked secret.
+function credentialValid(_value: string, groups: string[] = []): boolean {
+  const [, separator, token] = groups;
+  if (!token) return false;
+  if (separator && /[:=]/.test(separator)) return true;
+  return /\d/.test(token) || (/[a-z]/.test(token) && /[A-Z]/.test(token));
+}
+
 const rules: Rule[] = [
   { kind: "email", label: "Email address", replacement: "[EMAIL]", pattern: /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi },
   { kind: "ssn", label: "Social Security Number", replacement: "[SSN]", pattern: /\b\d{3}-\d{2}-\d{4}\b/g, validate: ssnValid },
@@ -112,7 +124,11 @@ const rules: Rule[] = [
   // longer dotted-numeric run, keep out" when a digit follows it.
   { kind: "phone", label: "Phone number", replacement: "[PHONE]", pattern: /(?<![\w.])(?:\+?\d{1,3}[ -]?)?(?:\(?\d{2,4}\)?[ -]?)?\d{3,4}[ -]\d{3,4}(?!\w)(?!\.\d)/g, validate: phoneValid },
   { kind: "ip", label: "IPv4 address", replacement: "[IP ADDRESS]", pattern: /\b(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)\b/g },
-  { kind: "credential", label: "Password or credential", replacement: "$1$2[REDACTED]", pattern: /\b(password|passwd|pwd|secret)\s*([:=])\s*([^\s,;]{6,})/gi }
+  {
+    kind: "credential", label: "Password or credential", replacement: "$1$2[REDACTED]",
+    pattern: /\b(password|passwd|pwd|secret)\b(\s*[:=]\s*|\s+)([^\s,;]{4,})/gi,
+    validate: credentialValid
+  }
 ];
 
 export function inspectPrompt(text: string, options: ScanOptions = { includePersonalData: true, includeCredentials: true, includeFinancialData: true }): { findings: Finding[]; redactedText: string } {
@@ -125,10 +141,17 @@ export function inspectPrompt(text: string, options: ScanOptions = { includePers
     if (!enabled) continue;
     if (rule.validate) {
       const validate = rule.validate;
-      redactedText = redactedText.replace(rule.pattern, (value: string) => {
-        if (!validate(value)) return value;
+      redactedText = redactedText.replace(rule.pattern, (...args: unknown[]) => {
+        const value = args[0] as string;
+        // String#replace passes (match, ...capture groups, offset, fullString)
+        // to the callback -- drop the trailing offset/fullString to leave just
+        // the capture groups, so rules can validate/substitute using them.
+        const groups = args.slice(1, -2) as string[];
+        if (!validate(value, groups)) return value;
         findings.push({ kind: rule.kind, label: rule.label, value, replacement: rule.replacement });
-        return rule.replacement;
+        return rule.replacement.includes("$")
+          ? rule.replacement.replace(/\$(\d)/g, (_, i) => groups[Number(i) - 1] ?? "")
+          : rule.replacement;
       });
     } else {
       const found = [...redactedText.matchAll(rule.pattern)].map((match) => match[0]);
