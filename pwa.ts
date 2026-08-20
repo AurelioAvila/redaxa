@@ -6,13 +6,18 @@ interface DeferredInstallPromptEvent extends Event {
 let deferredInstallPrompt: DeferredInstallPromptEvent | null = null;
 
 function addInstallControl(): void {
-  const control = document.createElement("button");
-  control.id = "pwa-install";
-  control.type = "button";
-  control.hidden = true;
-  control.textContent = "Install app";
-  control.setAttribute("aria-label", "Install PromptShield on this device");
-  document.body.append(control);
+  // Prefer the styled button the page already places in its nav; fall back to
+  // creating one only on pages that don't declare it.
+  let control = document.getElementById("pwa-install") as HTMLButtonElement | null;
+  if (control === null) {
+    control = document.createElement("button");
+    control.id = "pwa-install";
+    control.type = "button";
+    control.hidden = true;
+    control.textContent = "Install app";
+    control.setAttribute("aria-label", "Install PromptShield on this device");
+    document.body.append(control);
+  }
 
   window.addEventListener("beforeinstallprompt", (event) => {
     event.preventDefault();

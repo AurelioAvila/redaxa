@@ -24,7 +24,38 @@
       /* Product polish */
       body { background:radial-gradient(circle at 52% -15%,#263519 0,transparent 34%),radial-gradient(circle at 98% 45%,#1a2410 0,transparent 18%),var(--ink); }
       nav { position:relative; z-index:1; }.brand { letter-spacing:-.055em; }.mark { width:38px; height:38px; padding:0; transform:none; overflow:hidden; border-radius:10px; background:transparent; }.mark img { width:100%; height:100%; display:block; }
-      .small-btn,.primary { border-radius:8px; transition:transform .18s,background .18s; }.small-btn:hover,.primary:hover { transform:translateY(-2px); background:#d0ff55; }.hero { padding-top:92px; position:relative; overflow:hidden; }.hero::after { content:""; position:absolute; width:340px; height:340px; border:1px solid #66814466; border-radius:50%; right:-80px; top:20px; box-shadow:0 0 0 28px #b9ff0007,0 0 0 56px #b9ff0004; pointer-events:none; }.eyebrow { position:relative; z-index:1; padding:7px 10px; border:1px solid #425333; border-radius:999px; background:#131a0e; width:max-content; }.hero h1,.hero p,.hero-meta { position:relative; z-index:1; }
+      .small-btn,.primary { border-radius:8px; transition:transform .18s,background .18s; }.small-btn:hover,.primary:hover { transform:translateY(-2px); background:#d0ff55; }.small-btn.ghost:hover { background:#1a1a1a; }.hero { padding-top:92px; position:relative; overflow:hidden; }
+      /* Two-column hero: copy left, live-check preview right — the previously
+         empty right half now shows the product doing its job. */
+      .hero { display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,.9fr); gap:56px; align-items:center; }
+      .hero h1 { max-width:none; font-size:clamp(48px,6.4vw,88px); }
+      .hero-demo { position:relative; z-index:1; }
+      .demo-card { border:1px solid #2f3a24; border-radius:16px; background:linear-gradient(150deg,#131712,#0c0e0b); box-shadow:0 24px 70px #000a,0 0 0 1px #b9ff0008; padding:20px 22px; font-size:13px; }
+      .demo-head,.demo-foot { display:flex; align-items:center; gap:8px; color:#9fae86; font-size:11px; text-transform:uppercase; letter-spacing:.12em; font-weight:800; }
+      .demo-count { margin-left:auto; color:var(--danger); letter-spacing:.06em; }
+      .demo-dot { width:7px; height:7px; border-radius:50%; background:var(--acid); box-shadow:0 0 0 4px #b9ff0015; }
+      .demo-prompt { margin:14px 0 16px; color:#d8d8d2; line-height:1.6; font-size:14px; }
+      .demo-prompt mark { background:#ff4b2118; color:#ffb39f; border-bottom:1px dashed var(--danger); padding:1px 3px; border-radius:3px; }
+      .demo-finding { display:flex; align-items:center; gap:9px; border-top:1px solid #232823; padding:9px 0; color:#a9a9a3; }
+      .demo-finding b { color:var(--paper); margin-right:6px; font-size:12.5px; }
+      .demo-finding .sev { width:7px; height:7px; background:var(--danger); flex-shrink:0; }
+      .demo-safe { border-top:1px solid #232823; padding-top:12px; margin-top:3px; }
+      .demo-safe b { display:block; font-size:11px; text-transform:uppercase; letter-spacing:.11em; color:var(--acid); margin-bottom:7px; }
+      .demo-safe code { display:block; font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace; color:#cfd8bd; background:#0a0c09; border:1px solid #242a1d; border-radius:9px; padding:11px 13px; }
+      .demo-foot { margin-top:14px; color:#7f8b6c; }
+      @media (max-width:960px) { .hero { grid-template-columns:1fr; gap:34px; } .hero-demo { display:none; } .hero h1 { max-width:860px; } }
+      /* Suite cross-promo strip (PC Tweaker). Violet marks the sibling brand;
+         everything else stays in this page's own language. */
+      .suite { margin:0 0 26px; border:1px solid #2c2739; border-radius:18px; background:linear-gradient(140deg,#161221,#0d0b12); padding:34px 36px; display:flex; align-items:center; justify-content:space-between; gap:34px; }
+      .suite-kicker { color:#a78bfa; font-size:11px; text-transform:uppercase; letter-spacing:.13em; font-weight:800; }
+      .suite h2 { margin:12px 0 10px; font-size:clamp(24px,3.4vw,38px); letter-spacing:-.05em; }
+      .suite h2 em { font-style:normal; color:#a78bfa; }
+      .suite p { margin:0; color:#9b96a8; font-size:14px; line-height:1.6; max-width:560px; }
+      .suite-cta { flex-shrink:0; display:flex; flex-direction:column; align-items:center; gap:3px; background:#8b5cf6; color:#0d0716; font-weight:800; padding:15px 26px; border-radius:11px; transition:transform .18s,background .18s; }
+      .suite-cta span { font-weight:600; font-size:11.5px; opacity:.75; }
+      .suite-cta:hover { transform:translateY(-2px); background:#a78bfa; }
+      @media (max-width:760px) { .suite { flex-direction:column; align-items:flex-start; padding:26px 22px; } }
+      #pwa-install[hidden] { display:none; }.hero::after { content:""; position:absolute; width:340px; height:340px; border:1px solid #66814466; border-radius:50%; right:-80px; top:20px; box-shadow:0 0 0 28px #b9ff0007,0 0 0 56px #b9ff0004; pointer-events:none; }.eyebrow { position:relative; z-index:1; padding:7px 10px; border:1px solid #425333; border-radius:999px; background:#131a0e; width:max-content; }.hero h1,.hero p,.hero-meta { position:relative; z-index:1; }
       .scanner { border-radius:22px; overflow:hidden; box-shadow:0 26px 75px #0008; }.scanner-head { background:#151915; }.scan-area textarea { border-radius:11px; }.scan-area textarea:focus { border-color:#849d4c; box-shadow:0 0 0 3px #b9ff0010; }.results { background:#101210; }.empty,.plan { border-radius:11px; }.copy { border-radius:7px; }.principles { border-radius:18px; overflow:hidden; background:#31382e; }.principle { background:linear-gradient(145deg,#121412,#0b0d0b); }.principle:hover { background:linear-gradient(145deg,#192017,#0e110d); }.principle .num { display:inline-flex; padding:5px 8px; border:1px solid #435334; border-radius:999px; background:#151d11; }.plan { background:#101210; }.plan.featured:hover { background:linear-gradient(145deg,#1a2013,#0f120e); box-shadow:0 12px 38px #0006; }.plan button { border-radius:7px; }.pricing { padding-bottom:98px; } footer { align-items:center; }.footer-brand::before { content:""; width:21px; height:21px; background:url('outputs/promptshield-mark.svg') center/contain no-repeat; display:inline-block; }
     </style>
   </head>
@@ -32,13 +63,27 @@
     <main class="shell">
       <nav>
         <a class="brand" href="#top" aria-label="PromptShield home"><span class="mark"><img src="outputs/promptshield-mark.svg" alt="" /></span><span>PromptShield</span></a>
-        <div class="navlinks"><a href="#scanner">Scanner</a><a href="#pricing">Pricing</a><a href="/privacy.html">Privacy</a><a class="small-btn" href="#scanner">Try it free</a></div>
+        <div class="navlinks"><a href="#scanner">Scanner</a><a href="#pricing">Pricing</a><a href="/privacy.html">Privacy</a><button class="small-btn ghost" id="pwa-install" hidden type="button" aria-label="Install PromptShield on this device">Install app</button><a class="small-btn" href="#scanner">Try it free</a></div>
       </nav>
       <section class="hero" id="top">
-        <div class="eyebrow"><span class="pulse"></span> Privacy, before AI</div>
-        <h1>Think freely.<br /><em>Share safely.</em></h1>
-        <p>PromptShield catches personal data and secrets before a prompt reaches an AI model. Your prompt is checked, never stored or logged.</p>
-        <div class="hero-meta"><span><b>7 days free.</b> Cancel anytime.</span><span class="arrow">→</span><span>Individual and business plans</span></div>
+        <div class="hero-copy">
+          <div class="eyebrow"><span class="pulse"></span> Privacy, before AI</div>
+          <h1>Think freely.<br /><em>Share safely.</em></h1>
+          <p>PromptShield catches personal data and secrets before a prompt reaches an AI model. Your prompt is checked, never stored or logged.</p>
+          <div class="hero-meta"><span><b>7 days free.</b> Cancel anytime.</span><span class="arrow">→</span><span>Individual and business plans</span></div>
+        </div>
+        <!-- Static preview of an actual scan: the empty right half of the hero
+             becomes proof of what the product does, before any scrolling. -->
+        <aside class="hero-demo" aria-hidden="true">
+          <div class="demo-card">
+            <div class="demo-head"><span class="demo-dot"></span> Live check <span class="demo-count">2 findings</span></div>
+            <p class="demo-prompt">&ldquo;Draft a payment reminder for <mark>marco.rossi@acme.com</mark> &mdash; invoice IBAN <mark>IT60 X054 2811 &hellip;3 456</mark>, due Friday.&rdquo;</p>
+            <div class="demo-finding"><span class="sev"></span><span><b>Email address</b> marco.rossi@acme.com</span></div>
+            <div class="demo-finding"><span class="sev"></span><span><b>IBAN</b> IT60 X054 2811 &hellip;3 456</span></div>
+            <div class="demo-safe"><b>Safer version</b><code>&ldquo;Draft a payment reminder for [email] &mdash; invoice [iban], due Friday.&rdquo;</code></div>
+            <div class="demo-foot"><span class="demo-dot"></span> Checked in 0.2s &middot; nothing stored</div>
+          </div>
+        </aside>
       </section>
       <section class="scanner" id="scanner" aria-labelledby="scanner-title">
         <div class="scanner-head"><h2 id="scanner-title">Private prompt check</h2><div class="local"><span>●</span> Encrypted in transit — never stored</div></div>
@@ -49,7 +94,17 @@
       </section>
       <section class="principles" id="privacy"><article class="principle"><div class="num">01 / ZERO RETENTION</div><h3>Private by design.</h3><p>Your prompt is checked over an encrypted connection to power the scan, then discarded immediately. We never log or store the text you paste.</p></article><article class="principle"><div class="num">02 / CLEAR CONTROL</div><h3>See what matters.</h3><p>Findings are specific and readable, so you can redact only what needs protecting.</p></article><article class="principle"><div class="num">03 / NO SURPRISES</div><h3>Simple billing.</h3><p>Start with 7 days free. A card is required; cancel before the trial ends and you will not be charged.</p></article></section>
       <section class="pricing" id="pricing"><h2>Protection that scales<br />with your work.</h2><p>Every plan starts with a 7-day trial. Use code <b>SHIELD</b> for 20% off your first monthly payment.</p><div class="plans"><article class="plan"><div class="tag">For individuals</div><h3>Personal</h3><div class="price">€7.99 <small>/ month</small></div><p>For independent professionals who use AI with real client and personal information.</p><button type="button" data-plan="personal" data-interval="monthly">Start 7-day trial</button><button type="button" data-plan="personal" data-interval="yearly">€79.90 yearly</button></article><article class="plan featured"><div class="tag">For teams · up to 3 users</div><h3>Business</h3><div class="price">€14.99 <small>/ user / month</small></div><p>Team controls and a clear privacy boundary for growing teams. Choose one to three seats.</p><label style="display:block;margin-top:14px;color:#aaa;font-size:13px">Seats <select id="business-seats" style="margin-left:8px;background:#111;color:#fff;border:1px solid #444;padding:6px"><option value="1">1 user</option><option value="2">2 users</option><option value="3">3 users</option></select></label><button type="button" data-plan="business" data-interval="monthly">Start 7-day trial</button><button type="button" data-plan="business" data-interval="yearly">€149.90 yearly / user</button></article><article class="plan"><div class="tag">Already subscribed?</div><h3>Manage billing</h3><div class="price">In control</div><p>Update your payment method, download invoices, or cancel renewal whenever you need to.</p><button type="button" id="manage-billing">Manage subscription</button></article></div></section>
-      <footer><span class="footer-brand">PromptShield</span><span>© 2026 · Built for thoughtful AI use · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></span></footer>
+      <!-- Suite cross-promo: same maker, adjacent problem. One rhetorical
+           hook, one honest sentence, one exit — never a banner farm. -->
+      <section class="suite" aria-label="From the maker of PromptShield">
+        <div class="suite-copy">
+          <div class="suite-kicker">From the maker of PromptShield</div>
+          <h2>Your prompts are safe. <em>Is your PC still lagging?</em></h2>
+          <p>PC Tweaker tunes Windows for speed, gaming and privacy &mdash; and every change is backed up and reversible with one click. Same maker, same rule: nothing happens without your say-so.</p>
+        </div>
+        <a class="suite-cta" href="https://pctweaker.app" target="_blank" rel="noopener">Get PC Tweaker<span>free for Windows 10/11</span></a>
+      </section>
+      <footer><span class="footer-brand">PromptShield</span><span>© 2026 · Built for thoughtful AI use · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a> · <a href="https://pctweaker.app" target="_blank" rel="noopener">PC Tweaker</a></span></footer>
     </main>
     <script type="module" src="dist/auth.js"></script>
     <script type="module" src="dist/landing.js"></script>
