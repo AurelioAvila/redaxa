@@ -7,83 +7,356 @@
     <title>PromptShield — Think freely. Share safely.</title>
     <link rel="icon" type="image/svg+xml" href="/outputs/promptshield-mark.svg" />
     <style>
-      :root { --ink:#090909; --surface:#111; --line:#292929; --muted:#a4a4a4; --paper:#f4f3ef; --acid:#b9ff00; --danger:#ff4b21; }
-      * { box-sizing:border-box; } html { scroll-behavior:smooth; } body { margin:0; background:var(--ink); color:var(--paper); font-family:Inter, ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
-      button, textarea { font:inherit; } button { cursor:pointer; } a { color:inherit; text-decoration:none; }
-      .shell { max-width:1180px; margin:auto; padding:0 28px; } nav { height:82px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #1d1d1d; }
-      .brand { display:flex; gap:11px; align-items:center; font-weight:800; letter-spacing:-.06em; font-size:22px; }.mark { display:grid; place-items:center; width:34px; height:34px; background:var(--paper); color:var(--ink); font-size:14px; font-style:italic; transform:skew(-10deg); letter-spacing:-.18em; padding-right:3px; }
-      .navlinks { display:flex; align-items:center; gap:28px; color:#b5b5b5; font-size:14px; }.navlinks a:hover { color:var(--paper); }.small-btn,.primary { border:0; font-weight:750; }.small-btn { padding:10px 15px; color:var(--ink); background:var(--paper); }.small-btn.ghost { background:transparent; color:var(--paper); border:1px solid #3a3a3a; }.small-btn.ghost:hover { background:#1a1a1a; }
-      .hero { padding:84px 0 46px; }.eyebrow { display:flex; align-items:center; gap:9px; color:var(--acid); text-transform:uppercase; letter-spacing:.13em; font-size:11px; font-weight:800; }.pulse { width:7px; height:7px; background:var(--acid); border-radius:50%; box-shadow:0 0 0 5px #b9ff0018; }.hero h1 { max-width:860px; margin:18px 0; font-size:clamp(52px,8vw,104px); line-height:.89; letter-spacing:-.085em; }.hero h1 em { color:var(--acid); font-style:normal; }.hero p { max-width:570px; color:var(--muted); font-size:18px; line-height:1.55; margin:26px 0 0; }.hero-meta { margin-top:38px; display:flex; align-items:center; gap:22px; color:#aaa; font-size:13px; }.hero-meta b { color:var(--paper); }.arrow { color:var(--acid); font-size:22px; }
-      .scanner { margin:44px 0 100px; border:1px solid var(--line); background:linear-gradient(135deg,#121212,#0d0d0d); }.scanner-head { padding:20px 24px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--line); }.scanner-head h2 { margin:0; font-size:16px; letter-spacing:-.02em; }.local { color:#8f8f8f; font-size:12px; }.local span { color:var(--acid); }.scanner-grid { display:grid; grid-template-columns:1.2fr .8fr; min-height:410px; }.scan-area { padding:24px; border-right:1px solid var(--line); display:flex; flex-direction:column; }.scan-area label { color:#aaa; font-size:12px; margin-bottom:10px; }.scan-area textarea { flex:1; min-height:220px; resize:vertical; border:1px solid #333; background:#090909; color:var(--paper); padding:18px; outline:none; line-height:1.55; }.scan-area textarea:focus { border-color:#777; }.actions { display:flex; justify-content:space-between; align-items:center; margin-top:16px; }.sample { background:transparent; border:0; color:#aaa; padding:0; font-size:13px; text-decoration:underline; text-underline-offset:4px; }.primary { background:var(--acid); color:#080808; padding:13px 18px; }.primary:hover { background:#d1ff4b; }.results { padding:24px; }.results h3 { margin:0; font-size:14px; }.results-copy { color:#888; line-height:1.45; font-size:13px; margin:8px 0 20px; }.empty { border:1px dashed #373737; padding:24px; color:#858585; font-size:13px; line-height:1.5; }.finding { border-top:1px solid #333; padding:13px 0; display:flex; align-items:flex-start; gap:10px; }.severity { width:8px; height:8px; margin-top:5px; background:var(--danger); }.finding b { display:block; font-size:13px; }.finding span { display:block; color:#999; font-size:12px; margin-top:4px; word-break:break-word; }.safe-output { display:none; margin-top:16px; border-top:1px solid #333; padding-top:16px; }.safe-output pre { margin:8px 0 0; padding:13px; white-space:pre-wrap; font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; color:#d4d4d4; background:#090909; max-height:130px; overflow:auto; }.copy { margin-top:10px; color:var(--paper); background:#252525; border:1px solid #333; padding:9px 12px; font-size:12px; }
-      .principles { padding:14px 0 100px; display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:#262626; }.principle { background:var(--ink); padding:28px; min-height:190px; }.principle .num { color:var(--acid); font-size:12px; font-weight:800; }.principle h3 { font-size:21px; letter-spacing:-.04em; margin:36px 0 8px; }.principle p { color:#939393; font-size:14px; line-height:1.5; margin:0; }
-      .pricing { border-top:1px solid var(--line); padding:88px 0; }.pricing h2 { font-size:clamp(36px,5vw,62px); letter-spacing:-.075em; margin:0 0 10px; }.pricing > p { color:#999; margin:0 0 32px; }.plans { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }.plan { border:1px solid var(--line); padding:25px; min-height:255px; }.plan { transition:border-color .18s ease, background .18s ease, box-shadow .18s ease, transform .18s ease; }
-      .plan:hover { transform:translateY(-2px); }
-      .plan.featured:hover { border-color:var(--acid); }.plan .tag { color:var(--acid); font-size:11px; text-transform:uppercase; letter-spacing:.12em; font-weight:800; }.plan h3 { margin:18px 0 6px; font-size:22px; }.plan .price { font-size:34px; letter-spacing:-.06em; }.plan .price small { color:#999; font-size:13px; letter-spacing:0; }.plan p { color:#999; font-size:13px; line-height:1.5; }.plan button { margin-top:12px; width:100%; padding:11px; border:1px solid #404040; background:transparent; color:var(--paper); }.plan.featured button { background:var(--acid); color:var(--ink); border-color:var(--acid); font-weight:800; }
-      footer { border-top:1px solid var(--line); padding:28px 0 40px; display:flex; justify-content:space-between; color:#858585; font-size:12px; }.footer-brand { color:var(--paper); font-weight:750; }footer a { text-decoration:underline; text-underline-offset:3px; }footer a:hover { color:var(--paper); }
-      @media (max-width:760px) { .shell { padding:0 18px; }.navlinks { display:none; }.hero { padding-top:56px; }.scanner-grid,.principles,.plans { grid-template-columns:1fr; }.scan-area { border-right:0; border-bottom:1px solid var(--line); }.hero-meta { gap:12px; flex-wrap:wrap; }.principles { background:transparent; gap:0; }.principle { border-bottom:1px solid var(--line); }.plans { gap:10px; } }
-      /* Product polish */
-      body { background:radial-gradient(circle at 52% -15%,#263519 0,transparent 34%),radial-gradient(circle at 98% 45%,#1a2410 0,transparent 18%),var(--ink); }
-      nav { position:relative; z-index:1; }.brand { letter-spacing:-.055em; }.mark { width:38px; height:38px; padding:0; transform:none; overflow:hidden; border-radius:10px; background:transparent; }.mark img { width:100%; height:100%; display:block; }
-      .small-btn,.primary { border-radius:8px; transition:transform .18s,background .18s; }.small-btn:hover,.primary:hover { transform:translateY(-2px); background:#d0ff55; }.small-btn.ghost:hover { background:#1a1a1a; }.hero { padding-top:92px; position:relative; overflow:hidden; }
-      /* Two-column hero: copy left, live-check preview right — the previously
-         empty right half now shows the product doing its job. */
-      .hero { display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,.9fr); gap:56px; align-items:center; }
-      .hero h1 { max-width:none; font-size:clamp(48px,6.4vw,88px); }
-      .hero-demo { position:relative; z-index:1; }
-      .demo-card { border:1px solid #2f3a24; border-radius:16px; background:linear-gradient(150deg,#131712,#0c0e0b); box-shadow:0 24px 70px #000a,0 0 0 1px #b9ff0008; padding:20px 22px; font-size:13px; }
-      .demo-head,.demo-foot { display:flex; align-items:center; gap:8px; color:#9fae86; font-size:11px; text-transform:uppercase; letter-spacing:.12em; font-weight:800; }
-      .demo-count { margin-left:auto; color:var(--danger); letter-spacing:.06em; }
-      .demo-dot { width:7px; height:7px; border-radius:50%; background:var(--acid); box-shadow:0 0 0 4px #b9ff0015; }
-      .demo-prompt { margin:14px 0 16px; color:#d8d8d2; line-height:1.6; font-size:14px; }
-      .demo-prompt mark { background:#ff4b2118; color:#ffb39f; border-bottom:1px dashed var(--danger); padding:1px 3px; border-radius:3px; }
-      .demo-finding { display:flex; align-items:center; gap:9px; border-top:1px solid #232823; padding:9px 0; color:#a9a9a3; }
-      .demo-finding b { color:var(--paper); margin-right:6px; font-size:12.5px; }
-      .demo-finding .sev { width:7px; height:7px; background:var(--danger); flex-shrink:0; }
-      .demo-safe { border-top:1px solid #232823; padding-top:12px; margin-top:3px; }
-      .demo-safe b { display:block; font-size:11px; text-transform:uppercase; letter-spacing:.11em; color:var(--acid); margin-bottom:7px; }
-      .demo-safe code { display:block; font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace; color:#cfd8bd; background:#0a0c09; border:1px solid #242a1d; border-radius:9px; padding:11px 13px; }
-      .demo-foot { margin-top:14px; color:#7f8b6c; }
-      @media (max-width:960px) { .hero { grid-template-columns:1fr; gap:34px; } .hero-demo { display:none; } .hero h1 { max-width:860px; } }
-      /* Suite cross-promo strip (PC Tweaker). Violet marks the sibling brand;
-         everything else stays in this page's own language. */
-      .suite { margin:0 0 26px; border:1px solid #2c2739; border-radius:18px; background:linear-gradient(140deg,#161221,#0d0b12); padding:34px 36px; display:flex; align-items:center; justify-content:space-between; gap:34px; }
-      .suite-kicker { color:#a78bfa; font-size:11px; text-transform:uppercase; letter-spacing:.13em; font-weight:800; }
-      .suite h2 { margin:12px 0 10px; font-size:clamp(24px,3.4vw,38px); letter-spacing:-.05em; }
-      .suite h2 em { font-style:normal; color:#a78bfa; }
-      .suite p { margin:0; color:#9b96a8; font-size:14px; line-height:1.6; max-width:560px; }
-      .suite-cta { flex-shrink:0; display:flex; flex-direction:column; align-items:center; gap:3px; background:#8b5cf6; color:#0d0716; font-weight:800; padding:15px 26px; border-radius:11px; transition:transform .18s,background .18s; }
-      .suite-cta span { font-weight:600; font-size:11.5px; opacity:.75; }
-      .suite-cta:hover { transform:translateY(-2px); background:#a78bfa; }
-      @media (max-width:760px) { .suite { flex-direction:column; align-items:flex-start; padding:26px 22px; } }
-      #pwa-install[hidden] { display:none; }.hero::after { content:""; position:absolute; width:340px; height:340px; border:1px solid #66814466; border-radius:50%; right:-80px; top:20px; box-shadow:0 0 0 28px #b9ff0007,0 0 0 56px #b9ff0004; pointer-events:none; }.eyebrow { position:relative; z-index:1; padding:7px 10px; border:1px solid #425333; border-radius:999px; background:#131a0e; width:max-content; }.hero h1,.hero p,.hero-meta { position:relative; z-index:1; }
-      .scanner { border-radius:22px; overflow:hidden; box-shadow:0 26px 75px #0008; }.scanner-head { background:#151915; }.scan-area textarea { border-radius:11px; }.scan-area textarea:focus { border-color:#849d4c; box-shadow:0 0 0 3px #b9ff0010; }.results { background:#101210; }.empty,.plan { border-radius:11px; }.copy { border-radius:7px; }.principles { border-radius:18px; overflow:hidden; background:#31382e; }.principle { background:linear-gradient(145deg,#121412,#0b0d0b); }.principle:hover { background:linear-gradient(145deg,#192017,#0e110d); }.principle .num { display:inline-flex; padding:5px 8px; border:1px solid #435334; border-radius:999px; background:#151d11; }.plan { background:#101210; }.plan.featured:hover { background:linear-gradient(145deg,#1a2013,#0f120e); box-shadow:0 12px 38px #0006; }.plan button { border-radius:7px; }.pricing { padding-bottom:98px; } footer { align-items:center; }.footer-brand::before { content:""; width:21px; height:21px; background:url('outputs/promptshield-mark.svg') center/contain no-repeat; display:inline-block; }
+      /* ============ Design tokens ============ */
+      :root {
+        --bg: #08090c;
+        --s1: #0d0f14;
+        --s2: #11141a;
+        --line: #1b1f28;
+        --line-2: #252a34;
+        --ink: #f5f7fa;
+        --mut: #9299a6;
+        --dim: #646b78;
+        --acid: #b9ff00;         /* brand accent: protection, positive state */
+        --acid-ink: #0a0d02;
+        --warn: #ffb224;
+        --danger: #ff5c33;
+        --r-s: 8px; --r-m: 12px; --r-l: 16px;
+        --ease: cubic-bezier(0.2, 0, 0, 1);
+        --font: Inter, "SF Pro Display", "Segoe UI Variable Display", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+        --mono: "SF Mono", ui-monospace, SFMono-Regular, "Cascadia Code", Menlo, Consolas, monospace;
+      }
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0; background: var(--bg); color: var(--ink);
+        font-family: var(--font); font-size: 15px; line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+        /* A barely-there dot grid: the space outside the frame reads as an
+           engineered surface, not as leftover void. */
+        background-image: radial-gradient(#161a22 1px, transparent 1px);
+        background-size: 28px 28px;
+      }
+      button, textarea, select { font: inherit; } button { cursor: pointer; }
+      a { color: inherit; text-decoration: none; }
+      ::selection { background: #b9ff0030; }
+      :focus-visible { outline: 2px solid var(--acid); outline-offset: 2px; border-radius: 4px; }
+
+      /* The framed column: hairline side borders make the outer margins part
+         of the composition. Sections are divided by full-width hairlines. */
+      .frame { max-width: 1216px; margin: 0 auto; border-inline: 1px solid var(--line); background: var(--bg); min-height: 100vh; }
+      .pad { padding-inline: 56px; }
+      .rule { border: 0; border-top: 1px solid var(--line); margin: 0; }
+      .label { font-size: 11px; font-weight: 650; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); }
+
+      /* ============ Nav ============ */
+      .nav {
+        position: sticky; top: 0; z-index: 50;
+        display: flex; align-items: center; justify-content: space-between; gap: 20px;
+        height: 68px; padding-inline: 56px;
+        background: #08090cd9; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--line);
+      }
+      .brand { display: flex; gap: 10px; align-items: center; font-weight: 750; letter-spacing: -0.045em; font-size: 18px; }
+      .mark { width: 30px; height: 30px; border-radius: 8px; overflow: hidden; }
+      .mark img { width: 100%; height: 100%; display: block; }
+      .nav-right { display: flex; align-items: center; gap: 10px; }
+      .navlinks { display: flex; align-items: center; gap: 26px; margin-right: 16px; color: var(--mut); font-size: 13.5px; font-weight: 500; }
+      .navlinks a { transition: color 160ms var(--ease); }
+      .navlinks a:hover { color: var(--ink); }
+      .small-btn, .nav-cta, .nav-install {
+        border: 0; border-radius: var(--r-s); padding: 9px 14px;
+        font-size: 13px; font-weight: 650; transition: transform 160ms var(--ease), background 160ms var(--ease), border-color 160ms var(--ease);
+      }
+      .small-btn { background: transparent; color: var(--ink); border: 1px solid var(--line-2); }
+      .small-btn:hover { border-color: #39404e; background: var(--s2); }
+      .small-btn.ghost { background: transparent; color: var(--mut); border: 1px solid transparent; }
+      .small-btn.ghost:hover { color: var(--ink); background: var(--s2); }
+      .nav-install { background: transparent; color: var(--mut); border: 1px solid var(--line-2); }
+      .nav-install:hover { color: var(--ink); border-color: #39404e; }
+      .nav-install[hidden] { display: none; }
+      .nav-cta { background: var(--acid); color: var(--acid-ink); }
+      .nav-cta:hover { transform: translateY(-1px); background: #ccff3d; }
+      .ps-auth-buttons { display: flex; align-items: center; gap: 8px; }
+
+      /* ============ Hero ============ */
+      .hero { display: grid; grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr); gap: 64px; align-items: center; padding: 88px 56px 80px; }
+      .eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 6px 11px; border: 1px solid var(--line-2); border-radius: 999px; background: var(--s1); color: var(--acid); font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+      .pulse { width: 6px; height: 6px; background: var(--acid); border-radius: 50%; box-shadow: 0 0 0 4px #b9ff0014; }
+      .hero h1 { margin: 22px 0 0; font-size: clamp(46px, 5.6vw, 84px); line-height: 0.94; letter-spacing: -0.045em; font-weight: 700; }
+      .hero h1 em { color: var(--acid); font-style: normal; }
+      .hero .sub { max-width: 480px; color: var(--mut); font-size: 17px; line-height: 1.6; margin: 22px 0 0; }
+      .cta-row { display: flex; align-items: center; gap: 12px; margin-top: 32px; flex-wrap: wrap; }
+      .btn-primary { background: var(--acid); color: var(--acid-ink); border: 0; border-radius: 10px; padding: 14px 22px; font-size: 15px; font-weight: 700; transition: transform 180ms var(--ease), background 180ms var(--ease); }
+      .btn-primary:hover { transform: translateY(-2px); background: #ccff3d; }
+      .btn-ghost { background: transparent; color: var(--ink); border: 1px solid var(--line-2); border-radius: 10px; padding: 13px 20px; font-size: 15px; font-weight: 600; transition: border-color 180ms var(--ease), background 180ms var(--ease); }
+      .btn-ghost:hover { border-color: #39404e; background: var(--s1); }
+      .hero-meta { margin-top: 22px; color: var(--dim); font-size: 13px; }
+      .hero-meta b { color: var(--mut); font-weight: 650; }
+
+      /* ============ Shield card (product preview) ============ */
+      .shield-card {
+        border: 1px solid var(--line-2); border-radius: var(--r-l); background: linear-gradient(165deg, var(--s2), var(--s1));
+        box-shadow: 0 32px 80px #00000073, 0 1px 0 #ffffff08 inset;
+        padding: 22px 24px; font-size: 13px; position: relative; overflow: hidden;
+        animation: card-in 500ms var(--ease) both;
+      }
+      @keyframes card-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+      .sc-head { display: flex; align-items: center; gap: 10px; }
+      .sc-title { font-size: 11px; font-weight: 750; letter-spacing: 0.14em; color: var(--mut); }
+      .sc-live { font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em; color: var(--dim); border: 1px solid var(--line-2); border-radius: 999px; padding: 3px 8px; }
+      .sc-status { margin-left: auto; position: relative; font-size: 11px; font-weight: 750; letter-spacing: 0.08em; height: 16px; min-width: 96px; text-align: right; }
+      .sc-status .scanning, .sc-status .protected { position: absolute; inset: 0; white-space: nowrap; text-align: right; }
+      .sc-status .scanning { color: var(--warn); animation: swap-out 200ms var(--ease) 1500ms both; }
+      .sc-status .protected { color: var(--acid); opacity: 0; animation: swap-in 260ms var(--ease) 1500ms both; }
+      @keyframes swap-out { to { opacity: 0; } }
+      @keyframes swap-in { to { opacity: 1; } }
+
+      .sc-stage { margin-top: 16px; }
+      .sc-stage .label { display: block; margin-bottom: 8px; }
+      .sc-raw { position: relative; border: 1px solid var(--line); border-radius: var(--r-m); background: #0a0c10; padding: 14px 16px; color: #d4d9e2; line-height: 1.65; font-size: 13.5px; overflow: hidden; }
+      .sc-raw mark { background: transparent; color: inherit; border-radius: 3px; padding: 1px 3px; transition: none; animation: mark-in 320ms var(--ease) 1150ms both; }
+      @keyframes mark-in { from { background: transparent; color: inherit; } to { background: #ff5c331f; color: #ffb09c; box-shadow: inset 0 -1px 0 var(--danger); } }
+      .scanline { position: absolute; top: 0; bottom: 0; width: 42%; pointer-events: none; background: linear-gradient(90deg, transparent, #b9ff000e 45%, #b9ff0022 50%, #b9ff000e 55%, transparent); animation: sweep 1100ms var(--ease) 250ms both; }
+      @keyframes sweep { from { left: -45%; opacity: 1; } 85% { opacity: 1; } to { left: 105%; opacity: 0; } }
+
+      .sc-flow { display: flex; align-items: center; gap: 8px; margin: 14px 0 6px; }
+      .sc-flow .label { margin: 0; }
+      .sc-flow svg { width: 12px; height: 12px; color: var(--dim); flex-shrink: 0; }
+      .sc-detect { border-top: 1px solid var(--line); padding-top: 12px; }
+      .sc-count { font-weight: 650; color: var(--ink); font-size: 13px; }
+      .sc-badges { display: inline-flex; gap: 6px; margin-left: 10px; vertical-align: 1px; }
+      .sc-badge { font-size: 10px; font-weight: 750; letter-spacing: 0.09em; color: #ffb09c; background: #ff5c3314; border: 1px solid #ff5c332e; border-radius: 5px; padding: 2px 7px; animation: fade-up 280ms var(--ease) both; }
+      .sc-badge:nth-child(1) { animation-delay: 1250ms; }
+      .sc-badge:nth-child(2) { animation-delay: 1360ms; }
+      @keyframes fade-up { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+      .sc-safe { margin-top: 14px; animation: fade-up 320ms var(--ease) 1500ms both; }
+      .sc-safe code { display: block; font: 12px/1.7 var(--mono); color: #cfe3a8; background: #0a0c09; border: 1px solid #232a1c; border-radius: var(--r-m); padding: 12px 14px; }
+      .sc-safe code b { color: var(--acid); font-weight: 650; }
+      .sc-foot { display: flex; align-items: center; gap: 7px; margin-top: 16px; color: var(--dim); font-size: 11px; font-weight: 650; letter-spacing: 0.1em; text-transform: uppercase; }
+      .sc-foot .pulse { box-shadow: none; }
+
+      /* ============ Protect strip ============ */
+      .protect { display: grid; grid-template-columns: repeat(4, 1fr); }
+      .protect-item { padding: 30px 28px 34px; border-right: 1px solid var(--line); }
+      .protect-item:last-child { border-right: 0; }
+      .protect-item svg { width: 20px; height: 20px; color: var(--acid); }
+      .protect-item h3 { margin: 14px 0 5px; font-size: 15px; font-weight: 650; letter-spacing: -0.015em; }
+      .protect-item p { margin: 0; color: var(--mut); font-size: 13px; line-height: 1.55; }
+
+      /* ============ Section scaffolding ============ */
+      .section { padding: 88px 56px; }
+      .section-kicker { color: var(--acid); font-size: 11px; font-weight: 750; letter-spacing: 0.13em; text-transform: uppercase; }
+      .section h2 { margin: 14px 0 10px; font-size: clamp(30px, 3.6vw, 48px); letter-spacing: -0.04em; line-height: 1.04; font-weight: 700; }
+      .section .lede { margin: 0; color: var(--mut); font-size: 16px; max-width: 560px; line-height: 1.6; }
+
+      /* ============ Live scanner (functional) ============ */
+      .scanner { margin: 0 56px 88px; border: 1px solid var(--line-2); border-radius: var(--r-l); overflow: hidden; background: var(--s1); box-shadow: 0 26px 70px #00000059; }
+      .scanner-head { padding: 18px 24px; display: flex; align-items: center; justify-content: space-between; gap: 14px; border-bottom: 1px solid var(--line); background: var(--s2); }
+      .scanner-head h2 { margin: 0; font-size: 15px; letter-spacing: -0.02em; font-weight: 650; }
+      .local { color: var(--dim); font-size: 12px; }
+      .local span { color: var(--acid); }
+      .scanner-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; min-height: 400px; }
+      .scan-area { padding: 24px; border-right: 1px solid var(--line); display: flex; flex-direction: column; }
+      .scan-area label { color: var(--mut); font-size: 12px; margin-bottom: 10px; font-weight: 600; }
+      .scan-area textarea { flex: 1; min-height: 210px; resize: vertical; border: 1px solid var(--line-2); border-radius: var(--r-m); background: #0a0c10; color: var(--ink); padding: 16px; outline: none; line-height: 1.6; transition: border-color 160ms var(--ease), box-shadow 160ms var(--ease); }
+      .scan-area textarea:focus { border-color: #566043; box-shadow: 0 0 0 3px #b9ff0012; }
+      .actions { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; gap: 10px; }
+      .sample { background: transparent; border: 0; color: var(--mut); padding: 0; font-size: 13px; text-decoration: underline; text-underline-offset: 4px; transition: color 160ms var(--ease); }
+      .sample:hover { color: var(--ink); }
+      .primary { background: var(--acid); color: var(--acid-ink); border: 0; border-radius: 10px; padding: 13px 18px; font-weight: 700; transition: transform 180ms var(--ease), background 180ms var(--ease); }
+      .primary:hover { transform: translateY(-2px); background: #ccff3d; }
+      .primary:disabled { opacity: 0.6; transform: none; cursor: wait; }
+      .results { padding: 24px; background: var(--s1); }
+      .results h3 { margin: 0; font-size: 14px; font-weight: 650; }
+      .results-copy { color: var(--dim); line-height: 1.5; font-size: 13px; margin: 8px 0 18px; }
+      .empty { border: 1px dashed var(--line-2); border-radius: var(--r-m); padding: 22px; color: var(--dim); font-size: 13px; line-height: 1.55; }
+      .finding { border-top: 1px solid var(--line); padding: 12px 0; display: flex; align-items: flex-start; gap: 10px; }
+      .severity { width: 7px; height: 7px; margin-top: 6px; background: var(--danger); border-radius: 2px; flex-shrink: 0; }
+      .finding b { display: block; font-size: 13px; }
+      .finding span { display: block; color: var(--mut); font-size: 12px; margin-top: 3px; word-break: break-word; }
+      .safe-output { display: none; margin-top: 16px; border-top: 1px solid var(--line); padding-top: 16px; }
+      .safe-output pre { margin: 8px 0 0; padding: 13px; white-space: pre-wrap; font: 12px/1.6 var(--mono); color: #d4d9e2; background: #0a0c10; border: 1px solid var(--line); border-radius: var(--r-m); max-height: 130px; overflow: auto; }
+      .copy { margin-top: 10px; color: var(--ink); background: var(--s2); border: 1px solid var(--line-2); border-radius: var(--r-s); padding: 9px 12px; font-size: 12px; font-weight: 600; transition: border-color 160ms var(--ease); }
+      .copy:hover { border-color: #39404e; }
+
+      /* ============ How it works ============ */
+      .flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin-top: 46px; position: relative; }
+      .flow::before { content: ""; position: absolute; left: 24px; right: 24px; top: 15px; height: 1px; background: var(--line-2); }
+      .step { position: relative; padding: 0 24px; }
+      .step-num { position: relative; z-index: 1; display: grid; place-items: center; width: 30px; height: 30px; border: 1px solid var(--line-2); border-radius: 9px; background: var(--s2); color: var(--acid); font-size: 12px; font-weight: 750; font-family: var(--mono); }
+      .step h3 { margin: 16px 0 6px; font-size: 15.5px; font-weight: 650; letter-spacing: -0.015em; }
+      .step p { margin: 0; color: var(--mut); font-size: 13px; line-height: 1.55; }
+      .step .mini { margin-top: 10px; font: 11.5px/1.5 var(--mono); color: #b9c0cc; }
+      .step .mini mark { background: #ff5c331f; color: #ffb09c; border-radius: 3px; padding: 0 3px; box-shadow: inset 0 -1px 0 var(--danger); }
+      .step .mini b { color: var(--acid); font-weight: 650; }
+
+      /* ============ Trust ============ */
+      .trust { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin-top: 46px; border-top: 1px solid var(--line); }
+      .trust-item { padding: 28px 28px 6px; border-right: 1px solid var(--line); }
+      .trust-item:last-child { border-right: 0; }
+      .trust-item .label { color: var(--acid); }
+      .trust-item h3 { margin: 30px 0 8px; font-size: 19px; letter-spacing: -0.03em; font-weight: 650; }
+      .trust-item p { color: var(--mut); font-size: 13.5px; line-height: 1.6; margin: 0; }
+
+      /* ============ Pricing ============ */
+      .plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 44px; align-items: stretch; }
+      .plan { border: 1px solid var(--line-2); border-radius: var(--r-l); padding: 26px; background: var(--s1); display: flex; flex-direction: column; transition: transform 200ms var(--ease), border-color 200ms var(--ease), box-shadow 200ms var(--ease); }
+      .plan:hover { transform: translateY(-3px); border-color: #39404e; }
+      .plan .tag { color: var(--dim); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.12em; font-weight: 750; }
+      .plan h3 { margin: 16px 0 4px; font-size: 21px; letter-spacing: -0.03em; }
+      .plan .price { font-size: 34px; letter-spacing: -0.05em; font-weight: 700; }
+      .plan .price small { color: var(--dim); font-size: 13px; letter-spacing: 0; font-weight: 500; }
+      .plan p { color: var(--mut); font-size: 13px; line-height: 1.55; }
+      .plan button { margin-top: 10px; width: 100%; padding: 12px; border: 1px solid var(--line-2); border-radius: 9px; background: transparent; color: var(--ink); font-weight: 600; font-size: 13.5px; transition: border-color 160ms var(--ease), background 160ms var(--ease), transform 160ms var(--ease); }
+      .plan button:hover { border-color: #39404e; background: var(--s2); }
+      .plan .spacer { flex: 1; }
+      .plan.featured { background: linear-gradient(170deg, #141a0d, #0d0f14 55%); border-color: #3d4a22; box-shadow: 0 18px 55px #0000005e, 0 1px 0 #b9ff0022 inset; position: relative; }
+      .plan.featured .tag { color: var(--acid); }
+      .plan.featured:hover { border-color: #55672f; }
+      .plan.featured button[data-interval="monthly"] { background: var(--acid); color: var(--acid-ink); border-color: var(--acid); font-weight: 750; }
+      .plan.featured button[data-interval="monthly"]:hover { background: #ccff3d; transform: translateY(-1px); }
+      .plan select { background: #0a0c10; color: var(--ink); border: 1px solid var(--line-2); border-radius: 7px; padding: 6px 8px; }
+
+      /* ============ Suite line + footer ============ */
+      .suite-line { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 22px 56px; color: var(--mut); font-size: 13.5px; }
+      .suite-line b { color: var(--ink); font-weight: 650; }
+      .suite-line em { font-style: normal; color: #a78bfa; }
+      .suite-go { flex-shrink: 0; display: inline-flex; align-items: center; gap: 7px; color: #a78bfa; border: 1px solid #322c44; border-radius: 9px; padding: 9px 14px; font-size: 13px; font-weight: 650; transition: border-color 160ms var(--ease), background 160ms var(--ease); }
+      .suite-go:hover { border-color: #4c4470; background: #14111e; }
+      footer { border-top: 1px solid var(--line); padding: 30px 56px 42px; display: flex; justify-content: space-between; align-items: center; gap: 18px; color: var(--dim); font-size: 12.5px; flex-wrap: wrap; }
+      .footer-brand { display: flex; align-items: center; gap: 8px; color: var(--ink); font-weight: 700; letter-spacing: -0.03em; font-size: 14px; }
+      .footer-brand img { width: 20px; height: 20px; border-radius: 5px; }
+      .footer-tag { color: var(--dim); font-weight: 400; margin-left: 4px; }
+      footer nav.flinks { display: flex; gap: 18px; }
+      footer a { transition: color 160ms var(--ease); }
+      footer a:hover { color: var(--ink); }
+
+      /* ============ Responsive ============ */
+      @media (max-width: 1023px) {
+        .pad, .nav, .section, .suite-line, footer { padding-inline: 32px; }
+        .hero { padding: 64px 32px 60px; gap: 40px; grid-template-columns: 1fr; }
+        .scanner { margin-inline: 32px; }
+        .protect { grid-template-columns: repeat(2, 1fr); }
+        .protect-item:nth-child(2) { border-right: 0; }
+        .protect-item:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+        .flow { grid-template-columns: repeat(2, 1fr); row-gap: 40px; }
+        .flow::before { display: none; }
+        .trust { grid-template-columns: 1fr; }
+        .trust-item { border-right: 0; border-bottom: 1px solid var(--line); padding-bottom: 26px; }
+        .trust-item:last-child { border-bottom: 0; }
+        .trust-item h3 { margin-top: 14px; }
+        .plans { grid-template-columns: 1fr; }
+      }
+      @media (max-width: 700px) {
+        .pad, .nav, .section, .suite-line, footer { padding-inline: 18px; }
+        .navlinks { display: none; }
+        .hero { padding: 44px 18px 48px; }
+        .hero .sub { font-size: 15.5px; }
+        .scanner { margin-inline: 18px; }
+        .scanner-grid { grid-template-columns: 1fr; }
+        .scan-area { border-right: 0; border-bottom: 1px solid var(--line); }
+        .protect { grid-template-columns: 1fr; }
+        .protect-item { border-right: 0; border-bottom: 1px solid var(--line); }
+        .protect-item:last-child { border-bottom: 0; }
+        .flow { grid-template-columns: 1fr; }
+        .section { padding-block: 60px; }
+        .suite-line { flex-direction: column; align-items: flex-start; }
+        .btn-primary, .btn-ghost { width: 100%; text-align: center; }
+        .cta-row { flex-direction: column; align-items: stretch; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; }
+        html { scroll-behavior: auto; }
+      }
     </style>
   </head>
   <body>
-    <main class="shell">
-      <nav>
+    <div class="frame">
+      <nav class="nav">
         <a class="brand" href="#top" aria-label="PromptShield home"><span class="mark"><img src="outputs/promptshield-mark.svg" alt="" /></span><span>PromptShield</span></a>
-        <div class="navlinks"><a href="#scanner">Scanner</a><a href="#pricing">Pricing</a><a href="/privacy.html">Privacy</a><button class="small-btn ghost" id="pwa-install" hidden type="button" aria-label="Install PromptShield on this device">Install app</button><a class="small-btn" href="#scanner">Try it free</a></div>
+        <div class="nav-right">
+          <div class="navlinks"><a href="#scanner">Product</a><a href="#pricing">Pricing</a><a href="/privacy.html">Privacy</a></div>
+          <button class="nav-install" id="pwa-install" hidden type="button" aria-label="Install PromptShield on this device">Install app</button>
+          <!-- auth.js takes the FIRST .small-btn as its account trigger and
+               adds a "Log in" next to it. Keep this anchor first in DOM order
+               among .small-btn elements. -->
+          <a class="small-btn" href="#account">Create account</a>
+          <a class="nav-cta" href="#scanner">Try it free</a>
+        </div>
       </nav>
-      <section class="hero" id="top">
-        <div class="hero-copy">
+
+      <header class="hero" id="top">
+        <div>
           <div class="eyebrow"><span class="pulse"></span> Privacy, before AI</div>
           <h1>Think freely.<br /><em>Share safely.</em></h1>
-          <p>PromptShield catches personal data and secrets before a prompt reaches an AI model. Your prompt is checked, never stored or logged.</p>
-          <div class="hero-meta"><span><b>7 days free.</b> Cancel anytime.</span><span class="arrow">→</span><span>Individual and business plans</span></div>
-        </div>
-        <!-- Static preview of an actual scan: the empty right half of the hero
-             becomes proof of what the product does, before any scrolling. -->
-        <aside class="hero-demo" aria-hidden="true">
-          <div class="demo-card">
-            <div class="demo-head"><span class="demo-dot"></span> Live check <span class="demo-count">2 findings</span></div>
-            <p class="demo-prompt">&ldquo;Draft a payment reminder for <mark>marco.rossi@acme.com</mark> &mdash; invoice IBAN <mark>IT60 X054 2811 &hellip;3 456</mark>, due Friday.&rdquo;</p>
-            <div class="demo-finding"><span class="sev"></span><span><b>Email address</b> marco.rossi@acme.com</span></div>
-            <div class="demo-finding"><span class="sev"></span><span><b>IBAN</b> IT60 X054 2811 &hellip;3 456</span></div>
-            <div class="demo-safe"><b>Safer version</b><code>&ldquo;Draft a payment reminder for [email] &mdash; invoice [iban], due Friday.&rdquo;</code></div>
-            <div class="demo-foot"><span class="demo-dot"></span> Checked in 0.2s &middot; nothing stored</div>
+          <p class="sub">PromptShield catches personal data and secrets before a prompt reaches an AI model. Your prompt is checked, never stored or logged.</p>
+          <div class="cta-row">
+            <a class="btn-primary" href="#scanner">Scan a prompt — free</a>
+            <a class="btn-ghost" href="#how">See how it works</a>
           </div>
+          <p class="hero-meta"><b>7 days free.</b> Cancel anytime · Individual and business plans</p>
+        </div>
+
+        <!-- Static preview of an actual scan; the animation replays the real
+             flow once (raw → detection → safe). Decorative, honest. -->
+        <aside class="shield-card" aria-hidden="true">
+          <div class="sc-head">
+            <span class="sc-title">PROMPTSHIELD</span>
+            <span class="sc-live">LIVE SCAN</span>
+            <span class="sc-status"><span class="scanning">Scanning…</span><span class="protected">● Protected</span></span>
+          </div>
+          <div class="sc-stage">
+            <span class="label">Raw prompt</span>
+            <p class="sc-raw">&ldquo;Send a payment reminder to <mark>marco.rossi@acme.com</mark> about invoice IBAN <mark>IT60 X054 2811 &hellip;3 456</mark>, due Friday.&rdquo;<span class="scanline"></span></p>
+          </div>
+          <div class="sc-flow"><span class="label">Detection</span><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 4v14m0 0 5-5m-5 5-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="sc-detect">
+            <span class="sc-count">2 sensitive items detected</span>
+            <span class="sc-badges"><span class="sc-badge">EMAIL</span><span class="sc-badge">IBAN</span></span>
+          </div>
+          <div class="sc-safe">
+            <span class="label">Safe prompt</span>
+            <code>&ldquo;Send a payment reminder to <b>[email]</b> about invoice IBAN <b>[iban]</b>, due Friday.&rdquo;</code>
+          </div>
+          <div class="sc-foot"><span class="pulse"></span> Checked in 0.2s · nothing stored</div>
         </aside>
+      </header>
+
+      <hr class="rule" />
+
+      <!-- What it protects: four categories, matching what the scanner
+           actually detects today. -->
+      <section class="protect" aria-label="What PromptShield protects">
+        <div class="protect-item">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8.2" r="3.4" stroke="currentColor" stroke-width="1.7"/><path d="M4.8 19.6c1.3-3.5 4.1-5.3 7.2-5.3s5.9 1.8 7.2 5.3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+          <h3>Personal data</h3>
+          <p>Names, emails, phone numbers and addresses that identify you or your clients.</p>
+        </div>
+        <div class="protect-item">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4.5" y="10" width="15" height="9.5" rx="2.5" stroke="currentColor" stroke-width="1.7"/><path d="M8 10V7.8a4 4 0 0 1 8 0V10" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="14.7" r="1.5" fill="currentColor"/></svg>
+          <h3>Credentials</h3>
+          <p>Passwords, API keys and tokens that should never leave your machine.</p>
+        </div>
+        <div class="protect-item">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="6" width="17" height="12.5" rx="2.5" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 10.5h17" stroke="currentColor" stroke-width="1.7"/><path d="M7 15.5h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+          <h3>Financial information</h3>
+          <p>IBANs and card numbers pasted in without a second thought.</p>
+        </div>
+        <div class="protect-item">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9.5 15.5 4.75 12l4.75-3.5M14.5 8.5 19.25 12l-4.75 3.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <h3>Secrets</h3>
+          <p>Connection strings, private keys and anything that smells like a leak.</p>
+        </div>
+      </section>
+
+      <hr class="rule" />
+
+      <!-- Functional scanner (ids consumed by dist/landing.js — do not rename) -->
+      <section class="section" style="padding-bottom: 34px">
+        <div class="section-kicker">Try it now</div>
+        <h2>Private prompt check.</h2>
+        <p class="lede">Paste anything you were about to send to an AI. We look for common personal details and credentials, then discard your prompt immediately.</p>
       </section>
       <section class="scanner" id="scanner" aria-labelledby="scanner-title">
         <div class="scanner-head"><h2 id="scanner-title">Private prompt check</h2><div class="local"><span>●</span> Encrypted in transit — never stored</div></div>
@@ -92,20 +365,115 @@
           <aside class="results" aria-live="polite"><h3 id="result-title">Ready when you are</h3><p class="results-copy" id="result-copy">We look for common personal details and credentials, then discard your prompt immediately.</p><div id="findings" class="empty">Paste text and run a check. Your prompt is never saved.</div><div class="safe-output" id="safe-output"><h3>Safer version</h3><pre id="redacted"></pre><button class="copy" id="copy" type="button">Copy safer prompt</button></div></aside>
         </div>
       </section>
-      <section class="principles" id="privacy"><article class="principle"><div class="num">01 / ZERO RETENTION</div><h3>Private by design.</h3><p>Your prompt is checked over an encrypted connection to power the scan, then discarded immediately. We never log or store the text you paste.</p></article><article class="principle"><div class="num">02 / CLEAR CONTROL</div><h3>See what matters.</h3><p>Findings are specific and readable, so you can redact only what needs protecting.</p></article><article class="principle"><div class="num">03 / NO SURPRISES</div><h3>Simple billing.</h3><p>Start with 7 days free. A card is required; cancel before the trial ends and you will not be charged.</p></article></section>
-      <section class="pricing" id="pricing"><h2>Protection that scales<br />with your work.</h2><p>Every plan starts with a 7-day trial. Use code <b>SHIELD</b> for 20% off your first monthly payment.</p><div class="plans"><article class="plan"><div class="tag">For individuals</div><h3>Personal</h3><div class="price">€7.99 <small>/ month</small></div><p>For independent professionals who use AI with real client and personal information.</p><button type="button" data-plan="personal" data-interval="monthly">Start 7-day trial</button><button type="button" data-plan="personal" data-interval="yearly">€79.90 yearly</button></article><article class="plan featured"><div class="tag">For teams · up to 3 users</div><h3>Business</h3><div class="price">€14.99 <small>/ user / month</small></div><p>Team controls and a clear privacy boundary for growing teams. Choose one to three seats.</p><label style="display:block;margin-top:14px;color:#aaa;font-size:13px">Seats <select id="business-seats" style="margin-left:8px;background:#111;color:#fff;border:1px solid #444;padding:6px"><option value="1">1 user</option><option value="2">2 users</option><option value="3">3 users</option></select></label><button type="button" data-plan="business" data-interval="monthly">Start 7-day trial</button><button type="button" data-plan="business" data-interval="yearly">€149.90 yearly / user</button></article><article class="plan"><div class="tag">Already subscribed?</div><h3>Manage billing</h3><div class="price">In control</div><p>Update your payment method, download invoices, or cancel renewal whenever you need to.</p><button type="button" id="manage-billing">Manage subscription</button></article></div></section>
-      <!-- Suite cross-promo: same maker, adjacent problem. One rhetorical
-           hook, one honest sentence, one exit — never a banner farm. -->
-      <section class="suite" aria-label="From the maker of PromptShield">
-        <div class="suite-copy">
-          <div class="suite-kicker">From the maker of PromptShield</div>
-          <h2>Your prompts are safe. <em>Is your PC still lagging?</em></h2>
-          <p>PC Tweaker tunes Windows for speed, gaming and privacy &mdash; and every change is backed up and reversible with one click. Same maker, same rule: nothing happens without your say-so.</p>
+
+      <hr class="rule" />
+
+      <section class="section" id="how">
+        <div class="section-kicker">How it works</div>
+        <h2>Your prompts.<br />Before they leave your screen.</h2>
+        <p class="lede">The check happens before the AI model ever sees your text — you decide what goes through.</p>
+        <div class="flow">
+          <div class="step">
+            <div class="step-num">01</div>
+            <h3>Write your prompt</h3>
+            <p>Work exactly as you already do, in your own words.</p>
+            <p class="mini">"Reply to marco about the invoice…"</p>
+          </div>
+          <div class="step">
+            <div class="step-num">02</div>
+            <h3>PromptShield checks it</h3>
+            <p>The text is inspected over an encrypted connection and discarded immediately.</p>
+          </div>
+          <div class="step">
+            <div class="step-num">03</div>
+            <h3>Sensitive data is flagged</h3>
+            <p>Findings are specific and readable — no vague warnings.</p>
+            <p class="mini">…to <mark>marco.rossi@acme.com</mark>…</p>
+          </div>
+          <div class="step">
+            <div class="step-num">04</div>
+            <h3>You stay in control</h3>
+            <p>Copy the safer version, or send the original. Your call, always.</p>
+            <p class="mini">…to <b>[email]</b>…</p>
+          </div>
         </div>
-        <a class="suite-cta" href="https://pctweaker.app" target="_blank" rel="noopener">Get PC Tweaker<span>free for Windows 10/11</span></a>
       </section>
-      <footer><span class="footer-brand">PromptShield</span><span>© 2026 · Built for thoughtful AI use · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a> · <a href="https://pctweaker.app" target="_blank" rel="noopener">PC Tweaker</a></span></footer>
-    </main>
+
+      <hr class="rule" />
+
+      <section class="section" id="privacy" style="padding-bottom: 66px">
+        <div class="section-kicker">Why trust it</div>
+        <h2>Private by design.</h2>
+        <div class="trust">
+          <article class="trust-item">
+            <span class="label">01 / Zero retention</span>
+            <h3>Nothing is stored.</h3>
+            <p>Your prompt is checked over an encrypted connection to power the scan, then discarded immediately. We never log or store the text you paste.</p>
+          </article>
+          <article class="trust-item">
+            <span class="label">02 / Clear control</span>
+            <h3>See what matters.</h3>
+            <p>Findings are specific and readable, so you can redact only what needs protecting — nothing is changed for you.</p>
+          </article>
+          <article class="trust-item">
+            <span class="label">03 / No surprises</span>
+            <h3>Simple billing.</h3>
+            <p>Start with 7 days free. A card is required; cancel before the trial ends and you will not be charged.</p>
+          </article>
+        </div>
+      </section>
+
+      <hr class="rule" />
+
+      <section class="section" id="pricing">
+        <div class="section-kicker">Pricing</div>
+        <h2>Protection that scales<br />with your work.</h2>
+        <p class="lede">Every plan starts with a 7-day trial. Use code <b>SHIELD</b> for 20% off your first monthly payment.</p>
+        <div class="plans">
+          <article class="plan">
+            <div class="tag">For individuals</div>
+            <h3>Personal</h3>
+            <div class="price">€7.99 <small>/ month</small></div>
+            <p>For independent professionals who use AI with real client and personal information.</p>
+            <div class="spacer"></div>
+            <button type="button" data-plan="personal" data-interval="monthly">Start 7-day trial</button>
+            <button type="button" data-plan="personal" data-interval="yearly">€79.90 yearly</button>
+          </article>
+          <article class="plan featured">
+            <div class="tag">Recommended · Teams up to 3</div>
+            <h3>Business</h3>
+            <div class="price">€14.99 <small>/ user / month</small></div>
+            <p>Team controls and a clear privacy boundary for growing teams. Choose one to three seats.</p>
+            <label style="display: block; margin: 6px 0 4px; color: var(--mut); font-size: 13px">Seats <select id="business-seats" style="margin-left: 8px"><option value="1">1 user</option><option value="2">2 users</option><option value="3">3 users</option></select></label>
+            <div class="spacer"></div>
+            <button type="button" data-plan="business" data-interval="monthly">Start 7-day trial</button>
+            <button type="button" data-plan="business" data-interval="yearly">€149.90 yearly / user</button>
+          </article>
+          <article class="plan">
+            <div class="tag">Already subscribed?</div>
+            <h3>Manage billing</h3>
+            <div class="price">In control</div>
+            <p>Update your payment method, download invoices, or cancel renewal whenever you need to.</p>
+            <div class="spacer"></div>
+            <button type="button" id="manage-billing">Manage subscription</button>
+          </article>
+        </div>
+      </section>
+
+      <hr class="rule" />
+
+      <!-- Suite cross-promo, deliberately compact and out of the sales flow. -->
+      <div class="suite-line">
+        <span><b>From the same maker</b> — your prompts are safe. <em>Is your PC still lagging?</em> PC Tweaker tunes Windows with every change reversible.</span>
+        <a class="suite-go" href="https://pctweaker.app" target="_blank" rel="noopener">Get PC Tweaker →</a>
+      </div>
+
+      <footer>
+        <span class="footer-brand"><img src="outputs/promptshield-mark.svg" alt="" />PromptShield<span class="footer-tag">· Privacy, before AI</span></span>
+        <nav class="flinks" aria-label="Footer"><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="https://pctweaker.app" target="_blank" rel="noopener">PC Tweaker</a></nav>
+        <span>© 2026 PromptShield</span>
+      </footer>
+    </div>
     <script type="module" src="dist/auth.js"></script>
     <script type="module" src="dist/landing.js"></script>
   </body>
