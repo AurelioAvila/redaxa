@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.1.8 — 2026-08-21
+
+Web release: the landing page becomes the product demo.
+
+- **Landing redesign.** A hairline-framed layout on a quiet dot grid, a
+  product-led hero where an animated shield card replays a real scan
+  (raw prompt → detection → safe version), a four-category overview of
+  what the scanner actually detects, a four-step "before it leaves your
+  screen" flow, and a premium pricing treatment. All CSS, all honest,
+  reduced-motion respected.
+- **Scanner:** casual "password xxx" credential mentions are now caught
+  even without a colon or equals separator.
+- **Install app** is a real, styled navbar button (the PWA prompt control
+  was previously an unstyled element appended to the page body — and was
+  being accidentally hijacked as the account button by a selector
+  collision, now fixed with an explicit trigger).
+- Suite footer: PC Tweaker cross-link. Same maker, same rules.
+
+The desktop app is unchanged in this release (still 0.1.7 binaries).
+
 ## v0.1.7 — 2026-08-13
 
 - Desktop session tokens now live in Windows Credential Manager instead of
