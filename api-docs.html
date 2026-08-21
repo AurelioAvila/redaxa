@@ -32,15 +32,12 @@
       <p>The same endpoint every PromptShield surface uses is available to your own code. One call in, one decision out: the findings, a redacted version of the text, and the policy decision with its reason. The prompt is scanned and discarded — it is never stored, logged, or used for anything else.</p>
 
       <h2>Authentication</h2>
-      <p>Requests authenticate with a <strong>Supabase access token</strong> sent as a Bearer header — the same token the desktop app and browser extension use. Obtain one by signing in with your account credentials:</p>
-      <pre><code>curl -s https://promptshield-beta.vercel.app/api/auth/signin \
-  -H "Content-Type: application/json" \
-  -d '{"email":"you@example.com","password":"..."}'</code></pre>
-      <p>The response includes an <code>access_token</code> (short-lived) and a <code>refresh_token</code>. An active trial or subscription is required to scan.</p>
+      <p>Create a <strong>dedicated API key</strong> from the dashboard: <em>Preferences → API keys → Create API key</em>. The key (<code>psk_live_…</code>) is shown exactly once — only a hash of it is stored, so it cannot be recovered, only revoked and replaced. Send it as a Bearer header. An active trial or subscription on the owning account is required to scan.</p>
+      <p>Up to 10 active keys per account; revoke any key from the same panel, effective immediately.</p>
 
       <h2>Scan a prompt</h2>
       <pre><code>curl -s https://promptshield-beta.vercel.app/api/scan \
-  -H "Authorization: Bearer $TOKEN" \
+  -H "Authorization: Bearer psk_live_..." \
   -H "Content-Type: application/json" \
   -d '{
     "text": "Contact m.rossi@acme.com, api key sk_live_...",
@@ -75,11 +72,11 @@
 
       <h2>Read your activity</h2>
       <pre><code>curl -s https://promptshield-beta.vercel.app/api/scan \
-  -H "Authorization: Bearer $TOKEN"</code></pre>
+  -H "Authorization: Bearer psk_live_..."</code></pre>
       <p>Returns your last 50 scan events — metadata only (surface, detection kinds, decision). Organization owners and admins can add <code>?scope=org</code> for the whole team's events. There is no endpoint that returns prompt content, because none is ever stored.</p>
 
       <h2>Honesty note</h2>
-      <p>This is the same API our own surfaces run on, documented as it is. There is no separate key management yet — your account session is the credential. If you build something on it, <a href="mailto:canadesino91@gmail.com">tell us</a>: dedicated API keys are on the roadmap and real usage moves them up.</p>
+      <p>This is the same API our own surfaces run on, documented as it is. If you build something on it, <a href="mailto:canadesino91@gmail.com">tell us</a> — real usage is what moves the roadmap.</p>
     </main>
   </body>
 </html>
