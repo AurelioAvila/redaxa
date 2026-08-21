@@ -89,6 +89,25 @@ export function evaluatePolicy(findings: Finding[], rules: PolicyRule[]): Policy
 // in charge — so shipping it changes zero behavior. What it adds is the
 // explanation: every scan can now say WHICH rule fired and WHY. Organization-
 // authored rules will use the same shapes with an org id attached.
+// Builds the effective policy for an organization member: the default
+// personal policy, with per-category actions overridden where the
+// organization has chosen one. Reasons name the organization as the author
+// so the member knows the rule was set by their workspace, not the product.
+export function buildOrganizationPolicy(overrides: Partial<Record<FindingCategory, PolicyAction>>): PolicyRule[] {
+  const orgReasons: Record<FindingCategory, string> = {
+    credentials: "Your organization's policy covers passwords, API keys and private keys.",
+    financial: "Your organization's policy covers financial data like cards and IBANs.",
+    personal: "Your organization's policy covers personal identifiers.",
+    custom: "Your organization's policy covers its protected terms."
+  };
+  return defaultPersonalPolicy.map((rule) => {
+    const category = rule.match.categories?.[0];
+    const override = category ? overrides[category] : undefined;
+    if (!override || !category) return rule;
+    return { ...rule, id: `org-${category}`, name: `Organization: ${rule.name}`, action: override, reason: orgReasons[category] };
+  });
+}
+
 export const defaultPersonalPolicy: PolicyRule[] = [
   {
     id: "default-credentials",

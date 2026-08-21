@@ -3,7 +3,7 @@
 // finding values (indexes only).
 import assert from "node:assert/strict";
 import { inspectPrompt, type Finding } from "./scanner.js";
-import { defaultPersonalPolicy, evaluatePolicy, type PolicyRule } from "./policy.js";
+import { buildOrganizationPolicy, defaultPersonalPolicy, evaluatePolicy, type PolicyRule } from "./policy.js";
 
 function finding(partial: Partial<Finding> & Pick<Finding, "kind" | "category" | "severity">): Finding {
   return { label: "x", value: "raw-value", replacement: "[X]", ...partial };
@@ -86,6 +86,20 @@ function finding(partial: Partial<Finding> & Pick<Finding, "kind" | "category" |
   const credential = findings.find((f) => f.kind === "credential");
   assert.equal(credential?.category, "credentials");
   assert.equal(credential?.severity, "critical");
+}
+
+// --- organization overrides change action + reason, defaults survive ---------
+{
+  const rules = buildOrganizationPolicy({ credentials: "block", personal: "redact" });
+  const creds = rules.find((r) => r.id === "org-credentials");
+  assert.equal(creds?.action, "block");
+  assert.ok(creds?.reason.includes("organization"));
+  assert.equal(rules.find((r) => r.id === "org-personal")?.action, "redact");
+  // Categories without an override keep the stock default rule untouched.
+  assert.equal(rules.find((r) => r.id === "default-financial")?.action, "redact");
+  const decision = evaluatePolicy([finding({ kind: "secret", category: "credentials", severity: "critical" })], rules);
+  assert.equal(decision.action, "block");
+  assert.equal(decision.decidedBy?.ruleId, "org-credentials");
 }
 
 console.log("policy tests passed");

@@ -1,7 +1,7 @@
-import { corsHeaders, effectiveEntitlement, organizationMembershipFor, protectedTermsFor, requireUser, supabaseService } from "./_billing.js";
+import { corsHeaders, effectiveEntitlement, organizationMembershipFor, orgScanContextFor, protectedTermsFor, requireUser, supabaseService } from "./_billing.js";
 import { clientIp, rateLimited } from "./_rateLimit.js";
 import { inspectPrompt, type ScanOptions } from "../scanner.js";
-import { defaultPersonalPolicy, evaluatePolicy } from "../policy.js";
+import { buildOrganizationPolicy, defaultPersonalPolicy, evaluatePolicy, type PolicyAction, type PolicyRule } from "../policy.js";
 
 type RequestLike = { method?: string; body?: unknown; headers?: Record<string, string | string[] | undefined> };
 type ResponseLike = { setHeader(name: string, value: string | string[]): void; status(code: number): ResponseLike; json(value: unknown): void; end(): void };
@@ -85,28 +85,39 @@ export default async function handler(request: RequestLike, response: ResponseLi
     // fails, the scan proceeds with the caller's own options rather than
     // failing (detection availability beats governance completeness for now).
     let organizationId: string | null = null;
+    let policyRules: PolicyRule[] = defaultPersonalPolicy;
     try {
-      const membership = await organizationMembershipFor(user.id);
-      if (membership) {
-        organizationId = membership.organization_id;
-        const orgTerms = (await protectedTermsFor(membership.organization_id)).map((row) => row.term);
-        if (orgTerms.length > 0) {
-          options.customTerms = [...new Set([...(options.customTerms ?? []), ...orgTerms])].slice(0, 60);
+      // One embedded query for membership + shared terms + policies; the
+      // two-call fallback covers the window where org_policies does not
+      // exist yet (embedding fails as a whole when one relation is missing).
+      let context = await orgScanContextFor(user.id);
+      if (!context) {
+        const membership = await organizationMembershipFor(user.id);
+        if (membership) context = { organizationId: membership.organization_id, terms: (await protectedTermsFor(membership.organization_id)).map((row) => row.term), policies: [] };
+      }
+      if (context) {
+        organizationId = context.organizationId;
+        if (context.terms.length > 0) {
+          options.customTerms = [...new Set([...(options.customTerms ?? []), ...context.terms])].slice(0, 60);
+        }
+        if (context.policies.length > 0) {
+          const overrides: Partial<Record<"personal" | "credentials" | "financial" | "custom", PolicyAction>> = {};
+          for (const row of context.policies) overrides[row.category] = row.action;
+          policyRules = buildOrganizationPolicy(overrides);
         }
       }
     } catch {
-      // Fall through with personal options only.
+      // Fall through with personal options and the default policy.
     }
 
     // Deliberately not logged, persisted, or forwarded anywhere: this request body is used
     // only to compute the response below, then discarded when the function returns.
     const result = inspectPrompt(text, options);
 
-    // Policy evaluation: same findings, one explainable decision. Today this
-    // is the default personal policy for everyone (it mirrors the product's
-    // existing behavior: user decides, redaction offered); organization
-    // policies will slot in here without the response shape changing.
-    const decision = evaluatePolicy(result.findings, defaultPersonalPolicy);
+    // Policy evaluation: same findings, one explainable decision — the
+    // organization's rules when it has set any, the default personal policy
+    // otherwise.
+    const decision = evaluatePolicy(result.findings, policyRules);
 
     const application = typeof body.application === "string" && knownApplications.has(body.application) ? body.application : "unknown";
     void recordScanEvent(

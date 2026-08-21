@@ -399,6 +399,44 @@ export async function renameOrganization(orgId: string, name: string): Promise<v
   if (!response.ok) throw new Error("ORG_STORAGE_ERROR");
 }
 
+export type OrgPolicyRow = { category: "personal" | "credentials" | "financial" | "custom"; action: "warn" | "redact" | "block" };
+
+export async function orgPoliciesFor(orgId: string): Promise<OrgPolicyRow[]> {
+  const response = await supabaseService(`/rest/v1/org_policies?organization_id=eq.${encodeURIComponent(orgId)}&select=category,action`, { method: "GET" });
+  if (!response.ok) return [];
+  return response.json() as Promise<OrgPolicyRow[]>;
+}
+
+export async function setOrgPolicy(orgId: string, category: string, action: string, updatedBy: string): Promise<void> {
+  const response = await supabaseService("/rest/v1/org_policies?on_conflict=organization_id,category", {
+    method: "POST",
+    headers: { Prefer: "resolution=merge-duplicates" },
+    body: JSON.stringify({ organization_id: orgId, category, action, updated_by: updatedBy, updated_at: new Date().toISOString() })
+  });
+  if (!response.ok) throw new Error("ORG_STORAGE_ERROR");
+}
+
+export async function clearOrgPolicy(orgId: string, category: string): Promise<void> {
+  const response = await supabaseService(`/rest/v1/org_policies?organization_id=eq.${encodeURIComponent(orgId)}&category=eq.${encodeURIComponent(category)}`, { method: "DELETE" });
+  if (!response.ok) throw new Error("ORG_STORAGE_ERROR");
+}
+
+/** Everything /api/scan needs about the caller's organization in ONE REST
+ *  round-trip (PostgREST embedding): membership, shared terms, policies.
+ *  Null when the user has no organization. */
+export async function orgScanContextFor(userId: string): Promise<{ organizationId: string; terms: string[]; policies: OrgPolicyRow[] } | null> {
+  const response = await supabaseService(`/rest/v1/organization_members?user_id=eq.${encodeURIComponent(userId)}&select=organization_id,organizations(protected_terms(term),org_policies(category,action))`, { method: "GET" });
+  if (!response.ok) return null;
+  const rows = await response.json() as Array<{ organization_id: string; organizations?: { protected_terms?: { term: string }[]; org_policies?: OrgPolicyRow[] } | null }>;
+  const row = rows[0];
+  if (!row) return null;
+  return {
+    organizationId: row.organization_id,
+    terms: (row.organizations?.protected_terms ?? []).map((t) => t.term),
+    policies: row.organizations?.org_policies ?? []
+  };
+}
+
 export async function protectedTermsFor(orgId: string): Promise<ProtectedTerm[]> {
   const response = await supabaseService(`/rest/v1/protected_terms?organization_id=eq.${encodeURIComponent(orgId)}&select=id,term,created_at&order=created_at.asc`, { method: "GET" });
   if (!response.ok) throw new Error("ORG_STORAGE_ERROR");

@@ -1,4 +1,4 @@
-import { acceptTeamInvite, accountFor, addOrganizationMember, addProtectedTerm, appUrl, corsHeaders, createTeamInvite, ensureOrganization, hasActiveEntitlement, inviteByToken, organizationById, organizationMembers, organizationMembershipFor, protectedTermsFor, removeProtectedTerm, renameOrganization, requireUser, revokeTeamInvite, supabaseUserById, teamInvitesFor } from "./_billing.js";
+import { acceptTeamInvite, accountFor, addOrganizationMember, addProtectedTerm, appUrl, clearOrgPolicy, orgPoliciesFor, setOrgPolicy, corsHeaders, createTeamInvite, ensureOrganization, hasActiveEntitlement, inviteByToken, organizationById, organizationMembers, organizationMembershipFor, protectedTermsFor, removeProtectedTerm, renameOrganization, requireUser, revokeTeamInvite, supabaseUserById, teamInvitesFor } from "./_billing.js";
 import { clientIp, rateLimited } from "./_rateLimit.js";
 
 type RequestLike = { method?: string; body?: unknown; query?: Record<string, string | string[] | undefined>; headers?: Record<string, string | string[] | undefined> };
@@ -50,10 +50,11 @@ export default async function handler(request: RequestLike, response: ResponseLi
         }
       }
       if (!membership) { response.status(200).json({ organization: null }); return; }
-      const [org, members, terms] = await Promise.all([
+      const [org, members, terms, policies] = await Promise.all([
         organizationById(membership.organization_id),
         organizationMembers(membership.organization_id),
-        protectedTermsFor(membership.organization_id)
+        protectedTermsFor(membership.organization_id),
+        orgPoliciesFor(membership.organization_id)
       ]);
       // Member emails via the auth admin API; capped so a pathological member
       // list can't fan out into dozens of upstream calls.
@@ -62,7 +63,8 @@ export default async function handler(request: RequestLike, response: ResponseLi
         organization: org ? { id: org.id, name: org.name, createdAt: org.created_at } : null,
         role: membership.role,
         members: members.map((member, index) => ({ role: member.role, joinedAt: member.joined_at, email: emails[index] ?? null, you: member.user_id === user.id })),
-        protectedTerms: terms.map((term) => ({ id: term.id, term: term.term }))
+        protectedTerms: terms.map((term) => ({ id: term.id, term: term.term })),
+        policies: policies.map((policy) => ({ category: policy.category, action: policy.action }))
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "ORG_ERROR";
@@ -79,12 +81,12 @@ export default async function handler(request: RequestLike, response: ResponseLi
       response.status(429).json({ error: "Too many attempts. Please wait a few minutes and try again." });
       return;
     }
-    const body = (request.body ?? {}) as { token?: unknown; inviteId?: unknown; name?: unknown; term?: unknown; termId?: unknown };
+    const body = (request.body ?? {}) as { token?: unknown; inviteId?: unknown; name?: unknown; term?: unknown; termId?: unknown; category?: unknown; action?: unknown };
 
     // Organization management. Writes require the owner or admin role — the
     // single place this is enforced, matching the RLS design (server-only
     // writes, role checks in the API).
-    if (action === "org-rename" || action === "term-add" || action === "term-remove") {
+    if (action === "org-rename" || action === "term-add" || action === "term-remove" || action === "policy-set") {
       const membership = await organizationMembershipFor(user.id);
       if (!membership || (membership.role !== "owner" && membership.role !== "admin")) {
         response.status(403).json({ error: "Only organization owners and admins can change this." });
@@ -100,6 +102,15 @@ export default async function handler(request: RequestLike, response: ResponseLi
         const existing = await protectedTermsFor(membership.organization_id);
         if (existing.length >= 30) { response.status(409).json({ error: "You can protect up to 30 terms." }); return; }
         await addProtectedTerm(membership.organization_id, term, user.id);
+      } else if (action === "policy-set") {
+        // action "default" clears the override so the category falls back to
+        // the stock personal policy.
+        const category = typeof body.category === "string" ? body.category : "";
+        const policyAction = typeof body.action === "string" ? body.action : "";
+        if (!["personal", "credentials", "financial", "custom"].includes(category)) { response.status(400).json({ error: "Unknown category." }); return; }
+        if (policyAction === "default") await clearOrgPolicy(membership.organization_id, category);
+        else if (["warn", "redact", "block"].includes(policyAction)) await setOrgPolicy(membership.organization_id, category, policyAction, user.id);
+        else { response.status(400).json({ error: "Unknown action." }); return; }
       } else {
         const termId = typeof body.termId === "string" ? body.termId : "";
         if (!termId) { response.status(400).json({ error: "Missing term id." }); return; }
