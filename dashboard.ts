@@ -915,7 +915,7 @@ export function mountDashboard(): void {
 
   // Kept out of scan() so a language switch can re-render an on-screen result
   // without re-running the check.
-  let lastResult: { findings: Finding[]; redactedText: string; sourceText: string } | null = null;
+  let lastResult: { findings: Finding[]; redactedText: string; sourceText: string; decision?: ScanDecision } | null = null;
 
   // Shows the user's own text with each detected value marked, so the result
   // answers "where in my prompt?" and not just "how many". Honours the
@@ -970,9 +970,12 @@ export function mountDashboard(): void {
     riskBanner.className = `risk-banner risk-${level}`;
     count.textContent = level === "none" ? "✓" : String(n);
     title.textContent = level === "high" ? words().riskHigh : level === "medium" ? words().riskMedium : words().riskNone;
-    copy.textContent = level === "high" ? plural(words().actionHigh, n)
+    // When the policy layer supplied a decision, its human-written reason is
+    // more specific than the generic level copy — show it instead.
+    const reason = n > 0 ? lastResult.decision?.decidedBy?.reason : undefined;
+    copy.textContent = reason ?? (level === "high" ? plural(words().actionHigh, n)
       : level === "medium" ? plural(words().actionMedium, n)
-      : words().actionNone;
+      : words().actionNone);
 
     const snippet = buildSnippet(lastResult.sourceText, lastResult.findings);
     resultSnippet.innerHTML = snippet;
@@ -1051,7 +1054,7 @@ export function mountDashboard(): void {
     try {
       const scanned = await window.promptShieldAuth!.scanPrompt(prompt.value, preferences);
       const result = storeResult(prompt.value, scanned.findings, scanned.redactedText, preferences);
-      lastResult = { findings: result.findings, redactedText: result.redactedText, sourceText: prompt.value };
+      lastResult = { findings: result.findings, redactedText: result.redactedText, sourceText: prompt.value, decision: scanned.decision };
       showResults();
       renderRiskCopy();
       redacted.textContent = result.redactedText;
@@ -1171,13 +1174,14 @@ export function mountDashboard(): void {
 }
 
 type ScanRequestOptions = { includePersonalData?: boolean; includeCredentials?: boolean; includeFinancialData?: boolean; customTerms?: string[] };
+type ScanDecision = { action: "allow" | "warn" | "redact" | "block"; decidedBy: { ruleId: string; ruleName: string; reason: string; findingIndexes: number[] } | null };
 
 declare global {
   interface Window {
     promptShieldAuth?: {
       hasAccess(): boolean;
       requestAccess(message?: string): void;
-      scanPrompt(text: string, options?: ScanRequestOptions): Promise<{ findings: Finding[]; redactedText: string }>;
+      scanPrompt(text: string, options?: ScanRequestOptions): Promise<{ findings: Finding[]; redactedText: string; decision?: ScanDecision }>;
       request(path: string, body?: Record<string, unknown>, method?: "GET" | "POST"): Promise<Record<string, unknown>>;
     };
   }

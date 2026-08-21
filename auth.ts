@@ -21,13 +21,16 @@ let currentEmail: string | null = null;
 let accountActive = false;
 
 type ScanRequestOptions = { includePersonalData?: boolean; includeCredentials?: boolean; includeFinancialData?: boolean; customTerms?: string[] };
+// The policy layer's verdict, passed through untouched from /api/scan so every
+// surface can show WHICH rule fired and WHY (indexes only — never values).
+type ScanDecision = { action: "allow" | "warn" | "redact" | "block"; decidedBy: { ruleId: string; ruleName: string; reason: string; findingIndexes: number[] } | null };
 
 declare global {
   interface Window {
     promptShieldAuth?: {
       hasAccess(): boolean;
       requestAccess(message?: string): void;
-      scanPrompt(text: string, options?: ScanRequestOptions): Promise<{ findings: Finding[]; redactedText: string }>;
+      scanPrompt(text: string, options?: ScanRequestOptions): Promise<{ findings: Finding[]; redactedText: string; decision?: ScanDecision }>;
       request(path: string, body?: Record<string, unknown>, method?: "GET" | "POST"): Promise<Record<string, unknown>>;
     };
   }
@@ -450,8 +453,8 @@ async function boot(): Promise<void> {
     scanPrompt: async (text, options) => {
       // Audit metadata only: which surface asked. Grants nothing server-side.
       const application = "__TAURI_INTERNALS__" in window ? "desktop" : "web";
-      const payload = await apiRequest("/api/scan", { text, application, options: options ?? {} }) as { findings?: Finding[]; redactedText?: string };
-      return { findings: payload.findings ?? [], redactedText: payload.redactedText ?? "" };
+      const payload = await apiRequest("/api/scan", { text, application, options: options ?? {} }) as { findings?: Finding[]; redactedText?: string; decision?: ScanDecision };
+      return { findings: payload.findings ?? [], redactedText: payload.redactedText ?? "", decision: payload.decision };
     },
     request: (path, body, method) => apiRequest(path, body, method)
   };

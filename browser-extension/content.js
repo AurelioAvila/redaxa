@@ -120,6 +120,13 @@ function buildUI() {
   });
 }
 
+// The policy decision explains WHY the scan flagged something: the server
+// returns the winning rule's human-written reason alongside the findings.
+function decisionReason(result) {
+  const reason = result.decision?.decidedBy?.reason;
+  return reason ? `<p class="ps-reason">${escapeHtml(reason)}</p>` : "";
+}
+
 function renderFindings(body, result, composer, onHandled) {
   if (!result.findings.length) {
     body.innerHTML = `<p class="ps-empty">Nothing obvious found. This is a helpful signal, not a guarantee.</p>`;
@@ -128,6 +135,7 @@ function renderFindings(body, result, composer, onHandled) {
   const list = result.findings.map((f) => `<div class="ps-finding"><b>${escapeHtml(f.label)}</b></div>`).join("");
   body.innerHTML = `
     <p class="ps-count">${result.findings.length} item${result.findings.length === 1 ? "" : "s"} to review</p>
+    ${decisionReason(result)}
     ${list}
     <button type="button" class="ps-use-redacted" id="promptshield-use-redacted">Replace with safer version</button>
   `;
@@ -239,12 +247,18 @@ async function gate(composer, resend) {
   }
 
   const list = result.findings.map((f) => `<div class="ps-finding"><b>${escapeHtml(f.label)}</b></div>`).join("");
+  // Enforcement follows the policy decision: when the winning rule says
+  // "block" there is no "Send anyway" -- the prompt stays unsent until fixed.
+  // (The default personal policy never blocks; this path exists for
+  // organization rules.)
+  const blocked = result.decision?.action === "block";
   showModal(`
-    <div class="ps-int-head">Found ${result.findings.length} item${result.findings.length === 1 ? "" : "s"} before sending<button type="button" class="ps-int-x" id="ps-int-close">×</button></div>
+    <div class="ps-int-head">${blocked ? "Blocked by your organization's policy" : `Found ${result.findings.length} item${result.findings.length === 1 ? "" : "s"} before sending`}<button type="button" class="ps-int-x" id="ps-int-close">×</button></div>
     <div class="ps-int-body">
+      ${decisionReason(result)}
       ${list}
       <button type="button" class="ps-use-redacted" id="ps-int-fix">Fix it first</button>
-      <button type="button" class="ps-int-secondary" id="ps-int-send-anyway">Send anyway</button>
+      ${blocked ? "" : `<button type="button" class="ps-int-secondary" id="ps-int-send-anyway">Send anyway</button>`}
     </div>
   `);
   modalEl.querySelector("#ps-int-close")?.addEventListener("click", closeModal);
