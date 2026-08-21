@@ -268,7 +268,7 @@ export async function effectiveEntitlement(userId: string): Promise<{ active: bo
   return { active: true, role: "member", ownerEmail: ownerUser?.email ?? null, account };
 }
 
-async function supabaseUserById(userId: string): Promise<{ email?: string } | null> {
+export async function supabaseUserById(userId: string): Promise<{ email?: string } | null> {
   const response = await supabaseService(`/auth/v1/admin/users/${encodeURIComponent(userId)}`, { method: "GET" });
   if (!response.ok) return null;
   return response.json() as Promise<{ email?: string }>;
@@ -327,6 +327,96 @@ export async function acceptTeamInvite(token: string, memberUserId: string): Pro
   if (!response.ok) throw new Error("TEAM_STORAGE_ERROR");
   const rows = await response.json() as TeamInvite[];
   return rows[0] ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// Organizations (M2). The organization is the governance layer: entitlement
+// still comes from the owner's subscription, but membership, roles, shared
+// protected terms and per-org audit hang off these tables.
+
+export type OrganizationRole = "owner" | "admin" | "member";
+export type Organization = { id: string; name: string; owner_user_id: string; created_at: string };
+export type OrganizationMembership = { organization_id: string; user_id: string; role: OrganizationRole };
+export type ProtectedTerm = { id: string; term: string; created_at: string };
+
+export async function organizationMembershipFor(userId: string): Promise<OrganizationMembership | null> {
+  const response = await supabaseService(`/rest/v1/organization_members?user_id=eq.${encodeURIComponent(userId)}&select=organization_id,user_id,role`, { method: "GET" });
+  if (!response.ok) throw new Error("ORG_STORAGE_ERROR");
+  const rows = await response.json() as OrganizationMembership[];
+  return rows[0] ?? null;
+}
+
+export async function organizationById(orgId: string): Promise<Organization | null> {
+  const response = await supabaseService(`/rest/v1/organizations?id=eq.${encodeURIComponent(orgId)}&select=*`, { method: "GET" });
+  if (!response.ok) throw new Error("ORG_STORAGE_ERROR");
+  const rows = await response.json() as Organization[];
+  return rows[0] ?? null;
+}
+
+export async function organizationMembers(orgId: string): Promise<Array<{ user_id: string; role: OrganizationRole; joined_at: string }>> {
+  const response = await supabaseService(`/rest/v1/organization_members?organization_id=eq.${encodeURIComponent(orgId)}&select=user_id,role,joined_at&order=joined_at.asc`, { method: "GET" });
+  if (!response.ok) throw new Error("ORG_STORAGE_ERROR");
+  return response.json() as Promise<Array<{ user_id: string; role: OrganizationRole; joined_at: string }>>;
+}
+
+/** Creates the org + owner membership for a business owner if missing.
+ *  Idempotent: unique constraints make double-creation a no-op. */
+export async function ensureOrganization(ownerUserId: string): Promise<Organization | null> {
+  await supabaseService("/rest/v1/organizations", {
+    method: "POST",
+    headers: { Prefer: "resolution=ignore-duplicates" },
+    body: JSON.stringify({ owner_user_id: ownerUserId })
+  });
+  const orgResponse = await supabaseService(`/rest/v1/organizations?owner_user_id=eq.${encodeURIComponent(ownerUserId)}&select=*`, { method: "GET" });
+  if (!orgResponse.ok) throw new Error("ORG_STORAGE_ERROR");
+  const orgs = await orgResponse.json() as Organization[];
+  const org = orgs[0] ?? null;
+  if (!org) return null;
+  await supabaseService("/rest/v1/organization_members", {
+    method: "POST",
+    headers: { Prefer: "resolution=ignore-duplicates" },
+    body: JSON.stringify({ organization_id: org.id, user_id: ownerUserId, role: "owner" })
+  });
+  return org;
+}
+
+export async function addOrganizationMember(orgId: string, userId: string, role: OrganizationRole): Promise<void> {
+  await supabaseService("/rest/v1/organization_members", {
+    method: "POST",
+    headers: { Prefer: "resolution=ignore-duplicates" },
+    body: JSON.stringify({ organization_id: orgId, user_id: userId, role })
+  });
+}
+
+export async function removeOrganizationMember(orgId: string, userId: string): Promise<void> {
+  await supabaseService(`/rest/v1/organization_members?organization_id=eq.${encodeURIComponent(orgId)}&user_id=eq.${encodeURIComponent(userId)}&role=neq.owner`, { method: "DELETE" });
+}
+
+export async function renameOrganization(orgId: string, name: string): Promise<void> {
+  const response = await supabaseService(`/rest/v1/organizations?id=eq.${encodeURIComponent(orgId)}`, {
+    method: "PATCH", body: JSON.stringify({ name })
+  });
+  if (!response.ok) throw new Error("ORG_STORAGE_ERROR");
+}
+
+export async function protectedTermsFor(orgId: string): Promise<ProtectedTerm[]> {
+  const response = await supabaseService(`/rest/v1/protected_terms?organization_id=eq.${encodeURIComponent(orgId)}&select=id,term,created_at&order=created_at.asc`, { method: "GET" });
+  if (!response.ok) throw new Error("ORG_STORAGE_ERROR");
+  return response.json() as Promise<ProtectedTerm[]>;
+}
+
+export async function addProtectedTerm(orgId: string, term: string, createdBy: string): Promise<void> {
+  const response = await supabaseService("/rest/v1/protected_terms", {
+    method: "POST",
+    headers: { Prefer: "resolution=ignore-duplicates" },
+    body: JSON.stringify({ organization_id: orgId, term, created_by: createdBy })
+  });
+  if (!response.ok) throw new Error("ORG_STORAGE_ERROR");
+}
+
+export async function removeProtectedTerm(orgId: string, termId: string): Promise<void> {
+  const response = await supabaseService(`/rest/v1/protected_terms?id=eq.${encodeURIComponent(termId)}&organization_id=eq.${encodeURIComponent(orgId)}`, { method: "DELETE" });
+  if (!response.ok) throw new Error("ORG_STORAGE_ERROR");
 }
 
 export async function userForCustomer(customerId: string): Promise<string | null> {

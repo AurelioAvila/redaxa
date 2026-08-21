@@ -1,4 +1,4 @@
-import { corsHeaders, effectiveEntitlement, requireUser, supabaseService } from "./_billing.js";
+import { corsHeaders, effectiveEntitlement, organizationMembershipFor, protectedTermsFor, requireUser, supabaseService } from "./_billing.js";
 import { clientIp, rateLimited } from "./_rateLimit.js";
 import { inspectPrompt, type ScanOptions } from "../scanner.js";
 import { defaultPersonalPolicy, evaluatePolicy } from "../policy.js";
@@ -20,12 +20,13 @@ const knownApplications = new Set(["web", "extension", "desktop", "chatgpt", "cl
  * design there is nothing sensitive in the row to lose: kinds, counts,
  * decision, surface. Never the text, never a finding value.
  */
-async function recordScanEvent(userId: string, application: string, kinds: string[], categories: string[], findingCount: number, action: string): Promise<void> {
+async function recordScanEvent(userId: string, organizationId: string | null, application: string, kinds: string[], categories: string[], findingCount: number, action: string): Promise<void> {
   try {
     await supabaseService("/rest/v1/scan_events", {
       method: "POST",
       body: JSON.stringify({
         user_id: userId,
+        organization_id: organizationId,
         application,
         finding_kinds: [...new Set(kinds)],
         finding_categories: [...new Set(categories)],
@@ -79,6 +80,24 @@ export default async function handler(request: RequestLike, response: ResponseLi
       includeFinancialData: body.options?.includeFinancialData !== false,
       customTerms: Array.isArray(body.options?.customTerms) ? body.options.customTerms.filter((term): term is string => typeof term === "string").slice(0, 30) : undefined
     };
+    // Organization governance: a member's scans are also checked against the
+    // organization's shared protected terms. Best-effort — if the lookup
+    // fails, the scan proceeds with the caller's own options rather than
+    // failing (detection availability beats governance completeness for now).
+    let organizationId: string | null = null;
+    try {
+      const membership = await organizationMembershipFor(user.id);
+      if (membership) {
+        organizationId = membership.organization_id;
+        const orgTerms = (await protectedTermsFor(membership.organization_id)).map((row) => row.term);
+        if (orgTerms.length > 0) {
+          options.customTerms = [...new Set([...(options.customTerms ?? []), ...orgTerms])].slice(0, 60);
+        }
+      }
+    } catch {
+      // Fall through with personal options only.
+    }
+
     // Deliberately not logged, persisted, or forwarded anywhere: this request body is used
     // only to compute the response below, then discarded when the function returns.
     const result = inspectPrompt(text, options);
@@ -92,6 +111,7 @@ export default async function handler(request: RequestLike, response: ResponseLi
     const application = typeof body.application === "string" && knownApplications.has(body.application) ? body.application : "unknown";
     void recordScanEvent(
       user.id,
+      organizationId,
       application,
       result.findings.map((finding) => finding.kind),
       result.findings.map((finding) => finding.category),
