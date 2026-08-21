@@ -1,6 +1,6 @@
 [package]
 name = "promptshield-desktop"
-version = "0.1.9"
+version = "0.1.10"
 description = "PromptShield local desktop companion"
 authors = ["Aurelio Avila"]
 license = ""

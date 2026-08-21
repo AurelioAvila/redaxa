@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.1.10 — 2026-08-21
+
+Desktop catch-up: admin snapshot + per-member breakdown + CSV export in
+Organization activity, prefetched Organization panel, overflow fixes.
+First release delivered via the auto-updater.
+
 ## v0.1.9 — 2026-08-21
 
 The privacy control layer release.
