@@ -50,6 +50,22 @@ keeps ordinary 16-digit tracking numbers from being flagged as credit cards,
 a mod-97 checksum does the same for IBANs, and reserved SSN ranges are
 excluded so invoice numbers don't trip it.
 
+## For teams: the control layer
+
+On the Business plan, a workspace is a real organization:
+
+- **Policies** — per category (credentials, financial, personal, protected
+  terms) an admin chooses *warn*, *redact* or *block*. Block removes "Send
+  anyway" in the browser extension: the prompt does not leave until fixed.
+- **Shared protected terms** — protect a project codename or client name
+  once and every member's checks flag it, on every device and surface.
+- **Explainable decisions** — every scan names the rule that decided and
+  why, on every surface.
+- **Audit trail, metadata only** — every check leaves an event (surface,
+  detection kinds, decision). Never the prompt, never a value: the events
+  table has no column that could hold content. Members see their own
+  activity; owners and admins see the organization's.
+
 ## Where it runs
 
 - **Web app** — [promptshield-beta.vercel.app](https://promptshield-beta.vercel.app), no install
