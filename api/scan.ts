@@ -1,5 +1,5 @@
 import { corsHeaders, effectiveEntitlement, organizationMembershipFor, orgScanContextFor, protectedTermsFor, requireUser, supabaseService, supabaseUserById } from "./_billing.js";
-import { clientIp, rateLimited } from "./_rateLimit.js";
+import { clientIp, rateLimited, rateLimitedShared } from "./_rateLimit.js";
 import { inspectPrompt, type ScanOptions } from "../scanner.js";
 import { buildOrganizationPolicy, defaultPersonalPolicy, evaluatePolicy, type PolicyAction, type PolicyRule } from "../policy.js";
 
@@ -83,7 +83,11 @@ export default async function handler(request: RequestLike, response: ResponseLi
     const user = await requireUser(request, response);
     const entitlement = await effectiveEntitlement(user.id);
     if (!entitlement.active) { response.status(402).json({ error: "TRIAL_REQUIRED" }); return; }
-    if (rateLimited(`scan:user:${user.id}`, 120, 60_000) || rateLimited(`scan:ip:${clientIp(request.headers)}`, 240, 60_000)) {
+    if (
+      rateLimited(`scan:user:${user.id}`, 120, 60_000) ||
+      rateLimited(`scan:ip:${clientIp(request.headers)}`, 240, 60_000) ||
+      await rateLimitedShared(supabaseService, `scan:user:${user.id}`, 120, 60)
+    ) {
       response.status(429).json({ error: "Too many checks. Please slow down." });
       return;
     }

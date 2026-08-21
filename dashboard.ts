@@ -683,15 +683,18 @@ export function mountDashboard(): void {
   const rawValueToggle = required<HTMLInputElement>("#show-raw");
   const clearAfterCopyToggle = required<HTMLInputElement>("#clear-after-copy");
   const customTermsInput = required<HTMLTextAreaElement>("#custom-terms");
-  languageSelect.value = preferences.language;
-  scanModeSelect.value = preferences.scanMode;
-  personalToggle.checked = preferences.includePersonalData;
-  credentialToggle.checked = preferences.includeCredentials;
-  financialToggle.checked = preferences.includeFinancialData;
-  historyToggle.checked = preferences.saveHistory;
-  rawValueToggle.checked = preferences.showRawValues;
-  clearAfterCopyToggle.checked = preferences.autoClearAfterCopy;
-  customTermsInput.value = preferences.customTerms.join("\n");
+  const syncPreferenceControls = (): void => {
+    languageSelect.value = preferences.language;
+    scanModeSelect.value = preferences.scanMode;
+    personalToggle.checked = preferences.includePersonalData;
+    credentialToggle.checked = preferences.includeCredentials;
+    financialToggle.checked = preferences.includeFinancialData;
+    historyToggle.checked = preferences.saveHistory;
+    rawValueToggle.checked = preferences.showRawValues;
+    clearAfterCopyToggle.checked = preferences.autoClearAfterCopy;
+    customTermsInput.value = preferences.customTerms.join("\n");
+  };
+  syncPreferenceControls();
 
   const closePreferences = (): void => {
     preferenceDialog.classList.remove("open");
@@ -890,9 +893,38 @@ export function mountDashboard(): void {
       activityEmpty.hidden = true;
     } catch { /* members and solo users simply don't see this block */ }
   };
+  // Cross-device sync: the account payload carries the synced settings
+  // (detection toggles, scan mode, custom terms). Applied once per page load,
+  // server wins — the server copy is whatever this user last saved anywhere.
+  // Theme and language deliberately stay per-device.
+  let syncedSettingsApplied = false;
+  const applySyncedSettings = (settings: NonNullable<AccountState["settings"]>): void => {
+    if (syncedSettingsApplied) return;
+    syncedSettingsApplied = true;
+    if (typeof settings.detectPersonal === "boolean") preferences.includePersonalData = settings.detectPersonal;
+    if (typeof settings.detectCredentials === "boolean") preferences.includeCredentials = settings.detectCredentials;
+    if (typeof settings.detectFinancial === "boolean") preferences.includeFinancialData = settings.detectFinancial;
+    if (settings.scanMode === "standard" || settings.scanMode === "strict") preferences.scanMode = settings.scanMode;
+    if (Array.isArray(settings.customTerms)) preferences.customTerms = settings.customTerms.slice(0, 30);
+    savePreferences(preferences);
+    syncPreferenceControls();
+  };
+  const pushSyncedSettings = (): void => {
+    if (!window.promptShieldAuth?.hasAccess()) return;
+    void window.promptShieldAuth.request("/api/account", {
+      settings: {
+        detectPersonal: preferences.includePersonalData,
+        detectCredentials: preferences.includeCredentials,
+        detectFinancial: preferences.includeFinancialData,
+        scanMode: preferences.scanMode,
+        customTerms: preferences.customTerms
+      }
+    }, "POST").catch(() => undefined);
+  };
   document.addEventListener("promptshield:account", (event) => {
     accountState = (event as CustomEvent<AccountState | null>).detail;
     renderPlanStatus();
+    if (accountState?.settings) applySyncedSettings(accountState.settings);
     void loadServerActivity();
     void loadOrgActivity();
   });
@@ -1195,6 +1227,7 @@ export function mountDashboard(): void {
     preferences.autoClearAfterCopy = clearAfterCopyToggle.checked;
     preferences.customTerms = customTermsInput.value.split(/\r?\n/).map((term) => term.trim()).filter(Boolean).slice(0, 30);
     savePreferences(preferences);
+    pushSyncedSettings();
     applyLanguage();
     closePreferences();
   });

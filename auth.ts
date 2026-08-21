@@ -286,7 +286,8 @@ function authRedirect(): string { return `${webAppUrl}/`; }
 // The dashboard renders the plan/trial state in its sidebar. Rather than have
 // it issue its own /api/account request (and race this one), the single
 // response already fetched here is published as an event.
-export type AccountState = { active: boolean; status: string | null; currentPeriodEnd: string | null; plan: string | null };
+export type SyncedSettings = { detectPersonal?: boolean; detectCredentials?: boolean; detectFinancial?: boolean; scanMode?: "standard" | "strict"; customTerms?: string[] };
+export type AccountState = { active: boolean; status: string | null; currentPeriodEnd: string | null; plan: string | null; settings?: SyncedSettings | null };
 function publishAccountState(state: AccountState | null): void {
   document.dispatchEvent(new CustomEvent("promptshield:account", { detail: state }));
 }
@@ -302,13 +303,14 @@ async function refreshEntitlement(): Promise<void> {
     }
     const response = await fetch(`${apiBase}/api/account`, { headers, cache: "no-store" });
     if (!response.ok) { accountActive = false; publishAccountState(null); return; }
-    const payload = await response.json() as { active?: boolean; status?: string | null; currentPeriodEnd?: string | null; plan?: string | null };
+    const payload = await response.json() as { active?: boolean; status?: string | null; currentPeriodEnd?: string | null; plan?: string | null; settings?: SyncedSettings | null };
     accountActive = Boolean(payload.active);
     publishAccountState({
       active: accountActive,
       status: payload.status ?? null,
       currentPeriodEnd: payload.currentPeriodEnd ?? null,
-      plan: payload.plan ?? null
+      plan: payload.plan ?? null,
+      settings: payload.settings ?? null
     });
   } catch { accountActive = false; publishAccountState(null); }
 }

@@ -20,6 +20,29 @@ export function rateLimited(key: string, limit: number, windowMs: number): boole
   return bucket.count > limit;
 }
 
+// Cross-instance authority: an atomic Postgres counter (rate_limit_hit RPC).
+// The in-memory check above stays as the cheap first line; this one closes
+// the "every warm instance has its own counter" hole. Deliberately fail-open:
+// if the RPC is missing or the DB hiccups, the scan must still work — the
+// in-memory guard still applies, and availability beats a perfect limit.
+export async function rateLimitedShared(
+  supabaseService: (path: string, init?: RequestInit) => Promise<Response>,
+  key: string,
+  limit: number,
+  windowSeconds: number
+): Promise<boolean> {
+  try {
+    const response = await supabaseService("/rest/v1/rpc/rate_limit_hit", {
+      method: "POST",
+      body: JSON.stringify({ p_key: key, p_limit: limit, p_window_seconds: windowSeconds })
+    });
+    if (!response.ok) return false;
+    return await response.json() === true;
+  } catch {
+    return false;
+  }
+}
+
 export function clientIp(headers: Record<string, string | string[] | undefined> | undefined): string {
   const forwarded = headers?.["x-forwarded-for"];
   const value = Array.isArray(forwarded) ? forwarded[0] : forwarded;
