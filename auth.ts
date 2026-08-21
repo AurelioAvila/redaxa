@@ -128,6 +128,16 @@ function accountControls(): { trigger: HTMLAnchorElement; login: HTMLAnchorEleme
   buttonRow.className = "ps-auth-buttons";
   trigger.insertAdjacentElement("beforebegin", buttonRow);
   buttonRow.append(login, trigger);
+  // The marketing page had no visible way into the product itself: the only
+  // entry points were "Create account"/"Log in" and the avatar menu. Give
+  // everyone a first-class Dashboard link in the same slot — signed-out
+  // visitors are asked to sign in by the dashboard itself. Omitted only on
+  // the dashboard, where it would link to the current page.
+  const dashboard = document.createElement("a");
+  dashboard.className = "small-btn";
+  dashboard.href = "/dashboard.html";
+  dashboard.textContent = "Dashboard";
+  if (!location.pathname.includes("dashboard")) buttonRow.append(dashboard);
   // A full email address plus a permanent "Sign out" button spent the most
   // prominent slot in the header on the two things a signed-in user needs
   // least often. Collapsed into an initials avatar that opens a menu; the
