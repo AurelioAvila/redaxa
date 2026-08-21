@@ -438,7 +438,9 @@ async function boot(): Promise<void> {
       document.dispatchEvent(new CustomEvent("promptshield:need-upgrade", { detail: { message } }));
     },
     scanPrompt: async (text, options) => {
-      const payload = await apiRequest("/api/scan", { text, options: options ?? {} }) as { findings?: Finding[]; redactedText?: string };
+      // Audit metadata only: which surface asked. Grants nothing server-side.
+      const application = "__TAURI_INTERNALS__" in window ? "desktop" : "web";
+      const payload = await apiRequest("/api/scan", { text, application, options: options ?? {} }) as { findings?: Finding[]; redactedText?: string };
       return { findings: payload.findings ?? [], redactedText: payload.redactedText ?? "" };
     },
     request: (path, body, method) => apiRequest(path, body, method)

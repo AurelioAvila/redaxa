@@ -115,7 +115,9 @@ export async function supabaseAuthUser(accessToken: string): Promise<{ id: strin
   return { id: body.id, email: body.email };
 }
 
-async function supabase(path: string, init: RequestInit = {}): Promise<Response> {
+// Exported for other API modules (scan events audit): a service-role REST
+// call. Named to make the privilege explicit at every call site.
+export async function supabaseService(path: string, init: RequestInit = {}): Promise<Response> {
   return fetch(`${supabaseUrl()}${path}`, {
     ...init,
     headers: {
@@ -215,7 +217,7 @@ export async function requireUser(
 }
 
 export async function reserveCheckout(userId: string): Promise<BillingAccount> {
-  const response = await supabase("/rest/v1/rpc/reserve_billing_checkout", {
+  const response = await supabaseService("/rest/v1/rpc/reserve_billing_checkout", {
     method: "POST", body: JSON.stringify({ p_user_id: userId })
   });
   if (!response.ok) {
@@ -229,13 +231,13 @@ export async function reserveCheckout(userId: string): Promise<BillingAccount> {
 }
 
 export async function releaseCheckout(userId: string): Promise<void> {
-  await supabase(`/rest/v1/billing_accounts?user_id=eq.${encodeURIComponent(userId)}`, {
+  await supabaseService(`/rest/v1/billing_accounts?user_id=eq.${encodeURIComponent(userId)}`, {
     method: "PATCH", body: JSON.stringify({ checkout_lock_at: null })
   });
 }
 
 export async function saveCustomer(userId: string, customerId: string): Promise<void> {
-  const response = await supabase(`/rest/v1/billing_accounts?user_id=eq.${encodeURIComponent(userId)}`, {
+  const response = await supabaseService(`/rest/v1/billing_accounts?user_id=eq.${encodeURIComponent(userId)}`, {
     method: "PATCH", body: JSON.stringify({ stripe_customer_id: customerId })
   });
   if (!response.ok) {
@@ -245,7 +247,7 @@ export async function saveCustomer(userId: string, customerId: string): Promise<
 }
 
 export async function accountFor(userId: string): Promise<BillingAccount | null> {
-  const response = await supabase(`/rest/v1/billing_accounts?user_id=eq.${encodeURIComponent(userId)}&select=stripe_customer_id,stripe_subscription_id,has_used_trial,subscription_status,current_period_end,plan,seat_count`, { method: "GET" });
+  const response = await supabaseService(`/rest/v1/billing_accounts?user_id=eq.${encodeURIComponent(userId)}&select=stripe_customer_id,stripe_subscription_id,has_used_trial,subscription_status,current_period_end,plan,seat_count`, { method: "GET" });
   if (!response.ok) throw new Error("BILLING_STORAGE_ERROR");
   const rows = await response.json() as BillingAccount[];
   return rows[0] ?? null;
@@ -267,27 +269,27 @@ export async function effectiveEntitlement(userId: string): Promise<{ active: bo
 }
 
 async function supabaseUserById(userId: string): Promise<{ email?: string } | null> {
-  const response = await supabase(`/auth/v1/admin/users/${encodeURIComponent(userId)}`, { method: "GET" });
+  const response = await supabaseService(`/auth/v1/admin/users/${encodeURIComponent(userId)}`, { method: "GET" });
   if (!response.ok) return null;
   return response.json() as Promise<{ email?: string }>;
 }
 
 export async function teamMembershipFor(userId: string): Promise<TeamInvite | null> {
-  const response = await supabase(`/rest/v1/team_invites?member_user_id=eq.${encodeURIComponent(userId)}&status=eq.accepted&select=*`, { method: "GET" });
+  const response = await supabaseService(`/rest/v1/team_invites?member_user_id=eq.${encodeURIComponent(userId)}&status=eq.accepted&select=*`, { method: "GET" });
   if (!response.ok) throw new Error("TEAM_STORAGE_ERROR");
   const rows = await response.json() as TeamInvite[];
   return rows[0] ?? null;
 }
 
 export async function teamInvitesFor(ownerUserId: string): Promise<TeamInvite[]> {
-  const response = await supabase(`/rest/v1/team_invites?owner_user_id=eq.${encodeURIComponent(ownerUserId)}&status=in.(pending,accepted)&select=*&order=created_at.asc`, { method: "GET" });
+  const response = await supabaseService(`/rest/v1/team_invites?owner_user_id=eq.${encodeURIComponent(ownerUserId)}&status=in.(pending,accepted)&select=*&order=created_at.asc`, { method: "GET" });
   if (!response.ok) throw new Error("TEAM_STORAGE_ERROR");
   return response.json() as Promise<TeamInvite[]>;
 }
 
 export async function createTeamInvite(ownerUserId: string): Promise<TeamInvite> {
   const token = crypto.randomUUID().replace(/-/g, "");
-  const response = await supabase("/rest/v1/team_invites", {
+  const response = await supabaseService("/rest/v1/team_invites", {
     method: "POST",
     headers: { Prefer: "return=representation" },
     body: JSON.stringify({ owner_user_id: ownerUserId, token })
@@ -298,14 +300,14 @@ export async function createTeamInvite(ownerUserId: string): Promise<TeamInvite>
 }
 
 export async function revokeTeamInvite(ownerUserId: string, inviteId: string): Promise<void> {
-  const response = await supabase(`/rest/v1/team_invites?id=eq.${encodeURIComponent(inviteId)}&owner_user_id=eq.${encodeURIComponent(ownerUserId)}&status=eq.pending`, {
+  const response = await supabaseService(`/rest/v1/team_invites?id=eq.${encodeURIComponent(inviteId)}&owner_user_id=eq.${encodeURIComponent(ownerUserId)}&status=eq.pending`, {
     method: "PATCH", body: JSON.stringify({ status: "revoked" })
   });
   if (!response.ok) throw new Error("TEAM_STORAGE_ERROR");
 }
 
 export async function inviteByToken(token: string): Promise<TeamInvite | null> {
-  const response = await supabase(`/rest/v1/team_invites?token=eq.${encodeURIComponent(token)}&select=*`, { method: "GET" });
+  const response = await supabaseService(`/rest/v1/team_invites?token=eq.${encodeURIComponent(token)}&select=*`, { method: "GET" });
   if (!response.ok) throw new Error("TEAM_STORAGE_ERROR");
   const rows = await response.json() as TeamInvite[];
   return rows[0] ?? null;
@@ -317,7 +319,7 @@ export async function inviteByToken(token: string): Promise<TeamInvite | null> {
 // would let an owner "accept" their own invite since the WHERE clause has no
 // opinion about who the member is.
 export async function acceptTeamInvite(token: string, memberUserId: string): Promise<TeamInvite | null> {
-  const response = await supabase(`/rest/v1/team_invites?token=eq.${encodeURIComponent(token)}&status=eq.pending`, {
+  const response = await supabaseService(`/rest/v1/team_invites?token=eq.${encodeURIComponent(token)}&status=eq.pending`, {
     method: "PATCH",
     headers: { Prefer: "return=representation" },
     body: JSON.stringify({ member_user_id: memberUserId, status: "accepted", accepted_at: new Date().toISOString() })
@@ -328,14 +330,14 @@ export async function acceptTeamInvite(token: string, memberUserId: string): Pro
 }
 
 export async function userForCustomer(customerId: string): Promise<string | null> {
-  const response = await supabase(`/rest/v1/billing_accounts?stripe_customer_id=eq.${encodeURIComponent(customerId)}&select=user_id`, { method: "GET" });
+  const response = await supabaseService(`/rest/v1/billing_accounts?stripe_customer_id=eq.${encodeURIComponent(customerId)}&select=user_id`, { method: "GET" });
   if (!response.ok) throw new Error("BILLING_STORAGE_ERROR");
   const rows = await response.json() as Array<{ user_id?: string }>;
   return rows[0]?.user_id ?? null;
 }
 
 export async function patchAccount(userId: string, updates: Json): Promise<void> {
-  const response = await supabase(`/rest/v1/billing_accounts?user_id=eq.${encodeURIComponent(userId)}`, {
+  const response = await supabaseService(`/rest/v1/billing_accounts?user_id=eq.${encodeURIComponent(userId)}`, {
     method: "PATCH", body: JSON.stringify({ ...updates, updated_at: new Date().toISOString() })
   });
   if (!response.ok) {
@@ -345,13 +347,13 @@ export async function patchAccount(userId: string, updates: Json): Promise<void>
 }
 
 export async function claimStripeEvent(eventId: string, eventType: string): Promise<"claimed" | "completed" | "in_progress"> {
-  const response = await supabase("/rest/v1/rpc/claim_stripe_event", { method: "POST", body: JSON.stringify({ p_event_id: eventId, p_event_type: eventType }) });
+  const response = await supabaseService("/rest/v1/rpc/claim_stripe_event", { method: "POST", body: JSON.stringify({ p_event_id: eventId, p_event_type: eventType }) });
   if (!response.ok) throw new Error("BILLING_STORAGE_ERROR");
   return response.json() as Promise<"claimed" | "completed" | "in_progress">;
 }
 
 export async function completeStripeEvent(eventId: string): Promise<void> {
-  const response = await supabase("/rest/v1/rpc/complete_stripe_event", { method: "POST", body: JSON.stringify({ p_event_id: eventId }) });
+  const response = await supabaseService("/rest/v1/rpc/complete_stripe_event", { method: "POST", body: JSON.stringify({ p_event_id: eventId }) });
   if (!response.ok) throw new Error("BILLING_STORAGE_ERROR");
 }
 

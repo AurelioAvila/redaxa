@@ -54,7 +54,7 @@ async function apiRequest(path, body, method = "POST") {
   return payload;
 }
 
-async function handleMessage(message) {
+async function handleMessage(message, sender) {
   switch (message.type) {
     case "SIGN_IN": {
       const payload = await apiRequest("/api/auth/signin", { email: message.email, password: message.password });
@@ -85,7 +85,17 @@ async function handleMessage(message) {
       }
     }
     case "SCAN": {
-      const result = await apiRequest("/api/scan", { text: message.text, options: message.options ?? {} });
+      // Audit metadata only: which AI app the prompt was headed to. Derived
+      // from the sender tab's host here (trusted context), never from the
+      // page itself.
+      const host = sender?.tab?.url ? new URL(sender.tab.url).hostname : "";
+      const application =
+        host.includes("chatgpt") || host.includes("chat.openai") ? "chatgpt" :
+        host.includes("claude") ? "claude" :
+        host.includes("gemini") ? "gemini" :
+        host.includes("copilot") ? "copilot" :
+        host.includes("perplexity") ? "perplexity" : "extension";
+      const result = await apiRequest("/api/scan", { text: message.text, application, options: message.options ?? {} });
       return { findings: result.findings ?? [], redactedText: result.redactedText ?? "" };
     }
     default:
@@ -99,7 +109,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // explicitly anyway, so this stays safe if externally_connectable is
   // ever added later for an unrelated reason.
   if (sender.id !== chrome.runtime.id) return false;
-  handleMessage(message)
+  handleMessage(message, sender)
     .then((result) => sendResponse({ ok: true, result }))
     .catch((error) => sendResponse({ ok: false, error: error instanceof Error ? error.message : "Unexpected error." }));
   return true; // keep the message channel open for the async response
