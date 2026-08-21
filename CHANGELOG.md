@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.1.11 — 2026-08-21
+
+Layout fix: the Organization activity admin snapshot spans the full width.
+
 ## v0.1.10 — 2026-08-21
 
 Desktop catch-up: admin snapshot + per-member breakdown + CSV export in

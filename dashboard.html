@@ -318,6 +318,11 @@ main{width:100%;max-width:1280px;margin:0 auto;padding:36px 44px 96px}
 .entry{padding:13px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface-2);cursor:pointer;transition:border-color .14s ease}
 .entry:hover{border-color:var(--line-strong)}
 .entry{min-width:0;overflow:hidden}
+/* The org-activity list is a 4-column card grid; the admin snapshot, the
+   per-member bars and the export button injected above the cards must span
+   the full row instead of being squeezed into one cell. */
+#org-activity-list > .metrics,#org-activity-list > .bars-label,#org-activity-list > .analytics-row,#org-activity-list > #org-export-csv{grid-column:1 / -1}
+#org-activity-list > #org-export-csv{justify-self:start}
 .entry strong{display:block;font-size:12px;font-weight:700;overflow-wrap:anywhere}
 .entry span{display:block;margin-top:6px;color:var(--text-3);font-size:11px;line-height:1.45;overflow-wrap:anywhere}
 .entry em{display:inline-block;margin-top:10px;color:var(--accent);font-size:10.5px;font-style:normal}
