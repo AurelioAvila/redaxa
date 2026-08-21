@@ -590,12 +590,13 @@ export function mountDashboard(): void {
     protectedTerms?: { id: string; term: string }[];
   };
   const roleLabel = (role: string): string => role === "owner" ? words().orgRoleOwner : role === "admin" ? words().orgRoleAdmin : words().orgRoleMember;
-  const loadOrganization = async (): Promise<void> => {
-    if (!window.promptShieldAuth?.hasAccess()) { orgSection.hidden = true; return; }
-    try {
-      const data = await window.promptShieldAuth.request("/api/team?action=org", undefined, "GET") as OrgPayload;
-      if (!data.organization) { orgSection.hidden = true; return; }
-      orgSection.hidden = false;
+  // The last payload is kept so re-opening the drawer paints instantly from
+  // cache while a background refresh fetches the current state — without it
+  // the whole Organization section popped in ~400ms after the drawer opened.
+  let orgCache: OrgPayload | null = null;
+  const renderOrganization = (data: OrgPayload): void => {
+    if (!data.organization) { orgSection.hidden = true; return; }
+    orgSection.hidden = false;
       const canManage = data.role === "owner" || data.role === "admin";
       required<HTMLElement>("#org-title").textContent = data.organization.name === "Workspace" ? words().orgTitle : data.organization.name;
       orgNameRow.hidden = !canManage;
@@ -607,7 +608,15 @@ export function mountDashboard(): void {
       orgTermList.innerHTML = (data.protectedTerms ?? []).map((term) =>
         `<li><span>${escapeHtml(term.term)}</span>${canManage ? `<button type="button" class="secondary" data-term-remove="${term.id}">${words().orgRemove}</button>` : ""}</li>`
       ).join("") || `<li class="empty">${words().orgNoTerms}</li>`;
-    } catch { orgSection.hidden = true; }
+  };
+  const loadOrganization = async (): Promise<void> => {
+    if (!window.promptShieldAuth?.hasAccess()) { orgSection.hidden = true; return; }
+    if (orgCache) renderOrganization(orgCache);
+    try {
+      const data = await window.promptShieldAuth.request("/api/team?action=org", undefined, "GET") as OrgPayload;
+      orgCache = data;
+      renderOrganization(data);
+    } catch { if (!orgCache) orgSection.hidden = true; }
   };
   required<HTMLButtonElement>("#org-name-save").addEventListener("click", async () => {
     const name = orgNameInput.value.trim();
@@ -842,7 +851,7 @@ export function mountDashboard(): void {
   // The account event can fire before entitlement is known (hasAccess() still
   // false), and there is no later event on some sign-in paths — poll briefly
   // instead of missing the load.
-  for (const delay of [2000, 5000, 10_000]) setTimeout(() => void loadServerActivity(), delay);
+  for (const delay of [2000, 5000, 10_000]) setTimeout(() => { void loadServerActivity(); if (!orgCache) void loadOrganization(); }, delay);
 
   const metricChecked = document.querySelector<HTMLElement>("#metric-checked");
   const metricItems = document.querySelector<HTMLElement>("#metric-items");
