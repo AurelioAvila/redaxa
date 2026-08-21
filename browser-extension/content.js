@@ -9,6 +9,7 @@ function findComposer() {
     "textarea[data-testid='chat-input']",
     "rich-textarea .ql-editor[contenteditable='true']",
     "div.ql-editor[contenteditable='true']",
+    "#ask-input",
     "#userInput",
     "textarea#composer-background"
   ];
@@ -49,10 +50,57 @@ function setComposerText(el, text) {
     const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value")?.set;
     setter?.call(el, text);
     el.dispatchEvent(new Event("input", { bubbles: true }));
-  } else {
+    return;
+  }
+  // Rich editors (Lexical on Perplexity, ProseMirror on ChatGPT/Claude,
+  // Quill on Gemini) revert DOM writes they didn't make; the replacement has
+  // to flow through execCommand so it enters the editor's own beforeinput
+  // pipeline. Two constraints make the exact shape of this code load-bearing:
+  //  1. It must run SYNCHRONOUSLY inside the user's button click — the
+  //     user-gesture token that makes insertText acceptable to these editors
+  //     does not survive a setTimeout.
+  //  2. When insertText reports success, believe it. Editors apply the change
+  //     asynchronously, so the DOM still shows the old text right here — a
+  //     "verify and fall back to innerText" step would stomp the editor's DOM
+  //     and get the whole edit reverted (observed live on Perplexity).
+  el.focus();
+  const selection = window.getSelection();
+  const caret = document.createRange();
+  caret.selectNodeContents(el);
+  caret.collapse(false);
+  selection.removeAllRanges();
+  selection.addRange(caret);
+  document.execCommand("selectAll");
+  const inserted = document.execCommand("insertText", false, text);
+  if (!inserted) {
     el.innerText = text;
     el.dispatchEvent(new InputEvent("input", { bubbles: true }));
   }
+  // Some editors (Lexical on Perplexity) discard scripted edits entirely, no
+  // matter which pipeline they arrive through. Verify after the editor has
+  // had time to apply the change; if it refused, fall back to the one path
+  // that can never be blocked: safe text on the clipboard, everything left
+  // selected, and a toast telling the user the single keystroke that
+  // finishes the job.
+  setTimeout(() => {
+    if (composerText(el).trim() === text.trim()) return;
+    navigator.clipboard.writeText(text).then(() => {
+      el.focus();
+      document.execCommand("selectAll");
+      psToast("Safe version copied — press Ctrl+V to replace your prompt.");
+    }).catch(() => {
+      psToast("This editor blocks automatic replacing. Copy the safe version from the PromptShield panel.");
+    });
+  }, 400);
+}
+
+function psToast(message) {
+  document.getElementById("promptshield-toast")?.remove();
+  const toast = document.createElement("div");
+  toast.id = "promptshield-toast";
+  toast.textContent = message;
+  document.body.append(toast);
+  setTimeout(() => toast.remove(), 7000);
 }
 
 function send(message) {

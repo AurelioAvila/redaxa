@@ -40,18 +40,35 @@ async function accessToken() {
   return payload.access_token;
 }
 
-async function apiRequest(path, body, method = "POST") {
+async function apiRequest(path, body, method = "POST", { timeoutMs = 15_000, retries = 1 } = {}) {
   const headers = { "Content-Type": "application/json" };
   const token = await accessToken();
   if (token) headers.Authorization = `Bearer ${token}`;
-  const response = await fetch(`${API_BASE}${path}`, {
-    method,
-    headers,
-    body: method === "GET" ? undefined : JSON.stringify(body ?? {})
-  });
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(payload.error ?? "Request failed.");
-  return payload;
+  // A hung request would leave the user staring at "Checking…" forever, and a
+  // single transient network blip shouldn't read as "PromptShield is broken":
+  // hard timeout + one retry on pure network failures (never on HTTP errors,
+  // which are real answers).
+  for (let attempt = 0; ; attempt++) {
+    const abort = new AbortController();
+    const timer = setTimeout(() => abort.abort(), timeoutMs);
+    try {
+      const response = await fetch(`${API_BASE}${path}`, {
+        method,
+        headers,
+        body: method === "GET" ? undefined : JSON.stringify(body ?? {}),
+        signal: abort.signal
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw Object.assign(new Error(payload.error ?? "Request failed."), { httpStatus: response.status });
+      return payload;
+    } catch (error) {
+      if (error.httpStatus || attempt >= retries) {
+        throw error.name === "AbortError" ? new Error("The check timed out. Please try again.") : error;
+      }
+    } finally {
+      clearTimeout(timer);
+    }
+  }
 }
 
 async function handleMessage(message, sender) {
@@ -96,7 +113,10 @@ async function handleMessage(message, sender) {
         host.includes("copilot") ? "copilot" :
         host.includes("perplexity") ? "perplexity" : "extension";
       const result = await apiRequest("/api/scan", { text: message.text, application, options: message.options ?? {} });
-      return { findings: result.findings ?? [], redactedText: result.redactedText ?? "" };
+      // The decision (which policy rule fired, why, and whether the send is
+      // blocked) must survive this hop — the content script's modal depends
+      // on it. Dropping it here silently degraded block to warn.
+      return { findings: result.findings ?? [], redactedText: result.redactedText ?? "", decision: result.decision ?? null };
     }
     default:
       throw new Error(`Unknown message type: ${message.type}`);

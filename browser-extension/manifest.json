@@ -4,7 +4,10 @@
   "short_name": "PromptShield",
   "version": "0.1.9",
   "description": "Catches personal data and secrets in your prompt before you send it to ChatGPT or Claude.",
-  "permissions": ["storage"],
+  "permissions": [
+    "storage",
+    "clipboardWrite"
+  ],
   "host_permissions": [
     "https://promptshield-beta.vercel.app/*"
   ],
@@ -35,8 +38,12 @@
         "https://copilot.microsoft.com/*",
         "https://www.perplexity.ai/*"
       ],
-      "js": ["content.js"],
-      "css": ["content.css"],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
       "run_at": "document_start"
     }
   ]

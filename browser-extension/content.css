@@ -72,3 +72,18 @@
 .ps-int-x { border: 0; background: transparent; color: #9da49a; font-size: 20px; cursor: pointer; }
 .ps-int-body { padding: 14px 16px; }
 .ps-int-body .ps-use-redacted { margin-top: 4px; }
+
+#promptshield-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 26px;
+  transform: translateX(-50%);
+  z-index: 2147483647;
+  background: #0d0f0c;
+  color: #f4f6f1;
+  border: 1px solid #b9ff00;
+  border-radius: 999px;
+  padding: 11px 18px;
+  font: 600 13px system-ui, sans-serif;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45);
+}
