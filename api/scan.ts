@@ -137,7 +137,12 @@ export default async function handler(request: RequestLike, response: ResponseLi
     const decision = evaluatePolicy(result.findings, policyRules);
 
     const application = typeof body.application === "string" && knownApplications.has(body.application) ? body.application : "unknown";
-    void recordScanEvent(
+    // Awaited, not fire-and-forget: a serverless function is frozen the moment
+    // the response is sent, so an un-awaited insert is silently killed mid-
+    // flight most of the time (observed in production: events went missing).
+    // recordScanEvent still swallows its own failures, so a DB hiccup delays
+    // the response by at most one timeout instead of failing the scan.
+    await recordScanEvent(
       user.id,
       organizationId,
       application,
