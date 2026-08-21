@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.1.9 — 2026-08-21
+
+The privacy control layer release.
+
+- Organizations with owner/admin/member roles (auto-provisioned for
+  Business owners; invites join the workspace automatically).
+- Shared protected terms, enforced server-side on every member's checks.
+- Per-category organization policies: Warn / Redact / Block. Block removes
+  "Send anyway" in the extension.
+- Explainable policy decisions on every surface (which rule, why).
+- Metadata-first audit trail: personal and organization activity in the
+  dashboard; the events table has no columns for content by design.
+- Desktop: signed auto-updates, checked at startup.
+- Landing: always-visible Dashboard link.
+
 ## v0.1.8 — 2026-08-21
 
 Web release: the landing page becomes the product demo.

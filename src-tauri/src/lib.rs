@@ -37,6 +37,39 @@ fn secure_store_delete() -> Result<(), String> {
     }
 }
 
+// Silent-by-default auto-update: checked once at startup, and the user is
+// asked before anything is downloaded or installed. Update artifacts are
+// signed (minisign) and verified by the updater plugin against the pubkey in
+// tauri.conf.json, so a compromised download host cannot ship a payload.
+#[cfg(desktop)]
+async fn check_for_updates(app: tauri::AppHandle) {
+    use tauri_plugin_dialog::{DialogExt, MessageDialogButtons};
+    use tauri_plugin_updater::UpdaterExt;
+    let Ok(updater) = app.updater() else { return };
+    let Ok(Some(update)) = updater.check().await else { return };
+    let version = update.version.clone();
+    let app_for_install = app.clone();
+    app.dialog()
+        .message(format!(
+            "PromptShield {version} is available.\n\nInstall now? The app restarts when it finishes."
+        ))
+        .title("Update available")
+        .buttons(MessageDialogButtons::OkCancelCustom(
+            "Install and restart".into(),
+            "Later".into(),
+        ))
+        .show(move |confirmed| {
+            if !confirmed {
+                return;
+            }
+            tauri::async_runtime::spawn(async move {
+                if update.download_and_install(|_, _| {}, || {}).await.is_ok() {
+                    app_for_install.restart();
+                }
+            });
+        });
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -55,6 +88,16 @@ pub fn run() {
                         .level(log::LevelFilter::Info)
                         .build(),
                 )?;
+            }
+            #[cfg(desktop)]
+            {
+                app.handle()
+                    .plugin(tauri_plugin_updater::Builder::new().build())?;
+                app.handle().plugin(tauri_plugin_dialog::init())?;
+                let handle = app.handle().clone();
+                tauri::async_runtime::spawn(async move {
+                    check_for_updates(handle).await;
+                });
             }
             Ok(())
         })

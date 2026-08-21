@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "PromptShield",
   "short_name": "PromptShield",
-  "version": "0.1.0",
+  "version": "0.1.9",
   "description": "Catches personal data and secrets in your prompt before you send it to ChatGPT or Claude.",
   "permissions": ["storage"],
   "host_permissions": [
