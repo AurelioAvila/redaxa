@@ -73,6 +73,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     seatsLabel: "Seats", seat1: "1 user", seat2: "2 users", seat3: "3 users", yearlyBusiness: "€149.90 yearly / user",
     manageTag: "Already subscribed?", manageTitle: "Manage billing", manageDesc: "Update your payment method, download invoices, or cancel renewal whenever you need to.", manageBtn: "Manage subscription",
     teamTitle: "Team", teamSeatsUsed: "{used} of {total} seats used.", inviteCreate: "Create invite link", copyLink: "Copy link", noInvites: "No invites yet.", teammateJoined: "Teammate joined", invitePending: "Invite pending", revoke: "Revoke", couldNotCreateInvite: "We could not create an invite.",
+    orgTitle: "Organization", orgIntro: "Shared protection for your whole workspace. Protected terms apply to every member's checks, on every device.", orgMembersLabel: "Members", orgTermsLabel: "Protected terms", orgTermsHint: "Project codenames, client names — flagged in every member's prompts.", orgTermAdd: "Add", orgTermPlaceholder: "e.g. Project Falcon", orgRoleOwner: "Owner", orgRoleAdmin: "Admin", orgRoleMember: "Member", orgYou: "you", orgRenameSave: "Save name", orgNoTerms: "No protected terms yet.", orgRemove: "Remove",
     previewBadge: "Preview", previewLabel: "example result — not your prompt", planNone: "No active plan", planNoneNote: "Start a 7-day free trial to run checks.", planTrial: "Free trial", planTrialNote: "Your trial covers unlimited checks. Add a plan to keep them running.", planActive: "Active plan", planActiveNote: "Unlimited checks and custom protected terms are on.", planDayOf: "Day {day} of {total}", planEndsToday: "Ends today", planDaysLeft: "{n} day left|{n} days left", foundInPrompt: "Found in your prompt"
   },
   it: {
@@ -111,6 +112,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     seatsLabel: "Posti", seat1: "1 utente", seat2: "2 utenti", seat3: "3 utenti", yearlyBusiness: "€149,90 all'anno / utente",
     manageTag: "Già abbonato?", manageTitle: "Gestisci fatturazione", manageDesc: "Aggiorna il metodo di pagamento, scarica le fatture o annulla il rinnovo quando vuoi.", manageBtn: "Gestisci abbonamento",
     teamTitle: "Team", teamSeatsUsed: "{used} di {total} posti utilizzati.", inviteCreate: "Crea link di invito", copyLink: "Copia link", noInvites: "Nessun invito ancora.", teammateJoined: "Collega entrato", invitePending: "Invito in sospeso", revoke: "Revoca", couldNotCreateInvite: "Non è stato possibile creare un invito.",
+    orgTitle: "Organizzazione", orgIntro: "Protezione condivisa per tutto il workspace. I termini protetti valgono per i controlli di ogni membro, su ogni dispositivo.", orgMembersLabel: "Membri", orgTermsLabel: "Termini protetti", orgTermsHint: "Nomi in codice, nomi di clienti — segnalati nei prompt di ogni membro.", orgTermAdd: "Aggiungi", orgTermPlaceholder: "es. Progetto Falco", orgRoleOwner: "Proprietario", orgRoleAdmin: "Admin", orgRoleMember: "Membro", orgYou: "tu", orgRenameSave: "Salva nome", orgNoTerms: "Nessun termine protetto ancora.", orgRemove: "Rimuovi",
     previewBadge: "Anteprima", previewLabel: "risultato di esempio — non il tuo prompt", planNone: "Nessun piano attivo", planNoneNote: "Avvia la prova gratuita di 7 giorni per eseguire controlli.", planTrial: "Prova gratuita", planTrialNote: "La prova include controlli illimitati. Aggiungi un piano per non interromperli.", planActive: "Piano attivo", planActiveNote: "Controlli illimitati e termini protetti personalizzati sono attivi.", planDayOf: "Giorno {day} di {total}", planEndsToday: "Scade oggi", planDaysLeft: "{n} giorno rimasto|{n} giorni rimasti", foundInPrompt: "Trovato nel tuo prompt"
   },
   es: {
@@ -149,6 +151,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     seatsLabel: "Puestos", seat1: "1 usuario", seat2: "2 usuarios", seat3: "3 usuarios", yearlyBusiness: "149,90 € al año / usuario",
     manageTag: "¿Ya estás suscrito?", manageTitle: "Gestionar facturación", manageDesc: "Actualiza tu método de pago, descarga facturas o cancela la renovación cuando quieras.", manageBtn: "Gestionar suscripción",
     teamTitle: "Equipo", teamSeatsUsed: "{used} de {total} puestos usados.", inviteCreate: "Crear enlace de invitación", copyLink: "Copiar enlace", noInvites: "Aún no hay invitaciones.", teammateJoined: "Compañero incorporado", invitePending: "Invitación pendiente", revoke: "Revocar", couldNotCreateInvite: "No se pudo crear la invitación.",
+    orgTitle: "Organización", orgIntro: "Protección compartida para todo el espacio de trabajo. Los términos protegidos se aplican a los controles de cada miembro, en cada dispositivo.", orgMembersLabel: "Miembros", orgTermsLabel: "Términos protegidos", orgTermsHint: "Nombres en clave, nombres de clientes — señalados en los prompts de cada miembro.", orgTermAdd: "Añadir", orgTermPlaceholder: "p. ej. Proyecto Halcón", orgRoleOwner: "Propietario", orgRoleAdmin: "Admin", orgRoleMember: "Miembro", orgYou: "tú", orgRenameSave: "Guardar nombre", orgNoTerms: "Aún no hay términos protegidos.", orgRemove: "Quitar",
     previewBadge: "Vista previa", previewLabel: "resultado de ejemplo — no es tu prompt", planNone: "Sin plan activo", planNoneNote: "Comienza la prueba gratuita de 7 días para hacer revisiones.", planTrial: "Prueba gratuita", planTrialNote: "Tu prueba incluye revisiones ilimitadas. Añade un plan para no interrumpirlas.", planActive: "Plan activo", planActiveNote: "Revisiones ilimitadas y términos protegidos propios están activos.", planDayOf: "Día {day} de {total}", planEndsToday: "Termina hoy", planDaysLeft: "Queda {n} día|Quedan {n} días", foundInPrompt: "Encontrado en tu prompt"
   },
   fr: {
@@ -187,6 +190,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     seatsLabel: "Postes", seat1: "1 utilisateur", seat2: "2 utilisateurs", seat3: "3 utilisateurs", yearlyBusiness: "149,90 € par an / utilisateur",
     manageTag: "Déjà abonné ?", manageTitle: "Gérer la facturation", manageDesc: "Mettez à jour votre moyen de paiement, téléchargez vos factures ou annulez le renouvellement quand vous le souhaitez.", manageBtn: "Gérer l’abonnement",
     teamTitle: "Équipe", teamSeatsUsed: "{used} poste(s) utilisé(s) sur {total}.", inviteCreate: "Créer un lien d’invitation", copyLink: "Copier le lien", noInvites: "Aucune invitation pour l’instant.", teammateJoined: "Coéquipier ajouté", invitePending: "Invitation en attente", revoke: "Révoquer", couldNotCreateInvite: "Impossible de créer une invitation.",
+    orgTitle: "Organisation", orgIntro: "Une protection partagée pour tout l'espace de travail. Les termes protégés s'appliquent aux contrôles de chaque membre, sur chaque appareil.", orgMembersLabel: "Membres", orgTermsLabel: "Termes protégés", orgTermsHint: "Noms de code, noms de clients — signalés dans les prompts de chaque membre.", orgTermAdd: "Ajouter", orgTermPlaceholder: "ex. Projet Faucon", orgRoleOwner: "Propriétaire", orgRoleAdmin: "Admin", orgRoleMember: "Membre", orgYou: "vous", orgRenameSave: "Enregistrer le nom", orgNoTerms: "Aucun terme protégé pour l'instant.", orgRemove: "Retirer",
     previewBadge: "Aperçu", previewLabel: "résultat d’exemple — pas votre prompt", planNone: "Aucune offre active", planNoneNote: "Démarrez l’essai gratuit de 7 jours pour lancer des vérifications.", planTrial: "Essai gratuit", planTrialNote: "Votre essai couvre des vérifications illimitées. Ajoutez une offre pour les poursuivre.", planActive: "Offre active", planActiveNote: "Vérifications illimitées et termes protégés personnalisés sont actifs.", planDayOf: "Jour {day} sur {total}", planEndsToday: "Se termine aujourd’hui", planDaysLeft: "{n} jour restant|{n} jours restants", foundInPrompt: "Trouvé dans votre prompt"
   },
   de: {
@@ -225,6 +229,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     seatsLabel: "Plätze", seat1: "1 Nutzer", seat2: "2 Nutzer", seat3: "3 Nutzer", yearlyBusiness: "149,90 € jährlich / Nutzer",
     manageTag: "Bereits abonniert?", manageTitle: "Abrechnung verwalten", manageDesc: "Aktualisieren Sie Ihre Zahlungsmethode, laden Sie Rechnungen herunter oder kündigen Sie die Verlängerung jederzeit.", manageBtn: "Abonnement verwalten",
     teamTitle: "Team", teamSeatsUsed: "{used} von {total} Plätzen belegt.", inviteCreate: "Einladungslink erstellen", copyLink: "Link kopieren", noInvites: "Noch keine Einladungen.", teammateJoined: "Teammitglied beigetreten", invitePending: "Einladung ausstehend", revoke: "Widerrufen", couldNotCreateInvite: "Die Einladung konnte nicht erstellt werden.",
+    orgTitle: "Organisation", orgIntro: "Gemeinsamer Schutz für den ganzen Workspace. Geschützte Begriffe gelten für die Prüfungen jedes Mitglieds, auf jedem Gerät.", orgMembersLabel: "Mitglieder", orgTermsLabel: "Geschützte Begriffe", orgTermsHint: "Codenamen, Kundennamen — werden in den Prompts jedes Mitglieds markiert.", orgTermAdd: "Hinzufügen", orgTermPlaceholder: "z. B. Projekt Falke", orgRoleOwner: "Inhaber", orgRoleAdmin: "Admin", orgRoleMember: "Mitglied", orgYou: "Sie", orgRenameSave: "Namen speichern", orgNoTerms: "Noch keine geschützten Begriffe.", orgRemove: "Entfernen",
     previewBadge: "Vorschau", previewLabel: "Beispielergebnis — nicht Ihr Prompt", planNone: "Kein aktiver Tarif", planNoneNote: "Starten Sie die 7-tägige Testphase, um Prüfungen auszuführen.", planTrial: "Kostenlose Testphase", planTrialNote: "Ihre Testphase umfasst unbegrenzte Prüfungen. Wählen Sie einen Tarif, um sie fortzusetzen.", planActive: "Aktiver Tarif", planActiveNote: "Unbegrenzte Prüfungen und eigene geschützte Begriffe sind aktiv.", planDayOf: "Tag {day} von {total}", planEndsToday: "Endet heute", planDaysLeft: "noch {n} Tag|noch {n} Tage", foundInPrompt: "In Ihrem Prompt gefunden"
   }
 };
@@ -507,6 +512,23 @@ export function mountDashboard(): void {
         <button type="button" class="secondary" id="team-invite-btn">${words().inviteCreate}</button>
         <div id="team-invite-result"></div>
       </section>
+      <section id="org-section" class="team-section" hidden>
+        <h3 id="org-title">${words().orgTitle}</h3>
+        <p>${words().orgIntro}</p>
+        <div class="pref-row" id="org-name-row" hidden>
+          <input type="text" id="org-name-input" maxlength="80">
+          <button type="button" class="secondary" id="org-name-save">${words().orgRenameSave}</button>
+        </div>
+        <h3>${words().orgMembersLabel}</h3>
+        <ul id="org-member-list"></ul>
+        <h3>${words().orgTermsLabel}</h3>
+        <p>${words().orgTermsHint}</p>
+        <ul id="org-term-list"></ul>
+        <div class="pref-row" id="org-term-row" hidden>
+          <input type="text" id="org-term-input" maxlength="64" placeholder="${words().orgTermPlaceholder}">
+          <button type="button" class="secondary" id="org-term-add">${words().orgTermAdd}</button>
+        </div>
+      </section>
       <div class="drawer-actions"><button class="secondary" id="close-plans" type="button">${settingsByLanguage[preferences.language][10]}</button></div>
     </section>`;
   document.body.append(plansDialog);
@@ -552,10 +574,66 @@ export function mountDashboard(): void {
     await loadTeam();
   });
 
+  // Organization panel: workspace name, member roster, shared protected terms.
+  // Writes are offered only to owners/admins (the server enforces it anyway).
+  const orgSection = required<HTMLElement>("#org-section");
+  const orgNameRow = required<HTMLElement>("#org-name-row");
+  const orgNameInput = required<HTMLInputElement>("#org-name-input");
+  const orgMemberList = required<HTMLUListElement>("#org-member-list");
+  const orgTermList = required<HTMLUListElement>("#org-term-list");
+  const orgTermRow = required<HTMLElement>("#org-term-row");
+  const orgTermInput = required<HTMLInputElement>("#org-term-input");
+  type OrgPayload = {
+    organization: { id: string; name: string } | null;
+    role?: "owner" | "admin" | "member";
+    members?: { role: string; email: string | null; you: boolean }[];
+    protectedTerms?: { id: string; term: string }[];
+  };
+  const roleLabel = (role: string): string => role === "owner" ? words().orgRoleOwner : role === "admin" ? words().orgRoleAdmin : words().orgRoleMember;
+  const loadOrganization = async (): Promise<void> => {
+    if (!window.promptShieldAuth?.hasAccess()) { orgSection.hidden = true; return; }
+    try {
+      const data = await window.promptShieldAuth.request("/api/team?action=org", undefined, "GET") as OrgPayload;
+      if (!data.organization) { orgSection.hidden = true; return; }
+      orgSection.hidden = false;
+      const canManage = data.role === "owner" || data.role === "admin";
+      required<HTMLElement>("#org-title").textContent = data.organization.name === "Workspace" ? words().orgTitle : data.organization.name;
+      orgNameRow.hidden = !canManage;
+      orgTermRow.hidden = !canManage;
+      if (canManage && document.activeElement !== orgNameInput) orgNameInput.value = data.organization.name;
+      orgMemberList.innerHTML = (data.members ?? []).map((member) =>
+        `<li><span>${escapeHtml(member.email ?? "—")}${member.you ? ` (${words().orgYou})` : ""} · ${roleLabel(member.role)}</span></li>`
+      ).join("");
+      orgTermList.innerHTML = (data.protectedTerms ?? []).map((term) =>
+        `<li><span>${escapeHtml(term.term)}</span>${canManage ? `<button type="button" class="secondary" data-term-remove="${term.id}">${words().orgRemove}</button>` : ""}</li>`
+      ).join("") || `<li class="empty">${words().orgNoTerms}</li>`;
+    } catch { orgSection.hidden = true; }
+  };
+  required<HTMLButtonElement>("#org-name-save").addEventListener("click", async () => {
+    const name = orgNameInput.value.trim();
+    if (!name) return;
+    await window.promptShieldAuth?.request("/api/team?action=org-rename", { name }, "POST").catch(() => undefined);
+    await loadOrganization();
+  });
+  required<HTMLButtonElement>("#org-term-add").addEventListener("click", async () => {
+    const term = orgTermInput.value.trim();
+    if (term.length < 2) return;
+    await window.promptShieldAuth?.request("/api/team?action=term-add", { term }, "POST").catch(() => undefined);
+    orgTermInput.value = "";
+    await loadOrganization();
+  });
+  orgTermList.addEventListener("click", async (event) => {
+    const termId = (event.target as HTMLElement).dataset.termRemove;
+    if (!termId) return;
+    await window.promptShieldAuth?.request("/api/team?action=term-remove", { termId }, "POST").catch(() => undefined);
+    await loadOrganization();
+  });
+
   const openPlans = (): void => {
     plansDialog.classList.add("open");
     document.documentElement.classList.add("preferences-open");
     void loadTeam();
+    void loadOrganization();
   };
   required<HTMLButtonElement>("#close-plans").addEventListener("click", closePlans);
   document.querySelector("#side-fill-cta")?.addEventListener("click", (event) => { event.preventDefault(); openPlans(); });
