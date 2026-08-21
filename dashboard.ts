@@ -839,6 +839,10 @@ export function mountDashboard(): void {
     renderPlanStatus();
     void loadServerActivity();
   });
+  // The account event can fire before entitlement is known (hasAccess() still
+  // false), and there is no later event on some sign-in paths — poll briefly
+  // instead of missing the load.
+  for (const delay of [2000, 5000, 10_000]) setTimeout(() => void loadServerActivity(), delay);
 
   const metricChecked = document.querySelector<HTMLElement>("#metric-checked");
   const metricItems = document.querySelector<HTMLElement>("#metric-items");
