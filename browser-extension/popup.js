@@ -19,6 +19,17 @@ async function render() {
     statusBox.classList.add("show");
     formBox.classList.remove("show");
     statusEmail.textContent = status.email;
+    // Honest state: "Active" only with a live trial/subscription — otherwise
+    // say what's missing instead of showing a green light that isn't true.
+    const pillText = document.getElementById("status-pill-text");
+    const pillDot = document.querySelector("#status-pill i");
+    if (status.active) {
+      pillText.textContent = "Protection active";
+      pillDot.style.background = "var(--accent)";
+    } else {
+      pillText.textContent = "Plan required";
+      pillDot.style.background = "#ff9d8a";
+    }
   } else {
     statusBox.classList.remove("show");
     formBox.classList.add("show");
@@ -36,6 +47,10 @@ document.getElementById("form").addEventListener("submit", async (event) => {
   } catch (error) {
     msg.textContent = error.message || "Sign-in failed.";
   }
+});
+
+document.getElementById("open-dashboard").addEventListener("click", () => {
+  chrome.tabs.create({ url: DASHBOARD_URL });
 });
 
 document.getElementById("sign-out").addEventListener("click", async () => {
