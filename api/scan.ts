@@ -1,4 +1,4 @@
-import { corsHeaders, effectiveEntitlement, organizationMembershipFor, orgScanContextFor, protectedTermsFor, requireUser, supabaseService } from "./_billing.js";
+import { corsHeaders, effectiveEntitlement, organizationMembershipFor, orgScanContextFor, protectedTermsFor, requireUser, supabaseService, supabaseUserById } from "./_billing.js";
 import { clientIp, rateLimited } from "./_rateLimit.js";
 import { inspectPrompt, type ScanOptions } from "../scanner.js";
 import { buildOrganizationPolicy, defaultPersonalPolicy, evaluatePolicy, type PolicyAction, type PolicyRule } from "../policy.js";
@@ -45,15 +45,32 @@ export default async function handler(request: RequestLike, response: ResponseLi
   response.setHeader("Cache-Control", "no-store");
   if (request.method === "OPTIONS") { response.status(204).end(); return; }
 
-  // GET = the caller's own recent scan activity (metadata only). Folded into
-  // this function because the Vercel Hobby plan caps deployments at 12
-  // serverless functions and this project sits exactly at the cap.
+  // GET = recent scan activity (metadata only). Folded into this function
+  // because the Vercel Hobby plan caps deployments at 12 serverless functions
+  // and this project sits exactly at the cap. Default scope: the caller's own
+  // events. ?scope=org: the whole organization's events — owners and admins
+  // only, the visibility the Business plan exists for.
   if (request.method === "GET") {
     try {
       const user = await requireUser(request, response);
-      const eventsResponse = await supabaseService(`/rest/v1/scan_events?user_id=eq.${encodeURIComponent(user.id)}&select=created_at,application,finding_kinds,finding_categories,finding_count,action&order=created_at.desc&limit=50`, { method: "GET" });
+      const scope = Array.isArray((request as { query?: Record<string, string | string[]> }).query?.scope) ? undefined : (request as { query?: Record<string, string | undefined> }).query?.scope;
+      let filter = `user_id=eq.${encodeURIComponent(user.id)}`;
+      if (scope === "org") {
+        const membership = await organizationMembershipFor(user.id);
+        if (!membership || (membership.role !== "owner" && membership.role !== "admin")) { response.status(403).json({ error: "Only organization owners and admins can view team activity." }); return; }
+        filter = `organization_id=eq.${encodeURIComponent(membership.organization_id)}`;
+      }
+      const eventsResponse = await supabaseService(`/rest/v1/scan_events?${filter}&select=created_at,application,finding_kinds,finding_categories,finding_count,action,user_id&order=created_at.desc&limit=50`, { method: "GET" });
       if (!eventsResponse.ok) { response.status(200).json({ events: [] }); return; }
-      response.status(200).json({ events: await eventsResponse.json() });
+      const events = await eventsResponse.json() as Array<{ user_id: string } & Record<string, unknown>>;
+      // Resolve member emails so the org view reads as people, not UUIDs;
+      // capped, cached per distinct id, and only for the org scope.
+      let emailById = new Map<string, string | null>();
+      if (scope === "org") {
+        const ids = [...new Set(events.map((event) => event.user_id))].slice(0, 10);
+        emailById = new Map(await Promise.all(ids.map(async (id) => [id, (await supabaseUserById(id))?.email ?? null] as [string, string | null])));
+      }
+      response.status(200).json({ events: events.map(({ user_id, ...event }) => ({ ...event, member: scope === "org" ? emailById.get(user_id) ?? null : undefined })) });
     } catch (error) {
       const message = error instanceof Error ? error.message : "";
       response.status(message === "UNAUTHORIZED" ? 401 : 500).json({ error: message === "UNAUTHORIZED" ? "UNAUTHORIZED" : "We could not load your activity." });
