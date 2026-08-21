@@ -1,7 +1,7 @@
-import { accountFor, corsHeaders, effectiveEntitlement, requireUser, supabaseService } from "./_billing.js";
+import { accountFor, corsHeaders, createApiKey, effectiveEntitlement, listApiKeys, requireUser, revokeApiKey, supabaseService } from "./_billing.js";
 import { clientIp, rateLimited } from "./_rateLimit.js";
 
-type RequestLike = { method?: string; body?: unknown; headers?: Record<string, string | string[] | undefined> };
+type RequestLike = { method?: string; body?: unknown; query?: Record<string, string | string[] | undefined>; headers?: Record<string, string | string[] | undefined> };
 type ResponseLike = { setHeader(name: string, value: string | string[]): void; status(code: number): ResponseLike; json(value: unknown): void; end(): void };
 
 // Only these keys sync across devices; theme/language are device preferences
@@ -26,6 +26,48 @@ export default async function handler(request: RequestLike, response: ResponseLi
   for (const [name, value] of Object.entries(cors)) response.setHeader(name, value);
   if (request.method === "OPTIONS") { response.status(204).end(); return; }
   response.setHeader("Cache-Control", "no-store");
+
+  const action = Array.isArray(request.query?.action) ? request.query?.action[0] : request.query?.action;
+
+  // Dedicated API key management, folded in here (12-function cap). GET
+  // ?action=keys lists metadata; POST ?action=key-create returns the
+  // plaintext key EXACTLY ONCE; POST ?action=key-revoke disables one.
+  if (action === "keys" && request.method === "GET") {
+    try {
+      const user = await requireUser(request, response);
+      const keys = await listApiKeys(user.id);
+      response.status(200).json({ keys: keys.map((k) => ({ id: k.id, name: k.name, prefix: k.key_prefix, createdAt: k.created_at, lastUsedAt: k.last_used_at, revoked: k.revoked_at !== null })) });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      response.status(message === "UNAUTHORIZED" ? 401 : 500).json({ error: message === "UNAUTHORIZED" ? "UNAUTHORIZED" : "We could not load your API keys." });
+    }
+    return;
+  }
+  if ((action === "key-create" || action === "key-revoke") && request.method === "POST") {
+    try {
+      const user = await requireUser(request, response);
+      if (rateLimited(`apikeys:user:${user.id}`, 20, 60 * 60_000)) {
+        response.status(429).json({ error: "Too many key operations. Please wait." });
+        return;
+      }
+      const body = (request.body ?? {}) as { name?: unknown; keyId?: unknown };
+      if (action === "key-create") {
+        const name = typeof body.name === "string" && body.name.trim() ? body.name.trim().slice(0, 60) : "API key";
+        const created = await createApiKey(user.id, name);
+        if (!created) { response.status(409).json({ error: "You can have up to 10 active API keys." }); return; }
+        response.status(200).json({ key: created.key, id: created.meta.id, prefix: created.meta.key_prefix });
+      } else {
+        const keyId = typeof body.keyId === "string" ? body.keyId : "";
+        if (!keyId) { response.status(400).json({ error: "Missing key id." }); return; }
+        await revokeApiKey(user.id, keyId);
+        response.status(200).json({ ok: true });
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      response.status(message === "UNAUTHORIZED" ? 401 : 500).json({ error: message === "UNAUTHORIZED" ? "UNAUTHORIZED" : "We could not complete that key operation." });
+    }
+    return;
+  }
 
   // POST = save the caller's synced settings (upsert of one jsonb row).
   if (request.method === "POST") {

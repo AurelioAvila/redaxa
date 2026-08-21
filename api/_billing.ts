@@ -187,12 +187,73 @@ export function corsHeaders(request: { headers?: Record<string, string | string[
   };
 }
 
+// ---------------------------------------------------------------------------
+// Dedicated API keys (`psk_live_...`). Only a SHA-256 hash is ever stored;
+// the plaintext exists exactly once, in the create response.
+
+const API_KEY_PREFIX = "psk_live_";
+
+async function sha256Hex(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+export type ApiKeyMeta = { id: string; name: string; key_prefix: string; created_at: string; last_used_at: string | null; revoked_at: string | null };
+
+async function apiKeyUser(bearer: string): Promise<BillingUser | null> {
+  const hash = await sha256Hex(bearer);
+  const response = await supabaseService(`/rest/v1/api_keys?key_hash=eq.${hash}&revoked_at=is.null&select=id,user_id`, { method: "GET" });
+  if (!response.ok) return null;
+  const rows = await response.json() as Array<{ id: string; user_id: string }>;
+  const row = rows[0];
+  if (!row) return null;
+  // Best-effort usage stamp; an audit hiccup must not fail the request.
+  void supabaseService(`/rest/v1/api_keys?id=eq.${row.id}`, { method: "PATCH", body: JSON.stringify({ last_used_at: new Date().toISOString() }) }).catch(() => undefined);
+  const authUser = await supabaseUserById(row.user_id);
+  return { id: row.user_id, email: authUser?.email ?? "" };
+}
+
+export async function listApiKeys(userId: string): Promise<ApiKeyMeta[]> {
+  const response = await supabaseService(`/rest/v1/api_keys?user_id=eq.${encodeURIComponent(userId)}&select=id,name,key_prefix,created_at,last_used_at,revoked_at&order=created_at.desc`, { method: "GET" });
+  if (!response.ok) return [];
+  return response.json() as Promise<ApiKeyMeta[]>;
+}
+
+/** Creates a key and returns its PLAINTEXT — the only moment it exists. */
+export async function createApiKey(userId: string, name: string): Promise<{ key: string; meta: { id: string; key_prefix: string } } | null> {
+  const existing = await listApiKeys(userId);
+  if (existing.filter((k) => !k.revoked_at).length >= 10) return null;
+  const secret = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
+  const key = `${API_KEY_PREFIX}${secret}`;
+  const response = await supabaseService("/rest/v1/api_keys", {
+    method: "POST",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify({ user_id: userId, name, key_hash: await sha256Hex(key), key_prefix: key.slice(0, API_KEY_PREFIX.length + 6) })
+  });
+  if (!response.ok) return null;
+  const rows = await response.json() as Array<{ id: string; key_prefix: string }>;
+  return rows[0] ? { key, meta: rows[0] } : null;
+}
+
+export async function revokeApiKey(userId: string, keyId: string): Promise<void> {
+  await supabaseService(`/rest/v1/api_keys?id=eq.${encodeURIComponent(keyId)}&user_id=eq.${encodeURIComponent(userId)}`, {
+    method: "PATCH", body: JSON.stringify({ revoked_at: new Date().toISOString() })
+  });
+}
+
 export async function requireUser(
   request: { headers?: Record<string, string | string[] | undefined> },
   response?: { setHeader(name: string, value: string | string[]): void }
 ): Promise<BillingUser> {
   const bearer = bearerToken(request.headers);
   if (bearer) {
+    // Dedicated API keys are distinguishable by prefix and never sent to
+    // Supabase auth; Supabase session tokens never hit the key table.
+    if (bearer.startsWith(API_KEY_PREFIX)) {
+      const user = await apiKeyUser(bearer);
+      if (user) return user;
+      throw new Error("UNAUTHORIZED");
+    }
     const user = await supabaseAuthUser(bearer);
     if (user) return user;
   }
@@ -399,19 +460,19 @@ export async function renameOrganization(orgId: string, name: string): Promise<v
   if (!response.ok) throw new Error("ORG_STORAGE_ERROR");
 }
 
-export type OrgPolicyRow = { category: "personal" | "credentials" | "financial" | "custom"; action: "warn" | "redact" | "block" };
+export type OrgPolicyRow = { category: "personal" | "credentials" | "financial" | "custom"; action: "warn" | "redact" | "block"; min_severity?: "low" | "medium" | "high" | "critical" | null };
 
 export async function orgPoliciesFor(orgId: string): Promise<OrgPolicyRow[]> {
-  const response = await supabaseService(`/rest/v1/org_policies?organization_id=eq.${encodeURIComponent(orgId)}&select=category,action`, { method: "GET" });
+  const response = await supabaseService(`/rest/v1/org_policies?organization_id=eq.${encodeURIComponent(orgId)}&select=category,action,min_severity`, { method: "GET" });
   if (!response.ok) return [];
   return response.json() as Promise<OrgPolicyRow[]>;
 }
 
-export async function setOrgPolicy(orgId: string, category: string, action: string, updatedBy: string): Promise<void> {
+export async function setOrgPolicy(orgId: string, category: string, action: string, updatedBy: string, minSeverity: string | null = null): Promise<void> {
   const response = await supabaseService("/rest/v1/org_policies?on_conflict=organization_id,category", {
     method: "POST",
     headers: { Prefer: "resolution=merge-duplicates" },
-    body: JSON.stringify({ organization_id: orgId, category, action, updated_by: updatedBy, updated_at: new Date().toISOString() })
+    body: JSON.stringify({ organization_id: orgId, category, action, min_severity: minSeverity, updated_by: updatedBy, updated_at: new Date().toISOString() })
   });
   if (!response.ok) throw new Error("ORG_STORAGE_ERROR");
 }
@@ -425,7 +486,7 @@ export async function clearOrgPolicy(orgId: string, category: string): Promise<v
  *  round-trip (PostgREST embedding): membership, shared terms, policies.
  *  Null when the user has no organization. */
 export async function orgScanContextFor(userId: string): Promise<{ organizationId: string; terms: string[]; policies: OrgPolicyRow[] } | null> {
-  const response = await supabaseService(`/rest/v1/organization_members?user_id=eq.${encodeURIComponent(userId)}&select=organization_id,organizations(protected_terms(term),org_policies(category,action))`, { method: "GET" });
+  const response = await supabaseService(`/rest/v1/organization_members?user_id=eq.${encodeURIComponent(userId)}&select=organization_id,organizations(protected_terms(term),org_policies(category,action,min_severity))`, { method: "GET" });
   if (!response.ok) return null;
   const rows = await response.json() as Array<{ organization_id: string; organizations?: { protected_terms?: { term: string }[]; org_policies?: OrgPolicyRow[] } | null }>;
   const row = rows[0];

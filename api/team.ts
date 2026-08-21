@@ -64,7 +64,7 @@ export default async function handler(request: RequestLike, response: ResponseLi
         role: membership.role,
         members: members.map((member, index) => ({ role: member.role, joinedAt: member.joined_at, email: emails[index] ?? null, you: member.user_id === user.id })),
         protectedTerms: terms.map((term) => ({ id: term.id, term: term.term })),
-        policies: policies.map((policy) => ({ category: policy.category, action: policy.action }))
+        policies: policies.map((policy) => ({ category: policy.category, action: policy.action, minSeverity: policy.min_severity ?? null }))
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "ORG_ERROR";
@@ -81,7 +81,7 @@ export default async function handler(request: RequestLike, response: ResponseLi
       response.status(429).json({ error: "Too many attempts. Please wait a few minutes and try again." });
       return;
     }
-    const body = (request.body ?? {}) as { token?: unknown; inviteId?: unknown; name?: unknown; term?: unknown; termId?: unknown; category?: unknown; action?: unknown };
+    const body = (request.body ?? {}) as { token?: unknown; inviteId?: unknown; name?: unknown; term?: unknown; termId?: unknown; category?: unknown; action?: unknown; minSeverity?: unknown };
 
     // Organization management. Writes require the owner or admin role — the
     // single place this is enforced, matching the RLS design (server-only
@@ -108,8 +108,10 @@ export default async function handler(request: RequestLike, response: ResponseLi
         const category = typeof body.category === "string" ? body.category : "";
         const policyAction = typeof body.action === "string" ? body.action : "";
         if (!["personal", "credentials", "financial", "custom"].includes(category)) { response.status(400).json({ error: "Unknown category." }); return; }
+        const rawSeverity = typeof body.minSeverity === "string" ? body.minSeverity : "";
+        const minSeverity = ["low", "medium", "high", "critical"].includes(rawSeverity) ? rawSeverity : null;
         if (policyAction === "default") await clearOrgPolicy(membership.organization_id, category);
-        else if (["warn", "redact", "block"].includes(policyAction)) await setOrgPolicy(membership.organization_id, category, policyAction, user.id);
+        else if (["warn", "redact", "block"].includes(policyAction)) await setOrgPolicy(membership.organization_id, category, policyAction, user.id, minSeverity);
         else { response.status(400).json({ error: "Unknown action." }); return; }
       } else {
         const termId = typeof body.termId === "string" ? body.termId : "";

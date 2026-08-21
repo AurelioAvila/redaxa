@@ -73,7 +73,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     seatsLabel: "Seats", seat1: "1 user", seat2: "2 users", seat3: "3 users", yearlyBusiness: "€149.90 yearly / user",
     manageTag: "Already subscribed?", manageTitle: "Manage billing", manageDesc: "Update your payment method, download invoices, or cancel renewal whenever you need to.", manageBtn: "Manage subscription",
     teamTitle: "Team", teamSeatsUsed: "{used} of {total} seats used.", inviteCreate: "Create invite link", copyLink: "Copy link", noInvites: "No invites yet.", teammateJoined: "Teammate joined", invitePending: "Invite pending", revoke: "Revoke", couldNotCreateInvite: "We could not create an invite.",
-    orgTitle: "Organization", orgIntro: "Shared protection for your whole workspace. Protected terms apply to every member's checks, on every device.", orgMembersLabel: "Members", orgTermsLabel: "Protected terms", orgTermsHint: "Project codenames, client names — flagged in every member's prompts.", orgTermAdd: "Add", orgTermPlaceholder: "e.g. Project Falcon", orgRoleOwner: "Owner", orgRoleAdmin: "Admin", orgRoleMember: "Member", orgYou: "you", orgRenameSave: "Save name", orgNoTerms: "No protected terms yet.", orgRemove: "Remove", acctActivity: "Across your account — all devices", orgActivity: "Organization activity", orgChecks: "Team checks", orgFlagged: "Flagged", orgBlocked: "Blocked", orgTopCat: "Top category", orgByMember: "By member", orgExport: "Export CSV (metadata only)", orgPoliciesLabel: "Policies", orgPoliciesHint: "What happens when a category is found in a member's prompt. Block prevents sending from the extension until fixed.", polDefault: "Default", polWarn: "Warn", polRedact: "Redact", polBlock: "Block", catPersonal: "Personal data", catCredentials: "Credentials", catFinancial: "Financial data", catCustom: "Protected terms",
+    orgTitle: "Organization", orgIntro: "Shared protection for your whole workspace. Protected terms apply to every member's checks, on every device.", orgMembersLabel: "Members", orgTermsLabel: "Protected terms", orgTermsHint: "Project codenames, client names — flagged in every member's prompts.", orgTermAdd: "Add", orgTermPlaceholder: "e.g. Project Falcon", orgRoleOwner: "Owner", orgRoleAdmin: "Admin", orgRoleMember: "Member", orgYou: "you", orgRenameSave: "Save name", orgNoTerms: "No protected terms yet.", orgRemove: "Remove", acctActivity: "Across your account — all devices", orgActivity: "Organization activity", orgChecks: "Team checks", orgFlagged: "Flagged", orgBlocked: "Blocked", orgTopCat: "Top category", orgByMember: "By member", orgExport: "Export CSV (metadata only)", orgPoliciesLabel: "Policies", orgPoliciesHint: "What happens when a category is found in a member's prompt. Block prevents sending from the extension until fixed.", polDefault: "Default", polWarn: "Warn", polRedact: "Redact", polBlock: "Block", catPersonal: "Personal data", catCredentials: "Credentials", catFinancial: "Financial data", catCustom: "Protected terms", sevAny: "any severity",
     previewBadge: "Preview", previewLabel: "example result — not your prompt", planNone: "No active plan", planNoneNote: "Start a 7-day free trial to run checks.", planTrial: "Free trial", planTrialNote: "Your trial covers unlimited checks. Add a plan to keep them running.", planActive: "Active plan", planActiveNote: "Unlimited checks and custom protected terms are on.", planDayOf: "Day {day} of {total}", planEndsToday: "Ends today", planDaysLeft: "{n} day left|{n} days left", foundInPrompt: "Found in your prompt"
   },
   it: {
@@ -112,7 +112,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     seatsLabel: "Posti", seat1: "1 utente", seat2: "2 utenti", seat3: "3 utenti", yearlyBusiness: "€149,90 all'anno / utente",
     manageTag: "Già abbonato?", manageTitle: "Gestisci fatturazione", manageDesc: "Aggiorna il metodo di pagamento, scarica le fatture o annulla il rinnovo quando vuoi.", manageBtn: "Gestisci abbonamento",
     teamTitle: "Team", teamSeatsUsed: "{used} di {total} posti utilizzati.", inviteCreate: "Crea link di invito", copyLink: "Copia link", noInvites: "Nessun invito ancora.", teammateJoined: "Collega entrato", invitePending: "Invito in sospeso", revoke: "Revoca", couldNotCreateInvite: "Non è stato possibile creare un invito.",
-    orgTitle: "Organizzazione", orgIntro: "Protezione condivisa per tutto il workspace. I termini protetti valgono per i controlli di ogni membro, su ogni dispositivo.", orgMembersLabel: "Membri", orgTermsLabel: "Termini protetti", orgTermsHint: "Nomi in codice, nomi di clienti — segnalati nei prompt di ogni membro.", orgTermAdd: "Aggiungi", orgTermPlaceholder: "es. Progetto Falco", orgRoleOwner: "Proprietario", orgRoleAdmin: "Admin", orgRoleMember: "Membro", orgYou: "tu", orgRenameSave: "Salva nome", orgNoTerms: "Nessun termine protetto ancora.", orgRemove: "Rimuovi", acctActivity: "Sul tuo account — tutti i dispositivi", orgActivity: "Attività dell'organizzazione", orgChecks: "Controlli del team", orgFlagged: "Segnalati", orgBlocked: "Bloccati", orgTopCat: "Categoria principale", orgByMember: "Per membro", orgExport: "Esporta CSV (solo metadata)", orgPoliciesLabel: "Policy", orgPoliciesHint: "Cosa succede quando una categoria viene trovata nel prompt di un membro. Blocca impedisce l'invio dall'estensione finché non correggi.", polDefault: "Predefinito", polWarn: "Avvisa", polRedact: "Redigi", polBlock: "Blocca", catPersonal: "Dati personali", catCredentials: "Credenziali", catFinancial: "Dati finanziari", catCustom: "Termini protetti",
+    orgTitle: "Organizzazione", orgIntro: "Protezione condivisa per tutto il workspace. I termini protetti valgono per i controlli di ogni membro, su ogni dispositivo.", orgMembersLabel: "Membri", orgTermsLabel: "Termini protetti", orgTermsHint: "Nomi in codice, nomi di clienti — segnalati nei prompt di ogni membro.", orgTermAdd: "Aggiungi", orgTermPlaceholder: "es. Progetto Falco", orgRoleOwner: "Proprietario", orgRoleAdmin: "Admin", orgRoleMember: "Membro", orgYou: "tu", orgRenameSave: "Salva nome", orgNoTerms: "Nessun termine protetto ancora.", orgRemove: "Rimuovi", acctActivity: "Sul tuo account — tutti i dispositivi", orgActivity: "Attività dell'organizzazione", orgChecks: "Controlli del team", orgFlagged: "Segnalati", orgBlocked: "Bloccati", orgTopCat: "Categoria principale", orgByMember: "Per membro", orgExport: "Esporta CSV (solo metadata)", orgPoliciesLabel: "Policy", orgPoliciesHint: "Cosa succede quando una categoria viene trovata nel prompt di un membro. Blocca impedisce l'invio dall'estensione finché non correggi.", polDefault: "Predefinito", polWarn: "Avvisa", polRedact: "Redigi", polBlock: "Blocca", catPersonal: "Dati personali", catCredentials: "Credenziali", catFinancial: "Dati finanziari", catCustom: "Termini protetti", sevAny: "qualsiasi gravità",
     previewBadge: "Anteprima", previewLabel: "risultato di esempio — non il tuo prompt", planNone: "Nessun piano attivo", planNoneNote: "Avvia la prova gratuita di 7 giorni per eseguire controlli.", planTrial: "Prova gratuita", planTrialNote: "La prova include controlli illimitati. Aggiungi un piano per non interromperli.", planActive: "Piano attivo", planActiveNote: "Controlli illimitati e termini protetti personalizzati sono attivi.", planDayOf: "Giorno {day} di {total}", planEndsToday: "Scade oggi", planDaysLeft: "{n} giorno rimasto|{n} giorni rimasti", foundInPrompt: "Trovato nel tuo prompt"
   },
   es: {
@@ -151,7 +151,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     seatsLabel: "Puestos", seat1: "1 usuario", seat2: "2 usuarios", seat3: "3 usuarios", yearlyBusiness: "149,90 € al año / usuario",
     manageTag: "¿Ya estás suscrito?", manageTitle: "Gestionar facturación", manageDesc: "Actualiza tu método de pago, descarga facturas o cancela la renovación cuando quieras.", manageBtn: "Gestionar suscripción",
     teamTitle: "Equipo", teamSeatsUsed: "{used} de {total} puestos usados.", inviteCreate: "Crear enlace de invitación", copyLink: "Copiar enlace", noInvites: "Aún no hay invitaciones.", teammateJoined: "Compañero incorporado", invitePending: "Invitación pendiente", revoke: "Revocar", couldNotCreateInvite: "No se pudo crear la invitación.",
-    orgTitle: "Organización", orgIntro: "Protección compartida para todo el espacio de trabajo. Los términos protegidos se aplican a los controles de cada miembro, en cada dispositivo.", orgMembersLabel: "Miembros", orgTermsLabel: "Términos protegidos", orgTermsHint: "Nombres en clave, nombres de clientes — señalados en los prompts de cada miembro.", orgTermAdd: "Añadir", orgTermPlaceholder: "p. ej. Proyecto Halcón", orgRoleOwner: "Propietario", orgRoleAdmin: "Admin", orgRoleMember: "Miembro", orgYou: "tú", orgRenameSave: "Guardar nombre", orgNoTerms: "Aún no hay términos protegidos.", orgRemove: "Quitar", acctActivity: "En tu cuenta — todos los dispositivos", orgActivity: "Actividad de la organización", orgChecks: "Controles del equipo", orgFlagged: "Señalados", orgBlocked: "Bloqueados", orgTopCat: "Categoría principal", orgByMember: "Por miembro", orgExport: "Exportar CSV (solo metadatos)", orgPoliciesLabel: "Políticas", orgPoliciesHint: "Qué ocurre cuando se encuentra una categoría en el prompt de un miembro. Bloquear impide el envío desde la extensión hasta corregirlo.", polDefault: "Predeterminado", polWarn: "Avisar", polRedact: "Censurar", polBlock: "Bloquear", catPersonal: "Datos personales", catCredentials: "Credenciales", catFinancial: "Datos financieros", catCustom: "Términos protegidos",
+    orgTitle: "Organización", orgIntro: "Protección compartida para todo el espacio de trabajo. Los términos protegidos se aplican a los controles de cada miembro, en cada dispositivo.", orgMembersLabel: "Miembros", orgTermsLabel: "Términos protegidos", orgTermsHint: "Nombres en clave, nombres de clientes — señalados en los prompts de cada miembro.", orgTermAdd: "Añadir", orgTermPlaceholder: "p. ej. Proyecto Halcón", orgRoleOwner: "Propietario", orgRoleAdmin: "Admin", orgRoleMember: "Miembro", orgYou: "tú", orgRenameSave: "Guardar nombre", orgNoTerms: "Aún no hay términos protegidos.", orgRemove: "Quitar", acctActivity: "En tu cuenta — todos los dispositivos", orgActivity: "Actividad de la organización", orgChecks: "Controles del equipo", orgFlagged: "Señalados", orgBlocked: "Bloqueados", orgTopCat: "Categoría principal", orgByMember: "Por miembro", orgExport: "Exportar CSV (solo metadatos)", orgPoliciesLabel: "Políticas", orgPoliciesHint: "Qué ocurre cuando se encuentra una categoría en el prompt de un miembro. Bloquear impide el envío desde la extensión hasta corregirlo.", polDefault: "Predeterminado", polWarn: "Avisar", polRedact: "Censurar", polBlock: "Bloquear", catPersonal: "Datos personales", catCredentials: "Credenciales", catFinancial: "Datos financieros", catCustom: "Términos protegidos", sevAny: "cualquier gravedad",
     previewBadge: "Vista previa", previewLabel: "resultado de ejemplo — no es tu prompt", planNone: "Sin plan activo", planNoneNote: "Comienza la prueba gratuita de 7 días para hacer revisiones.", planTrial: "Prueba gratuita", planTrialNote: "Tu prueba incluye revisiones ilimitadas. Añade un plan para no interrumpirlas.", planActive: "Plan activo", planActiveNote: "Revisiones ilimitadas y términos protegidos propios están activos.", planDayOf: "Día {day} de {total}", planEndsToday: "Termina hoy", planDaysLeft: "Queda {n} día|Quedan {n} días", foundInPrompt: "Encontrado en tu prompt"
   },
   fr: {
@@ -190,7 +190,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     seatsLabel: "Postes", seat1: "1 utilisateur", seat2: "2 utilisateurs", seat3: "3 utilisateurs", yearlyBusiness: "149,90 € par an / utilisateur",
     manageTag: "Déjà abonné ?", manageTitle: "Gérer la facturation", manageDesc: "Mettez à jour votre moyen de paiement, téléchargez vos factures ou annulez le renouvellement quand vous le souhaitez.", manageBtn: "Gérer l’abonnement",
     teamTitle: "Équipe", teamSeatsUsed: "{used} poste(s) utilisé(s) sur {total}.", inviteCreate: "Créer un lien d’invitation", copyLink: "Copier le lien", noInvites: "Aucune invitation pour l’instant.", teammateJoined: "Coéquipier ajouté", invitePending: "Invitation en attente", revoke: "Révoquer", couldNotCreateInvite: "Impossible de créer une invitation.",
-    orgTitle: "Organisation", orgIntro: "Une protection partagée pour tout l'espace de travail. Les termes protégés s'appliquent aux contrôles de chaque membre, sur chaque appareil.", orgMembersLabel: "Membres", orgTermsLabel: "Termes protégés", orgTermsHint: "Noms de code, noms de clients — signalés dans les prompts de chaque membre.", orgTermAdd: "Ajouter", orgTermPlaceholder: "ex. Projet Faucon", orgRoleOwner: "Propriétaire", orgRoleAdmin: "Admin", orgRoleMember: "Membre", orgYou: "vous", orgRenameSave: "Enregistrer le nom", orgNoTerms: "Aucun terme protégé pour l'instant.", orgRemove: "Retirer", acctActivity: "Sur votre compte — tous les appareils", orgActivity: "Activité de l'organisation", orgChecks: "Contrôles de l'équipe", orgFlagged: "Signalés", orgBlocked: "Bloqués", orgTopCat: "Catégorie principale", orgByMember: "Par membre", orgExport: "Exporter CSV (métadonnées uniquement)", orgPoliciesLabel: "Politiques", orgPoliciesHint: "Ce qui se passe quand une catégorie est détectée dans le prompt d'un membre. Bloquer empêche l'envoi depuis l'extension jusqu'à correction.", polDefault: "Par défaut", polWarn: "Avertir", polRedact: "Caviarder", polBlock: "Bloquer", catPersonal: "Données personnelles", catCredentials: "Identifiants", catFinancial: "Données financières", catCustom: "Termes protégés",
+    orgTitle: "Organisation", orgIntro: "Une protection partagée pour tout l'espace de travail. Les termes protégés s'appliquent aux contrôles de chaque membre, sur chaque appareil.", orgMembersLabel: "Membres", orgTermsLabel: "Termes protégés", orgTermsHint: "Noms de code, noms de clients — signalés dans les prompts de chaque membre.", orgTermAdd: "Ajouter", orgTermPlaceholder: "ex. Projet Faucon", orgRoleOwner: "Propriétaire", orgRoleAdmin: "Admin", orgRoleMember: "Membre", orgYou: "vous", orgRenameSave: "Enregistrer le nom", orgNoTerms: "Aucun terme protégé pour l'instant.", orgRemove: "Retirer", acctActivity: "Sur votre compte — tous les appareils", orgActivity: "Activité de l'organisation", orgChecks: "Contrôles de l'équipe", orgFlagged: "Signalés", orgBlocked: "Bloqués", orgTopCat: "Catégorie principale", orgByMember: "Par membre", orgExport: "Exporter CSV (métadonnées uniquement)", orgPoliciesLabel: "Politiques", orgPoliciesHint: "Ce qui se passe quand une catégorie est détectée dans le prompt d'un membre. Bloquer empêche l'envoi depuis l'extension jusqu'à correction.", polDefault: "Par défaut", polWarn: "Avertir", polRedact: "Caviarder", polBlock: "Bloquer", catPersonal: "Données personnelles", catCredentials: "Identifiants", catFinancial: "Données financières", catCustom: "Termes protégés", sevAny: "toute gravité",
     previewBadge: "Aperçu", previewLabel: "résultat d’exemple — pas votre prompt", planNone: "Aucune offre active", planNoneNote: "Démarrez l’essai gratuit de 7 jours pour lancer des vérifications.", planTrial: "Essai gratuit", planTrialNote: "Votre essai couvre des vérifications illimitées. Ajoutez une offre pour les poursuivre.", planActive: "Offre active", planActiveNote: "Vérifications illimitées et termes protégés personnalisés sont actifs.", planDayOf: "Jour {day} sur {total}", planEndsToday: "Se termine aujourd’hui", planDaysLeft: "{n} jour restant|{n} jours restants", foundInPrompt: "Trouvé dans votre prompt"
   },
   de: {
@@ -229,7 +229,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     seatsLabel: "Plätze", seat1: "1 Nutzer", seat2: "2 Nutzer", seat3: "3 Nutzer", yearlyBusiness: "149,90 € jährlich / Nutzer",
     manageTag: "Bereits abonniert?", manageTitle: "Abrechnung verwalten", manageDesc: "Aktualisieren Sie Ihre Zahlungsmethode, laden Sie Rechnungen herunter oder kündigen Sie die Verlängerung jederzeit.", manageBtn: "Abonnement verwalten",
     teamTitle: "Team", teamSeatsUsed: "{used} von {total} Plätzen belegt.", inviteCreate: "Einladungslink erstellen", copyLink: "Link kopieren", noInvites: "Noch keine Einladungen.", teammateJoined: "Teammitglied beigetreten", invitePending: "Einladung ausstehend", revoke: "Widerrufen", couldNotCreateInvite: "Die Einladung konnte nicht erstellt werden.",
-    orgTitle: "Organisation", orgIntro: "Gemeinsamer Schutz für den ganzen Workspace. Geschützte Begriffe gelten für die Prüfungen jedes Mitglieds, auf jedem Gerät.", orgMembersLabel: "Mitglieder", orgTermsLabel: "Geschützte Begriffe", orgTermsHint: "Codenamen, Kundennamen — werden in den Prompts jedes Mitglieds markiert.", orgTermAdd: "Hinzufügen", orgTermPlaceholder: "z. B. Projekt Falke", orgRoleOwner: "Inhaber", orgRoleAdmin: "Admin", orgRoleMember: "Mitglied", orgYou: "Sie", orgRenameSave: "Namen speichern", orgNoTerms: "Noch keine geschützten Begriffe.", orgRemove: "Entfernen", acctActivity: "In Ihrem Konto — alle Geräte", orgActivity: "Organisationsaktivität", orgChecks: "Team-Prüfungen", orgFlagged: "Markiert", orgBlocked: "Blockiert", orgTopCat: "Top-Kategorie", orgByMember: "Nach Mitglied", orgExport: "CSV exportieren (nur Metadaten)", orgPoliciesLabel: "Richtlinien", orgPoliciesHint: "Was passiert, wenn eine Kategorie im Prompt eines Mitglieds gefunden wird. Blockieren verhindert das Senden aus der Erweiterung, bis es behoben ist.", polDefault: "Standard", polWarn: "Warnen", polRedact: "Schwärzen", polBlock: "Blockieren", catPersonal: "Persönliche Daten", catCredentials: "Zugangsdaten", catFinancial: "Finanzdaten", catCustom: "Geschützte Begriffe",
+    orgTitle: "Organisation", orgIntro: "Gemeinsamer Schutz für den ganzen Workspace. Geschützte Begriffe gelten für die Prüfungen jedes Mitglieds, auf jedem Gerät.", orgMembersLabel: "Mitglieder", orgTermsLabel: "Geschützte Begriffe", orgTermsHint: "Codenamen, Kundennamen — werden in den Prompts jedes Mitglieds markiert.", orgTermAdd: "Hinzufügen", orgTermPlaceholder: "z. B. Projekt Falke", orgRoleOwner: "Inhaber", orgRoleAdmin: "Admin", orgRoleMember: "Mitglied", orgYou: "Sie", orgRenameSave: "Namen speichern", orgNoTerms: "Noch keine geschützten Begriffe.", orgRemove: "Entfernen", acctActivity: "In Ihrem Konto — alle Geräte", orgActivity: "Organisationsaktivität", orgChecks: "Team-Prüfungen", orgFlagged: "Markiert", orgBlocked: "Blockiert", orgTopCat: "Top-Kategorie", orgByMember: "Nach Mitglied", orgExport: "CSV exportieren (nur Metadaten)", orgPoliciesLabel: "Richtlinien", orgPoliciesHint: "Was passiert, wenn eine Kategorie im Prompt eines Mitglieds gefunden wird. Blockieren verhindert das Senden aus der Erweiterung, bis es behoben ist.", polDefault: "Standard", polWarn: "Warnen", polRedact: "Schwärzen", polBlock: "Blockieren", catPersonal: "Persönliche Daten", catCredentials: "Zugangsdaten", catFinancial: "Finanzdaten", catCustom: "Geschützte Begriffe", sevAny: "jede Schwere",
     previewBadge: "Vorschau", previewLabel: "Beispielergebnis — nicht Ihr Prompt", planNone: "Kein aktiver Tarif", planNoneNote: "Starten Sie die 7-tägige Testphase, um Prüfungen auszuführen.", planTrial: "Kostenlose Testphase", planTrialNote: "Ihre Testphase umfasst unbegrenzte Prüfungen. Wählen Sie einen Tarif, um sie fortzusetzen.", planActive: "Aktiver Tarif", planActiveNote: "Unbegrenzte Prüfungen und eigene geschützte Begriffe sind aktiv.", planDayOf: "Tag {day} von {total}", planEndsToday: "Endet heute", planDaysLeft: "noch {n} Tag|noch {n} Tage", foundInPrompt: "In Ihrem Prompt gefunden"
   }
 };
@@ -448,6 +448,16 @@ export function mountDashboard(): void {
       <label class="switch"><input id="show-raw" type="checkbox" checked> Show the detected value on screen</label>
       <label class="switch"><input id="clear-after-copy" type="checkbox"> Clear the prompt after copying its safer version</label>
       <label class="pref-row">Custom protected terms<textarea class="term-editor" id="custom-terms" maxlength="1500" placeholder="One term per line, for example: Acme Client"></textarea></label>
+      <div class="pref-row" id="api-keys-block">
+        <span>API keys <small style="color:var(--text-3);font-weight:500">— for scripts and pipelines (<a href="/api-docs.html" target="_blank" rel="noopener">docs</a>)</span></small>
+        <ul id="api-key-list"></ul>
+        <div id="api-key-new" hidden>
+          <input type="text" id="api-key-value" readonly>
+          <button type="button" class="secondary" id="api-key-copy">Copy</button>
+          <p class="pref-note">This key is shown once. Store it now — it cannot be recovered.</p>
+        </div>
+        <button type="button" class="secondary" id="api-key-create">Create API key</button>
+      </div>
       <div class="drawer-actions"><button class="secondary" id="close-preferences" type="button">Close</button><button class="primary" id="save-preferences" type="button">Save preferences</button></div>
     </section>`;
   document.body.append(preferenceDialog);
@@ -467,6 +477,40 @@ export function mountDashboard(): void {
     savePreferences(preferences);
     themeRow.querySelectorAll(".theme-swatch").forEach((swatch) => swatch.classList.toggle("active", swatch === button));
     renderOnboarding();
+  });
+
+  // API keys: metadata list + one-time plaintext display on create.
+  const apiKeyList = required<HTMLUListElement>("#api-key-list");
+  const apiKeyNew = required<HTMLElement>("#api-key-new");
+  const apiKeyValue = required<HTMLInputElement>("#api-key-value");
+  const loadApiKeys = async (): Promise<void> => {
+    if (!window.promptShieldAuth?.hasAccess()) { apiKeyList.innerHTML = `<li class="empty">Sign in to manage API keys.</li>`; return; }
+    try {
+      const data = await window.promptShieldAuth.request("/api/account?action=keys", undefined, "GET") as { keys?: { id: string; name: string; prefix: string; createdAt: string; revoked: boolean }[] };
+      const keys = (data.keys ?? []).filter((key) => !key.revoked);
+      apiKeyList.innerHTML = keys.map((key) =>
+        `<li><span><code>${escapeHtml(key.prefix)}…</code> ${escapeHtml(key.name)}</span><button type="button" class="secondary" data-key-revoke="${key.id}">Revoke</button></li>`
+      ).join("") || `<li class="empty">No API keys yet.</li>`;
+    } catch { apiKeyList.innerHTML = ""; }
+  };
+  required<HTMLButtonElement>("#api-key-create").addEventListener("click", async () => {
+    try {
+      const created = await window.promptShieldAuth?.request("/api/account?action=key-create", { name: `Key ${dateOnly(new Date().toISOString())}` }, "POST") as { key?: string };
+      if (created?.key) {
+        apiKeyValue.value = created.key;
+        apiKeyNew.hidden = false;
+      }
+      await loadApiKeys();
+    } catch { /* rate-limited or offline; the list simply doesn't change */ }
+  });
+  required<HTMLButtonElement>("#api-key-copy").addEventListener("click", () => {
+    void navigator.clipboard.writeText(apiKeyValue.value);
+  });
+  apiKeyList.addEventListener("click", async (event) => {
+    const keyId = (event.target as HTMLElement).dataset.keyRevoke;
+    if (!keyId) return;
+    await window.promptShieldAuth?.request("/api/account?action=key-revoke", { keyId }, "POST").catch(() => undefined);
+    await loadApiKeys();
   });
 
   const plansDialog = document.createElement("div");
@@ -592,7 +636,7 @@ export function mountDashboard(): void {
     role?: "owner" | "admin" | "member";
     members?: { role: string; email: string | null; you: boolean }[];
     protectedTerms?: { id: string; term: string }[];
-    policies?: { category: string; action: string }[];
+    policies?: { category: string; action: string; minSeverity?: string | null }[];
   };
   const policyCategories = ["credentials", "financial", "personal", "custom"] as const;
   const categoryLabel = (category: string): string =>
@@ -616,15 +660,21 @@ export function mountDashboard(): void {
       orgTermList.innerHTML = (data.protectedTerms ?? []).map((term) =>
         `<li><span>${escapeHtml(term.term)}</span>${canManage ? `<button type="button" class="secondary" data-term-remove="${term.id}">${words().orgRemove}</button>` : ""}</li>`
       ).join("") || `<li class="empty">${words().orgNoTerms}</li>`;
-      const chosen = new Map((data.policies ?? []).map((policy) => [policy.category, policy.action]));
+      const chosen = new Map((data.policies ?? []).map((policy) => [policy.category, policy]));
       orgPolicyList.innerHTML = policyCategories.map((category) => {
-        const current = chosen.get(category) ?? "default";
+        const row = chosen.get(category);
+        const current = row?.action ?? "default";
+        const severity = row?.minSeverity ?? "";
         if (!canManage) {
           const label = current === "default" ? words().polDefault : current === "warn" ? words().polWarn : current === "redact" ? words().polRedact : words().polBlock;
-          return `<li><span>${categoryLabel(category)}</span><span>${label}</span></li>`;
+          const sevLabel = severity ? ` (≥ ${severity})` : "";
+          return `<li><span>${categoryLabel(category)}</span><span>${label}${sevLabel}</span></li>`;
         }
-        const option = (value: string, label: string): string => `<option value="${value}"${current === value ? " selected" : ""}>${label}</option>`;
-        return `<li><span>${categoryLabel(category)}</span><select data-policy-category="${category}">${option("default", words().polDefault)}${option("warn", words().polWarn)}${option("redact", words().polRedact)}${option("block", words().polBlock)}</select></li>`;
+        const option = (value: string, label: string, selected: string): string => `<option value="${value}"${selected === value ? " selected" : ""}>${label}</option>`;
+        const actions = `<select data-policy-category="${category}">${option("default", words().polDefault, current)}${option("warn", words().polWarn, current)}${option("redact", words().polRedact, current)}${option("block", words().polBlock, current)}</select>`;
+        // Severity floor only makes sense once an override exists.
+        const severities = `<select data-policy-severity="${category}"${current === "default" ? " disabled" : ""}>${option("", words().sevAny, severity)}${option("medium", "≥ medium", severity)}${option("high", "≥ high", severity)}${option("critical", "≥ critical", severity)}</select>`;
+        return `<li><span>${categoryLabel(category)}</span><span class="policy-selects">${actions}${severities}</span></li>`;
       }).join("");
   };
   const loadOrganization = async (): Promise<void> => {
@@ -651,9 +701,15 @@ export function mountDashboard(): void {
   });
   orgPolicyList.addEventListener("change", async (event) => {
     const select = (event.target as HTMLElement).closest("select");
-    const category = select?.dataset.policyCategory;
+    const category = select?.dataset.policyCategory ?? select?.dataset.policySeverity;
     if (!select || !category) return;
-    await window.promptShieldAuth?.request("/api/team?action=policy-set", { category, action: select.value }, "POST").catch(() => undefined);
+    const actionSelect = orgPolicyList.querySelector<HTMLSelectElement>(`select[data-policy-category="${category}"]`);
+    const severitySelect = orgPolicyList.querySelector<HTMLSelectElement>(`select[data-policy-severity="${category}"]`);
+    await window.promptShieldAuth?.request("/api/team?action=policy-set", {
+      category,
+      action: actionSelect?.value ?? "default",
+      minSeverity: severitySelect?.value || undefined
+    }, "POST").catch(() => undefined);
     await loadOrganization();
   });
   orgTermList.addEventListener("click", async (event) => {
@@ -701,6 +757,7 @@ export function mountDashboard(): void {
     document.documentElement.classList.remove("preferences-open");
   };
   const openPreferences = (): void => {
+    void loadApiKeys();
     preferenceDialog.classList.add("open");
     document.documentElement.classList.add("preferences-open");
     languageSelect.focus();

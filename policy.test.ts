@@ -90,7 +90,7 @@ function finding(partial: Partial<Finding> & Pick<Finding, "kind" | "category" |
 
 // --- organization overrides change action + reason, defaults survive ---------
 {
-  const rules = buildOrganizationPolicy({ credentials: "block", personal: "redact" });
+  const rules = buildOrganizationPolicy({ credentials: { action: "block" }, personal: { action: "redact" } });
   const creds = rules.find((r) => r.id === "org-credentials");
   assert.equal(creds?.action, "block");
   assert.ok(creds?.reason.includes("organization"));
@@ -100,6 +100,16 @@ function finding(partial: Partial<Finding> & Pick<Finding, "kind" | "category" |
   const decision = evaluatePolicy([finding({ kind: "secret", category: "credentials", severity: "critical" })], rules);
   assert.equal(decision.action, "block");
   assert.equal(decision.decidedBy?.ruleId, "org-credentials");
+}
+
+// --- org overrides can set a severity floor ---------------------------------
+{
+  const rules = buildOrganizationPolicy({ personal: { action: "block", minSeverity: "high" } });
+  const low = evaluatePolicy([finding({ kind: "ip", category: "personal", severity: "low" })], rules);
+  assert.equal(low.action, "allow", "below the floor, the org personal rule must not fire");
+  const high = evaluatePolicy([finding({ kind: "ssn", category: "personal", severity: "high" })], rules);
+  assert.equal(high.action, "block");
+  assert.equal(high.decidedBy?.ruleId, "org-personal");
 }
 
 console.log("policy tests passed");

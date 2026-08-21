@@ -1,7 +1,7 @@
 import { corsHeaders, effectiveEntitlement, organizationMembershipFor, orgScanContextFor, protectedTermsFor, requireUser, supabaseService, supabaseUserById } from "./_billing.js";
 import { clientIp, rateLimited, rateLimitedShared } from "./_rateLimit.js";
 import { inspectPrompt, type ScanOptions } from "../scanner.js";
-import { buildOrganizationPolicy, defaultPersonalPolicy, evaluatePolicy, type PolicyAction, type PolicyRule } from "../policy.js";
+import { buildOrganizationPolicy, defaultPersonalPolicy, evaluatePolicy, type PolicyRule } from "../policy.js";
 
 type RequestLike = { method?: string; body?: unknown; headers?: Record<string, string | string[] | undefined> };
 type ResponseLike = { setHeader(name: string, value: string | string[]): void; status(code: number): ResponseLike; json(value: unknown): void; end(): void };
@@ -122,8 +122,10 @@ export default async function handler(request: RequestLike, response: ResponseLi
           options.customTerms = [...new Set([...(options.customTerms ?? []), ...context.terms])].slice(0, 60);
         }
         if (context.policies.length > 0) {
-          const overrides: Partial<Record<"personal" | "credentials" | "financial" | "custom", PolicyAction>> = {};
-          for (const row of context.policies) overrides[row.category] = row.action;
+          const overrides: Parameters<typeof buildOrganizationPolicy>[0] = {};
+          for (const row of context.policies) {
+            overrides[row.category] = { action: row.action, minSeverity: row.min_severity ?? undefined };
+          }
           policyRules = buildOrganizationPolicy(overrides);
         }
       }

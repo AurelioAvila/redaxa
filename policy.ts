@@ -93,7 +93,13 @@ export function evaluatePolicy(findings: Finding[], rules: PolicyRule[]): Policy
 // personal policy, with per-category actions overridden where the
 // organization has chosen one. Reasons name the organization as the author
 // so the member knows the rule was set by their workspace, not the product.
-export function buildOrganizationPolicy(overrides: Partial<Record<FindingCategory, PolicyAction>>): PolicyRule[] {
+export interface OrgPolicyOverride {
+  action: PolicyAction;
+  /** Optional severity floor: the rule only matches findings at or above it. */
+  minSeverity?: FindingSeverity;
+}
+
+export function buildOrganizationPolicy(overrides: Partial<Record<FindingCategory, OrgPolicyOverride>>): PolicyRule[] {
   const orgReasons: Record<FindingCategory, string> = {
     credentials: "Your organization's policy covers passwords, API keys and private keys.",
     financial: "Your organization's policy covers financial data like cards and IBANs.",
@@ -104,7 +110,14 @@ export function buildOrganizationPolicy(overrides: Partial<Record<FindingCategor
     const category = rule.match.categories?.[0];
     const override = category ? overrides[category] : undefined;
     if (!override || !category) return rule;
-    return { ...rule, id: `org-${category}`, name: `Organization: ${rule.name}`, action: override, reason: orgReasons[category] };
+    return {
+      ...rule,
+      id: `org-${category}`,
+      name: `Organization: ${rule.name}`,
+      action: override.action,
+      match: override.minSeverity ? { ...rule.match, minSeverity: override.minSeverity } : rule.match,
+      reason: orgReasons[category]
+    };
   });
 }
 
