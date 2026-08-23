@@ -13,11 +13,11 @@ const storageKey = "redaxa.personal-history.v1";
 const preferencesKey = "redaxa.personal-preferences.v1";
 const maxPromptLength = 10_000;
 
-const defaultPreferences: Preferences = { language: "en", theme: "lime", scanMode: "standard", includePersonalData: true, includeCredentials: true, includeFinancialData: true, saveHistory: true, autoClearAfterCopy: false, showRawValues: true, customTerms: [] };
+const defaultPreferences: Preferences = { language: "en", theme: "violet", scanMode: "standard", includePersonalData: true, includeCredentials: true, includeFinancialData: true, saveHistory: true, autoClearAfterCopy: false, showRawValues: true, customTerms: [] };
 
 const themes: { code: ThemeName; label: string; accent: string; accentInk: string; swatch: [string, string] }[] = [
   { code: "lime", label: "Lime", accent: "#b9ff00", accentInk: "#080a07", swatch: ["#b9ff00", "#6dd400"] },
-  { code: "violet", label: "Violet", accent: "#ff5c8a", accentInk: "#1a0710", swatch: ["#ff5c8a", "#35e0c0"] },
+  { code: "violet", label: "Violet", accent: "#7c5cfc", accentInk: "#14092e", swatch: ["#7c5cfc", "#5b3de0"] },
   { code: "teal", label: "Teal Depths", accent: "#35e0c0", accentInk: "#062019", swatch: ["#35e0c0", "#ff5c8a"] },
   { code: "amber", label: "Amber Dusk", accent: "#ffb84d", accentInk: "#241202", swatch: ["#ffb84d", "#5bd1ff"] },
   { code: "crimson", label: "Crimson Steel", accent: "#ff4d6d", accentInk: "#1c0509", swatch: ["#ff4d6d", "#4ce0b3"] },
@@ -310,7 +310,7 @@ function readPreferences(): Preferences {
       return {
         ...defaultPreferences,
         language: ["en", "it", "es", "fr", "de"].includes(String(candidate.language)) ? candidate.language as Language : "en",
-        theme: themes.some((t) => t.code === candidate.theme) ? candidate.theme as ThemeName : "lime",
+        theme: themes.some((t) => t.code === candidate.theme) ? candidate.theme as ThemeName : "violet",
         scanMode: candidate.scanMode === "strict" ? "strict" : "standard",
         includePersonalData: candidate.includePersonalData !== false,
         includeCredentials: candidate.includeCredentials !== false,
