@@ -10,12 +10,15 @@
 </p>
 
 <p align="center">
-  <a href="../../releases/latest"><img src="https://img.shields.io/badge/Download-Windows%2010%2F11-0078D4?style=for-the-badge&logo=windows&logoColor=white" alt="Download for Windows"></a>
+  <a href="https://promptshield-beta.vercel.app"><img src="https://img.shields.io/badge/TRY_IT_NOW-No_install%2C_no_SmartScreen-2E7D32?style=for-the-badge" alt="Try the web app, no install required"></a>
+  <a href="https://chromewebstore.google.com/detail/prompt-shield/dncladangpekkaigfeajgplboocjfaim"><img src="https://img.shields.io/badge/Chrome_Web_Store-Get_the_extension-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Get the Chrome extension"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Proprietary-3DA639?style=for-the-badge" alt="Proprietary License"></a>
   <a href="../../releases"><img src="https://img.shields.io/github/v/release/AurelioAvila/promptshield?display_name=tag&style=for-the-badge&color=7C3AED" alt="Latest release"></a>
 </p>
 
-**[⬇ Download for Windows](../../releases/latest)** · [Web app](https://promptshield-beta.vercel.app) ·
+**Fastest way to try it — [web app](https://promptshield-beta.vercel.app), nothing to install** ·
+[Chrome extension](https://chromewebstore.google.com/detail/prompt-shield/dncladangpekkaigfeajgplboocjfaim) ·
+[⬇ Windows desktop app](../../releases/latest) (not code-signed yet — SmartScreen shows a warning, click **More info** → **Run anyway**) ·
 [Changelog](CHANGELOG.md) · [Privacy Policy](https://promptshield-beta.vercel.app/privacy.html) ·
 [Terms](https://promptshield-beta.vercel.app/terms.html)
 
