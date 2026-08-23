@@ -1,6 +1,6 @@
 function required<T extends Element>(selector: string): T {
   const element = document.querySelector<T>(selector);
-  if (!element) throw new Error(`PromptShield landing element missing: ${selector}`);
+  if (!element) throw new Error(`Redaxa landing element missing: ${selector}`);
   return element;
 }
 
@@ -69,7 +69,7 @@ function mountLanding(): void {
     button.textContent = "Copied";
     window.setTimeout(() => { button.textContent = "Copy safer prompt"; }, 1400);
   });
-  document.addEventListener("promptshield:need-upgrade", () => {
+  document.addEventListener("redaxa:need-upgrade", () => {
     location.hash = "#pricing";
     document.querySelector("#pricing")?.scrollIntoView({ behavior: "smooth" });
   });

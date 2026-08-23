@@ -1,6 +1,6 @@
 {
-  "name": "PromptShield",
-  "short_name": "PromptShield",
+  "name": "Redaxa",
+  "short_name": "Redaxa",
   "description": "Review sensitive details before sharing a prompt with AI.",
   "lang": "en",
   "start_url": "/dashboard.html",
@@ -8,5 +8,5 @@
   "display": "standalone",
   "background_color": "#090a08",
   "theme_color": "#b9ff00",
-  "icons": [{ "src": "/outputs/promptshield-mark.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+  "icons": [{ "src": "/outputs/redaxa-mark.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
 }

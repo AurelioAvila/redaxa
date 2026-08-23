@@ -1,6 +1,6 @@
 {
-  "name": "promptshield",
-  "version": "0.1.11",
+  "name": "redaxa",
+  "version": "0.2.0",
   "type": "module",
   "private": true,
   "engines": {

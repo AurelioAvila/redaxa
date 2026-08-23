@@ -24,7 +24,7 @@ createServer((request, response) => {
 
   if (pathname === "/health") {
     response.writeHead(200, securityHeaders("application/json; charset=utf-8"));
-    response.end(JSON.stringify({ status: "ok", service: "promptshield", promptStorage: "none" }));
+    response.end(JSON.stringify({ status: "ok", service: "redaxa", promptStorage: "none" }));
     return;
   }
 

@@ -4,7 +4,7 @@
 // other process or user account with filesystem access. This gives the
 // same "stays logged in until you sign out or uninstall" behavior while
 // keeping the refresh token off disk in the clear.
-const KEYRING_SERVICE: &str = "com.promptshield.desktop";
+const KEYRING_SERVICE: &str = "com.redaxa.desktop";
 const KEYRING_USER: &str = "session";
 
 #[tauri::command]
@@ -51,7 +51,7 @@ async fn check_for_updates(app: tauri::AppHandle) {
     let app_for_install = app.clone();
     app.dialog()
         .message(format!(
-            "PromptShield {version} is available.\n\nInstall now? The app restarts when it finishes."
+            "Redaxa {version} is available.\n\nInstall now? The app restarts when it finishes."
         ))
         .title("Update available")
         .buttons(MessageDialogButtons::OkCancelCustom(

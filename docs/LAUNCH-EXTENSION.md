@@ -2,16 +2,16 @@
 
 ## 1. Swap the landing link
 In `index.html`, the `#extension` suite-line currently points at
-`https://github.com/AurelioAvila/promptshield/releases/latest`.
+`https://github.com/AurelioAvila/redaxa/releases/latest`.
 Replace with the store URL (`https://chromewebstore.google.com/detail/<listing-id>`),
 rebuild (`npm run build:web`) and `vercel deploy --prod`.
 
 ## 2. Show HN draft
-- **Title:** `Show HN: PromptShield – catches secrets in your prompt before it reaches ChatGPT`
-- **URL:** `https://github.com/AurelioAvila/promptshield`
+- **Title:** `Show HN: Redaxa – catches secrets in your prompt before it reaches ChatGPT`
+- **URL:** `https://github.com/AurelioAvila/redaxa`
 - **First comment (post immediately after submitting):**
 
-> Solo dev here. PromptShield sits between you and the AI chat: a browser
+> Solo dev here. Redaxa sits between you and the AI chat: a browser
 > extension that intercepts your send on ChatGPT, Claude, Gemini, Copilot and
 > Perplexity, scans the prompt for real sensitive data — API keys, card numbers
 > (Luhn-validated), IBANs (mod-97), SSNs, emails — and offers a redacted
@@ -32,7 +32,7 @@ rebuild (`npm run build:web`) and `vercel deploy --prod`.
 > Happy to answer anything about the detection engine or the org/policy model.
 
 ## 3. Announcement blurb (site/newsletter/social)
-> PromptShield is now on the Chrome Web Store. One click, and every prompt you
+> Redaxa is now on the Chrome Web Store. One click, and every prompt you
 > type into ChatGPT, Claude, Gemini, Copilot or Perplexity gets checked for
 > secrets and personal data before it sends — with a safe, redacted version one
 > click away. Free 7-day trial; team policies on Business.
@@ -41,6 +41,6 @@ rebuild (`npm run build:web`) and `vercel deploy --prod`.
 - [ ] Swap landing link (step 1)
 - [ ] Update README "Where it runs" with the store link
 - [ ] Show HN (step 2) — morning US time works best
-- [ ] Newsletter via the shared PC Tweaker endpoint (source: promptshield)
+- [ ] Newsletter via the shared PC Tweaker endpoint (source: redaxa)
 - [ ] Winget: still blocked on microsoft/winget-pkgs PR #417245 (new-package
       admin review); submit 0.1.9 update once merged

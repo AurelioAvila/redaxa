@@ -89,15 +89,15 @@ function setComposerText(el, text) {
       document.execCommand("selectAll");
       psToast("Safe version copied — press Ctrl+V to replace your prompt.");
     }).catch(() => {
-      psToast("This editor blocks automatic replacing. Copy the safe version from the PromptShield panel.");
+      psToast("This editor blocks automatic replacing. Copy the safe version from the Redaxa panel.");
     });
   }, 400);
 }
 
 function psToast(message) {
-  document.getElementById("promptshield-toast")?.remove();
+  document.getElementById("redaxa-toast")?.remove();
   const toast = document.createElement("div");
-  toast.id = "promptshield-toast";
+  toast.id = "redaxa-toast";
   toast.textContent = message;
   document.body.append(toast);
   setTimeout(() => toast.remove(), 7000);
@@ -106,7 +106,7 @@ function psToast(message) {
 function send(message) {
   return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage(message, (response) => {
-      if (!response) { reject(new Error("PromptShield extension is unavailable.")); return; }
+      if (!response) { reject(new Error("Redaxa extension is unavailable.")); return; }
       if (!response.ok) { reject(new Error(response.error)); return; }
       resolve(response.result);
     });
@@ -124,21 +124,21 @@ function escapeHtml(value) {
 // ---------------------------------------------------------------------------
 function buildUI() {
   const button = document.createElement("button");
-  button.id = "promptshield-check-btn";
+  button.id = "redaxa-check-btn";
   button.type = "button";
   button.textContent = "🛡 Check";
   document.body.append(button);
 
   const panel = document.createElement("div");
-  panel.id = "promptshield-panel";
+  panel.id = "redaxa-panel";
   panel.innerHTML = `
-    <div class="ps-panel-head">PromptShield<button type="button" id="promptshield-close">×</button></div>
-    <div class="ps-panel-body" id="promptshield-body"></div>
+    <div class="ps-panel-head">Redaxa<button type="button" id="redaxa-close">×</button></div>
+    <div class="ps-panel-body" id="redaxa-body"></div>
   `;
   document.body.append(panel);
 
-  const closeBtn = panel.querySelector("#promptshield-close");
-  const body = panel.querySelector("#promptshield-body");
+  const closeBtn = panel.querySelector("#redaxa-close");
+  const body = panel.querySelector("#redaxa-body");
   closeBtn.addEventListener("click", () => panel.classList.remove("open"));
 
   button.addEventListener("click", async () => {
@@ -153,11 +153,11 @@ function buildUI() {
     try {
       const status = await send({ type: "STATUS" });
       if (!status.signedIn) {
-        body.innerHTML = `<p class="ps-empty">Sign in to PromptShield from the extension icon to run a check.</p>`;
+        body.innerHTML = `<p class="ps-empty">Sign in to Redaxa from the extension icon to run a check.</p>`;
         return;
       }
       if (!status.active) {
-        body.innerHTML = `<p class="ps-empty">Your PromptShield trial/subscription isn't active. Open the extension icon or <a href="https://promptshield-beta.vercel.app/#pricing" target="_blank" rel="noopener">see plans</a>.</p>`;
+        body.innerHTML = `<p class="ps-empty">Your Redaxa trial/subscription isn't active. Open the extension icon or <a href="https://promptshield-beta.vercel.app/#pricing" target="_blank" rel="noopener">see plans</a>.</p>`;
         return;
       }
       const result = await runScan(text);
@@ -185,9 +185,9 @@ function renderFindings(body, result, composer, onHandled) {
     <p class="ps-count">${result.findings.length} item${result.findings.length === 1 ? "" : "s"} to review</p>
     ${decisionReason(result)}
     ${list}
-    <button type="button" class="ps-use-redacted" id="promptshield-use-redacted">Replace with safer version</button>
+    <button type="button" class="ps-use-redacted" id="redaxa-use-redacted">Replace with safer version</button>
   `;
-  body.querySelector("#promptshield-use-redacted")?.addEventListener("click", () => {
+  body.querySelector("#redaxa-use-redacted")?.addEventListener("click", () => {
     setComposerText(composer, result.redactedText);
     onHandled();
   });
@@ -242,7 +242,7 @@ function closeModal() {
 function showModal(html) {
   closeModal();
   modalEl = document.createElement("div");
-  modalEl.id = "promptshield-intercept";
+  modalEl.id = "redaxa-intercept";
   modalEl.innerHTML = `<div class="ps-intercept-card">${html}</div>`;
   document.body.append(modalEl);
   return modalEl;
@@ -269,7 +269,7 @@ function resendVia(kind, target) {
 async function gate(composer, resend) {
   const text = composerText(composer).trim();
   showModal(`
-    <div class="ps-int-head">PromptShield</div>
+    <div class="ps-int-head">Redaxa</div>
     <div class="ps-int-body"><p class="ps-loading">Checking before this sends…</p></div>
   `);
   let result;
@@ -277,7 +277,7 @@ async function gate(composer, resend) {
     result = await runScan(text);
   } catch (error) {
     showModal(`
-      <div class="ps-int-head">PromptShield<button type="button" class="ps-int-x" id="ps-int-close">×</button></div>
+      <div class="ps-int-head">Redaxa<button type="button" class="ps-int-x" id="ps-int-close">×</button></div>
       <div class="ps-int-body">
         <p class="ps-empty">${escapeHtml(error.message || "Check failed.")}</p>
         <button type="button" class="ps-int-secondary" id="ps-int-send-anyway">Send anyway</button>
@@ -353,7 +353,7 @@ void refreshStatus();
 window.setInterval(refreshStatus, 30_000);
 
 function boot() {
-  if (!document.getElementById("promptshield-check-btn")) buildUI();
+  if (!document.getElementById("redaxa-check-btn")) buildUI();
 }
 if (document.body) boot();
 else document.addEventListener("DOMContentLoaded", boot, { once: true });

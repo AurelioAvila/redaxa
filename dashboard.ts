@@ -9,8 +9,8 @@ type ThemeName = "lime" | "violet" | "teal" | "amber" | "crimson" | "ocean" | "e
 type Preferences = ScanOptions & { language: Language; theme: ThemeName; scanMode: "standard" | "strict"; saveHistory: boolean; autoClearAfterCopy: boolean; showRawValues: boolean; customTerms: string[] };
 type RiskLevel = "none" | "medium" | "high";
 
-const storageKey = "promptshield.personal-history.v1";
-const preferencesKey = "promptshield.personal-preferences.v1";
+const storageKey = "redaxa.personal-history.v1";
+const preferencesKey = "redaxa.personal-preferences.v1";
 const maxPromptLength = 10_000;
 
 const defaultPreferences: Preferences = { language: "en", theme: "lime", scanMode: "standard", includePersonalData: true, includeCredentials: true, includeFinancialData: true, saveHistory: true, autoClearAfterCopy: false, showRawValues: true, customTerms: [] };
@@ -340,7 +340,7 @@ export function riskLevel(findings: Finding[]): RiskLevel {
 
 function required<T extends Element>(selector: string): T {
   const element = document.querySelector<T>(selector);
-  if (!element) throw new Error(`PromptShield dashboard element missing: ${selector}`);
+  if (!element) throw new Error(`Redaxa dashboard element missing: ${selector}`);
   return element;
 }
 
@@ -728,7 +728,7 @@ export function mountDashboard(): void {
   required<HTMLButtonElement>("#close-plans").addEventListener("click", closePlans);
   document.querySelector("#side-fill-cta")?.addEventListener("click", (event) => { event.preventDefault(); openPlans(); });
   plansDialog.addEventListener("click", (event) => { if (event.target === plansDialog) closePlans(); });
-  document.addEventListener("promptshield:need-upgrade", () => openPlans());
+  document.addEventListener("redaxa:need-upgrade", () => openPlans());
 
   const languageSelect = required<HTMLSelectElement>("#language");
   const scanModeSelect = required<HTMLSelectElement>("#scan-mode");
@@ -853,7 +853,7 @@ export function mountDashboard(): void {
     "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#039;", "\"": "&quot;"
   }[character] ?? character));
 
-  const onboardingKey = "promptshield.onboarding-dismissed.v1";
+  const onboardingKey = "redaxa.onboarding-dismissed.v1";
   const onboardingSection = document.querySelector<HTMLElement>("#onboarding");
   const renderOnboarding = (): void => {
     if (!onboardingSection) return;
@@ -987,7 +987,7 @@ export function mountDashboard(): void {
         const blob = new Blob([`${header}\n${rows.join("\n")}\n`], { type: "text/csv" });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = `promptshield-org-activity-${new Date().toISOString().slice(0, 10)}.csv`;
+        link.download = `redaxa-org-activity-${new Date().toISOString().slice(0, 10)}.csv`;
         link.click();
         URL.revokeObjectURL(link.href);
       });
@@ -1023,7 +1023,7 @@ export function mountDashboard(): void {
       }
     }, "POST").catch(() => undefined);
   };
-  document.addEventListener("promptshield:account", (event) => {
+  document.addEventListener("redaxa:account", (event) => {
     accountState = (event as CustomEvent<AccountState | null>).detail;
     renderPlanStatus();
     if (accountState?.settings) applySyncedSettings(accountState.settings);

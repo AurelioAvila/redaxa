@@ -6,7 +6,7 @@ const msg = document.getElementById("msg");
 function send(message) {
   return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage(message, (response) => {
-      if (!response) { reject(new Error("No response from PromptShield background.")); return; }
+      if (!response) { reject(new Error("No response from Redaxa background.")); return; }
       if (!response.ok) { reject(new Error(response.error)); return; }
       resolve(response.result);
     });

@@ -124,4 +124,4 @@ await withMockFetch(
   async () => { await assert.rejects(() => billing.requireUser({ headers: { cookie: "ps_at=expired-token" } }), /UNAUTHORIZED/); }
 );
 
-console.log("PromptShield billing tests passed.");
+console.log("Redaxa billing tests passed.");

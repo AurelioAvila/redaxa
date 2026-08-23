@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "PromptShield",
-  "short_name": "PromptShield",
-  "version": "0.1.9",
+  "name": "Redaxa",
+  "short_name": "Redaxa",
+  "version": "0.2.0",
   "description": "Catches personal data and secrets in your prompt before you send it to ChatGPT or Claude.",
   "permissions": [
     "storage",
@@ -21,7 +21,7 @@
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "PromptShield",
+    "default_title": "Redaxa",
     "default_icon": {
       "16": "icons/16.png",
       "48": "icons/48.png",

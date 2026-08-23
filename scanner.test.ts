@@ -170,4 +170,4 @@ const passwordAdvice = inspectPrompt("Meglio usare una password unica e lunga.",
 });
 assert.deepEqual(passwordAdvice.findings, []);
 
-console.log("PromptShield scanner tests passed.");
+console.log("Redaxa scanner tests passed.");

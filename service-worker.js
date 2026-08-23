@@ -1,5 +1,5 @@
-const CACHE_NAME = "promptshield-shell-v2";
-const APP_SHELL = ["/", "/index.html", "/dashboard.html", "/manifest.webmanifest", "/outputs/promptshield-mark.svg", "/dist/dashboard.js", "/dist/scanner.js", "/dist/pwa.js"];
+const CACHE_NAME = "redaxa-shell-v2";
+const APP_SHELL = ["/", "/index.html", "/dashboard.html", "/manifest.webmanifest", "/outputs/redaxa-mark.svg", "/dist/dashboard.js", "/dist/scanner.js", "/dist/pwa.js"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));

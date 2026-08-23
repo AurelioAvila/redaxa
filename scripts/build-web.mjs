@@ -22,4 +22,4 @@ cpSync(resolve(root, "dist"), resolve(output, "dist"), {
   filter: (src) => !/[\\/]scanner(\.test)?\.js(\.map)?$/.test(src)
 });
 mkdirSync(resolve(output, "outputs"), { recursive: true });
-cpSync(resolve(root, "outputs", "promptshield-mark.svg"), resolve(output, "outputs", "promptshield-mark.svg"));
+cpSync(resolve(root, "outputs", "redaxa-mark.svg"), resolve(output, "outputs", "redaxa-mark.svg"));

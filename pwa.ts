@@ -15,7 +15,7 @@ function addInstallControl(): void {
     control.type = "button";
     control.hidden = true;
     control.textContent = "Install app";
-    control.setAttribute("aria-label", "Install PromptShield on this device");
+    control.setAttribute("aria-label", "Install Redaxa on this device");
     document.body.append(control);
   }
 
