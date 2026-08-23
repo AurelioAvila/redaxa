@@ -1,6 +1,6 @@
-# PromptShield 0.1.9 — the privacy control layer
+# Redaxa 0.1.9 — the privacy control layer
 
-PromptShield grows from a scanner into a control layer: organizations, shared policies, explainable decisions, and a metadata-first audit trail.
+Redaxa grows from a scanner into a control layer: organizations, shared policies, explainable decisions, and a metadata-first audit trail.
 
 - **Organizations.** Business workspaces are now real organizations with owner/admin/member roles. Accepting a team invite joins the workspace automatically.
 - **Shared protected terms.** An admin protects a term once — a project codename, a client name — and every member's checks flag it, on every device and surface.

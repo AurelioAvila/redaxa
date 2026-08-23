@@ -289,7 +289,7 @@ function authRedirect(): string { return `${webAppUrl}/`; }
 export type SyncedSettings = { detectPersonal?: boolean; detectCredentials?: boolean; detectFinancial?: boolean; scanMode?: "standard" | "strict"; customTerms?: string[] };
 export type AccountState = { active: boolean; status: string | null; currentPeriodEnd: string | null; plan: string | null; settings?: SyncedSettings | null };
 function publishAccountState(state: AccountState | null): void {
-  document.dispatchEvent(new CustomEvent("promptshield:account", { detail: state }));
+  document.dispatchEvent(new CustomEvent("redaxa:account", { detail: state }));
 }
 
 async function refreshEntitlement(): Promise<void> {
@@ -359,7 +359,7 @@ async function boot(): Promise<void> {
   // signup -> email confirmation -> redirect round trip, then consumed the
   // moment we know who's signed in. Defined before the confirmation-hash
   // handling below so that flow can also trigger it on first sign-in.
-  const pendingInviteKey = "promptshield.pending-invite.v1";
+  const pendingInviteKey = "redaxa.pending-invite.v1";
   const acceptPendingInvite = async (): Promise<void> => {
     if (desktop) return;
     const token = localStorage.getItem(pendingInviteKey);
@@ -450,7 +450,7 @@ async function boot(): Promise<void> {
       }
       // Already signed in but no active trial/subscription: point at pricing
       // instead of re-showing a login form the user doesn't need.
-      document.dispatchEvent(new CustomEvent("promptshield:need-upgrade", { detail: { message } }));
+      document.dispatchEvent(new CustomEvent("redaxa:need-upgrade", { detail: { message } }));
     },
     scanPrompt: async (text, options) => {
       // Audit metadata only: which surface asked. Grants nothing server-side.
@@ -526,7 +526,7 @@ async function boot(): Promise<void> {
   // One free manual resend right after the automatic signup email, then a
   // 600s cooldown per email before another is allowed -- tracked client-side
   // (the server also rate-limits independently as a backstop).
-  const resendCooldownKey = "promptshield.resend-cooldown.v1";
+  const resendCooldownKey = "redaxa.resend-cooldown.v1";
   const resendCooldownSeconds = 600;
   const readResendCooldown = (): Record<string, number> => {
     try { return JSON.parse(localStorage.getItem(resendCooldownKey) ?? "{}") as Record<string, number>; } catch { return {}; }

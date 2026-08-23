@@ -3,9 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="PromptShield scans sensitive details before you share a prompt with AI." />
-    <title>PromptShield — Think freely. Share safely.</title>
-    <link rel="icon" type="image/svg+xml" href="/outputs/promptshield-mark.svg" />
+    <meta name="description" content="Redaxa scans sensitive details before you share a prompt with AI." />
+    <title>Redaxa — Think freely. Share safely.</title>
+    <link rel="icon" type="image/svg+xml" href="/outputs/redaxa-mark.svg" />
     <style>
       /* ============ Design tokens ============ */
       :root {
@@ -17,7 +17,7 @@
         --ink: #f5f7fa;
         --mut: #9299a6;
         --dim: #646b78;
-        --acid: #b9ff00;         /* brand accent: protection, positive state */
+        --acid: #7c5cfc;         /* brand accent: protection, positive state */
         --acid-ink: #0a0d02;
         --warn: #ffb224;
         --danger: #ff5c33;
@@ -39,7 +39,7 @@
       }
       button, textarea, select { font: inherit; } button { cursor: pointer; }
       a { color: inherit; text-decoration: none; }
-      ::selection { background: #b9ff0030; }
+      ::selection { background: #7c5cfc30; }
       :focus-visible { outline: 2px solid var(--acid); outline-offset: 2px; border-radius: 4px; }
 
       /* The framed column: hairline side borders make the outer margins part
@@ -82,7 +82,7 @@
       /* ============ Hero ============ */
       .hero { display: grid; grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr); gap: 64px; align-items: center; padding: 88px 56px 80px; }
       .eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 6px 11px; border: 1px solid var(--line-2); border-radius: 999px; background: var(--s1); color: var(--acid); font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
-      .pulse { width: 6px; height: 6px; background: var(--acid); border-radius: 50%; box-shadow: 0 0 0 4px #b9ff0014; }
+      .pulse { width: 6px; height: 6px; background: var(--acid); border-radius: 50%; box-shadow: 0 0 0 4px #7c5cfc14; }
       .hero h1 { margin: 22px 0 0; font-size: clamp(46px, 5.6vw, 84px); line-height: 0.94; letter-spacing: -0.045em; font-weight: 700; }
       .hero h1 em { color: var(--acid); font-style: normal; }
       .hero .sub { max-width: 480px; color: var(--mut); font-size: 17px; line-height: 1.6; margin: 22px 0 0; }
@@ -117,7 +117,7 @@
       .sc-raw { position: relative; border: 1px solid var(--line); border-radius: var(--r-m); background: #0a0c10; padding: 14px 16px; color: #d4d9e2; line-height: 1.65; font-size: 13.5px; overflow: hidden; }
       .sc-raw mark { background: transparent; color: inherit; border-radius: 3px; padding: 1px 3px; transition: none; animation: mark-in 320ms var(--ease) 1150ms both; }
       @keyframes mark-in { from { background: transparent; color: inherit; } to { background: #ff5c331f; color: #ffb09c; box-shadow: inset 0 -1px 0 var(--danger); } }
-      .scanline { position: absolute; top: 0; bottom: 0; width: 42%; pointer-events: none; background: linear-gradient(90deg, transparent, #b9ff000e 45%, #b9ff0022 50%, #b9ff000e 55%, transparent); animation: sweep 1100ms var(--ease) 250ms both; }
+      .scanline { position: absolute; top: 0; bottom: 0; width: 42%; pointer-events: none; background: linear-gradient(90deg, transparent, #7c5cfc0e 45%, #7c5cfc22 50%, #7c5cfc0e 55%, transparent); animation: sweep 1100ms var(--ease) 250ms both; }
       @keyframes sweep { from { left: -45%; opacity: 1; } 85% { opacity: 1; } to { left: 105%; opacity: 0; } }
 
       .sc-flow { display: flex; align-items: center; gap: 8px; margin: 14px 0 6px; }
@@ -160,7 +160,7 @@
       .scan-area { padding: 24px; border-right: 1px solid var(--line); display: flex; flex-direction: column; }
       .scan-area label { color: var(--mut); font-size: 12px; margin-bottom: 10px; font-weight: 600; }
       .scan-area textarea { flex: 1; min-height: 210px; resize: vertical; border: 1px solid var(--line-2); border-radius: var(--r-m); background: #0a0c10; color: var(--ink); padding: 16px; outline: none; line-height: 1.6; transition: border-color 160ms var(--ease), box-shadow 160ms var(--ease); }
-      .scan-area textarea:focus { border-color: #566043; box-shadow: 0 0 0 3px #b9ff0012; }
+      .scan-area textarea:focus { border-color: #566043; box-shadow: 0 0 0 3px #7c5cfc12; }
       .actions { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; gap: 10px; }
       .sample { background: transparent; border: 0; color: var(--mut); padding: 0; font-size: 13px; text-decoration: underline; text-underline-offset: 4px; transition: color 160ms var(--ease); }
       .sample:hover { color: var(--ink); }
@@ -211,7 +211,7 @@
       .plan button { margin-top: 10px; width: 100%; padding: 12px; border: 1px solid var(--line-2); border-radius: 9px; background: transparent; color: var(--ink); font-weight: 600; font-size: 13.5px; transition: border-color 160ms var(--ease), background 160ms var(--ease), transform 160ms var(--ease); }
       .plan button:hover { border-color: #39404e; background: var(--s2); }
       .plan .spacer { flex: 1; }
-      .plan.featured { background: linear-gradient(170deg, #141a0d, #0d0f14 55%); border-color: #3d4a22; box-shadow: 0 18px 55px #0000005e, 0 1px 0 #b9ff0022 inset; position: relative; }
+      .plan.featured { background: linear-gradient(170deg, #141a0d, #0d0f14 55%); border-color: #3d4a22; box-shadow: 0 18px 55px #0000005e, 0 1px 0 #7c5cfc22 inset; position: relative; }
       .plan.featured .tag { color: var(--acid); }
       .plan.featured:hover { border-color: #55672f; }
       .plan.featured button[data-interval="monthly"] { background: var(--acid); color: var(--acid-ink); border-color: var(--acid); font-weight: 750; }
@@ -274,10 +274,10 @@
   <body>
     <div class="frame">
       <nav class="nav">
-        <a class="brand" href="#top" aria-label="PromptShield home"><span class="mark"><img src="outputs/promptshield-mark.svg" alt="" /></span><span>PromptShield</span></a>
+        <a class="brand" href="#top" aria-label="Redaxa home"><span class="mark"><img src="outputs/redaxa-mark.svg" alt="" /></span><span>Redaxa</span></a>
         <div class="nav-right">
           <div class="navlinks"><a href="#scanner">Product</a><a href="#pricing">Pricing</a><a href="/privacy.html">Privacy</a></div>
-          <button class="nav-install" id="pwa-install" hidden type="button" aria-label="Install PromptShield on this device">Install app</button>
+          <button class="nav-install" id="pwa-install" hidden type="button" aria-label="Install Redaxa on this device">Install app</button>
           <!-- auth.js takes the FIRST .small-btn as its account trigger and
                adds a "Log in" next to it. Keep this anchor first in DOM order
                among .small-btn elements. -->
@@ -290,7 +290,7 @@
         <div>
           <div class="eyebrow"><span class="pulse"></span> Privacy, before AI</div>
           <h1>Think freely.<br /><em>Share safely.</em></h1>
-          <p class="sub">PromptShield catches personal data and secrets before a prompt reaches an AI model. Your prompt is checked, never stored or logged.</p>
+          <p class="sub">Redaxa catches personal data and secrets before a prompt reaches an AI model. Your prompt is checked, never stored or logged.</p>
           <div class="cta-row">
             <a class="btn-primary" href="#scanner">Scan a prompt — free</a>
             <a class="btn-ghost" href="#how">See how it works</a>
@@ -302,7 +302,7 @@
              flow once (raw → detection → safe). Decorative, honest. -->
         <aside class="shield-card" aria-hidden="true">
           <div class="sc-head">
-            <span class="sc-title">PROMPTSHIELD</span>
+            <span class="sc-title">REDAXA</span>
             <span class="sc-live">LIVE SCAN</span>
             <span class="sc-status"><span class="scanning">Scanning…</span><span class="protected">● Protected</span></span>
           </div>
@@ -327,7 +327,7 @@
 
       <!-- What it protects: four categories, matching what the scanner
            actually detects today. -->
-      <section class="protect" aria-label="What PromptShield protects">
+      <section class="protect" aria-label="What Redaxa protects">
         <div class="protect-item">
           <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8.2" r="3.4" stroke="currentColor" stroke-width="1.7"/><path d="M4.8 19.6c1.3-3.5 4.1-5.3 7.2-5.3s5.9 1.8 7.2 5.3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
           <h3>Personal data</h3>
@@ -381,7 +381,7 @@
           </div>
           <div class="step">
             <div class="step-num">02</div>
-            <h3>PromptShield checks it</h3>
+            <h3>Redaxa checks it</h3>
             <p>The text is inspected over an encrypted connection and discarded immediately.</p>
           </div>
           <div class="step">
@@ -462,12 +462,12 @@
 
       <hr class="rule" />
 
-      <!-- Surfaces strip: where PromptShield actually runs. The extension link
+      <!-- Surfaces strip: where Redaxa actually runs. The extension link
            points at the GitHub release until the Chrome Web Store listing is
            approved, then it should be swapped to the store URL. -->
       <div class="suite-line" id="extension">
         <span><b>Runs where you prompt</b> — a browser extension that checks your message inside ChatGPT, Claude, Gemini, Copilot and Perplexity before it sends, plus a Windows desktop app with signed auto-updates.</span>
-        <a class="suite-go" href="https://github.com/AurelioAvila/promptshield/releases/latest" target="_blank" rel="noopener">Get the extension &amp; desktop app →</a>
+        <a class="suite-go" href="https://github.com/AurelioAvila/redaxa/releases/latest" target="_blank" rel="noopener">Get the extension &amp; desktop app →</a>
       </div>
 
       <hr class="rule" />
@@ -479,9 +479,9 @@
       </div>
 
       <footer>
-        <span class="footer-brand"><img src="outputs/promptshield-mark.svg" alt="" />PromptShield<span class="footer-tag">· Privacy, before AI</span></span>
+        <span class="footer-brand"><img src="outputs/redaxa-mark.svg" alt="" />Redaxa<span class="footer-tag">· Privacy, before AI</span></span>
         <nav class="flinks" aria-label="Footer"><a href="/api-docs.html">API</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="https://pctweaker.app" target="_blank" rel="noopener">PC Tweaker</a></nav>
-        <span>© 2026 PromptShield</span>
+        <span>© 2026 Redaxa</span>
       </footer>
     </div>
     <script type="module" src="dist/auth.js"></script>

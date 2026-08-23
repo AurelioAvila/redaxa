@@ -17,7 +17,7 @@ function rawBody(request: IncomingMessage): Promise<Buffer> {
 }
 
 async function syncSubscription(subscription: Stripe.Subscription, fallbackUserId?: string): Promise<void> {
-  const userId = subscription.metadata.promptshield_user_id || fallbackUserId || await userForCustomer(String(subscription.customer));
+  const userId = subscription.metadata.redaxa_user_id || fallbackUserId || await userForCustomer(String(subscription.customer));
   if (!userId) throw new Error("Subscription cannot be linked to an account.");
   const item = subscription.items.data[0];
   await patchAccount(userId, {
@@ -54,14 +54,14 @@ export default async function handler(request: WebhookRequest, response: Respons
       const session = event.data.object as Stripe.Checkout.Session;
       if (session.mode === "subscription" && session.subscription) {
         const subscription = await stripe.subscriptions.retrieve(String(session.subscription));
-        await syncSubscription(subscription, session.metadata?.promptshield_user_id);
+        await syncSubscription(subscription, session.metadata?.redaxa_user_id);
       }
     } else if (event.type === "customer.subscription.created" || event.type === "customer.subscription.updated") {
       const eventSubscription = event.data.object as Stripe.Subscription;
       await syncSubscription(await stripe.subscriptions.retrieve(eventSubscription.id));
     } else if (event.type === "customer.subscription.deleted") {
       const subscription = event.data.object as Stripe.Subscription;
-      const userId = subscription.metadata.promptshield_user_id || await userForCustomer(String(subscription.customer));
+      const userId = subscription.metadata.redaxa_user_id || await userForCustomer(String(subscription.customer));
       if (userId) await patchAccount(userId, { subscription_status: "canceled", cancel_at_period_end: false, current_period_end: null, checkout_lock_at: null });
     } else if (event.type === "invoice.payment_failed") {
       const invoice = event.data.object as Stripe.Invoice;

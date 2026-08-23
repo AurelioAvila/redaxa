@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="src-tauri/icons/128x128.png" width="112" alt="PromptShield logo">
+  <img src="src-tauri/icons/128x128.png" width="112" alt="Redaxa logo">
 </p>
 
-<h1 align="center">PromptShield</h1>
+<h1 align="center">Redaxa</h1>
 
 <p align="center">
   <strong>Catch what you're about to leak, before it leaves.</strong><br>
@@ -12,7 +12,7 @@
 <p align="center">
   <a href="https://promptshield-beta.vercel.app"><img src="https://img.shields.io/badge/TRY_IT_NOW-No_install%2C_no_SmartScreen-2E7D32?style=for-the-badge" alt="Try the web app, no install required"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Proprietary-3DA639?style=for-the-badge" alt="Proprietary License"></a>
-  <a href="../../releases"><img src="https://img.shields.io/github/v/release/AurelioAvila/promptshield?display_name=tag&style=for-the-badge&color=7C3AED" alt="Latest release"></a>
+  <a href="../../releases"><img src="https://img.shields.io/github/v/release/AurelioAvila/redaxa?display_name=tag&style=for-the-badge&color=7C3AED" alt="Latest release"></a>
 </p>
 
 **Fastest way to try it — [web app](https://promptshield-beta.vercel.app), nothing to install** ·
@@ -29,7 +29,7 @@
 
 You're about to paste a stack trace, a config file, or a client email into
 ChatGPT. Somewhere in there is an API key, a card number, or someone's
-email address you didn't mean to send. PromptShield catches it in the
+email address you didn't mean to send. Redaxa catches it in the
 half-second before you hit enter — not with a vague "this might be
 sensitive" guess, but with real validation: a Luhn check on card numbers, a
 mod-97 checksum on IBANs, reserved-range filtering on SSNs. Copy-pasting
@@ -39,7 +39,7 @@ into a text box and hoping isn't a strategy. This is.
 
 ## What it does
 
-Paste a prompt in. PromptShield finds what's sensitive in it — real ones,
+Paste a prompt in. Redaxa finds what's sensitive in it — real ones,
 not guesses — and hands you back a redacted version you can send instead.
 
 | Category | Detected |
@@ -78,7 +78,7 @@ On the Business plan, a workspace is a real organization:
 
 ## Privacy
 
-**Your prompt text is sent to PromptShield's own backend to be scanned — it
+**Your prompt text is sent to Redaxa's own backend to be scanned — it
 is not processed entirely on-device.** That's a deliberate tradeoff, not a
 hidden detail: running the same detection logic server-side is what lets
 the web app, desktop app and browser extension all give identical results.
@@ -112,7 +112,7 @@ npx tauri build
 
 ## Product boundaries
 
-PromptShield is a protective review layer, not a guarantee that all
+Redaxa is a protective review layer, not a guarantee that all
 sensitive data will be caught — detection has irreducible false negatives,
 and you're always the one who decides what actually gets sent. Team sharing
 and cloud sync of scan history are not implemented; history stays in the

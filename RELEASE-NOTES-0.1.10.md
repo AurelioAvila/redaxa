@@ -1,4 +1,4 @@
-# PromptShield 0.1.10 — desktop catch-up
+# Redaxa 0.1.10 — desktop catch-up
 
 The desktop app picks up everything the web dashboard gained since 0.1.9 was cut:
 

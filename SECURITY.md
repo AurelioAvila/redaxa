@@ -1,6 +1,6 @@
-# Security at PromptShield
+# Security at Redaxa
 
-PromptShield is privacy-sensitive by design.
+Redaxa is privacy-sensitive by design.
 
 ## Current prototype boundary
 

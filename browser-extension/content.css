@@ -1,4 +1,4 @@
-#promptshield-check-btn {
+#redaxa-check-btn {
   position: fixed;
   right: 22px;
   bottom: 88px;
@@ -12,9 +12,9 @@
   cursor: pointer;
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
 }
-#promptshield-check-btn:hover { border-color: #b9ff00; color: #b9ff00; }
+#redaxa-check-btn:hover { border-color: #7c5cfc; color: #7c5cfc; }
 
-#promptshield-panel {
+#redaxa-panel {
   position: fixed;
   right: 22px;
   bottom: 138px;
@@ -30,7 +30,7 @@
   display: none;
   font: 13px/1.5 system-ui, sans-serif;
 }
-#promptshield-panel.open { display: block; }
+#redaxa-panel.open { display: block; }
 .ps-panel-head {
   display: flex; justify-content: space-between; align-items: center;
   padding: 12px 14px; border-bottom: 1px solid #2b3128; font-weight: 700;
@@ -45,10 +45,10 @@
 .ps-finding b { font-size: 12.5px; }
 .ps-use-redacted {
   margin-top: 12px; width: 100%; border: 0; border-radius: 8px; padding: 9px;
-  background: #b9ff00; color: #0a0c08; font-weight: 700; cursor: pointer;
+  background: #7c5cfc; color: #0a0c08; font-weight: 700; cursor: pointer;
 }
 
-#promptshield-intercept {
+#redaxa-intercept {
   position: fixed; inset: 0; z-index: 2147483647;
   background: rgba(0, 0, 0, 0.55);
   display: flex; align-items: center; justify-content: center;
@@ -64,7 +64,7 @@
   margin-top: 8px; width: 100%; border: 1px solid #2b3128; border-radius: 8px; padding: 9px;
   background: transparent; color: #f4f6f1; font-weight: 600; cursor: pointer;
 }
-.ps-int-secondary:hover { border-color: #b9ff00; color: #b9ff00; }
+.ps-int-secondary:hover { border-color: #7c5cfc; color: #7c5cfc; }
 .ps-int-head {
   display: flex; justify-content: space-between; align-items: center;
   padding: 14px 16px; border-bottom: 1px solid #2b3128; font-weight: 700;
@@ -73,7 +73,7 @@
 .ps-int-body { padding: 14px 16px; }
 .ps-int-body .ps-use-redacted { margin-top: 4px; }
 
-#promptshield-toast {
+#redaxa-toast {
   position: fixed;
   left: 50%;
   bottom: 26px;
@@ -81,7 +81,7 @@
   z-index: 2147483647;
   background: #0d0f0c;
   color: #f4f6f1;
-  border: 1px solid #b9ff00;
+  border: 1px solid #7c5cfc;
   border-radius: 999px;
   padding: 11px 18px;
   font: 600 13px system-ui, sans-serif;

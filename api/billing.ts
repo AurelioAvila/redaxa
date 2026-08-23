@@ -56,7 +56,7 @@ export default async function handler(request: RequestLike, response: ResponseLi
     let customerId = account.stripe_customer_id;
     try {
       if (!customerId) {
-        const customer = await stripe.customers.create({ email: user.email, metadata: { promptshield_user_id: user.id } }, { idempotencyKey: `ps-customer-${user.id}` });
+        const customer = await stripe.customers.create({ email: user.email, metadata: { redaxa_user_id: user.id } }, { idempotencyKey: `ps-customer-${user.id}` });
         customerId = customer.id;
         await saveCustomer(user.id, customerId);
       }
@@ -70,9 +70,9 @@ export default async function handler(request: RequestLike, response: ResponseLi
         allow_promotion_codes: interval === "monthly",
         subscription_data: {
           trial_period_days: account.has_used_trial ? undefined : 7,
-          metadata: { promptshield_user_id: user.id, plan, interval, seats: String(seats) }
+          metadata: { redaxa_user_id: user.id, plan, interval, seats: String(seats) }
         },
-        metadata: { promptshield_user_id: user.id, plan, interval, seats: String(seats) },
+        metadata: { redaxa_user_id: user.id, plan, interval, seats: String(seats) },
         success_url: `${appUrl()}/?checkout=success`,
         cancel_url: `${appUrl()}/?checkout=cancelled`
       }, { idempotencyKey: `ps-checkout-${user.id}-${Date.now()}` });

@@ -4,7 +4,7 @@
 // on every call. Stored in chrome.storage.local (extension-private, not
 // reachable by the pages it's injected into).
 const API_BASE = "https://promptshield-beta.vercel.app";
-const SESSION_KEY = "promptshield_session";
+const SESSION_KEY = "redaxa_session";
 
 async function readSession() {
   const stored = await chrome.storage.local.get(SESSION_KEY);
@@ -45,7 +45,7 @@ async function apiRequest(path, body, method = "POST", { timeoutMs = 15_000, ret
   const token = await accessToken();
   if (token) headers.Authorization = `Bearer ${token}`;
   // A hung request would leave the user staring at "Checking…" forever, and a
-  // single transient network blip shouldn't read as "PromptShield is broken":
+  // single transient network blip shouldn't read as "Redaxa is broken":
   // hard timeout + one retry on pure network failures (never on HTTP errors,
   // which are real answers).
   for (let attempt = 0; ; attempt++) {
