@@ -11,16 +11,17 @@
 
 <p align="center">
   <a href="https://promptshield-beta.vercel.app"><img src="https://img.shields.io/badge/TRY_IT_NOW-No_install%2C_no_SmartScreen-2E7D32?style=for-the-badge" alt="Try the web app, no install required"></a>
-  <a href="https://chromewebstore.google.com/detail/prompt-shield/dncladangpekkaigfeajgplboocjfaim"><img src="https://img.shields.io/badge/Chrome_Web_Store-Get_the_extension-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Get the Chrome extension"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Proprietary-3DA639?style=for-the-badge" alt="Proprietary License"></a>
   <a href="../../releases"><img src="https://img.shields.io/github/v/release/AurelioAvila/promptshield?display_name=tag&style=for-the-badge&color=7C3AED" alt="Latest release"></a>
 </p>
 
 **Fastest way to try it — [web app](https://promptshield-beta.vercel.app), nothing to install** ·
-[Chrome extension](https://chromewebstore.google.com/detail/prompt-shield/dncladangpekkaigfeajgplboocjfaim) ·
 [⬇ Windows desktop app](../../releases/latest) (not code-signed yet — SmartScreen shows a warning, click **More info** → **Run anyway**) ·
 [Changelog](CHANGELOG.md) · [Privacy Policy](https://promptshield-beta.vercel.app/privacy.html) ·
 [Terms](https://promptshield-beta.vercel.app/terms.html)
+
+> The browser extension (source in [`browser-extension/`](browser-extension))
+> is not yet published on the Chrome Web Store — pending review.
 
 ---
 
@@ -73,7 +74,7 @@ On the Business plan, a workspace is a real organization:
 
 - **Web app** — [promptshield-beta.vercel.app](https://promptshield-beta.vercel.app), no install
 - **Windows desktop app** — this repo's installer, signs in once and stays signed in (session held in the OS credential store, not a file on disk)
-- **Browser extension** — a "Check" button injected into ChatGPT, Claude, Gemini, Copilot and Perplexity that scans whatever's in the composer before you send it
+- **Browser extension** *(pending Chrome Web Store review)* — a "Check" button injected into ChatGPT, Claude, Gemini, Copilot and Perplexity that scans whatever's in the composer before you send it
 
 ## Privacy
 
