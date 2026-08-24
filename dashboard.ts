@@ -1052,10 +1052,39 @@ export function mountDashboard(): void {
   const renderHistory = (): void => {
     const history = readHistory();
     const visible = history.slice(0, 8);
-    historyRoot.innerHTML = visible.length ? visible.map((entry) => {
-      const breakdown = Object.entries(entry.byKind).map(([kind, n]) => `${labels()[kind] ?? kind} × ${n}`).join(", ");
-      return `<article class="entry" data-id="${escapeHtml(entry.id)}" tabindex="0" role="button" aria-expanded="false"><strong>${plural(words().itemsReviewed, entry.findings)}</strong><span>${escapeHtml(entry.preview)}</span><em>${dateTime(entry.createdAt)}</em><div class="entry-detail">${breakdown ? escapeHtml(breakdown) : words().nothingFlagged}</div></article>`;
-    }).join("") : `<div class="entry"><strong>${words().noChecksYet}</strong><span>${words().lastEightWillAppear}</span></div>`;
+    historyRoot.replaceChildren();
+    if (visible.length) {
+      for (const entry of visible) {
+        const article = document.createElement("article");
+        article.className = "entry";
+        article.dataset.id = entry.id;
+        article.tabIndex = 0;
+        article.setAttribute("role", "button");
+        article.setAttribute("aria-expanded", "false");
+
+        const summary = document.createElement("strong");
+        summary.textContent = plural(words().itemsReviewed, entry.findings);
+        const preview = document.createElement("span");
+        preview.textContent = entry.preview;
+        const timestamp = document.createElement("em");
+        timestamp.textContent = dateTime(entry.createdAt);
+        const detail = document.createElement("div");
+        detail.className = "entry-detail";
+        const breakdown = Object.entries(entry.byKind).map(([kind, n]) => `${labels()[kind] ?? kind} × ${n}`).join(", ");
+        detail.textContent = breakdown || words().nothingFlagged;
+        article.append(summary, preview, timestamp, detail);
+        historyRoot.append(article);
+      }
+    } else {
+      const empty = document.createElement("div");
+      empty.className = "entry";
+      const title = document.createElement("strong");
+      title.textContent = words().noChecksYet;
+      const copy = document.createElement("span");
+      copy.textContent = words().lastEightWillAppear;
+      empty.append(title, copy);
+      historyRoot.append(empty);
+    }
 
     const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
     const weekly = history.filter((entry) => new Date(entry.createdAt).getTime() >= weekAgo);
