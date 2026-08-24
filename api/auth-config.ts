@@ -7,8 +7,15 @@ type ResponseLike = {
 };
 
 export default function handler(request: RequestLike, response: ResponseLike): void {
-  const origin = request.headers?.origin;
-  response.setHeader("Access-Control-Allow-Origin", (Array.isArray(origin) ? origin[0] : origin) ?? "*");
+  const rawOrigin = request.headers?.origin;
+  const origin = Array.isArray(rawOrigin) ? rawOrigin[0] : rawOrigin;
+  const appOrigin = process.env.APP_URL?.replace(/\/$/, "") ?? "https://promptshield-beta.vercel.app";
+  const allowedOrigins = new Set([appOrigin, "tauri://localhost", "https://tauri.localhost", "http://tauri.localhost"]);
+  const extensionOrigin = origin?.startsWith("chrome-extension://") || origin?.startsWith("moz-extension://");
+  response.setHeader("Access-Control-Allow-Origin", origin && (allowedOrigins.has(origin) || extensionOrigin) ? origin : appOrigin);
+  response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Refresh-Token");
+  response.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  response.setHeader("Vary", "Origin");
   if (request.method === "OPTIONS") { response.status(204).end(); return; }
   if (request.method !== "GET") {
     response.setHeader("Allow", "GET");
