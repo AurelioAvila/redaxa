@@ -1054,7 +1054,7 @@ export function mountDashboard(): void {
     const visible = history.slice(0, 8);
     historyRoot.innerHTML = visible.length ? visible.map((entry) => {
       const breakdown = Object.entries(entry.byKind).map(([kind, n]) => `${labels()[kind] ?? kind} × ${n}`).join(", ");
-      return `<article class="entry" data-id="${entry.id}" tabindex="0" role="button" aria-expanded="false"><strong>${plural(words().itemsReviewed, entry.findings)}</strong><span>${escapeHtml(entry.preview)}</span><em>${dateTime(entry.createdAt)}</em><div class="entry-detail">${breakdown ? escapeHtml(breakdown) : words().nothingFlagged}</div></article>`;
+      return `<article class="entry" data-id="${escapeHtml(entry.id)}" tabindex="0" role="button" aria-expanded="false"><strong>${plural(words().itemsReviewed, entry.findings)}</strong><span>${escapeHtml(entry.preview)}</span><em>${dateTime(entry.createdAt)}</em><div class="entry-detail">${breakdown ? escapeHtml(breakdown) : words().nothingFlagged}</div></article>`;
     }).join("") : `<div class="entry"><strong>${words().noChecksYet}</strong><span>${words().lastEightWillAppear}</span></div>`;
 
     const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
