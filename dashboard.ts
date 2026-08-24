@@ -489,7 +489,7 @@ export function mountDashboard(): void {
       const data = await window.promptShieldAuth.request("/api/account?action=keys", undefined, "GET") as { keys?: { id: string; name: string; prefix: string; createdAt: string; revoked: boolean }[] };
       const keys = (data.keys ?? []).filter((key) => !key.revoked);
       apiKeyList.innerHTML = keys.map((key) =>
-        `<li><span><code>${escapeHtml(key.prefix)}…</code> ${escapeHtml(key.name)}</span><button type="button" class="secondary" data-key-revoke="${key.id}">Revoke</button></li>`
+        `<li><span><code>${escapeHtml(key.prefix)}…</code> ${escapeHtml(key.name)}</span><button type="button" class="secondary" data-key-revoke="${escapeHtml(key.id)}">Revoke</button></li>`
       ).join("") || `<li class="empty">No API keys yet.</li>`;
     } catch { apiKeyList.innerHTML = ""; }
   };
@@ -598,7 +598,7 @@ export function mountDashboard(): void {
       teamSection.hidden = false;
       teamSeats.textContent = format(words().teamSeatsUsed, { used: data.seatsUsed ?? 0, total: data.seatCount ?? 1 });
       teamInviteBtn.disabled = (data.seatsUsed ?? 1) >= (data.seatCount ?? 1);
-      teamInviteList.innerHTML = data.invites.map((invite) => `<li data-id="${invite.id}"><span>${invite.status === "accepted" ? words().teammateJoined : words().invitePending} · ${dateOnly(invite.createdAt)}</span>${invite.status === "pending" ? `<button type="button" class="secondary" data-revoke="${invite.id}">${words().revoke}</button>` : ""}</li>`).join("") || `<li class="empty">${words().noInvites}</li>`;
+      teamInviteList.innerHTML = data.invites.map((invite) => `<li data-id="${escapeHtml(invite.id)}"><span>${invite.status === "accepted" ? words().teammateJoined : words().invitePending} · ${dateOnly(invite.createdAt)}</span>${invite.status === "pending" ? `<button type="button" class="secondary" data-revoke="${escapeHtml(invite.id)}">${words().revoke}</button>` : ""}</li>`).join("") || `<li class="empty">${words().noInvites}</li>`;
     } catch { teamSection.hidden = true; }
   };
   teamInviteBtn.addEventListener("click", async () => {
@@ -606,7 +606,7 @@ export function mountDashboard(): void {
     try {
       const payload = await window.promptShieldAuth!.request("/api/team", {}, "POST") as { url?: string; error?: string };
       if (payload.url) {
-        teamInviteResult.innerHTML = `<input type="text" readonly value="${payload.url}"><button type="button" class="secondary" id="team-copy-link">${words().copyLink}</button>`;
+        teamInviteResult.innerHTML = `<input type="text" readonly value="${escapeHtml(payload.url)}"><button type="button" class="secondary" id="team-copy-link">${words().copyLink}</button>`;
         document.querySelector("#team-copy-link")?.addEventListener("click", () => { void navigator.clipboard.writeText(payload.url ?? ""); });
         await loadTeam();
       }
@@ -658,7 +658,7 @@ export function mountDashboard(): void {
         `<li><span>${escapeHtml(member.email ?? "—")}${member.you ? ` (${words().orgYou})` : ""} · ${roleLabel(member.role)}</span></li>`
       ).join("");
       orgTermList.innerHTML = (data.protectedTerms ?? []).map((term) =>
-        `<li><span>${escapeHtml(term.term)}</span>${canManage ? `<button type="button" class="secondary" data-term-remove="${term.id}">${words().orgRemove}</button>` : ""}</li>`
+        `<li><span>${escapeHtml(term.term)}</span>${canManage ? `<button type="button" class="secondary" data-term-remove="${escapeHtml(term.id)}">${words().orgRemove}</button>` : ""}</li>`
       ).join("") || `<li class="empty">${words().orgNoTerms}</li>`;
       const chosen = new Map((data.policies ?? []).map((policy) => [policy.category, policy]));
       orgPolicyList.innerHTML = policyCategories.map((category) => {
