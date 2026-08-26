@@ -27,7 +27,7 @@
     <main class="shell">
       <a class="back" href="/">← Redaxa</a>
       <h1>Privacy policy</h1>
-      <p class="updated">Last updated 13 August 2026</p>
+      <p class="updated">Last updated 26 August 2026</p>
 
       <p>Redaxa is operated by Aurelio Avila, an individual based in Italy ("we", "us"). This page explains what we collect, why, and how you can control it. If anything here is unclear, email <a href="mailto:aurelio_11@outlook.it">aurelio_11@outlook.it</a>.</p>
 
@@ -38,12 +38,21 @@
       <table>
         <tr><th>Data</th><th>Why</th></tr>
         <tr><td>Email, first name, last name, date of birth</td><td>Create and secure your account (via Supabase Auth)</td></tr>
-        <tr><td>Prompt text you scan</td><td>Sent over an encrypted connection to compute the scan result, then discarded — never stored, logged, or used for any other purpose</td></tr>
+        <tr><td>Prompt text you scan — which may contain personally identifiable information (names, email addresses, phone numbers, physical addresses), financial and payment information (card numbers, IBANs, crypto wallet addresses), and authentication information (passwords, API keys, tokens, private keys)</td><td>Sent over an encrypted connection to compute the scan result, then discarded — never stored, logged, or used for any other purpose</td></tr>
         <tr><td>Subscription status, Stripe customer ID</td><td>Billing. We never see or store your card number — Stripe collects that directly</td></tr>
         <tr><td>Scan history (a short local preview and counts by category)</td><td>Stored only in your own browser's local storage, to show you "Recent checks." We never receive this — it never leaves your device</td></tr>
         <tr><td>Session tokens</td><td>Keep you signed in (httpOnly cookies on the web app; a locally-stored token on the desktop app)</td></tr>
         <tr><td>Team invite tokens</td><td>If you're on a Business plan, link-based invites so you can add teammates. We don't collect a teammate's email before they join</td></tr>
       </table>
+
+      <h2>Sensitive data the scanner may process</h2>
+      <p>Redaxa's whole purpose is to catch sensitive content <em>before</em> it leaves your browser, so the text you scan can legitimately contain any of the following:</p>
+      <ul>
+        <li><strong>Personally identifiable information</strong> — names, email addresses, phone numbers, physical addresses.</li>
+        <li><strong>Financial and payment information</strong> — credit/debit card numbers, IBANs and bank account numbers, cryptocurrency wallet addresses.</li>
+        <li><strong>Authentication information</strong> — passwords, API keys, JWTs, private keys, security-question answers.</li>
+      </ul>
+      <p>This content is processed only to detect and flag it to you. It is transmitted over an encrypted connection, used solely to compute the scan result shown in your browser, and is never written to a database, a log file, an analytics tool, or a backup — on the web app, the browser extension, or the desktop app.</p>
 
       <h2>Browser extension</h2>
       <p>The Redaxa browser extension reads the text box of the AI chat site you're on (ChatGPT, Claude, Gemini, Copilot, Perplexity) only when you click "Check", to send it for scanning as described above. It does not read any other page content, does not run on any other site, and does not track your browsing. Your sign-in tokens are stored in the extension's private local storage, inaccessible to the web pages it runs on.</p>
