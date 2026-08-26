@@ -1,6 +1,6 @@
 import { ACCESS_COOKIE, REFRESH_COOKIE, REMEMBER_COOKIE, clearSessionCookies, corsHeaders, parseCookies, refreshSession, setSessionCookies, supabaseAuthUser } from "../_billing.js";
 
-type RequestLike = { method?: string; headers?: Record<string, string | string[] | undefined> };
+type RequestLike = { method?: string; url?: string; headers?: Record<string, string | string[] | undefined> };
 type ResponseLike = { setHeader(name: string, value: string | string[]): void; status(code: number): ResponseLike; json(value: unknown): void; end(): void };
 
 function bearerToken(headers: Record<string, string | string[] | undefined> | undefined): string | undefined {
@@ -14,7 +14,34 @@ function header(headers: Record<string, string | string[] | undefined> | undefin
   return Array.isArray(raw) ? raw[0] : raw;
 }
 
+// Folded in from the old standalone /api/auth-config function (see
+// vercel.json's rewrite for that path to this file): the Hobby plan caps a
+// deployment at 12 Serverless Functions, and a 30-line GET-only config probe
+// didn't earn its own slot next to this one. `corsHeaders` is the exact same
+// origin allowlist auth-config used inline, so nothing about who is allowed
+// to call it changed - only where the code lives.
+function isAuthConfigRequest(request: RequestLike): boolean {
+  if (!request.url) return false;
+  const pathname = request.url.split("?")[0];
+  return pathname === "/api/auth-config";
+}
+
+function handleAuthConfig(request: RequestLike, response: ResponseLike): void {
+  const cors = corsHeaders(request);
+  for (const [name, value] of Object.entries(cors)) response.setHeader(name, value);
+  if (request.method === "OPTIONS") { response.status(204).end(); return; }
+  if (request.method !== "GET") { response.setHeader("Allow", "GET"); response.status(405).end(); return; }
+  // Only a boolean is exposed: the browser talks to Supabase exclusively
+  // through the /api/auth/* proxy endpoints, so it has no need for the
+  // project URL or key.
+  const configured = Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_PUBLISHABLE_KEY);
+  response.setHeader("Cache-Control", "no-store");
+  response.status(200).json({ configured });
+}
+
 export default async function handler(request: RequestLike, response: ResponseLike): Promise<void> {
+  if (isAuthConfigRequest(request)) { handleAuthConfig(request, response); return; }
+
   const cors = corsHeaders(request);
   for (const [name, value] of Object.entries(cors)) response.setHeader(name, value);
   if (request.method === "OPTIONS") { response.status(204).end(); return; }

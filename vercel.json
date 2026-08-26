@@ -1,6 +1,12 @@
 {
   "buildCommand": "npm run build:web",
   "outputDirectory": "public",
+  "rewrites": [
+    {
+      "source": "/api/auth-config",
+      "destination": "/api/auth/session"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
