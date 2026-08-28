@@ -23,3 +23,4 @@ cpSync(resolve(root, "dist"), resolve(output, "dist"), {
 });
 mkdirSync(resolve(output, "outputs"), { recursive: true });
 cpSync(resolve(root, "outputs", "redaxa-mark.svg"), resolve(output, "outputs", "redaxa-mark.svg"));
+cpSync(resolve(root, "brand", "redaxa-master.png"), resolve(output, "og-image.png"));
