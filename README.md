@@ -15,6 +15,8 @@
   <a href="../../releases"><img src="https://img.shields.io/github/v/release/AurelioAvila/redaxa?display_name=tag&style=for-the-badge&color=7C3AED" alt="Latest release"></a>
 </p>
 
+<p align="center"><sub>Want safer AI workflows? ⭐ Star Redaxa to follow new protections and help others find it.</sub></p>
+
 **Fastest way to try it — [web app](https://promptshield-beta.vercel.app), nothing to install** ·
 [⬇ Windows desktop app](../../releases/latest) (not code-signed yet — SmartScreen shows a warning, click **More info** → **Run anyway**) ·
 [Changelog](CHANGELOG.md) · [Privacy Policy](https://promptshield-beta.vercel.app/privacy.html) ·
