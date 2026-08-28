@@ -17,6 +17,8 @@
 
 <p align="center"><sub>Want safer AI workflows? ⭐ Star Redaxa to follow new protections and help others find it.</sub></p>
 
+<p align="center"><sub><strong>Redaxa was previously known as PromptShield.</strong> The product was renamed to establish a distinctive, searchable identity; existing links and releases remain valid.</sub></p>
+
 **Fastest way to try it — [web app](https://promptshield-beta.vercel.app), nothing to install** ·
 [⬇ Windows desktop app](../../releases/latest) (not code-signed yet — SmartScreen shows a warning, click **More info** → **Run anyway**) ·
 [Changelog](CHANGELOG.md) · [Privacy Policy](https://promptshield-beta.vercel.app/privacy.html) ·
