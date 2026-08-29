@@ -16,3 +16,6 @@ coverage/
 .vercel
 .env*
 public/
+
+# Per-release updater manifest, generated at release time — not source.
+latest.json
