@@ -1,0 +1,11 @@
+{
+  "version": "0.3.0",
+  "notes": "New brand mark: a padlock with a face, replacing the plain violet R. Also ships CORS hardening and XSS-safe rendering on the dashboard history view, and folds an extra API endpoint into the shared auth handler to stay under the platform's function cap. No change to scanning, storage, or the free tier.",
+  "pub_date": "2026-08-29T19:41:57Z",
+  "platforms": {
+    "windows-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUU01vWTBZbmRBR2krQW52TmZmS1owUlhvODg5ODA2MHJiN0g5eXE4M3V5RzRnSDR1QTY5MHoxUzNsVld1Y0swYkpxWHVmZ3ZEd3c1Ni9kY29OTnVocEc0TFZ4bjNubFFJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4MDMyMzEyCWZpbGU6UmVkYXhhXzAuMy4wX3g2NC1zZXR1cC5leGUKSnZVTW5LM3ZrRGRId1lmS25UWDVpNHM1ZEFQWUtzVkRNdm9yUzJBK1dLVDRQQWQwS3JHbDY1MWRmWlN6N2NBWDRUVTZZU01GczFnN1NPTVJxTTMyQWc9PQo=",
+      "url": "https://github.com/AurelioAvila/redaxa/releases/download/v0.3.0/Redaxa_0.3.0_x64-setup.exe"
+    }
+  }
+}

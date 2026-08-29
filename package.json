@@ -3,6 +3,7 @@
   "version": "0.3.0",
   "type": "module",
   "private": true,
+  "license": "UNLICENSED",
   "engines": {
     "node": ">=22"
   },
