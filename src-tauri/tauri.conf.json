@@ -41,6 +41,9 @@
     "active": true,
     "targets": "all",
     "createUpdaterArtifacts": true,
+    "publisher": "Aurelio Avila",
+    "copyright": "Copyright © 2026 Aurelio Avila. All rights reserved.",
+    "shortDescription": "Catches personal data and secrets in your prompt before it reaches an AI tool",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
