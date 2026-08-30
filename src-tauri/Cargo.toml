@@ -1,6 +1,6 @@
 [package]
 name = "redaxa-desktop"
-version = "0.3.0"
+version = "0.3.1"
 description = "Redaxa local desktop companion"
 authors = ["Aurelio Avila"]
 license-file = "../LICENSE"
