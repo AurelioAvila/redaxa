@@ -1,6 +1,7 @@
 import type { IncomingMessage } from "node:http";
 import Stripe from "stripe";
-import { claimStripeEvent, completeStripeEvent, patchAccount, stripe, userForCustomer } from "./_billing.js";
+import { appUrl, claimStripeEvent, completeStripeEvent, patchAccount, stripe, userForCustomer } from "./_billing.js";
+import { formatChargedAmount, notifyOwnerOfSale, sendSubscriptionEmail } from "./_email.js";
 
 type ResponseLike = { setHeader(name: string, value: string): void; status(code: number): ResponseLike; json(value: unknown): void; end(): void };
 type WebhookRequest = IncomingMessage & { method?: string; headers: Record<string, string | string[] | undefined> };
@@ -34,6 +35,58 @@ async function syncSubscription(subscription: Stripe.Subscription, fallbackUserI
   });
 }
 
+/**
+ * Tells the customer their subscription has begun, and tells the owner a sale
+ * happened. Neither existed before: the webhook recorded the subscription and
+ * nobody was told anything.
+ *
+ * Sent from `customer.subscription.created` only, which fires exactly once
+ * per subscription — `updated` fires on every renewal and every card change,
+ * and mailing on those would turn a welcome into spam.
+ *
+ * Deliberately swallows its own failures. Throwing would make Stripe retry
+ * the whole webhook and re-run the account sync that already succeeded, and
+ * the customer's access does not depend on an email arriving.
+ */
+async function announceSubscription(subscription: Stripe.Subscription): Promise<void> {
+  try {
+    const item = subscription.items.data[0];
+    const price = item?.price;
+    const interval = subscription.metadata.interval ?? price?.recurring?.interval ?? null;
+    const trialing = subscription.status === "trialing";
+    // During a trial the meaningful date is the first charge, not a renewal;
+    // trial_end carries it, and the period end carries the other case.
+    const dateSeconds = trialing ? subscription.trial_end : item?.current_period_end;
+    const renewsOn = dateSeconds
+      ? new Date(dateSeconds * 1000).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          timeZone: "UTC",
+        })
+      : null;
+
+    const customer = await stripe.customers.retrieve(String(subscription.customer));
+    const email = "deleted" in customer && customer.deleted ? null : (customer.email ?? null);
+    if (!email) return;
+    const firstName = ("name" in customer ? customer.name : null)?.split(" ")[0] ?? null;
+
+    await sendSubscriptionEmail({
+      to: email,
+      firstName,
+      plan: subscription.metadata.plan ?? null,
+      interval,
+      priceLabel: formatChargedAmount(price?.unit_amount, price?.currency, interval),
+      renewsOn,
+      trialing,
+      appUrl: appUrl(),
+    });
+    await notifyOwnerOfSale(email, subscription.metadata.plan ?? null, interval, trialing);
+  } catch (error) {
+    console.error("redaxa subscription announcement failed", String(error).slice(0, 300));
+  }
+}
+
 export default async function handler(request: WebhookRequest, response: ResponseLike): Promise<void> {
   if (request.method !== "POST") { response.setHeader("Allow", "POST"); response.status(405).end(); return; }
   const signatureHeader = request.headers["stripe-signature"];
@@ -58,7 +111,9 @@ export default async function handler(request: WebhookRequest, response: Respons
       }
     } else if (event.type === "customer.subscription.created" || event.type === "customer.subscription.updated") {
       const eventSubscription = event.data.object as Stripe.Subscription;
-      await syncSubscription(await stripe.subscriptions.retrieve(eventSubscription.id));
+      const subscription = await stripe.subscriptions.retrieve(eventSubscription.id);
+      await syncSubscription(subscription);
+      if (event.type === "customer.subscription.created") await announceSubscription(subscription);
     } else if (event.type === "customer.subscription.deleted") {
       const subscription = event.data.object as Stripe.Subscription;
       const userId = subscription.metadata.redaxa_user_id || await userForCustomer(String(subscription.customer));
