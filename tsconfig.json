@@ -9,6 +9,6 @@
     "rootDir": ".",
     "skipLibCheck": true
   },
-  "include": ["scanner.ts", "dashboard.ts", "desktop.ts", "pwa.ts", "auth.ts", "landing.ts", "server.ts", "scanner.test.ts", "api/**/*.ts"],
+  "include": ["scanner.ts", "dashboard.ts", "desktop.ts", "pwa.ts", "auth.ts", "landing.ts", "server.ts", "scanner.test.ts", "policy.test.ts", "tokens.test.ts", "api/**/*.ts"],
   "exclude": ["api/**/*.test.ts"]
 }
