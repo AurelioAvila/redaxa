@@ -17,6 +17,9 @@
  */
 
 const ACCENT = "#7c5cfc";
+// The old #5b5f66 on the #0a0a0c card was 3.1:1 — under AA for the 13px it is used at,
+// and it carries the footer line about never asking for a password. This is 5.2:1.
+const MUTED = "#7e848c";
 const OWNER_INBOX = process.env.OWNER_INBOX || "canadesino91@gmail.com";
 
 /**
@@ -86,6 +89,25 @@ export function subscriptionSubject(trialing: boolean): string {
   return trialing ? "Your Redaxa trial has started" : "Your Redaxa subscription is confirmed";
 }
 
+/**
+ * Outlook renders with Word, which drops padding on an inline anchor: the
+ * button collapses into a bare text link. VML is the one shape it draws
+ * reliably, so Outlook gets the rectangle and every other client gets the
+ * anchor. The width is a parameter because VML cannot size itself to its text.
+ */
+function button(href: string, label: string, width: number): string {
+  const safeHref = escapeHtml(href);
+  return `<!--[if mso]>
+            <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${safeHref}" style="height:54px;v-text-anchor:middle;width:${width}px;" arcsize="22%" stroke="f" fillcolor="${ACCENT}">
+              <w:anchorlock/>
+              <center style="color:#0a0a0c;font-family:'Segoe UI',Arial,sans-serif;font-size:16px;font-weight:800;">${label}</center>
+            </v:roundrect>
+            <![endif]-->
+            <!--[if !mso]><!-->
+            <a href="${safeHref}" style="display:inline-block; background:${ACCENT}; color:#0a0a0c; font-size:16px; font-weight:800; text-decoration:none; padding:16px 36px; border-radius:12px; letter-spacing:-0.2px;">${label}</a>
+            <!--<![endif]-->`;
+}
+
 export function subscriptionHtml(input: SubscriptionEmailInput): string {
   const { firstName, plan, interval, priceLabel, renewsOn, trialing, appUrl } = input;
   const name = escapeHtml(firstName || "there");
@@ -109,10 +131,10 @@ export function subscriptionHtml(input: SubscriptionEmailInput): string {
      the first words of the body, which here is the eyebrow "Trial Started"
      repeated - the reader learns nothing they did not already see. -->
 <div style="display:none; max-height:0; overflow:hidden; opacity:0;">${escapeHtml(intro)}</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#050506; padding:48px 16px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#050506" style="background:#050506; padding:48px 16px;">
   <tr>
     <td align="center">
-      <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px; width:100%; background:#0a0a0c; border:1px solid #2a2d33; border-radius:20px; overflow:hidden;">
+      <table role="presentation" width="560" cellpadding="0" cellspacing="0" bgcolor="#0a0a0c" style="max-width:560px; width:100%; background:#0a0a0c; border:1px solid #2a2d33; border-radius:20px; overflow:hidden;">
 
         <tr>
           <td style="background:radial-gradient(circle at 20% 0%, ${ACCENT}4d 0%, transparent 60%), #0a0a0c; padding:40px 40px 32px; text-align:center;">
@@ -137,7 +159,7 @@ export function subscriptionHtml(input: SubscriptionEmailInput): string {
 
         <tr>
           <td style="padding:28px 40px 0;">
-            <div style="font-size:13px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#5b5f66; margin-bottom:16px;">What you've unlocked</div>
+            <div style="font-size:13px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:${MUTED}; margin-bottom:16px;">What you've unlocked</div>
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
               <tr>
                 <td style="padding:10px 0; color:#e5e7eb; font-size:15px; line-height:1.5;">
@@ -160,9 +182,7 @@ export function subscriptionHtml(input: SubscriptionEmailInput): string {
 
         <tr>
           <td style="padding:32px 40px 8px; text-align:center;">
-            <a href="${escapeHtml(appUrl)}" style="display:inline-block; background:${ACCENT}; color:#0a0a0c; font-size:16px; font-weight:800; text-decoration:none; padding:16px 36px; border-radius:12px; letter-spacing:-0.2px;">
-              Open Redaxa
-            </a>
+            ${button(appUrl, "Open Redaxa", 200)}
           </td>
         </tr>
 
@@ -171,13 +191,13 @@ export function subscriptionHtml(input: SubscriptionEmailInput): string {
           <td style="padding:24px 40px 8px;">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
               <tr>
-                <td style="font-size:13px; color:#5b5f66; padding:4px 0;">Plan</td>
+                <td style="font-size:13px; color:${MUTED}; padding:4px 0;">Plan</td>
                 <td style="font-size:13px; color:#e5e7eb; padding:4px 0; text-align:right;">${escapeHtml(planLabel(plan, interval))}</td>
               </tr>
               ${
                 priceLabel
                   ? `<tr>
-                <td style="font-size:13px; color:#5b5f66; padding:4px 0;">Price</td>
+                <td style="font-size:13px; color:${MUTED}; padding:4px 0;">Price</td>
                 <td style="font-size:13px; color:#e5e7eb; padding:4px 0; text-align:right;">${escapeHtml(priceLabel)}</td>
               </tr>`
                   : ""
@@ -185,7 +205,7 @@ export function subscriptionHtml(input: SubscriptionEmailInput): string {
               ${
                 renewsOn
                   ? `<tr>
-                <td style="font-size:13px; color:#5b5f66; padding:4px 0;">${dateLabel}</td>
+                <td style="font-size:13px; color:${MUTED}; padding:4px 0;">${dateLabel}</td>
                 <td style="font-size:13px; color:#e5e7eb; padding:4px 0; text-align:right;">${escapeHtml(renewsOn)}</td>
               </tr>`
                   : ""
@@ -196,9 +216,9 @@ export function subscriptionHtml(input: SubscriptionEmailInput): string {
 
         <tr>
           <td style="padding:32px 40px 40px; text-align:center;">
-            <p style="margin:0; font-size:13px; color:#5b5f66; line-height:1.6;">
+            <p style="margin:0; font-size:13px; color:${MUTED}; line-height:1.6;">
               Cancel anytime from your account settings. Questions? Just reply to this email.<br>
-              Redaxa &middot; <a href="${escapeHtml(appUrl)}" style="color:#5b5f66;">${escapeHtml(hostOf(appUrl))}</a>
+              Redaxa &middot; <a href="${escapeHtml(appUrl)}" style="color:${MUTED};">${escapeHtml(hostOf(appUrl))}</a>
             </p>
           </td>
         </tr>
@@ -344,10 +364,10 @@ export function welcomeHtml(firstName: string | null | undefined, appUrl: string
 </head>
 <body style="margin:0; padding:0; background:#050506; font-family:'Segoe UI', Arial, sans-serif;">
 <div style="display:none; max-height:0; overflow:hidden; opacity:0;">${escapeHtml(intro)}</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#050506; padding:48px 16px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#050506" style="background:#050506; padding:48px 16px;">
   <tr>
     <td align="center">
-      <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px; width:100%; background:#0a0a0c; border:1px solid #2a2d33; border-radius:20px; overflow:hidden;">
+      <table role="presentation" width="560" cellpadding="0" cellspacing="0" bgcolor="#0a0a0c" style="max-width:560px; width:100%; background:#0a0a0c; border:1px solid #2a2d33; border-radius:20px; overflow:hidden;">
 
         <tr>
           <td style="background:radial-gradient(circle at 20% 0%, ${ACCENT}4d 0%, transparent 60%), #0a0a0c; padding:40px 40px 32px; text-align:center;">
@@ -366,7 +386,7 @@ export function welcomeHtml(firstName: string | null | undefined, appUrl: string
 
         <tr>
           <td style="padding:28px 40px 0;">
-            <div style="font-size:13px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#5b5f66; margin-bottom:16px;">Three minutes to set up</div>
+            <div style="font-size:13px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:${MUTED}; margin-bottom:16px;">Three minutes to set up</div>
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
               <tr><td style="padding:10px 0; color:#e5e7eb; font-size:15px; line-height:1.5;"><span style="color:${ACCENT}; font-weight:700;">1</span>&nbsp;&nbsp; Install the browser extension or the desktop app</td></tr>
               <tr><td style="padding:10px 0; color:#e5e7eb; font-size:15px; line-height:1.5;"><span style="color:${ACCENT}; font-weight:700;">2</span>&nbsp;&nbsp; Open ChatGPT, Claude, Gemini or Copilot as you normally would</td></tr>
@@ -377,15 +397,15 @@ export function welcomeHtml(firstName: string | null | undefined, appUrl: string
 
         <tr>
           <td style="padding:32px 40px 8px; text-align:center;">
-            <a href="${escapeHtml(appUrl)}" style="display:inline-block; background:${ACCENT}; color:#0a0a0c; font-size:16px; font-weight:800; text-decoration:none; padding:16px 36px; border-radius:12px; letter-spacing:-0.2px;">Open Redaxa</a>
+            ${button(appUrl, "Open Redaxa", 200)}
           </td>
         </tr>
 
         <tr>
           <td style="padding:32px 40px 40px; text-align:center;">
-            <p style="margin:0; font-size:13px; color:#5b5f66; line-height:1.6;">
+            <p style="margin:0; font-size:13px; color:${MUTED}; line-height:1.6;">
               We will never ask you for a password or an API key by email.<br>
-              Redaxa &middot; <a href="${escapeHtml(appUrl)}" style="color:#5b5f66;">${escapeHtml(hostOf(appUrl))}</a>
+              Redaxa &middot; <a href="${escapeHtml(appUrl)}" style="color:${MUTED};">${escapeHtml(hostOf(appUrl))}</a>
             </p>
           </td>
         </tr>
@@ -443,10 +463,10 @@ export function passwordChangedHtml(firstName: string | null | undefined, when: 
 </head>
 <body style="margin:0; padding:0; background:#050506; font-family:'Segoe UI', Arial, sans-serif;">
 <div style="display:none; max-height:0; overflow:hidden; opacity:0;">${intro}</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#050506; padding:48px 16px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#050506" style="background:#050506; padding:48px 16px;">
   <tr>
     <td align="center">
-      <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px; width:100%; background:#0a0a0c; border:1px solid #2a2d33; border-radius:20px; overflow:hidden;">
+      <table role="presentation" width="560" cellpadding="0" cellspacing="0" bgcolor="#0a0a0c" style="max-width:560px; width:100%; background:#0a0a0c; border:1px solid #2a2d33; border-radius:20px; overflow:hidden;">
 
         <tr>
           <td style="background:radial-gradient(circle at 20% 0%, ${ACCENT}4d 0%, transparent 60%), #0a0a0c; padding:40px 40px 32px; text-align:center;">
@@ -473,7 +493,7 @@ export function passwordChangedHtml(firstName: string | null | undefined, when: 
 
         <tr>
           <td style="padding:32px 40px 40px; text-align:center;">
-            <p style="margin:0; font-size:13px; color:#5b5f66; line-height:1.6;">
+            <p style="margin:0; font-size:13px; color:${MUTED}; line-height:1.6;">
               We will never ask you for your password by email.<br>
               This notice is sent every time the password changes and cannot be turned off.
             </p>
