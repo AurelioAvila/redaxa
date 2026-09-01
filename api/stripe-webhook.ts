@@ -19,7 +19,15 @@ function rawBody(request: IncomingMessage): Promise<Buffer> {
 
 async function syncSubscription(subscription: Stripe.Subscription, fallbackUserId?: string): Promise<void> {
   const userId = subscription.metadata.redaxa_user_id || fallbackUserId || await userForCustomer(String(subscription.customer));
-  if (!userId) throw new Error("Subscription cannot be linked to an account.");
+  if (!userId) {
+    // One Stripe account serves several products, and Stripe fans every
+    // subscription event out to every endpoint listening for that type. An
+    // event we cannot link is another product's, not a lost Redaxa sale, so
+    // skip it and return 200: throwing made Stripe retry it forever. Logged
+    // in case a genuine orphan ever turns up here.
+    console.error("Skipping subscription not linked to a Redaxa account:", subscription.id, JSON.stringify(subscription.metadata));
+    return;
+  }
   const item = subscription.items.data[0];
   await patchAccount(userId, {
     stripe_customer_id: String(subscription.customer),
