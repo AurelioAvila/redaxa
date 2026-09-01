@@ -32,6 +32,7 @@ declare global {
       requestAccess(message?: string): void;
       scanPrompt(text: string, options?: ScanRequestOptions): Promise<{ findings: Finding[]; redactedText: string; decision?: ScanDecision }>;
       request(path: string, body?: Record<string, unknown>, method?: "GET" | "POST"): Promise<Record<string, unknown>>;
+      download(path: string): Promise<Blob>;
     };
   }
 }
@@ -110,6 +111,30 @@ async function apiRequest(path: string, body?: Record<string, unknown>, method: 
     throw new Error(message);
   }
   return payload as Record<string, unknown>;
+}
+
+/**
+ * Fetches a file rather than JSON, through the same authentication.
+ *
+ * A plain `<a download>` would work on the web, where the session is a cookie
+ * the browser attaches by itself — and would silently produce a sign-in page
+ * instead of a file in the desktop app, where the session is a bearer token
+ * this code has to add. One path, so the export cannot work in one build and
+ * quietly fail in the other.
+ */
+async function apiDownload(path: string): Promise<Blob> {
+  const headers: Record<string, string> = {};
+  if (isTauri()) {
+    const token = await desktopAccessToken();
+    if (token) headers.Authorization = `Bearer ${token}`;
+  }
+  const response = await fetch(`${apiBase}${path}`, { method: "GET", headers });
+  if (!response.ok) {
+    const payload: unknown = await response.json().catch(() => ({}));
+    const message = typeof payload === "object" && payload !== null && "error" in payload ? String((payload as { error?: unknown }).error) : "We could not prepare that download.";
+    throw new Error(message);
+  }
+  return response.blob();
 }
 
 function accountControls(): { trigger: HTMLAnchorElement; login: HTMLAnchorElement; account: HTMLDivElement; email: HTMLSpanElement; signout: HTMLButtonElement; avatars: HTMLElement[]; closeMenu: () => void } {
@@ -458,7 +483,8 @@ async function boot(): Promise<void> {
       const payload = await apiRequest("/api/scan", { text, application, options: options ?? {} }) as { findings?: Finding[]; redactedText?: string; decision?: ScanDecision };
       return { findings: payload.findings ?? [], redactedText: payload.redactedText ?? "", decision: payload.decision };
     },
-    request: (path, body, method) => apiRequest(path, body, method)
+    request: (path, body, method) => apiRequest(path, body, method),
+    download: (path) => apiDownload(path)
   };
   controls.trigger.addEventListener("click", (event) => { event.preventDefault(); if (!config?.configured) { setMessage("Account setup is being completed. Please try again shortly.", true); } setMode("signup"); show(); });
   controls.login.addEventListener("click", (event) => { event.preventDefault(); if (!config?.configured) { setMessage("Account setup is being completed. Please try again shortly.", true); } setMode("signin"); show(); });

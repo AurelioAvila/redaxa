@@ -1,10 +1,11 @@
 import { corsHeaders, effectiveEntitlement, organizationMembershipFor, orgScanContextFor, protectedTermsFor, requireUser, supabaseService, supabaseUserById } from "./_billing.js";
 import { clientIp, rateLimited, rateLimitedShared } from "./_rateLimit.js";
+import { auditBoundary, auditCsv, defaultAuditRows, maxAuditRows, type AuditEvent } from "./_audit.js";
 import { inspectPrompt, type ScanOptions } from "../scanner.js";
 import { buildOrganizationPolicy, defaultPersonalPolicy, evaluatePolicy, type PolicyRule } from "../policy.js";
 
 type RequestLike = { method?: string; body?: unknown; headers?: Record<string, string | string[] | undefined> };
-type ResponseLike = { setHeader(name: string, value: string | string[]): void; status(code: number): ResponseLike; json(value: unknown): void; end(): void };
+type ResponseLike = { setHeader(name: string, value: string | string[]): void; status(code: number): ResponseLike; json(value: unknown): void; send?(body: string): void; end(body?: string): void };
 
 const maxPromptLength = 20_000;
 
@@ -39,6 +40,12 @@ async function recordScanEvent(userId: string, organizationId: string | null, ap
   }
 }
 
+function queryValue(request: RequestLike, name: string): string | undefined {
+  const query = (request as { query?: Record<string, string | string[] | undefined> }).query;
+  const raw = query?.[name];
+  return Array.isArray(raw) ? raw[0] : raw;
+}
+
 export default async function handler(request: RequestLike, response: ResponseLike): Promise<void> {
   const cors = corsHeaders(request);
   for (const [name, value] of Object.entries(cors)) response.setHeader(name, value);
@@ -53,24 +60,71 @@ export default async function handler(request: RequestLike, response: ResponseLi
   if (request.method === "GET") {
     try {
       const user = await requireUser(request, response);
-      const scope = Array.isArray((request as { query?: Record<string, string | string[]> }).query?.scope) ? undefined : (request as { query?: Record<string, string | undefined> }).query?.scope;
+      const scope = queryValue(request, "scope");
+      const format = queryValue(request, "format");
+      const from = auditBoundary(queryValue(request, "from"), false);
+      const to = auditBoundary(queryValue(request, "to"), true);
+      if (queryValue(request, "from") && !from) { response.status(400).json({ error: "The start date is not a date." }); return; }
+      if (queryValue(request, "to") && !to) { response.status(400).json({ error: "The end date is not a date." }); return; }
+      if (from && to && from > to) { response.status(400).json({ error: "The start date is after the end date." }); return; }
+
       let filter = `user_id=eq.${encodeURIComponent(user.id)}`;
       if (scope === "org") {
         const membership = await organizationMembershipFor(user.id);
         if (!membership || (membership.role !== "owner" && membership.role !== "admin")) { response.status(403).json({ error: "Only organization owners and admins can view team activity." }); return; }
         filter = `organization_id=eq.${encodeURIComponent(membership.organization_id)}`;
       }
-      const eventsResponse = await supabaseService(`/rest/v1/scan_events?${filter}&select=created_at,application,finding_kinds,finding_categories,finding_count,action,user_id&order=created_at.desc&limit=50`, { method: "GET" });
-      if (!eventsResponse.ok) { response.status(200).json({ events: [] }); return; }
-      const events = await eventsResponse.json() as Array<{ user_id: string } & Record<string, unknown>>;
-      // Resolve member emails so the org view reads as people, not UUIDs;
-      // capped, cached per distinct id, and only for the org scope.
+      // Both boundaries are ISO strings this function produced, never the
+      // caller's own text — see auditBoundary.
+      if (from) filter += `&created_at=gte.${encodeURIComponent(from)}`;
+      if (to) filter += `&created_at=lte.${encodeURIComponent(to)}`;
+
+      // An export reads the whole range; the dashboard reads a window of it.
+      const limit = format === "csv" ? maxAuditRows : defaultAuditRows;
+
+      // `count=exact` is what stops the dashboard from lying. The metrics used
+      // to be computed over whatever page had been fetched and then labelled
+      // "Team checks" — so an organization with five thousand checks read as
+      // fifty. The count is of the range, not of the page.
+      const eventsResponse = await supabaseService(
+        `/rest/v1/scan_events?${filter}&select=created_at,application,finding_kinds,finding_categories,finding_count,action,user_id&order=created_at.desc&limit=${limit}`,
+        { method: "GET", headers: { Prefer: "count=exact" } }
+      );
+      if (!eventsResponse.ok) { response.status(200).json({ events: [], total: 0, truncated: false }); return; }
+      const events = await eventsResponse.json() as AuditEvent[];
+
+      // Content-Range comes back as "0-49/1234"; the tail is the real total.
+      const total = Number.parseInt((eventsResponse.headers.get("content-range") ?? "").split("/")[1] ?? "", 10);
+      const rangeTotal = Number.isFinite(total) ? total : events.length;
+      const truncated = rangeTotal > events.length;
+
+      // Resolve member emails so an org view reads as people rather than
+      // UUIDs. An export gets a far higher cap than a screen does: a CSV with
+      // blank member columns past the tenth person is not an audit record.
       let emailById = new Map<string, string | null>();
       if (scope === "org") {
-        const ids = [...new Set(events.map((event) => event.user_id))].slice(0, 10);
+        const ids = [...new Set(events.map((event) => event.user_id))].slice(0, format === "csv" ? 200 : 10);
         emailById = new Map(await Promise.all(ids.map(async (id) => [id, (await supabaseUserById(id))?.email ?? null] as [string, string | null])));
       }
-      response.status(200).json({ events: events.map(({ user_id, ...event }) => ({ ...event, member: scope === "org" ? emailById.get(user_id) ?? null : undefined })) });
+
+      if (format === "csv") {
+        const stamp = `${from ? from.slice(0, 10) : "start"}_${to ? to.slice(0, 10) : new Date().toISOString().slice(0, 10)}`;
+        const filename = `redaxa-audit-${scope === "org" ? "organization" : "account"}-${stamp}.csv`;
+        const csv = auditCsv(events, emailById, scope === "org" ? "org" : "account", from, to, truncated);
+        response.setHeader("Content-Type", "text/csv; charset=utf-8");
+        response.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+        response.status(200);
+        if (response.send) response.send(csv); else response.end(csv);
+        return;
+      }
+
+      response.status(200).json({
+        events: events.map(({ user_id, ...event }) => ({ ...event, member: scope === "org" ? emailById.get(user_id) ?? null : undefined })),
+        // The dashboard needs both numbers to describe itself honestly: how
+        // many events exist in the range, and how many of them it is holding.
+        total: rangeTotal,
+        truncated
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : "";
       response.status(message === "UNAUTHORIZED" ? 401 : 500).json({ error: message === "UNAUTHORIZED" ? "UNAUTHORIZED" : "We could not load your activity." });
