@@ -321,8 +321,15 @@ main{width:100%;max-width:1280px;margin:0 auto;padding:36px 44px 96px}
 /* The org-activity list is a 4-column card grid; the admin snapshot, the
    per-member bars and the export button injected above the cards must span
    the full row instead of being squeezed into one cell. */
-#org-activity-list > .metrics,#org-activity-list > .bars-label,#org-activity-list > .analytics-row,#org-activity-list > #org-export-csv{grid-column:1 / -1}
+#org-activity-list > .metrics,#org-activity-list > .bars-label,#org-activity-list > .analytics-row,#org-activity-list > #org-export-csv,#org-activity-list > .audit-range,#org-activity-list > .audit-coverage{grid-column:1 / -1}
 #org-activity-list > #org-export-csv{justify-self:start}
+/* The date range and the line that says how much of the record is on screen.
+   The coverage line is not decoration: without it the panel is a confident
+   summary of an unstated fraction of the audit trail. */
+.audit-range{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.audit-range label{display:inline-flex;align-items:center;gap:7px;color:var(--text-3);font-size:11px;font-weight:650}
+.audit-range input{padding:6px 9px;border:1px solid var(--line);border-radius:7px;background:var(--panel);color:var(--text);font:inherit;font-size:11.5px}
+.audit-coverage{margin:2px 0 0;color:var(--text-3);font-size:11px;line-height:1.5}
 .entry strong{display:block;font-size:12px;font-weight:700;overflow-wrap:anywhere}
 .entry span{display:block;margin-top:6px;color:var(--text-3);font-size:11px;line-height:1.45;overflow-wrap:anywhere}
 .entry em{display:inline-block;margin-top:10px;color:var(--accent);font-size:10.5px;font-style:normal}
