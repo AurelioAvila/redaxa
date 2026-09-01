@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { formatChargedAmount, planLabel, sendWelcomeEmail, subscriptionHtml, subscriptionSubject, subscriptionText, welcomeHtml, welcomeText } from "./_email.js";
+import { formatChargedAmount, passwordChangedHtml, passwordChangedText, planLabel, sendWelcomeEmail, subscriptionHtml, subscriptionSubject, subscriptionText, welcomeHtml, welcomeText } from "./_email.js";
 
 const base = {
   to: "buyer@example.com",
@@ -152,6 +152,38 @@ assert.equal(formatChargedAmount(null, "eur", "month"), null);
     if (previousFrom === undefined) delete process.env.REDAXA_MAIL_FROM;
     else process.env.REDAXA_MAIL_FROM = previousFrom;
   }
+}
+
+// The notice sent once a password has actually changed. Redaxa was the only
+// product without one, because the password changes inside Supabase and
+// Supabase sends nothing.
+{
+  const when = "Mon, 01 Sep 2026 10:00:00 GMT";
+  const html = passwordChangedHtml("Giulia", when);
+  const text = passwordChangedText("Giulia", when);
+
+  assert.ok(html.startsWith("<!doctype html>"));
+  assert.ok(html.includes("Your password was changed, Giulia."));
+  assert.ok(html.includes(when));
+  assert.ok(html.includes("display:none"), "an inbox preview line, or clients invent one");
+  assert.ok(text.includes("reply to this message straight away"));
+  assert.ok(!text.includes("<"), "the text part must not carry markup");
+}
+
+{
+  // No link and no code, deliberately. Whoever reads this is not necessarily
+  // the person who made the change — that is why it exists — and by then the
+  // new password is set, so a "this wasn't me" button is the exact shape an
+  // attacker would forge on the one message a worried reader will click.
+  const html = passwordChangedHtml("Giulia", "Mon, 01 Sep 2026 10:00:00 GMT");
+  assert.ok(!/href=/i.test(html), "a security notice must offer nothing to click");
+  assert.ok(!/token=|reset|code/i.test(html), "and nothing worth forging");
+}
+
+{
+  const html = passwordChangedHtml('<script>alert("x")</script>', "now");
+  assert.ok(!html.includes("<script>"), "the name must be escaped into the markup");
+  assert.ok(html.includes("&lt;script&gt;"));
 }
 
 console.log("Redaxa email tests passed.");
