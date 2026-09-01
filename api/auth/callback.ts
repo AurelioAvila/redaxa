@@ -1,4 +1,5 @@
-import { corsHeaders, refreshSession, setSessionCookies, supabaseAuthUser } from "../_billing.js";
+import { appUrl, corsHeaders, markWelcomed, refreshSession, setSessionCookies, supabaseAuthUser, type AuthUser } from "../_billing.js";
+import { sendWelcomeEmail } from "../_email.js";
 
 type RequestLike = { method?: string; body?: unknown; headers?: Record<string, string | string[] | undefined> };
 type ResponseLike = { setHeader(name: string, value: string | string[]): void; status(code: number): ResponseLike; json(value: unknown): void; end(): void };
@@ -30,8 +31,47 @@ export default async function handler(request: RequestLike, response: ResponseLi
       return;
     }
     setSessionCookies(response, refreshed.access_token, refreshed.refresh_token, refreshed.expires_in ?? 3600);
+    await welcomeOnce(user);
     response.status(200).json({ email: user.email });
   } catch {
     response.status(500).json({ error: "We could not complete sign-in." });
+  }
+}
+
+/**
+ * Sends the welcome the first time an address is confirmed, and never again.
+ *
+ * This endpoint is reached by both flows Supabase redirects back through —
+ * email confirmation and password reset — so "someone landed here" is not on
+ * its own a signup. Two conditions together make it one: the account has
+ * never been welcomed, and it was created in the last day. The second is what
+ * stops every existing customer who resets a password from being greeted as
+ * though they were new.
+ *
+ * Best-effort throughout: the session cookies are already set by the time
+ * this runs, and a mail provider having a bad minute must not turn a
+ * completed sign-in into a 500.
+ */
+const WELCOME_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+async function welcomeOnce(user: AuthUser): Promise<void> {
+  try {
+    if (!user.emailConfirmedAt) return;
+    if (user.metadata?.welcomed_at) return;
+    const createdAt = user.createdAt ? Date.parse(user.createdAt) : NaN;
+    if (!Number.isFinite(createdAt) || Date.now() - createdAt > WELCOME_WINDOW_MS) return;
+
+    // Marked before sending, not after: a send that succeeds and a mark that
+    // fails would greet the same person on every later reset. One missed
+    // welcome is a smaller fault than a repeating one.
+    await markWelcomed(user.id, user.metadata);
+    const firstName = typeof user.metadata?.first_name === "string" ? user.metadata.first_name : null;
+    // appUrl() rather than anything derived from the request: a link built
+    // from an attacker-supplied Host header is how a welcome email becomes a
+    // phishing page. It is also the variable the rest of the API already
+    // uses, so there is one answer to "where does the product live".
+    await sendWelcomeEmail(user.email, firstName, appUrl());
+  } catch (error) {
+    console.error("redaxa welcome failed", String(error).slice(0, 300));
   }
 }

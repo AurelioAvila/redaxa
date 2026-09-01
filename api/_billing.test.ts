@@ -72,7 +72,8 @@ await withMockFetch(
   },
   async () => {
     const user = await billing.requireUser({ headers: { cookie: "ps_at=valid-token" } });
-    assert.deepEqual(user, { id: "user-1", email: "person@example.com" });
+    assert.equal(user?.id, "user-1");
+    assert.equal(user?.email, "person@example.com");
   }
 );
 
@@ -86,7 +87,8 @@ await withMockFetch(
   },
   async () => {
     const user = await billing.requireUser({ headers: { authorization: "Bearer bearer-token" } });
-    assert.deepEqual(user, { id: "user-2", email: "desktop@example.com" });
+    assert.equal(user?.id, "user-2");
+    assert.equal(user?.email, "desktop@example.com");
   }
 );
 
@@ -106,7 +108,8 @@ await withMockFetch(
   async () => {
     const response = mockResponse();
     const user = await billing.requireUser({ headers: { cookie: "ps_at=expired-token; ps_rt=refresh-token" } }, response);
-    assert.deepEqual(user, { id: "user-1", email: "person@example.com" });
+    assert.equal(user?.id, "user-1");
+    assert.equal(user?.email, "person@example.com");
     const cookies = response.headers["Set-Cookie"] as string[];
     assert.match(cookies[0], /^ps_at=new-access;/);
   }

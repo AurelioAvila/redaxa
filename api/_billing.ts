@@ -105,14 +105,40 @@ export async function refreshSession(refreshToken: string): Promise<{ access_tok
   return response.json() as Promise<{ access_token: string; refresh_token: string; expires_in: number; user?: { email?: string } }>;
 }
 
-export async function supabaseAuthUser(accessToken: string): Promise<{ id: string; email: string } | null> {
+export type AuthUser = {
+  id: string;
+  email: string;
+  /** Present once the address has been confirmed. */
+  emailConfirmedAt?: string;
+  createdAt?: string;
+  /** Supabase's `user_metadata`. `welcomed_at` is written here rather than
+   *  into a table of our own: it is one flag about one account, and a
+   *  migration for it would be a table that never grows a second column. */
+  metadata?: Record<string, unknown>;
+};
+
+export async function supabaseAuthUser(accessToken: string): Promise<AuthUser | null> {
   const response = await fetch(`${supabaseUrl()}/auth/v1/user`, {
     headers: { apikey: required("SUPABASE_PUBLISHABLE_KEY"), Authorization: `Bearer ${accessToken}` }
   });
   if (!response.ok) return null;
-  const body = await response.json() as { id?: string; email?: string };
+  const body = await response.json() as { id?: string; email?: string; email_confirmed_at?: string; created_at?: string; user_metadata?: Record<string, unknown> };
   if (!body.id || !body.email) return null;
-  return { id: body.id, email: body.email };
+  return {
+    id: body.id,
+    email: body.email,
+    emailConfirmedAt: body.email_confirmed_at,
+    createdAt: body.created_at,
+    metadata: body.user_metadata,
+  };
+}
+
+/** Records that the welcome has gone out, so it goes out exactly once. */
+export async function markWelcomed(userId: string, metadata: Record<string, unknown> | undefined): Promise<void> {
+  await supabaseService(`/auth/v1/admin/users/${encodeURIComponent(userId)}`, {
+    method: "PUT",
+    body: JSON.stringify({ user_metadata: { ...(metadata ?? {}), welcomed_at: new Date().toISOString() } }),
+  });
 }
 
 // Exported for other API modules (scan events audit): a service-role REST
