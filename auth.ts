@@ -350,6 +350,10 @@ async function boot(): Promise<void> {
   currentEmail = await loadSession();
   await refreshEntitlement();
   window.addEventListener("focus", () => { void refreshEntitlement(); });
+  // Set only while the recovery link's own screen is open, and cleared the
+  // moment it is used. Its presence is what tells the one submit handler
+  // below that this is a password being set rather than a sign-in.
+  let recoveryToken: string | null = null;
   const show = (): void => { dialog.backdrop.classList.add("open"); dialog.email.focus(); };
   const close = (): void => dialog.backdrop.classList.remove("open");
   const setMessage = (message: string, error = false): void => { dialog.message.textContent = message; dialog.message.classList.toggle("error", error); };
@@ -413,6 +417,42 @@ async function boot(): Promise<void> {
     history.replaceState(null, "", location.pathname + location.search);
     const hashAccessToken = hashParams.get("access_token");
     const hashRefreshToken = hashParams.get("refresh_token");
+
+    // A recovery link and a confirmation link both come back with tokens in
+    // the fragment, and both were handled identically: exchanged for a
+    // session and greeted with "Email confirmed — you're signed in."
+    //
+    // For a confirmation that is right. For a recovery it meant the reset
+    // never happened. Someone who had forgotten their password asked for a
+    // link, followed it, was told something unrelated had succeeded, and
+    // still had the old password — with no form anywhere that could set a
+    // new one. The whole flow led nowhere.
+    if (hashParams.get("type") === "recovery" && hashAccessToken) {
+      // Deliberately does not exchange the recovery token for a normal
+      // session first. That token authorises exactly one thing, and holding
+      // a full session open on a page whose whole premise is "someone may
+      // have lost control of this account" widens what a stolen link is
+      // worth.
+      setMode("recovery");
+      dialog.title.textContent = "Choose a new password";
+      dialog.description.textContent = "Use a password with at least 12 characters.";
+      // The dialog exposes a wrapper for the password fields but not for the
+      // email one, so this reaches for its label rather than adding a field
+      // to the shape for a single screen.
+      dialog.email.closest("label")?.setAttribute("hidden", "hidden");
+      dialog.email.required = false;
+      dialog.passwordField.hidden = false;
+      dialog.password.required = true;
+      dialog.password.value = "";
+      dialog.password.autocomplete = "new-password";
+      dialog.password.minLength = 12;
+      dialog.submit.textContent = "Set the new password";
+      dialog.switcher.hidden = true;
+      recoveryToken = hashAccessToken;
+      show();
+      return;
+    }
+
     if (hashAccessToken && hashRefreshToken) {
       try {
         const payload = await apiRequest("/api/auth/callback", {
@@ -617,6 +657,21 @@ async function boot(): Promise<void> {
         renderAccount(email); await refreshEntitlement();
         if (localStorage.getItem(pendingInviteKey)) { await acceptPendingInvite(); }
         else { setMessage("Signed in successfully."); window.setTimeout(close, 700); }
+      } else if (recoveryToken) {
+        // The second half of a recovery: the link has been followed and a new
+        // password typed. Cleared before the await so a double submit cannot
+        // spend the same token twice.
+        const token = recoveryToken;
+        recoveryToken = null;
+        dialog.submit.textContent = "Saving…";
+        await apiRequest("/api/auth/recover?action=finish", {
+          access_token: token,
+          password: dialog.password.value,
+        });
+        dialog.submit.textContent = restingLabel;
+        dialog.switcher.hidden = false;
+        setMode("signin");
+        setMessage("Password changed. Sign in with the new one.");
       } else {
         dialog.submit.textContent = "Sending link…";
         await apiRequest("/api/auth/recover", { email: dialog.email.value.trim(), redirect_to: authRedirect() });
