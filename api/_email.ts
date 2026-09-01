@@ -416,6 +416,102 @@ export function welcomeText(firstName: string | null | undefined, appUrl: string
   ].join("\n");
 }
 
+/**
+ * The notice sent once a password has actually changed.
+ *
+ * Redaxa was the only one of the products without this, and the only one
+ * where the password does not change inside its own code — Supabase owns
+ * that, and Supabase sends nothing. The reset now goes through our own
+ * endpoint precisely so this can be true: the notice follows a change that
+ * really happened, rather than a request that might not have.
+ *
+ * No link and no code in it, deliberately. Whoever reads this is not
+ * necessarily the person who made the change — that is the entire reason it
+ * exists — but by the time it arrives the new password is already set, so a
+ * "this wasn't me" button would be the exact shape an attacker would forge,
+ * on the one message a worried reader is most likely to click.
+ */
+export function passwordChangedHtml(firstName: string | null | undefined, when: string): string {
+  const name = escapeHtml(firstName || "there");
+  const intro = `The password on your Redaxa account was changed on ${escapeHtml(when)}.`;
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Redaxa</title>
+</head>
+<body style="margin:0; padding:0; background:#050506; font-family:'Segoe UI', Arial, sans-serif;">
+<div style="display:none; max-height:0; overflow:hidden; opacity:0;">${intro}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#050506; padding:48px 16px;">
+  <tr>
+    <td align="center">
+      <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px; width:100%; background:#0a0a0c; border:1px solid #2a2d33; border-radius:20px; overflow:hidden;">
+
+        <tr>
+          <td style="background:radial-gradient(circle at 20% 0%, ${ACCENT}4d 0%, transparent 60%), #0a0a0c; padding:40px 40px 32px; text-align:center;">
+            <div style="font-size:15px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:${ACCENT};">Security notice</div>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:0 40px; text-align:center;">
+            <h1 style="margin:0; font-size:32px; line-height:1.25; font-weight:800; color:#f3f4f6; letter-spacing:-0.5px;">Your password was changed, ${name}.</h1>
+            <p style="margin:16px 0 0; font-size:16px; line-height:1.6; color:#9ca3af;">${intro}</p>
+          </td>
+        </tr>
+
+        <tr><td style="padding:32px 40px 0;"><div style="height:1px; background:#2a2d33;"></div></td></tr>
+
+        <tr>
+          <td style="padding:28px 40px 0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0f0f12; border:1px solid #2a2d33; border-radius:12px;">
+              <tr><td style="padding:18px; color:#9ca3af; font-size:15px; line-height:1.6;">If this was you, nothing else is needed.<br>If it was not, reply to this message straight away — somebody else set that password.</td></tr>
+            </table>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:32px 40px 40px; text-align:center;">
+            <p style="margin:0; font-size:13px; color:#5b5f66; line-height:1.6;">
+              We will never ask you for your password by email.<br>
+              This notice is sent every time the password changes and cannot be turned off.
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>`;
+}
+
+export function passwordChangedText(firstName: string | null | undefined, when: string): string {
+  const name = firstName || "there";
+  return [
+    `Your password was changed, ${name}.`,
+    "",
+    `The password on your Redaxa account was changed on ${when}.`,
+    "",
+    "If this was you, nothing else is needed. If it was not, reply to this message straight away - somebody else set that password.",
+    "",
+    "We will never ask you for your password by email.",
+  ].join("\n");
+}
+
+/** Sends the notice. Never throws; the password has already changed. */
+export async function sendPasswordChangedEmail(to: string, firstName: string | null | undefined): Promise<boolean> {
+  const when = new Date().toUTCString();
+  return send(
+    to,
+    "Your Redaxa password was changed",
+    passwordChangedHtml(firstName, when),
+    passwordChangedText(firstName, when),
+  );
+}
+
 /** Sends the welcome. Never throws; the caller has already succeeded. */
 export async function sendWelcomeEmail(to: string, firstName: string | null | undefined, appUrl: string): Promise<boolean> {
   return send(to, "Welcome to Redaxa", welcomeHtml(firstName, appUrl), welcomeText(firstName, appUrl));
