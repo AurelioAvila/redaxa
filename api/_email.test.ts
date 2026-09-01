@@ -137,8 +137,12 @@ assert.equal(formatChargedAmount(null, "eur", "month"), null);
       true,
     );
     assert.equal(sent.length, 1);
-    const payload = sent[0] as { from: string; text: string; html: string };
+    const payload = sent[0] as { from: string; text: string; html: string; reply_to: string };
     assert.equal(payload.from, "Redaxa <noreply@example.com>");
+    // The subscription email tells the reader to reply. Sent from a noreply@
+    // address, that promise is only true if a Reply-To carries it somewhere.
+    assert.ok(payload.reply_to, "every message must be replyable");
+    assert.ok(payload.reply_to.includes("@"));
     assert.ok(payload.text, "every message carries a text part");
     assert.ok(payload.html);
   } finally {

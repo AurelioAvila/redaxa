@@ -269,7 +269,12 @@ async function send(to: string, subject: string, html: string, text: string): Pr
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
-      body: JSON.stringify({ from, to, subject, html, text }),
+      // reply_to, because the subscription email says "Questions? Just reply
+      // to this email" and the address it is sent from is a noreply@. A
+      // promise in the copy that the transport quietly breaks is worse than
+      // not making it: the customer writes, hears nothing, and concludes
+      // there is nobody there.
+      body: JSON.stringify({ from, to, subject, html, text, reply_to: OWNER_INBOX }),
     });
     if (!response.ok) {
       console.error("redaxa mail failed", response.status, (await response.text()).slice(0, 300));
