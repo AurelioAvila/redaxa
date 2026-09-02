@@ -18,7 +18,8 @@ that was quietly half-working.
 - Nothing is sent at all when no sender address is configured, instead of
   half-sending.
 - Stripe webhooks belonging to the other two products on the same account
-  are acknowledged and ignored instead of returning 500.
+  are acknowledged and ignored instead of returning 500, and only
+  subscriptions that are actually Redaxa's are announced.
 - The audit trail exports into something an auditor can be handed.
 - `--dim` text meets a readable contrast ratio, with a test to keep it there.
 
