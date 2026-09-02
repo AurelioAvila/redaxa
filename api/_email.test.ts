@@ -9,7 +9,7 @@ const base = {
   priceLabel: "€6.99 / month",
   renewsOn: "September 30, 2026",
   trialing: false,
-  appUrl: "https://redaxa.app",
+  appUrl: "https://redaxa.example",
 };
 
 // A trial has charged nobody anything. Telling someone their subscription is
@@ -80,8 +80,8 @@ assert.equal(formatChargedAmount(null, "eur", "month"), null);
 // The welcome: sent once, when an address is first confirmed. Supabase sends
 // the confirmation link itself; nothing explained the product until this.
 {
-  const html = welcomeHtml("Giulia", "https://redaxa.app");
-  const text = welcomeText("Giulia", "https://redaxa.app");
+  const html = welcomeHtml("Giulia", "https://redaxa.example");
+  const text = welcomeText("Giulia", "https://redaxa.example");
   assert.ok(html.startsWith("<!doctype html>"));
   assert.ok(html.includes("Your account is confirmed, Giulia."));
   assert.ok(html.includes("display:none"), "an inbox preview line, or clients invent one");
@@ -93,19 +93,19 @@ assert.equal(formatChargedAmount(null, "eur", "month"), null);
   // A welcome that trains people to click authentication links out of an
   // inbox is teaching the exact habit that gets them phished — and this is a
   // product sold on not being careless with secrets.
-  const html = welcomeHtml("Giulia", "https://redaxa.app");
+  const html = welcomeHtml("Giulia", "https://redaxa.example");
   assert.ok(!/token=|access_token|reset|confirm[^e]/i.test(html), "no credential-shaped link belongs in a welcome");
 }
 
 {
-  const html = welcomeHtml('<script>alert("x")</script>', "https://redaxa.app");
+  const html = welcomeHtml('<script>alert("x")</script>', "https://redaxa.example");
   assert.ok(!html.includes("<script>"), "the name must be escaped into the markup");
   assert.ok(html.includes("&lt;script&gt;"));
 }
 
 {
   // No name is not an error; it just loses the name.
-  assert.ok(welcomeHtml(null, "https://redaxa.app").includes("confirmed, there."));
+  assert.ok(welcomeHtml(null, "https://redaxa.example").includes("confirmed, there."));
 }
 
 // The sender has no default. It used to fall back to an address on a domain
@@ -125,7 +125,7 @@ assert.equal(formatChargedAmount(null, "eur", "month"), null);
     process.env.RESEND_API_KEY = "re_test";
     delete process.env.REDAXA_MAIL_FROM;
     assert.equal(
-      await sendWelcomeEmail("someone@example.com", "Giulia", "https://redaxa.app"),
+      await sendWelcomeEmail("someone@example.com", "Giulia", "https://redaxa.example"),
       false,
       "an unconfigured sender must refuse rather than guess a domain",
     );
@@ -133,7 +133,7 @@ assert.equal(formatChargedAmount(null, "eur", "month"), null);
 
     process.env.REDAXA_MAIL_FROM = "Redaxa <noreply@example.com>";
     assert.equal(
-      await sendWelcomeEmail("someone@example.com", "Giulia", "https://redaxa.app"),
+      await sendWelcomeEmail("someone@example.com", "Giulia", "https://redaxa.example"),
       true,
     );
     assert.equal(sent.length, 1);
