@@ -34,14 +34,28 @@ jobs:
       # skips the job with a visible warning rather than failing the run
       # red. The PAT is a personal credential tied to a GitHub account, not
       # something that can be generated from inside a workflow.
-      - name: Check for the winget PAT
+      #
+      # The same gate covers the other reason there is nothing to do:
+      # winget-releaser only ever *updates* a package, and exits 1 when the
+      # identifier is absent from winget-pkgs. Until the first new-package
+      # pull request is merged by a moderator, that is the guaranteed
+      # outcome of every release here - a red run for an expected state,
+      # which is how a red run stops meaning anything.
+      - name: Check the PAT and that the package is in the index
         id: gate
         run: |
           if [ -z "${{ secrets.WINGET_TOKEN }}" ]; then
             echo "::warning::WINGET_TOKEN secret is not set; skipping the winget submission"
             echo "skip=true" >> "$GITHUB_OUTPUT"
           else
-            echo "skip=false" >> "$GITHUB_OUTPUT"
+            INDEX="https://api.github.com/repos/microsoft/winget-pkgs/contents"
+            CODE=$(curl -s -o /dev/null -w '%{http_code}' "$INDEX/manifests/a/AurelioAvila/Redaxa")
+            if [ "$CODE" = "404" ]; then
+              echo "::warning::AurelioAvila.Redaxa is not in winget-pkgs yet, so there is no version to update. The new-package pull request must be merged by a moderator first; skipping."
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "skip=false" >> "$GITHUB_OUTPUT"
+            fi
           fi
 
       - if: steps.gate.outputs.skip != 'true'
