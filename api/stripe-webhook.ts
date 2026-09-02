@@ -17,7 +17,11 @@ function rawBody(request: IncomingMessage): Promise<Buffer> {
   });
 }
 
-async function syncSubscription(subscription: Stripe.Subscription, fallbackUserId?: string): Promise<void> {
+/** Records the subscription against its Redaxa account and returns that
+ *  account id, or null when the subscription belongs to another product.
+ *  Callers must treat null as "not ours" — see the announce call in the
+ *  handler. */
+export async function syncSubscription(subscription: Stripe.Subscription, fallbackUserId?: string): Promise<string | null> {
   const userId = subscription.metadata.redaxa_user_id || fallbackUserId || await userForCustomer(String(subscription.customer));
   if (!userId) {
     // One Stripe account serves several products, and Stripe fans every
@@ -26,7 +30,7 @@ async function syncSubscription(subscription: Stripe.Subscription, fallbackUserI
     // skip it and return 200: throwing made Stripe retry it forever. Logged
     // in case a genuine orphan ever turns up here.
     console.error("Skipping subscription not linked to a Redaxa account:", subscription.id, JSON.stringify(subscription.metadata));
-    return;
+    return null;
   }
   const item = subscription.items.data[0];
   await patchAccount(userId, {
@@ -41,6 +45,7 @@ async function syncSubscription(subscription: Stripe.Subscription, fallbackUserI
     billing_interval: subscription.metadata.interval ?? item?.price.recurring?.interval ?? null,
     seat_count: item?.quantity ?? 1
   });
+  return userId;
 }
 
 /**
@@ -120,8 +125,12 @@ export default async function handler(request: WebhookRequest, response: Respons
     } else if (event.type === "customer.subscription.created" || event.type === "customer.subscription.updated") {
       const eventSubscription = event.data.object as Stripe.Subscription;
       const subscription = await stripe.subscriptions.retrieve(eventSubscription.id);
-      await syncSubscription(subscription);
-      if (event.type === "customer.subscription.created") await announceSubscription(subscription);
+      const userId = await syncSubscription(subscription);
+      // Only announce what syncSubscription could actually claim. This used
+      // to fire on every subscription in the account, so a PC Tweaker sale
+      // mailed its buyer a Redaxa welcome and reported a Redaxa sale that
+      // never happened.
+      if (userId && event.type === "customer.subscription.created") await announceSubscription(subscription);
     } else if (event.type === "customer.subscription.deleted") {
       const subscription = event.data.object as Stripe.Subscription;
       const userId = subscription.metadata.redaxa_user_id || await userForCustomer(String(subscription.customer));
