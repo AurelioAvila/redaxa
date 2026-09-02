@@ -40,7 +40,8 @@ your account or your data changes.
 ## Elsewhere
 
 - Stripe webhooks for the other two products sharing this account are
-  acknowledged and ignored instead of returning 500.
+  acknowledged and ignored instead of returning 500, and only subscriptions
+  that are actually Redaxa's get announced.
 - Subscription confirmation goes to the person who actually started it.
 - The audit trail exports into something an auditor can be handed.
 - `--dim` text meets a readable contrast ratio, checked by a test from now on.
