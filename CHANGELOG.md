@@ -1,5 +1,53 @@
 # Changelog
 
+## v0.3.2 — 2026-09-03
+
+The key rotation 0.3.1 announced but did not ship, plus the account email
+that was quietly half-working.
+
+- **Update signing.** 0.3.1's notes claimed Redaxa had moved to its own
+  signing key; that release still shipped the old *shared* public key, so
+  every install in the field trusts it. 0.3.2 ships the Redaxa-only key and
+  is signed with the shared one — the last release that will be. 0.3.3
+  onward signs with Redaxa's key alone.
+- The password reset actually resets the password.
+- New accounts get a welcome message; every message carries a text part
+  beside the HTML, survives Outlook, and "just reply to this email" is true.
+- Signup and subscription mail no longer points new accounts at a
+  competitor's site, which it did twice per message.
+- Nothing is sent at all when no sender address is configured, instead of
+  half-sending.
+- Stripe webhooks belonging to the other two products on the same account
+  are acknowledged and ignored instead of returning 500.
+- The audit trail exports into something an auditor can be handed.
+- `--dim` text meets a readable contrast ratio, with a test to keep it there.
+
+## v0.3.1 — 2026-08-30
+
+Security-only. Written down after the fact: this release shipped without an
+entry here.
+
+- Intended to give Redaxa its own update-signing key instead of sharing one
+  with PC Tweaker and the PC Tweaker Uninstaller. The new key was generated
+  and the notes announced it, but the shipped configuration still carried
+  the old shared public key — see 0.3.2, which completes it.
+
+## v0.3.0 — 2026-08-29
+
+- New brand mark: a padlock with a face, replacing the violet R monogram,
+  matching the icon already live on the Chrome Web Store listing.
+- Dashboard history rendering escapes identifiers and uses safe DOM APIs
+  instead of building HTML from strings.
+- Hardened CORS handling.
+- Folded `/api/auth-config` into `/api/auth/session` to stay under the
+  platform's function cap.
+
+## v0.2.0 — 2026-08-23
+
+Renamed from PromptShield. A rebrand, not a rewrite: every feature and
+guarantee is unchanged. The old name turned out to be in use by several
+unrelated products, including an established one with its own domain.
+
 ## v0.1.11 — 2026-08-21
 
 Layout fix: the Organization activity admin snapshot spans the full width.
