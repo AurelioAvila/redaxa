@@ -12,7 +12,7 @@
     "build:desktop": "npm run build && node scripts/build-desktop.mjs",
     "build:web": "npm run build && node scripts/build-web.mjs",
     "check": "tsc --noEmit",
-    "test": "tsx scanner.test.ts && tsx policy.test.ts && tsx tokens.test.ts && tsx api/_billing.test.ts && tsx api/auth/session.test.ts && tsx api/_email.test.ts && tsx api/_audit.test.ts && tsx api/stripe-webhook.test.ts",
+    "test": "tsx scanner.test.ts && tsx policy.test.ts && tsx tokens.test.ts && tsx api/_billing.test.ts && tsx api/auth/session.test.ts && tsx api/_email.test.ts && tsx api/_audit.test.ts && tsx api/_stripe-webhook.test.ts",
     "start": "npm run build && tsx server.ts",
     "tauri": "tauri"
   },

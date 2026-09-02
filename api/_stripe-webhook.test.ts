@@ -81,4 +81,4 @@ await withMockFetch(async () => ok([]), async () => {
   assert.equal(await syncSubscription(subscription({}), "user-3"), "user-3");
 });
 
-console.log("stripe-webhook.test.ts ok");
+console.log("_stripe-webhook.test.ts ok");
