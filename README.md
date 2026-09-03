@@ -5,8 +5,8 @@
 <h1 align="center">Redaxa</h1>
 
 <p align="center">
-  <strong>Catch what you're about to leak, before it leaves.</strong><br>
-  Emails, secrets, cards, IBANs, private keys — flagged and redactable before you paste into ChatGPT, Claude, Gemini, Copilot or Perplexity.
+  <strong>Catch what you're about to leak, before it reaches an AI tool.</strong><br>
+  Emails, secrets, cards, IBANs, private keys — flagged and redactable before you paste into ChatGPT, Claude, Gemini, Copilot or Perplexity. Scanned on our backend, not sent to any AI provider — details in <a href="#privacy">Privacy</a> below.
 </p>
 
 <p align="center">
