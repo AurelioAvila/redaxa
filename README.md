@@ -24,9 +24,11 @@
 </p>
 
 **Fastest way to try it — [web app](https://promptshield-beta.vercel.app), nothing to install** ·
-[⬇ Windows desktop app](../../releases/latest) (Certum-signed releases from v0.3.3; publisher: **Aurelio Avila**) ·
+[⬇ Windows desktop app](../../releases/latest) (v0.3.3 EXE and MSI installers verified as Certum-signed; publisher: **Aurelio Avila**) ·
 [Changelog](CHANGELOG.md) · [Privacy Policy](https://promptshield-beta.vercel.app/privacy.html) ·
 [Terms](https://promptshield-beta.vercel.app/terms.html)
+
+See the [Windows signing inventory and verification guide](https://github.com/AurelioAvila/.github/blob/master/CODE_SIGNING.md). This claim applies to the listed Windows installers, not older builds, the web app or browser extension.
 
 > The browser extension (source in [`browser-extension/`](browser-extension))
 > is not yet published on the Chrome Web Store — pending review.
