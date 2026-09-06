@@ -49,6 +49,8 @@ const base = {
 assert.equal(planLabel("business", "year"), "Business — Yearly");
 assert.equal(planLabel("personal", "month"), "Personal — Monthly");
 assert.equal(planLabel(null, null), "Redaxa");
+assert.equal(planLabel("monthly", "month"), "Redaxa — Monthly");
+assert.equal(planLabel("yearly", "year"), "Redaxa — Yearly");
 
 // Read from the price rather than a table of plan names, which would drift
 // from the dashboard silently.
