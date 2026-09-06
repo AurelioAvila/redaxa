@@ -80,7 +80,10 @@ function hostOf(url: string): string {
 }
 
 export function planLabel(plan: string | null, interval: string | null): string {
-  const name = plan === "business" ? "Business" : plan === "personal" ? "Personal" : plan || "Redaxa";
+  // Legacy metadata sometimes contains a billing cadence instead of a tier.
+  // Do not invent an entitlement or repeat "monthly — Monthly".
+  const cadenceOnly = ["month", "monthly", "year", "yearly", "annual"].includes((plan || "").toLowerCase());
+  const name = plan === "business" ? "Business" : plan === "personal" ? "Personal" : cadenceOnly ? "Redaxa" : plan || "Redaxa";
   const cadence = interval === "year" ? "Yearly" : interval === "month" ? "Monthly" : null;
   return cadence ? `${name} — ${cadence}` : name;
 }
@@ -288,6 +291,7 @@ async function send(to: string, subject: string, html: string, text: string): Pr
   try {
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
+      signal: AbortSignal.timeout(10000),
       headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
       // reply_to, because the subscription email says "Questions? Just reply
       // to this email" and the address it is sent from is a noreply@. A
@@ -297,12 +301,12 @@ async function send(to: string, subject: string, html: string, text: string): Pr
       body: JSON.stringify({ from, to, subject, html, text, reply_to: OWNER_INBOX }),
     });
     if (!response.ok) {
-      console.error("redaxa mail failed", response.status, (await response.text()).slice(0, 300));
+      console.error("redaxa mail failed", response.status);
       return false;
     }
     return true;
   } catch (error) {
-    console.error("redaxa mail threw", String(error).slice(0, 300));
+    console.error("redaxa mail request failed");
     return false;
   }
 }
