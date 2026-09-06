@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to Redact Sensitive Data Before ChatGPT | Redaxa</title>
+<meta name="description" content="A practical checklist for removing emails, API keys and client identifiers from AI prompts while keeping useful context. Includes a fictional before-and-after example.">
+<link rel="canonical" href="https://promptshield-beta.vercel.app/redact-sensitive-data-before-chatgpt.html">
+<meta property="og:type" content="article"><meta property="og:title" content="Keep the question. Remove the secrets.">
+<meta property="og:description" content="A practical prompt privacy checklist from Redaxa by Aurelio Avila.">
+<meta property="og:url" content="https://promptshield-beta.vercel.app/redact-sensitive-data-before-chatgpt.html">
+<meta property="og:image" content="https://promptshield-beta.vercel.app/og-image.png">
+<link rel="icon" type="image/svg+xml" href="outputs/redaxa-mark.svg">
+<style>
+:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#08090c;color:#f5f7fa;line-height:1.7}*{box-sizing:border-box}body{margin:0}header,main,footer{max-width:920px;margin:auto;padding:24px}header,footer{border-bottom:1px solid #252a34}a{color:#b8a6ff}header a{font-weight:700}main{padding-top:60px}h1{font-size:clamp(2.6rem,7vw,4.8rem);line-height:1.04;letter-spacing:-.045em;max-width:800px}h2{line-height:1.2}p,li{color:#bac0ca}section{margin:32px 0;padding:28px;border:1px solid #252a34;border-radius:16px;background:#0d0f14}.label{color:#b8a6ff;letter-spacing:.1em;font-size:.8rem;text-transform:uppercase}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#08090c;padding:20px;border-radius:10px;font-size:1rem}.button{display:inline-block;background:#7c5cfc;color:white;padding:12px 20px;border-radius:10px;text-decoration:none;font-weight:700}:focus-visible{outline:3px solid #ffb224;outline-offset:4px}@media(max-width:500px){section{padding:20px}main{padding-top:28px}}
+</style></head><body>
+<header><a href="/">Redaxa</a> · Privacy, before AI</header><main>
+<p class="label">Practical guide · By Aurelio Avila · September 6, 2026</p>
+<h1>Keep the question.<br>Remove the secrets.</h1>
+<p>You need help rewriting a client email or debugging an error. The AI needs the problem and enough context to understand it. It usually does not need a real email address, a live credential or a customer's account number.</p>
+<section><h2>1. Reduce what you share first</h2><p>Copy the relevant paragraph or error message, not the full mailbox, customer record or configuration file. Replace names and internal project references with consistent labels. Keep the sequence of events and the technical details that matter to the question.</p><p>Check your organization's rules before sharing work material with any external service, including a scanning service.</p></section>
+<section><h2>2. Check more than names</h2><ul><li><strong>Credentials:</strong> API keys, passwords, authorization headers, tokens and private keys.</li><li><strong>Identifiers:</strong> email addresses, phone numbers, client names and internal project terms.</li><li><strong>Financial details:</strong> payment card numbers, IBANs and billing references.</li><li><strong>Context:</strong> combinations of details that identify someone even after their name is removed.</li></ul><p>A scanner can help find patterns. It cannot decide whether you have permission to share a document, or reliably recognize every confidential fact.</p></section>
+<section><h2>3. Preserve useful context</h2><p>This example is fictional and manually redacted; it is not a live scan or a claim that every field is automatically detected.</p><h3>Before</h3><pre>Draft a reply to alex@example.com about project Cedar.
+The staging request fails with HTTP 401.
+The config contains password=demo-only-not-a-real-secret.
+Ask for the deployment time and request ID.</pre><h3>After review</h3><pre>Draft a reply to [CLIENT_EMAIL] about [PROJECT].
+The staging request fails with HTTP 401.
+The config contains password=[REDACTED].
+Ask for the deployment time and request ID.</pre><p>The task, error and next steps remain. The recipient, project identifier and credential do not. Add project names to protected terms when using Redaxa; do not assume generic detection knows your internal vocabulary.</p></section>
+<section><h2>4. Review before sending</h2><p>Read the cleaned version yourself. Check quoted replies, signatures and surrounding context. No findings means that the enabled checks found nothing; it is not a guarantee that the text is safe.</p><p>If you already exposed a real credential, redacting a later copy does not invalidate it. Use the provider's credential controls to revoke or rotate it.</p></section>
+<section><h2>Where Redaxa fits</h2><p>Redaxa by Aurelio Avila checks supported patterns in prompts and offers a redacted version. The Chrome extension works inside supported AI sites; a web scanner and Windows app are also available.</p><p><strong>Processing is server-side:</strong> prompt text is sent to Redaxa's backend for scanning. The scanner does not forward it to a third-party AI service, and prompt text is not stored. This is not an offline scanner. Read the <a href="privacy.html">privacy policy</a> before using it with sensitive work.</p><a class="button" href="https://chromewebstore.google.com/detail/redaxa/clkobbjoaegkgnmkibjghlboeoplpmok">View the Chrome extension</a><p>Requires an account and an active trial or subscription. The 7-day trial requires a card; cancel before it ends to avoid a charge. <a href="/#pricing">See pricing</a>.</p></section>
+</main><footer><a href="/">Redaxa home</a> · <a href="privacy.html">Privacy</a> · <a href="https://github.com/AurelioAvila/redaxa">Source and releases</a></footer></body></html>

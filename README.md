@@ -31,7 +31,7 @@
 See the [Windows signing inventory and verification guide](https://github.com/AurelioAvila/.github/blob/master/CODE_SIGNING.md). This claim applies to the listed Windows installers, not older builds, the web app or browser extension.
 
 > The browser extension (source in [`browser-extension/`](browser-extension))
-> is not yet published on the Chrome Web Store — pending review.
+> is available on the [Chrome Web Store](https://chromewebstore.google.com/detail/redaxa/clkobbjoaegkgnmkibjghlboeoplpmok). A Redaxa account and an active trial or subscription are required.
 
 ---
 
@@ -84,7 +84,7 @@ On the Business plan, a workspace is a real organization:
 
 - **Web app** — [promptshield-beta.vercel.app](https://promptshield-beta.vercel.app), no install
 - **Windows desktop app** — this repo's installer, signs in once and stays signed in (session held in the OS credential store, not a file on disk)
-- **Browser extension** *(pending Chrome Web Store review)* — a "Check" button injected into ChatGPT, Claude, Gemini, Copilot and Perplexity that scans whatever's in the composer before you send it
+- **[Browser extension](https://chromewebstore.google.com/detail/redaxa/clkobbjoaegkgnmkibjghlboeoplpmok)** — a "Check" button injected into ChatGPT, Claude, Gemini, Copilot and Perplexity that scans whatever's in the composer before you send it
 
 ## Privacy
 

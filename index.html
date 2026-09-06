@@ -323,13 +323,13 @@
       <header class="hero" id="top">
         <div>
           <div class="eyebrow"><span class="pulse"></span> Privacy, before AI</div>
-          <h1>Think freely.<br /><em>Share safely.</em></h1>
-          <p class="sub">Redaxa catches personal data and secrets before a prompt reaches an AI model. Your prompt is checked, never stored or logged.</p>
+          <h1>Your next prompt.<br /><em>Without the secrets.</em></h1>
+          <p class="sub">Catch emails, API keys and financial details before you send a prompt to ChatGPT, Claude or another supported AI tool. Review the findings, redact them, then decide what to share.</p>
           <div class="cta-row">
-            <a class="btn-primary" href="#scanner">Scan a prompt — free</a>
-            <a class="btn-ghost" href="#how">See how it works</a>
+            <a class="btn-primary" href="https://chromewebstore.google.com/detail/redaxa/clkobbjoaegkgnmkibjghlboeoplpmok">Get the Chrome extension</a>
+            <a class="btn-ghost" href="#scanner">Try the web scanner</a>
           </div>
-          <p class="hero-meta"><b>7 days free.</b> Cancel anytime · Individual and business plans</p>
+          <p class="hero-meta"><b>Account and card required for the 7-day trial.</b> Cancel before it ends to avoid a charge. Scans run on Redaxa’s backend, not on your device; prompt text is not stored.</p>
         </div>
 
         <!-- Static preview of an actual scan; the animation replays the real
@@ -337,8 +337,8 @@
         <aside class="shield-card" aria-hidden="true">
           <div class="sc-head">
             <span class="sc-title">REDAXA</span>
-            <span class="sc-live">LIVE SCAN</span>
-            <span class="sc-status"><span class="scanning">Scanning…</span><span class="protected">● Protected</span></span>
+            <span class="sc-live">EXAMPLE</span>
+            <span class="sc-status"><span class="scanning">Reviewing…</span><span class="protected">● Redacted</span></span>
           </div>
           <div class="sc-stage">
             <span class="label">Raw prompt</span>
@@ -353,7 +353,7 @@
             <span class="label">Safe prompt</span>
             <code>&ldquo;Send a payment reminder to <b>[email]</b> about invoice IBAN <b>[iban]</b>, due Friday.&rdquo;</code>
           </div>
-          <div class="sc-foot"><span class="pulse"></span> Checked in 0.2s · nothing stored</div>
+          <div class="sc-foot"><span class="pulse"></span> Illustrative preview · review before sharing</div>
         </aside>
       </header>
 
@@ -496,22 +496,27 @@
 
       <hr class="rule" />
 
-      <!-- Surfaces strip: where Redaxa actually runs. The extension link
-           points at the GitHub release until the Chrome Web Store listing is
-           approved, then it should be swapped to the store URL. -->
+      <!-- Published extension and Windows download paths. -->
       <div class="suite-line" id="extension">
         <span><b>Runs where you prompt</b> — a browser extension that checks your message inside ChatGPT, Claude, Gemini, Copilot and Perplexity before it sends, plus a Windows desktop app with signed auto-updates.</span>
-        <a class="suite-go" href="https://github.com/AurelioAvila/redaxa/releases/latest" target="_blank" rel="noopener">Get the extension &amp; desktop app →</a>
+        <a class="suite-go" href="https://github.com/AurelioAvila/redaxa/releases/latest" target="_blank" rel="noopener">Windows app →</a>
+        <a class="suite-go" href="https://chromewebstore.google.com/detail/redaxa/clkobbjoaegkgnmkibjghlboeoplpmok" target="_blank" rel="noopener">Chrome extension →</a>
       </div>
 
       <hr class="rule" />
 
       <!-- Suite cross-promo, deliberately compact and out of the sales flow. -->
       <div class="suite-line">
-        <span><b>From the same maker</b> — your prompts are safe. <em>Is your PC still lagging?</em> PC Tweaker tunes Windows with every change reversible.</span>
+        <span><b>From the same maker</b> — <em>Is your PC still lagging?</em> Explore PC Tweaker's Windows tuning tools.</span>
         <a class="suite-go" href="https://pctweaker.app" target="_blank" rel="noopener">Get PC Tweaker →</a>
       </div>
 
+      <section class="section" aria-labelledby="workflow-guide">
+        <div class="label">Before you paste</div>
+        <h2 id="workflow-guide">Keep the context.<br />Remove the identifiers.</h2>
+        <p>A client email or debugging log can carry more than your question. Learn what to remove, what to keep and why a clean scan still needs your review.</p>
+        <a class="btn-ghost" href="/redact-sensitive-data-before-chatgpt.html">Read the practical prompt privacy guide →</a>
+      </section>
       <footer>
         <span class="footer-brand"><img src="outputs/redaxa-mark.svg" alt="" />Redaxa<span class="footer-tag">· Privacy, before AI</span></span>
         <nav class="flinks" aria-label="Footer"><a href="/api-docs.html">API</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="https://pctweaker.app" target="_blank" rel="noopener">PC Tweaker</a></nav>
