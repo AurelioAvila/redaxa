@@ -30,6 +30,11 @@
 
 See the [Windows signing inventory and verification guide](https://github.com/AurelioAvila/.github/blob/master/CODE_SIGNING.md). This claim applies to the listed Windows installers, not older builds, the web app or browser extension.
 
+**WinGet status:** the [initial package submission](https://github.com/microsoft/winget-pkgs/pull/426231)
+is awaiting review. A successful submission workflow is not catalog approval;
+use the web app or the verified Windows release linked above until the package
+is accepted into the upstream index.
+
 > The browser extension (source in [`browser-extension/`](browser-extension))
 > is available on the [Chrome Web Store](https://chromewebstore.google.com/detail/redaxa/clkobbjoaegkgnmkibjghlboeoplpmok). A Redaxa account and an active trial or subscription are required.
 
