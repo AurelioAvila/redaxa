@@ -6,6 +6,7 @@ desktop-dist
 public
 dist
 coverage
+api/**/*.test.ts
 *.log
 *.exe
 *.zip
