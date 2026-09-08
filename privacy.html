@@ -33,12 +33,12 @@
       <p>Redaxa is operated by Aurelio Avila, an individual based in Italy ("we", "us"). This page explains what we collect, why, and how you can control it. If anything here is unclear, email <a href="mailto:aurelio_11@outlook.it">aurelio_11@outlook.it</a>.</p>
 
       <h2>The short version</h2>
-      <p>The text you paste into the scanner is used only to compute the result you see. It is never written to a database, a log file, an analytics tool, or a backup. We collect the account details needed to run a subscription (email, name, date of birth, billing status) and nothing more — no ad trackers, no analytics scripts, no data sold to anyone.</p>
+      <p>The text you paste into the scanner is used only to compute the result you see. It is never written to a database, a log file, an analytics tool, or a backup. We collect the account details needed to run a subscription (email, name, date of birth, billing status) and nothing more — no advertising trackers or sale of data to anyone.</p>
 
       <h2>What we collect</h2>
       <table>
         <tr><th>Data</th><th>Why</th></tr>
-        <tr><td>Email, first name, last name, date of birth</td><td>Create and secure your account (via Supabase Auth)</td></tr>
+        <tr><td>Email and optional first name (older accounts may retain previously supplied profile information)</td><td>Create and secure your account (via Supabase Auth)</td></tr>
         <tr><td>Prompt text you scan — which may contain personally identifiable information (names, email addresses, phone numbers, physical addresses), financial and payment information (card numbers, IBANs, crypto wallet addresses), and authentication information (passwords, API keys, tokens, private keys)</td><td>Sent over an encrypted connection to compute the scan result, then discarded — never stored, logged, or used for any other purpose</td></tr>
         <tr><td>Subscription status, Stripe customer ID</td><td>Billing. We never see or store your card number — Stripe collects that directly</td></tr>
         <tr><td>Scan history (a short local preview and counts by category)</td><td>Stored only in your own browser's local storage, to show you "Recent checks." We never receive this — it never leaves your device</td></tr>
@@ -85,6 +85,6 @@
 
       <h2>Changes to this policy</h2>
       <p>If this policy changes materially, we'll update the date at the top of this page and, where required, notify you by email.</p>
-    </main>
+    <section><h2>Website measurement</h2><p>We count website visits and predefined actions as daily totals. The measurement database stores only day, product, action and count: no prompt text, detected values, email addresses, account identifiers or IP addresses. Requests go to our Cloudflare service at redexa.getcertsprint.com. No tracking cookies or persistent visitor identifiers are set. Do Not Track and Global Privacy Control are respected. Counts are not unique users. Hosting providers process network information to deliver requests.</p></section></main>
   </body>
 </html>
