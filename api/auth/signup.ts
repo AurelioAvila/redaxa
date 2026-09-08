@@ -48,12 +48,7 @@ export default async function handler(request: RequestLike, response: ResponseLi
 
     const password = typeof body.password === "string" ? body.password : "";
     const firstName = typeof body.firstName === "string" ? body.firstName.trim() : "";
-    const lastName = typeof body.lastName === "string" ? body.lastName.trim() : "";
-    const dateOfBirth = typeof body.dateOfBirth === "string" ? body.dateOfBirth : "";
     if (!email || password.length < 12) { response.status(400).json({ error: "Enter a valid email and a password of at least 12 characters." }); return; }
-    if (!firstName) { response.status(400).json({ error: "First name is required." }); return; }
-    if (!lastName) { response.status(400).json({ error: "Last name is required." }); return; }
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth)) { response.status(400).json({ error: "Date of birth is required." }); return; }
     const ip = clientIp(request.headers);
     if (rateLimited(`signup:ip:${ip}`, 10, 15 * 60_000)) {
       response.status(429).json({ error: "Too many attempts. Please wait a few minutes and try again." });
@@ -67,7 +62,7 @@ export default async function handler(request: RequestLike, response: ResponseLi
       body: JSON.stringify({
         email,
         password,
-        data: { first_name: firstName, last_name: lastName, date_of_birth: dateOfBirth },
+        data: firstName ? { first_name: firstName.slice(0, 100) } : {},
         options: typeof body.emailRedirectTo === "string" ? { email_redirect_to: body.emailRedirectTo } : undefined
       })
     });

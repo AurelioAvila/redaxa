@@ -1,3 +1,7 @@
+import { track } from './growth.js';
+
+const demoPrompt = 'Write a concise project update to maria.rossi@example.com. Mention that the staging server is at 192.168.1.20 and include this demo credential: password=demo-secret-credential-123.';
+
 function required<T extends Element>(selector: string): T {
   const element = document.querySelector<T>(selector);
   if (!element) throw new Error(`Redaxa landing element missing: ${selector}`);
@@ -17,6 +21,25 @@ function mountLanding(): void {
   const resultCopy = required<HTMLElement>("#result-copy");
   const scanButton = required<HTMLButtonElement>("#scan");
 
+  let isDemo = false;
+  const showDemo = (): void => {
+    isDemo = true;
+    prompt.value = demoPrompt;
+    resultTitle.textContent = '3 example details to review';
+    resultCopy.textContent = 'Illustrative demo with fictional data. No account, payment or backend scan. Checking your own text requires the trial.';
+    findings.className = '';
+    findings.innerHTML = '<div class="finding"><i class="severity"></i><div><b>Email</b><span>maria.rossi@example.com → [email]</span></div></div><div class="finding"><i class="severity"></i><div><b>Server address</b><span>192.168.1.20 → [ip]</span></div></div><div class="finding"><i class="severity"></i><div><b>Demo credential</b><span>password=demo-secret-credential-123 → [credential]</span></div></div>';
+    redacted.textContent = 'Write a concise project update to [email]. Mention that the staging server is at [ip] and include this demo credential: [credential].';
+    output.style.display = 'block';
+    track('demo_result');
+  };
+  prompt.addEventListener('input', () => {
+    isDemo = false;
+    output.style.display = 'none';
+    findings.textContent = 'Your text has changed. Run a check to inspect it.';
+    resultTitle.textContent = 'Ready for your text';
+    resultCopy.textContent = 'Real scans require an account and an active trial or subscription.';
+  });
   const scan = async (): Promise<void> => {
     const text = prompt.value;
     if (!text.trim()) {
@@ -27,7 +50,9 @@ function mountLanding(): void {
       output.style.display = "none";
       return;
     }
+    if (text === demoPrompt) { showDemo(); return; }
     if (!window.promptShieldAuth?.hasAccess()) {
+      track('trial_gate');
       window.promptShieldAuth?.requestAccess("Create your account and start your 7-day free trial to inspect prompts.");
       return;
     }
@@ -42,6 +67,8 @@ function mountLanding(): void {
       findings.innerHTML = matches.length
         ? matches.map((item) => `<div class="finding"><i class="severity"></i><div><b>${escapeHtml(item.label)}</b><span>${escapeHtml(item.value)}</span></div></div>`).join("")
         : `<div class="empty">No common secrets or personal details were detected in this check.</div>`;
+      isDemo = false;
+      track('scan_success');
       redacted.textContent = redactedText;
       output.style.display = "block";
     } catch (error) {
@@ -60,11 +87,11 @@ function mountLanding(): void {
 
   scanButton.addEventListener("click", () => { void scan(); });
   required<HTMLButtonElement>("#sample").addEventListener("click", () => {
-    prompt.value = "Write a concise project update to maria.rossi@example.com. Mention that the staging server is at 192.168.1.20 and include this demo credential: password=demo-secret-credential-123.";
-    void scan();
+    showDemo();
   });
   required<HTMLButtonElement>("#copy").addEventListener("click", async () => {
     await navigator.clipboard.writeText(redacted.textContent ?? "");
+    if (isDemo) track('demo_copy');
     const button = required<HTMLButtonElement>("#copy");
     button.textContent = "Copied";
     window.setTimeout(() => { button.textContent = "Copy safer prompt"; }, 1400);
