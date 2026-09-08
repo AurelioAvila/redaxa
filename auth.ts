@@ -216,7 +216,7 @@ function initialsFor(email: string): string {
 
 function installDialog(): {
   backdrop: HTMLDivElement; form: HTMLFormElement; title: HTMLElement; description: HTMLElement; submit: HTMLButtonElement;
-  firstName: HTMLInputElement; lastName: HTMLInputElement; dateOfBirth: HTMLInputElement; registerFields: HTMLElement;
+  firstName: HTMLInputElement; registerFields: HTMLElement;
   email: HTMLInputElement; password: HTMLInputElement; passwordField: HTMLLabelElement;
   confirmPassword: HTMLInputElement; confirmPasswordField: HTMLLabelElement;
   message: HTMLElement; switcher: HTMLButtonElement; legal: HTMLElement;
@@ -230,9 +230,7 @@ function installDialog(): {
     <h2 id="ps-auth-title">Create your account</h2><p id="ps-auth-description">Start your 7-day free trial. Your prompt is checked to power the scan and never stored or logged.</p>
     <form>
     <div id="ps-auth-register-fields">
-      <label class="ps-auth-field">First name<input id="ps-auth-first-name" type="text" autocomplete="given-name"></label>
-      <label class="ps-auth-field">Last name<input id="ps-auth-last-name" type="text" autocomplete="family-name"></label>
-      <label class="ps-auth-field">Date of birth<input id="ps-auth-dob" type="date" autocomplete="bday"></label>
+      <label class="ps-auth-field">First name (optional)<input id="ps-auth-first-name" type="text" autocomplete="given-name"></label>
     </div>
     <label class="ps-auth-field">Email<input id="ps-auth-email" name="email" type="email" autocomplete="username" required></label>
     <!-- Explicit for=: a label's implicit target is its first labelable
@@ -254,7 +252,7 @@ function installDialog(): {
   return {
     backdrop, form: backdrop.querySelector("form")!, title: backdrop.querySelector("#ps-auth-title")!, description: backdrop.querySelector("#ps-auth-description")!,
     submit: backdrop.querySelector(".ps-auth-submit")!, registerFields: backdrop.querySelector("#ps-auth-register-fields")!,
-    firstName: backdrop.querySelector("#ps-auth-first-name")!, lastName: backdrop.querySelector("#ps-auth-last-name")!, dateOfBirth: backdrop.querySelector("#ps-auth-dob")!,
+    firstName: backdrop.querySelector("#ps-auth-first-name")!,
     email: backdrop.querySelector("#ps-auth-email")!, password: backdrop.querySelector("#ps-auth-password")!,
     passwordField: backdrop.querySelector("#ps-auth-password-field")!,
     confirmPassword: backdrop.querySelector("#ps-auth-confirm-password")!, confirmPasswordField: backdrop.querySelector("#ps-auth-confirm-password-field")!,
@@ -363,7 +361,7 @@ async function boot(): Promise<void> {
     dialog.title.textContent = signup ? "Create your account" : recovery ? "Reset your password" : "Welcome back";
     dialog.description.textContent = signup ? "Use a password with at least 12 characters. We will send a verification email." : recovery ? "We will email you a secure link to choose a new password." : "Sign in to continue with your private workspace.";
     dialog.registerFields.hidden = !signup;
-    dialog.firstName.required = signup; dialog.lastName.required = signup; dialog.dateOfBirth.required = signup;
+    dialog.firstName.required = false;
     dialog.passwordField.hidden = recovery; dialog.password.required = !recovery; dialog.password.autocomplete = signup ? "new-password" : "current-password";
     dialog.confirmPasswordField.hidden = !signup; dialog.confirmPassword.required = signup; dialog.confirmPassword.value = "";
     dialog.legal.hidden = !signup;
@@ -639,7 +637,7 @@ async function boot(): Promise<void> {
         dialog.submit.textContent = "Creating account…";
         await apiRequest("/api/auth/signup", {
           email: dialog.email.value.trim(), password: dialog.password.value, emailRedirectTo: authRedirect(),
-          firstName: dialog.firstName.value.trim(), lastName: dialog.lastName.value.trim(), dateOfBirth: dialog.dateOfBirth.value
+          firstName: dialog.firstName.value.trim()
         });
         // Stays in signup mode (not switched to signin) so the resend
         // option -- which only makes sense right after registering -- is
