@@ -26,7 +26,7 @@ function mountLanding(): void {
     isDemo = true;
     prompt.value = demoPrompt;
     resultTitle.textContent = '3 example details to review';
-    resultCopy.textContent = 'Illustrative demo with fictional data. No account, payment or backend scan. Checking your own text requires the trial.';
+    resultCopy.textContent = 'Illustrative demo with fictional data, answered without a scan. Replace it with your own text to run a real check.';
     findings.className = '';
     findings.innerHTML = '<div class="finding"><i class="severity"></i><div><b>Email</b><span>maria.rossi@example.com → [email]</span></div></div><div class="finding"><i class="severity"></i><div><b>Server address</b><span>192.168.1.20 → [ip]</span></div></div><div class="finding"><i class="severity"></i><div><b>Demo credential</b><span>password=demo-secret-credential-123 → [credential]</span></div></div>';
     redacted.textContent = 'Write a concise project update to [email]. Mention that the staging server is at [ip] and include this demo credential: [credential].';
@@ -38,7 +38,7 @@ function mountLanding(): void {
     output.style.display = 'none';
     findings.textContent = 'Your text has changed. Run a check to inspect it.';
     resultTitle.textContent = 'Ready for your text';
-    resultCopy.textContent = 'Real scans require an account and an active trial or subscription.';
+    resultCopy.textContent = 'Paste your own text and run a real check. The first few each day need no account.';
   });
   const scan = async (): Promise<void> => {
     const text = prompt.value;
@@ -51,16 +51,26 @@ function mountLanding(): void {
       return;
     }
     if (text === demoPrompt) { showDemo(); return; }
-    if (!window.promptShieldAuth?.hasAccess()) {
-      track('trial_gate');
-      window.promptShieldAuth?.requestAccess("Create your account and start your 7-day free trial to inspect prompts.");
+    // No client-side gate any more: the server grants a visitor a few real
+    // scans a day before it asks for anything (anonymousDailyScans in
+    // api/scan.ts). Checking hasAccess() here meant the first genuine thing
+    // a visitor tried to scan bounced off a signup dialog, which is the one
+    // moment the product could have proved itself. When the quota is spent
+    // the server answers TRIAL_REQUIRED and the catch below opens the same
+    // dialog, at the point where it has been earned.
+    // The auth bundle owns the fetch wrapper even for an anonymous scan. If
+    // it never loaded, say so rather than failing silently on the click.
+    const auth = window.promptShieldAuth;
+    if (!auth) {
+      resultTitle.textContent = "Check failed";
+      resultCopy.textContent = "We could not run that check. Please reload the page and try again.";
       return;
     }
     const originalLabel = scanButton.textContent;
     scanButton.disabled = true;
     scanButton.textContent = "Checking…";
     try {
-      const { findings: matches, redactedText } = await window.promptShieldAuth.scanPrompt(text, { includePersonalData: true, includeCredentials: true, includeFinancialData: true });
+      const { findings: matches, redactedText } = await auth.scanPrompt(text, { includePersonalData: true, includeCredentials: true, includeFinancialData: true });
       resultTitle.textContent = matches.length ? `${matches.length} item${matches.length === 1 ? "" : "s"} to review` : "Nothing obvious found";
       resultCopy.textContent = matches.length ? "Review these details before you share the prompt." : "This is a helpful signal, not a guarantee. Always review before sharing.";
       findings.className = "";
@@ -74,7 +84,8 @@ function mountLanding(): void {
     } catch (error) {
       const message = error instanceof Error ? error.message : "";
       if (message === "TRIAL_REQUIRED") {
-        window.promptShieldAuth?.requestAccess("Start your 7-day free trial to inspect prompts.");
+        track('trial_gate');
+        auth.requestAccess("You have used the free checks for today. Start your 7-day trial to keep going.");
       } else {
         resultTitle.textContent = "Check failed";
         resultCopy.textContent = "We could not run that check. Please try again.";

@@ -1,4 +1,4 @@
-import { corsHeaders, effectiveEntitlement, organizationMembershipFor, orgScanContextFor, protectedTermsFor, requireUser, supabaseService, supabaseUserById } from "./_billing.js";
+import { corsHeaders, effectiveEntitlement, organizationMembershipFor, orgScanContextFor, protectedTermsFor, requireUser, supabaseService, supabaseUserById, type BillingUser } from "./_billing.js";
 import { clientIp, rateLimited, rateLimitedShared } from "./_rateLimit.js";
 import { auditBoundary, auditCsv, defaultAuditRows, maxAuditRows, type AuditEvent } from "./_audit.js";
 import { inspectPrompt, type ScanOptions } from "../scanner.js";
@@ -8,6 +8,11 @@ type RequestLike = { method?: string; body?: unknown; headers?: Record<string, s
 type ResponseLike = { setHeader(name: string, value: string | string[]): void; status(code: number): ResponseLike; json(value: unknown): void; send?(body: string): void; end(body?: string): void };
 
 const maxPromptLength = 20_000;
+
+/** Real scans a visitor gets per day before an account is required. Small
+ *  enough that the detection engine is not a free public API, large enough
+ *  to check a genuine prompt and a retry after editing it. */
+const anonymousDailyScans = 5;
 
 // The surface the prompt came from, self-reported by the client and used ONLY
 // as audit metadata — it grants nothing. Values outside the allowlist are
@@ -134,15 +139,41 @@ export default async function handler(request: RequestLike, response: ResponseLi
 
   if (request.method !== "POST") { response.setHeader("Allow", "GET, POST"); response.status(405).end(); return; }
   try {
-    const user = await requireUser(request, response);
-    const entitlement = await effectiveEntitlement(user.id);
-    if (!entitlement.active) { response.status(402).json({ error: "TRIAL_REQUIRED" }); return; }
-    if (
-      rateLimited(`scan:user:${user.id}`, 120, 60_000) ||
-      rateLimited(`scan:ip:${clientIp(request.headers)}`, 240, 60_000) ||
-      await rateLimitedShared(supabaseService, `scan:user:${user.id}`, 120, 60)
+    // Anonymous trial. The landing demo could only replay one canned
+    // sentence, so the first real thing a visitor could scan was gated
+    // behind an account and a card — while the competitors this product is
+    // compared against run for free. A visitor now gets a few scans of
+    // their OWN text before anything is asked of them; the quota is the
+    // product's protection, not the account wall.
+    let user: BillingUser | null = null;
+    try {
+      user = await requireUser(request, response);
+    } catch (error) {
+      if ((error instanceof Error ? error.message : "") !== "UNAUTHORIZED") throw error;
+    }
+
+    const ip = clientIp(request.headers);
+
+    if (user) {
+      const entitlement = await effectiveEntitlement(user.id);
+      if (!entitlement.active) { response.status(402).json({ error: "TRIAL_REQUIRED" }); return; }
+      if (
+        rateLimited(`scan:user:${user.id}`, 120, 60_000) ||
+        rateLimited(`scan:ip:${ip}`, 240, 60_000) ||
+        await rateLimitedShared(supabaseService, `scan:user:${user.id}`, 120, 60)
+      ) {
+        response.status(429).json({ error: "Too many checks. Please slow down." });
+        return;
+      }
+    } else if (
+      // Both limiters, deliberately: the in-memory one is per warm instance
+      // and would let a scripted caller multiply its quota by fanning out.
+      // Exhausting the quota returns the same TRIAL_REQUIRED the account
+      // wall already returns, so the existing client path is unchanged.
+      rateLimited(`scan:anon:${ip}`, anonymousDailyScans, 86_400_000) ||
+      await rateLimitedShared(supabaseService, `scan:anon:${ip}`, anonymousDailyScans, 86_400)
     ) {
-      response.status(429).json({ error: "Too many checks. Please slow down." });
+      response.status(402).json({ error: "TRIAL_REQUIRED" });
       return;
     }
     const body = (request.body ?? {}) as { text?: unknown; application?: unknown; options?: Partial<ScanOptions> };
@@ -161,7 +192,7 @@ export default async function handler(request: RequestLike, response: ResponseLi
     // failing (detection availability beats governance completeness for now).
     let organizationId: string | null = null;
     let policyRules: PolicyRule[] = defaultPersonalPolicy;
-    try {
+    if (user) try {
       // One embedded query for membership + shared terms + policies; the
       // two-call fallback covers the window where org_policies does not
       // exist yet (embedding fails as a whole when one relation is missing).
@@ -202,7 +233,10 @@ export default async function handler(request: RequestLike, response: ResponseLi
     // flight most of the time (observed in production: events went missing).
     // recordScanEvent still swallows its own failures, so a DB hiccup delays
     // the response by at most one timeout instead of failing the scan.
-    await recordScanEvent(
+    // No account, no audit row: the event is keyed by user and an anonymous
+    // scan has nobody to attribute it to. Nothing about the text is recorded
+    // in either case.
+    if (user) await recordScanEvent(
       user.id,
       organizationId,
       application,
