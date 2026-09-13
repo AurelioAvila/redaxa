@@ -52,6 +52,7 @@
         --mut: #9299a6;
         --dim: #727a89;
         --acid: #7c5cfc;         /* brand accent: protection, positive state */
+        --acid-hover: #9478ff;   /* one token, so a hover fill cannot be left behind on a rebrand */
         --acid-ink: #0a0d02;
         --warn: #ffb224;
         --danger: #ff5c33;
@@ -75,6 +76,8 @@
       a { color: inherit; text-decoration: none; }
       ::selection { background: #7c5cfc30; }
       :focus-visible { outline: 2px solid var(--acid); outline-offset: 2px; border-radius: 4px; }
+      .skip { position: fixed; left: -9999px; }
+      .skip:focus { left: 56px; top: 12px; z-index: 60; background: var(--s2); color: var(--ink); border: 1px solid var(--line-2); border-radius: 8px; padding: 9px 14px; font-size: 13px; font-weight: 650; }
 
       /* The framed column: hairline side borders make the outer margins part
          of the composition. Sections are divided by full-width hairlines. */
@@ -110,7 +113,7 @@
       .nav-install:hover { color: var(--ink); border-color: #39404e; }
       .nav-install[hidden] { display: none; }
       .nav-cta { background: var(--acid); color: var(--acid-ink); }
-      .nav-cta:hover { transform: translateY(-1px); background: #ccff3d; }
+      .nav-cta:hover { transform: translateY(-1px); background: var(--acid-hover); }
       .ps-auth-buttons { display: flex; align-items: center; gap: 8px; }
 
       /* ============ Hero ============ */
@@ -122,7 +125,7 @@
       .hero .sub { max-width: 480px; color: var(--mut); font-size: 17px; line-height: 1.6; margin: 22px 0 0; }
       .cta-row { display: flex; align-items: center; gap: 12px; margin-top: 32px; flex-wrap: wrap; }
       .btn-primary { background: var(--acid); color: var(--acid-ink); border: 0; border-radius: 10px; padding: 14px 22px; font-size: 15px; font-weight: 700; transition: transform 180ms var(--ease), background 180ms var(--ease); }
-      .btn-primary:hover { transform: translateY(-2px); background: #ccff3d; }
+      .btn-primary:hover { transform: translateY(-2px); background: var(--acid-hover); }
       .btn-ghost { background: transparent; color: var(--ink); border: 1px solid var(--line-2); border-radius: 10px; padding: 13px 20px; font-size: 15px; font-weight: 600; transition: border-color 180ms var(--ease), background 180ms var(--ease); }
       .btn-ghost:hover { border-color: #39404e; background: var(--s1); }
       .hero-meta { margin-top: 22px; color: var(--dim); font-size: 13px; }
@@ -199,7 +202,7 @@
       .sample { background: transparent; border: 0; color: var(--mut); padding: 0; font-size: 13px; text-decoration: underline; text-underline-offset: 4px; transition: color 160ms var(--ease); }
       .sample:hover { color: var(--ink); }
       .primary { background: var(--acid); color: var(--acid-ink); border: 0; border-radius: 10px; padding: 13px 18px; font-weight: 700; transition: transform 180ms var(--ease), background 180ms var(--ease); }
-      .primary:hover { transform: translateY(-2px); background: #ccff3d; }
+      .primary:hover { transform: translateY(-2px); background: var(--acid-hover); }
       .primary:disabled { opacity: 0.6; transform: none; cursor: wait; }
       .results { padding: 24px; background: var(--s1); }
       .results h3 { margin: 0; font-size: 14px; font-weight: 650; }
@@ -249,7 +252,7 @@
       .plan.featured .tag { color: var(--acid); }
       .plan.featured:hover { border-color: #55672f; }
       .plan.featured button[data-interval="monthly"] { background: var(--acid); color: var(--acid-ink); border-color: var(--acid); font-weight: 750; }
-      .plan.featured button[data-interval="monthly"]:hover { background: #ccff3d; transform: translateY(-1px); }
+      .plan.featured button[data-interval="monthly"]:hover { background: var(--acid-hover); transform: translateY(-1px); }
       .plan select { background: #0a0c10; color: var(--ink); border: 1px solid var(--line-2); border-radius: 7px; padding: 6px 8px; }
 
       /* ============ Suite line + footer ============ */
@@ -307,6 +310,7 @@
   </head>
   <body>
     <div class="frame">
+      <a class="skip" href="#content">Skip to content</a>
       <nav class="nav">
         <a class="brand" href="#top" aria-label="Redaxa home"><span class="mark"><img src="outputs/redaxa-mark.svg" alt="" /></span><span>Redaxa</span></a>
         <div class="nav-right">
@@ -320,16 +324,17 @@
         </div>
       </nav>
 
+      <main id="content">
       <header class="hero" id="top">
         <div>
           <div class="eyebrow"><span class="pulse"></span> Privacy, before AI</div>
           <h1>Your next prompt.<br /><em>Without the secrets.</em></h1>
-          <p class="sub">Catch emails, API keys and financial details before you send a prompt to ChatGPT, Claude or another supported AI tool. Review the findings, redact them, then decide what to share.</p>
+          <p class="sub">Catch emails, API keys and financial details before you send a prompt to ChatGPT, Claude or another supported AI tool. Review the findings, redact them, then decide what to share. For a team, an administrator sets the terms that must never leave and exports a metadata-only record of what was caught.</p>
           <div class="cta-row">
             <a class="btn-primary" href="https://chromewebstore.google.com/detail/redaxa/clkobbjoaegkgnmkibjghlboeoplpmok">Get the Chrome extension</a>
-            <a class="btn-ghost" href="#scanner">See it work — no account</a>
+            <a class="btn-ghost" href="#scanner">Check your own text — no account</a>
           </div>
-          <p class="hero-meta"><b>Account and card required for the 7-day trial.</b> Cancel before it ends to avoid a charge. Scans run on Redaxa’s backend, not on your device; prompt text is not stored.</p>
+          <p class="hero-meta">Scanning runs on Redaxa’s servers, by design: every surface gets a new detection rule the moment it ships, and an administrator can set a policy that a user cannot switch off. <b>The prompt text itself is never stored</b> — a scan leaves behind what was found, never what you wrote. <b>Account and card required for the 7-day trial;</b> cancel before it ends to avoid a charge.</p>
         </div>
 
         <!-- Static preview of an actual scan; the animation replays the real
@@ -517,6 +522,7 @@
         <p>A client email or debugging log can carry more than your question. Learn what to remove, what to keep and why a clean scan still needs your review.</p>
         <a class="btn-ghost" href="/redact-sensitive-data-before-chatgpt.html">Read the practical prompt privacy guide →</a>
       </section>
+      </main>
       <footer>
         <span class="footer-brand"><img src="outputs/redaxa-mark.svg" alt="" />Redaxa<span class="footer-tag">· Privacy, before AI</span></span>
         <nav class="flinks" aria-label="Footer"><a href="/api-docs.html">API</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="https://pctweaker.app" target="_blank" rel="noopener">PC Tweaker</a></nav>
