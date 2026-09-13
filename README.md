@@ -2,7 +2,7 @@
   <img src="src-tauri/icons/128x128.png" width="112" alt="Redaxa logo">
 </p>
 
-<h1 align="center">Redaxa</h1>
+<h1 align="center">Redaxa — Secret and PII Detection for AI Prompts</h1>
 
 <p align="center">
   <strong>Catch what you're about to leak, before it reaches an AI tool.</strong><br>
@@ -44,18 +44,18 @@ is accepted into the upstream index.
 
 You're about to paste a stack trace, a config file, or a client email into
 ChatGPT. Somewhere in there is an API key, a card number, or someone's
-email address you didn't mean to send. Redaxa catches it in the
-half-second before you hit enter — not with a vague "this might be
-sensitive" guess, but with real validation: a Luhn check on card numbers, a
-mod-97 checksum on IBANs, reserved-range filtering on SSNs. Copy-pasting
-into a text box and hoping isn't a strategy. This is.
+email address you didn't mean to send. Redaxa helps you review it before you
+hit enter, using patterns and category-specific checks: Luhn for card-number
+candidates, mod-97 for IBANs and reserved-range filtering for SSNs. These
+checks reduce some false positives; they do not prove that a match is
+genuine or that every sensitive value will be found.
 
 ---
 
 ## What it does
 
-Paste a prompt in. Redaxa finds what's sensitive in it — real ones,
-not guesses — and hands you back a redacted version you can send instead.
+Paste a prompt in. Redaxa highlights potential sensitive values and offers
+a redacted version for you to review before sending.
 
 | Category | Detected |
 | --- | --- |
@@ -64,10 +64,10 @@ not guesses — and hands you back a redacted version you can send instead.
 | **Financial data** | Card numbers (Luhn-checksum validated), IBANs (mod-97 checksum validated), crypto wallet addresses, Italian fiscal codes, US SSNs (reserved-range filtered) |
 | **Custom terms** | Your own project codenames, client names, anything you want flagged that isn't generic PII |
 
-Every check is a real validator, not a loose regex guess — a Luhn check
-keeps ordinary 16-digit tracking numbers from being flagged as credit cards,
-a mod-97 checksum does the same for IBANs, and reserved SSN ranges are
-excluded so invoice numbers don't trip it.
+Detection combines patterns, known credential prefixes and category-specific
+checks. A tracking number can still pass a card checksum, and an unfamiliar
+secret can be missed. Review matches in context and use custom terms for
+sensitive values outside the built-in rules.
 
 ## For teams: the control layer
 
