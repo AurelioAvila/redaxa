@@ -81,6 +81,30 @@ const privateKey = inspectPrompt("-----BEGIN RSA PRIVATE KEY-----\nMIIBOgIBAAJBA
 assert.deepEqual(privateKey.findings.map((finding) => finding.kind), ["privateKey"]);
 assert.match(privateKey.redactedText, /\[PRIVATE KEY\]/);
 
+const npmKey = inspectPrompt("npm_1234567890abcdef1234567890abcdef1234", {
+  includePersonalData: false, includeCredentials: true, includeFinancialData: false
+});
+assert.deepEqual(npmKey.findings.map((finding) => finding.kind), ["secret"]);
+assert.match(npmKey.redactedText, /\[SECRET\]/);
+
+const pypiKey = inspectPrompt("pypi-AgEIcHlwaS5vcmc1234567890abcdef1234567890abcdef12345678901234567890", {
+  includePersonalData: false, includeCredentials: true, includeFinancialData: false
+});
+assert.deepEqual(pypiKey.findings.map((finding) => finding.kind), ["secret"]);
+assert.match(pypiKey.redactedText, /\[SECRET\]/);
+
+const gitlabKey = inspectPrompt("glpat-1234567890abcdef1234", {
+  includePersonalData: false, includeCredentials: true, includeFinancialData: false
+});
+assert.deepEqual(gitlabKey.findings.map((finding) => finding.kind), ["secret"]);
+assert.match(gitlabKey.redactedText, /\[SECRET\]/);
+
+const hfKey = inspectPrompt("hf_1234567890abcdef1234567890abcdef12", {
+  includePersonalData: false, includeCredentials: true, includeFinancialData: false
+});
+assert.deepEqual(hfKey.findings.map((finding) => finding.kind), ["secret"]);
+assert.match(hfKey.redactedText, /\[SECRET\]/);
+
 // SSNs are filtered against the reserved area/group/serial ranges so ordinary
 // dash-grouped numbers (invoice codes, etc.) of the same shape aren't flagged.
 const validSsn = inspectPrompt("SSN: 219-09-9999", {

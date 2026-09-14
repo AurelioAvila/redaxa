@@ -116,7 +116,7 @@ const rules: Rule[] = [
   },
   {
     kind: "secret", category: "credentials", severity: "critical", label: "API key or token", replacement: "[SECRET]",
-    pattern: /\b(?:sk-[A-Za-z0-9_-]{16,}|sk_(?:live|test)_[A-Za-z0-9]{10,}|pk_(?:live|test)_[A-Za-z0-9]{10,}|rk_live_[A-Za-z0-9]{10,}|gh[pousr]_[A-Za-z0-9_]{20,}|AIza[\w-]{20,}|AKIA[0-9A-Z]{16}|xox[baprs]-[A-Za-z0-9-]{10,}|eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}|Bearer\s+[A-Za-z0-9._-]{16,})\b/g
+    pattern: /\b(?:sk-[A-Za-z0-9_-]{16,}|sk_(?:live|test)_[A-Za-z0-9]{10,}|pk_(?:live|test)_[A-Za-z0-9]{10,}|rk_live_[A-Za-z0-9]{10,}|gh[pousr]_[A-Za-z0-9_]{20,}|AIza[\w-]{20,}|AKIA[0-9A-Z]{16}|xox[baprs]-[A-Za-z0-9-]{10,}|eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}|Bearer\s+[A-Za-z0-9._-]{16,}|npm_[a-zA-Z0-9]{36}|pypi-AgEIcHlwaS5vcmc[a-zA-Z0-9\-_]{50,}|glpat-[a-zA-Z0-9\-]{20}|hf_[a-zA-Z0-9]{34})\b/g
   },
   { kind: "privateKey", category: "credentials", severity: "critical",  label: "Private key", replacement: "[PRIVATE KEY]", pattern: /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----/g },
   { kind: "card", category: "financial", severity: "high",  label: "Card number", replacement: "[CARD]", pattern: /\b(?:\d[ -]*?){13,16}\b/g, validate: luhnValid },
