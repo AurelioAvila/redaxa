@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Detect and remove personal, confidential and sensitive information before sharing prompts with ChatGPT, Claude, Gemini and other AI tools." />
+    <meta name="description" content="Redaxa finds and removes personal data, credentials and confidential details in a prompt before you send it to ChatGPT, Claude, Gemini or another AI tool." />
     <meta name="google-site-verification" content="A0iTA5gIcRJ88SPRMZ3xAvV7DIe_4YttqAAF9OUj0Mo" />
     <title>AI Prompt Privacy Scanner &amp; Redaction Tool | Redaxa</title>
     <link rel="canonical" href="https://promptshield-beta.vercel.app/" />
@@ -13,6 +13,10 @@
     <meta property="og:description" content="Detect and redact personal data, credentials and secrets before a prompt reaches an AI model." />
     <meta property="og:url" content="https://promptshield-beta.vercel.app/" />
     <meta property="og:image" content="https://promptshield-beta.vercel.app/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Redaxa — find and redact personal data, credentials and secrets before a prompt reaches an AI." />
+    <meta property="og:locale" content="en" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Redaxa — Remove Sensitive Data Before Sharing AI Prompts" />
     <meta name="twitter:description" content="Detect and redact personal data, credentials and secrets before a prompt reaches an AI model." />
@@ -34,9 +38,39 @@
         "https://chromewebstore.google.com/detail/redaxa/clkobbjoaegkgnmkibjghlboeoplpmok"
       ],
       "author": { "@type": "Person", "name": "Aurelio Avila" },
+      "softwareVersion": "0.3.3",
       "offers": [
-        { "@type": "Offer", "name": "Personal monthly", "price": "7.99", "priceCurrency": "EUR" },
-        { "@type": "Offer", "name": "Business monthly", "price": "14.99", "priceCurrency": "EUR" }
+        { "@type": "Offer", "name": "Personal monthly", "price": "7.99", "priceCurrency": "EUR", "category": "subscription" },
+        { "@type": "Offer", "name": "Personal yearly", "price": "79.90", "priceCurrency": "EUR", "category": "subscription" },
+        { "@type": "Offer", "name": "Business monthly (per user)", "price": "14.99", "priceCurrency": "EUR", "category": "subscription" },
+        { "@type": "Offer", "name": "Business yearly (per user)", "price": "149.90", "priceCurrency": "EUR", "category": "subscription" }
+      ]
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://promptshield-beta.vercel.app/#organization",
+          "name": "Redaxa",
+          "url": "https://promptshield-beta.vercel.app/",
+          "logo": "https://promptshield-beta.vercel.app/og-image.png",
+          "founder": { "@type": "Person", "name": "Aurelio Avila" },
+          "sameAs": [
+            "https://github.com/AurelioAvila/redaxa",
+            "https://chromewebstore.google.com/detail/redaxa/clkobbjoaegkgnmkibjghlboeoplpmok"
+          ]
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://promptshield-beta.vercel.app/#website",
+          "name": "Redaxa",
+          "url": "https://promptshield-beta.vercel.app/",
+          "inLanguage": "en",
+          "publisher": { "@id": "https://promptshield-beta.vercel.app/#organization" }
+        }
       ]
     }
     </script>
@@ -178,7 +212,7 @@
       .protect-item { padding: 30px 28px 34px; border-right: 1px solid var(--line); }
       .protect-item:last-child { border-right: 0; }
       .protect-item svg { width: 20px; height: 20px; color: var(--acid); }
-      .protect-item h3 { margin: 14px 0 5px; font-size: 15px; font-weight: 650; letter-spacing: -0.015em; }
+      .protect-item h2 { margin: 14px 0 5px; font-size: 15px; font-weight: 650; letter-spacing: -0.015em; }
       .protect-item p { margin: 0; color: var(--mut); font-size: 13px; line-height: 1.55; }
 
       /* ============ Section scaffolding ============ */
@@ -312,7 +346,7 @@
     <div class="frame">
       <a class="skip" href="#content">Skip to content</a>
       <nav class="nav">
-        <a class="brand" href="#top" aria-label="Redaxa home"><span class="mark"><img src="outputs/redaxa-mark.svg" alt="" /></span><span>Redaxa</span></a>
+        <a class="brand" href="#top" aria-label="Redaxa home"><span class="mark"><img src="outputs/redaxa-mark.svg" alt="" width="30" height="30" /></span><span>Redaxa</span></a>
         <div class="nav-right">
           <div class="navlinks"><a href="#scanner">Product</a><a href="#pricing">Pricing</a><a href="/privacy.html">Privacy</a></div>
           <button class="nav-install" id="pwa-install" hidden type="button" aria-label="Install Redaxa on this device">Install app</button>
@@ -369,22 +403,22 @@
       <section class="protect" aria-label="What Redaxa protects">
         <div class="protect-item">
           <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8.2" r="3.4" stroke="currentColor" stroke-width="1.7"/><path d="M4.8 19.6c1.3-3.5 4.1-5.3 7.2-5.3s5.9 1.8 7.2 5.3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-          <h3>Personal data</h3>
+          <h2>Personal data</h2>
           <p>Names, emails, phone numbers and addresses that identify you or your clients.</p>
         </div>
         <div class="protect-item">
           <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4.5" y="10" width="15" height="9.5" rx="2.5" stroke="currentColor" stroke-width="1.7"/><path d="M8 10V7.8a4 4 0 0 1 8 0V10" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="14.7" r="1.5" fill="currentColor"/></svg>
-          <h3>Credentials</h3>
+          <h2>Credentials</h2>
           <p>Passwords, API keys and tokens to remove before sharing with an AI provider.</p>
         </div>
         <div class="protect-item">
           <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="6" width="17" height="12.5" rx="2.5" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 10.5h17" stroke="currentColor" stroke-width="1.7"/><path d="M7 15.5h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-          <h3>Financial information</h3>
+          <h2>Financial information</h2>
           <p>IBANs and card numbers pasted in without a second thought.</p>
         </div>
         <div class="protect-item">
           <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9.5 15.5 4.75 12l4.75-3.5M14.5 8.5 19.25 12l-4.75 3.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <h3>Secrets</h3>
+          <h2>Secrets</h2>
           <p>Connection strings, private keys and anything that smells like a leak.</p>
         </div>
       </section>
@@ -524,7 +558,7 @@
       </section>
       </main>
       <footer>
-        <span class="footer-brand"><img src="outputs/redaxa-mark.svg" alt="" />Redaxa<span class="footer-tag">· Privacy, before AI</span></span>
+        <span class="footer-brand"><img src="outputs/redaxa-mark.svg" alt="" width="20" height="20" />Redaxa<span class="footer-tag">· Privacy, before AI</span></span>
         <nav class="flinks" aria-label="Footer"><a href="/api-docs.html">API</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="https://pctweaker.app" target="_blank" rel="noopener">PC Tweaker</a></nav>
         <span>© 2026 Redaxa · Anonymous action counts, no tracking cookies. <a href="/privacy.html">Measurement details</a></span>
       </footer>

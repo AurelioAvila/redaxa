@@ -23,4 +23,7 @@ cpSync(resolve(root, "dist"), resolve(output, "dist"), {
 });
 mkdirSync(resolve(output, "outputs"), { recursive: true });
 cpSync(resolve(root, "outputs", "redaxa-mark.svg"), resolve(output, "outputs", "redaxa-mark.svg"));
-cpSync(resolve(root, "brand", "redaxa-master.png"), resolve(output, "og-image.png"));
+// og-image.png is the 1200x630 social card, not the 1024x1024 app mark: link
+// previews on X/LinkedIn/Slack need the wide ratio, and a square source gets
+// centre-cropped into an unreadable tile.
+cpSync(resolve(root, "brand", "og-image.png"), resolve(output, "og-image.png"));
