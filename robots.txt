@@ -1,5 +1,10 @@
 User-agent: *
 Allow: /
-Disallow: /dashboard.html
+
+# /dashboard.html is the signed-in workspace and carries <meta name="robots"
+# content="noindex,nofollow">. It is deliberately NOT disallowed here: a
+# disallowed URL cannot be crawled, so the noindex on it would never be read,
+# and Google can still list a blocked URL from inbound links alone. Letting
+# the crawler fetch the page is what actually keeps it out of the index.
 
 Sitemap: https://promptshield-beta.vercel.app/sitemap.xml
