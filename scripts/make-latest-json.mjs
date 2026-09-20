@@ -1,6 +1,6 @@
 /**
  * Builds the updater manifest (latest.json) for a GitHub release from the
- * locally built, signed NSIS bundle.
+ * locally built, signed NSIS and MSI bundles.
  *
  * Usage:  node scripts/make-latest-json.mjs <notes-file>
  *
@@ -34,6 +34,13 @@ if (!fs.existsSync(sigPath)) {
   process.exit(1);
 }
 
+const msiDir = path.join(root, "src-tauri", "target", "release", "bundle", "msi");
+const msi = fs.readdirSync(msiDir).find((f) => f.includes(`_${version}_`) && f.endsWith(".msi"));
+if (!msi || !fs.existsSync(path.join(msiDir, msi + ".sig"))) {
+  console.error(`No signed v${version} MSI found. Refusing to publish an incomplete updater manifest.`);
+  process.exit(1);
+}
+
 const notesFile = process.argv[2];
 if (!notesFile) {
   console.error("Usage: node scripts/make-latest-json.mjs <notes-file>");
@@ -60,15 +67,28 @@ if (/[^A-Za-z0-9.\-_]/.test(assetName)) {
   process.exit(1);
 }
 
+const nsisPlatform = {
+  signature: fs.readFileSync(sigPath, "utf8").trim(),
+  url: `${repoUrl}/releases/download/v${version}/${assetName}`,
+};
+const msiPlatform = {
+  signature: fs.readFileSync(path.join(msiDir, msi + ".sig"), "utf8").trim(),
+  url: `${repoUrl}/releases/download/v${version}/${msi.replace(/[^A-Za-z0-9.\-_]/g, ".")}`,
+};
+if (!nsisPlatform.signature || !msiPlatform.signature) {
+  console.error("Empty updater signature. Refusing to publish.");
+  process.exit(1);
+}
 const manifest = {
   version,
   notes,
   pub_date: new Date().toISOString().replace(/\.\d{3}Z$/, "Z"),
   platforms: {
-    "windows-x86_64": {
-      signature: fs.readFileSync(sigPath, "utf8").trim(),
-      url: `${repoUrl}/releases/download/v${version}/${assetName}`,
-    },
+    // Preserve the generic target for older clients while keeping the installed
+    // package family for clients that identify themselves as NSIS or MSI.
+    "windows-x86_64": nsisPlatform,
+    "windows-x86_64-nsis": nsisPlatform,
+    "windows-x86_64-msi": msiPlatform,
   },
 };
 
