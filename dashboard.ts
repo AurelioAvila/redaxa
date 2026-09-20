@@ -17,7 +17,7 @@ const defaultPreferences: Preferences = { language: "en", theme: "violet", scanM
 
 const themes: { code: ThemeName; label: string; accent: string; accentInk: string; swatch: [string, string] }[] = [
   { code: "lime", label: "Lime", accent: "#b9ff00", accentInk: "#080a07", swatch: ["#b9ff00", "#6dd400"] },
-  { code: "violet", label: "Violet", accent: "#7c5cfc", accentInk: "#14092e", swatch: ["#7c5cfc", "#5b3de0"] },
+  { code: "violet", label: "Violet", accent: "#b59aff", accentInk: "#241a38", swatch: ["#7c5cfc", "#5b3de0"] },
   { code: "teal", label: "Teal Depths", accent: "#35e0c0", accentInk: "#062019", swatch: ["#35e0c0", "#ff5c8a"] },
   { code: "amber", label: "Amber Dusk", accent: "#ffb84d", accentInk: "#241202", swatch: ["#ffb84d", "#5bd1ff"] },
   { code: "crimson", label: "Crimson Steel", accent: "#ff4d6d", accentInk: "#1c0509", swatch: ["#ff4d6d", "#4ce0b3"] },
@@ -39,7 +39,7 @@ const languageNames: Record<Language, string> = { en: "English", it: "Italiano",
 const copyByLanguage: Record<Language, Record<string, string>> = {
   en: {
     workspace: "Workspace", privateCheck: "Check a prompt", recent: "Recent checks", account: "Account", plans: "Plans & pricing", preferences: "Preferences",
-    eyebrow: "Personal workspace", title: "Your private AI checkpoint.", subtitle: "Review a prompt before it reaches any AI tool.",
+    eyebrow: "Personal workspace", title: "Share the work. Keep the secrets.", subtitle: "Review sensitive data before it reaches your next AI conversation.",
     scan: "Inspect prompt →", clear: "Clear", history: "Recent local checks", clearHistory: "Clear history",
     placeholder: "e.g. Draft a reply to Marco Rossi (m.rossi@acme.com) about the ACME invoice — my direct line is +39 02 5555 0180",
     composerTitle: "Check your prompt before sharing it with AI", composerSub: "Paste anything you are about to send to ChatGPT, Claude, Gemini or Copilot.", promptLabel: "Prompt to check",
@@ -59,17 +59,17 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     noChecksYet: "No checks yet", lastEightWillAppear: "Your last eight check summaries will appear here.", nothingFlagged: "Nothing flagged in this check.",
     itemsReviewed: "{n} item reviewed|{n} items reviewed",
     createAccountTrial: "Create your account and start your 7-day free trial to inspect prompts.", startTrialToInspect: "Start your 7-day free trial to inspect prompts.",
-    usageLabel: "Checks this week", freeTrialBadge: "What a plan unlocks", freeTrialDesc: "Unlimited checks, custom protected terms, and up to 3 team seats.", seePlans: "Compare plans →",
-    zeroRetentionDesc: "Prompts are checked, never stored or logged.", createAccountBtn: "Create account", protectionActive: "Protection active",
+    usageLabel: "Checks this week", freeTrialBadge: "More clarity with Pro", freeTrialDesc: "Prompt checks, protected terms, and local repository reviews on Windows.", seePlans: "Compare plans →",
+    zeroRetentionDesc: "Prompts are checked, never stored or logged.", createAccountBtn: "Create account", protectionActive: "Review before sharing",
     onboardCheckTitle: "Run your first check", onboardCheckDesc: "Paste a prompt and inspect it once.",
     onboardTermsTitle: "Add a custom term", onboardTermsDesc: "Protect a client or project name in Preferences.",
     onboardThemeTitle: "Pick a theme", onboardThemeDesc: "Make the workspace yours in Preferences.",
     activityTitle: "Your activity", activityEmpty: "Your privacy activity will appear here after your first check.", last7: "Last 7 days", byType: "By detection type",
     metricChecked: "Prompts checked", metricItems: "Sensitive items found", metricTop: "Most common detection", metricLast: "Last check",
-    plansTitle: "Plans & pricing", plansIntro: "Every plan starts with a 7-day trial. Use code {code} for 20% off your first monthly payment.",
-    personalTag: "For individuals", personalName: "Personal", personalDesc: "For independent professionals who use AI with real client and personal information.",
+    plansTitle: "Plans & pricing", plansIntro: "7-day trial for eligible new subscribers. Card required; cancel before the trial ends to avoid a charge. Pro is the new name for Personal, at the same price.",
+    personalTag: "Your everyday privacy toolkit", personalName: "Pro", personalDesc: "Review sensitive data in your prompts and repositories, with clear findings and practical next steps.",
     startTrial: "Start 7-day trial", yearlyPersonal: "€79.90 yearly",
-    businessTag: "For teams · up to 3 users", businessName: "Business", businessDesc: "Team controls and a clear privacy boundary for growing teams. Choose one to three seats.",
+    businessTag: "For teams · up to 3 users", businessName: "Business", businessDesc: "Everything in Pro, plus shared protected terms, category policies and metadata-only activity for your team.",
     seatsLabel: "Seats", seat1: "1 user", seat2: "2 users", seat3: "3 users", yearlyBusiness: "€149.90 yearly / user",
     manageTag: "Already subscribed?", manageTitle: "Manage billing", manageDesc: "Update your payment method, download invoices, or cancel renewal whenever you need to.", manageBtn: "Manage subscription",
     teamTitle: "Team", teamSeatsUsed: "{used} of {total} seats used.", inviteCreate: "Create invite link", copyLink: "Copy link", noInvites: "No invites yet.", teammateJoined: "Teammate joined", invitePending: "Invite pending", revoke: "Revoke", couldNotCreateInvite: "We could not create an invite.",
@@ -78,7 +78,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
   },
   it: {
     workspace: "Spazio di lavoro", privateCheck: "Controlla un prompt", recent: "Controlli recenti", account: "Account", plans: "Piani e prezzi", preferences: "Impostazioni",
-    eyebrow: "Spazio personale", title: "Il tuo controllo AI privato.", subtitle: "Rivedi un prompt prima di inviarlo a uno strumento AI.",
+    eyebrow: "Spazio personale", title: "Condividi il lavoro. Proteggi i segreti.", subtitle: "Rivedi i dati sensibili prima della tua prossima conversazione con l’AI.",
     scan: "Controlla prompt →", clear: "Svuota", history: "Controlli locali recenti", clearHistory: "Cancella cronologia",
     placeholder: "es. Scrivi una risposta a Marco Rossi (m.rossi@acme.com) sulla fattura ACME — il mio numero diretto è +39 02 5555 0180",
     composerTitle: "Controlla il prompt prima di condividerlo con l'AI", composerSub: "Incolla qualsiasi cosa tu stia per inviare a ChatGPT, Claude, Gemini o Copilot.", promptLabel: "Prompt da controllare",
@@ -98,15 +98,15 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     noChecksYet: "Nessun controllo ancora", lastEightWillAppear: "Qui compariranno i riepiloghi degli ultimi otto controlli.", nothingFlagged: "Nulla segnalato in questo controllo.",
     itemsReviewed: "{n} elemento esaminato|{n} elementi esaminati",
     createAccountTrial: "Crea il tuo account e avvia la prova gratuita di 7 giorni per controllare i prompt.", startTrialToInspect: "Avvia la prova gratuita di 7 giorni per controllare i prompt.",
-    usageLabel: "Controlli questa settimana", freeTrialBadge: "Cosa sblocca un piano", freeTrialDesc: "Controlli illimitati, termini protetti personalizzati e fino a 3 posti per il team.", seePlans: "Confronta i piani →",
-    zeroRetentionDesc: "I prompt vengono controllati, mai salvati né registrati.", createAccountBtn: "Crea account", protectionActive: "Protezione attiva",
+    usageLabel: "Controlli questa settimana", freeTrialBadge: "Più chiarezza con Pro", freeTrialDesc: "Controlli dei prompt, termini protetti e analisi locali dei repository su Windows.", seePlans: "Confronta i piani →",
+    zeroRetentionDesc: "I prompt vengono controllati, mai salvati né registrati.", createAccountBtn: "Crea account", protectionActive: "Rivedi prima di condividere",
     onboardCheckTitle: "Esegui il tuo primo controllo", onboardCheckDesc: "Incolla un prompt e controllalo una volta.",
     onboardTermsTitle: "Aggiungi un termine personalizzato", onboardTermsDesc: "Proteggi il nome di un cliente o progetto nelle Impostazioni.",
     onboardThemeTitle: "Scegli un tema", onboardThemeDesc: "Rendi personale lo spazio di lavoro nelle Impostazioni.",
     activityTitle: "La tua attività", activityEmpty: "La tua attività comparirà qui dopo il primo controllo.", last7: "Ultimi 7 giorni", byType: "Per tipo di rilevamento",
     metricChecked: "Prompt controllati", metricItems: "Elementi sensibili trovati", metricTop: "Rilevamento più frequente", metricLast: "Ultimo controllo",
-    plansTitle: "Piani e prezzi", plansIntro: "Ogni piano inizia con una prova gratuita di 7 giorni. Usa il codice {code} per il 20% di sconto sul primo pagamento mensile.",
-    personalTag: "Per privati", personalName: "Personal", personalDesc: "Per professionisti indipendenti che usano l'AI con dati reali di clienti e informazioni personali.",
+    plansTitle: "Piani e prezzi", plansIntro: "Prova di 7 giorni per nuovi abbonati idonei. Carta richiesta: annulla prima della fine per evitare addebiti. Pro è il nuovo nome di Personal, allo stesso prezzo.",
+    personalTag: "Per privati", personalName: "Pro", personalDesc: "Per professionisti indipendenti che usano l'AI con dati reali di clienti e informazioni personali.",
     startTrial: "Avvia prova di 7 giorni", yearlyPersonal: "€79,90 all'anno",
     businessTag: "Per team · fino a 3 utenti", businessName: "Business", businessDesc: "Controlli di team e un confine di privacy chiaro per team in crescita. Scegli da uno a tre posti.",
     seatsLabel: "Posti", seat1: "1 utente", seat2: "2 utenti", seat3: "3 utenti", yearlyBusiness: "€149,90 all'anno / utente",
@@ -144,8 +144,8 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     onboardThemeTitle: "Elige un tema", onboardThemeDesc: "Personaliza tu espacio de trabajo en Preferencias.",
     activityTitle: "Tu actividad", activityEmpty: "Tu actividad de privacidad aparecerá aquí después de tu primera revisión.", last7: "Últimos 7 días", byType: "Por tipo de detección",
     metricChecked: "Prompts revisados", metricItems: "Elementos sensibles encontrados", metricTop: "Detección más frecuente", metricLast: "Última revisión",
-    plansTitle: "Planes y precios", plansIntro: "Todos los planes comienzan con una prueba gratuita de 7 días. Usa el código {code} para un 20% de descuento en tu primer pago mensual.",
-    personalTag: "Para particulares", personalName: "Personal", personalDesc: "Para profesionales independientes que usan IA con datos reales de clientes e información personal.",
+    plansTitle: "Planes y precios", plansIntro: "Prueba de 7 días para nuevos suscriptores elegibles. Se requiere tarjeta; cancela antes del final para evitar cargos. Pro es el nuevo nombre de Personal, al mismo precio.",
+    personalTag: "Para particulares", personalName: "Pro", personalDesc: "Para profesionales independientes que usan IA con datos reales de clientes e información personal.",
     startTrial: "Comenzar prueba de 7 días", yearlyPersonal: "79,90 € al año",
     businessTag: "Para equipos · hasta 3 usuarios", businessName: "Business", businessDesc: "Controles de equipo y un límite de privacidad claro para equipos en crecimiento. Elige entre uno y tres puestos.",
     seatsLabel: "Puestos", seat1: "1 usuario", seat2: "2 usuarios", seat3: "3 usuarios", yearlyBusiness: "149,90 € al año / usuario",
@@ -177,14 +177,14 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     itemsReviewed: "{n} élément examiné|{n} éléments examinés",
     createAccountTrial: "Créez votre compte et démarrez votre essai gratuit de 7 jours pour vérifier des prompts.", startTrialToInspect: "Démarrez votre essai gratuit de 7 jours pour vérifier des prompts.",
     usageLabel: "Vérifications cette semaine", freeTrialBadge: "Ce qu’une offre débloque", freeTrialDesc: "Vérifications illimitées, termes protégés personnalisés et jusqu’à 3 postes d’équipe.", seePlans: "Comparer les offres →",
-    zeroRetentionDesc: "Les prompts sont vérifiés, jamais stockés ni enregistrés.", createAccountBtn: "Créer un compte", protectionActive: "Protection active",
+    zeroRetentionDesc: "Les prompts sont vérifiés, jamais stockés ni enregistrés.", createAccountBtn: "Créer un compte", protectionActive: "Review before sharing",
     onboardCheckTitle: "Effectuez votre première vérification", onboardCheckDesc: "Collez un prompt et vérifiez-le une fois.",
     onboardTermsTitle: "Ajoutez un terme personnalisé", onboardTermsDesc: "Protégez le nom d’un client ou d’un projet dans les Préférences.",
     onboardThemeTitle: "Choisissez un thème", onboardThemeDesc: "Personnalisez votre espace de travail dans les Préférences.",
     activityTitle: "Votre activité", activityEmpty: "Votre activité de confidentialité apparaîtra ici après votre première vérification.", last7: "7 derniers jours", byType: "Par type de détection",
     metricChecked: "Prompts vérifiés", metricItems: "Éléments sensibles trouvés", metricTop: "Détection la plus fréquente", metricLast: "Dernière vérification",
-    plansTitle: "Offres et tarifs", plansIntro: "Chaque offre commence par un essai gratuit de 7 jours. Utilisez le code {code} pour 20 % de réduction sur votre premier paiement mensuel.",
-    personalTag: "Pour les particuliers", personalName: "Personal", personalDesc: "Pour les professionnels indépendants qui utilisent l’IA avec de vraies données clients et personnelles.",
+    plansTitle: "Offres et tarifs", plansIntro: "Essai de 7 jours pour les nouveaux abonnés éligibles. Carte requise ; annulez avant la fin pour éviter les frais. Pro est le nouveau nom de Personal, au même prix.",
+    personalTag: "Pour les particuliers", personalName: "Pro", personalDesc: "Pour les professionnels indépendants qui utilisent l’IA avec de vraies données clients et personnelles.",
     startTrial: "Démarrer l’essai de 7 jours", yearlyPersonal: "79,90 € par an",
     businessTag: "Pour les équipes · jusqu’à 3 utilisateurs", businessName: "Business", businessDesc: "Des contrôles d’équipe et une limite de confidentialité claire pour les équipes en croissance. Choisissez de un à trois postes.",
     seatsLabel: "Postes", seat1: "1 utilisateur", seat2: "2 utilisateurs", seat3: "3 utilisateurs", yearlyBusiness: "149,90 € par an / utilisateur",
@@ -222,8 +222,8 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     onboardThemeTitle: "Ein Thema wählen", onboardThemeDesc: "Gestalten Sie den Arbeitsbereich in den Einstellungen nach Ihrem Geschmack.",
     activityTitle: "Ihre Aktivität", activityEmpty: "Ihre Datenschutz-Aktivität erscheint hier nach Ihrer ersten Prüfung.", last7: "Letzte 7 Tage", byType: "Nach Erkennungstyp",
     metricChecked: "Geprüfte Prompts", metricItems: "Gefundene sensible Elemente", metricTop: "Häufigste Erkennung", metricLast: "Letzte Prüfung",
-    plansTitle: "Tarife & Preise", plansIntro: "Jeder Tarif beginnt mit einer 7-tägigen Testphase. Verwenden Sie den Code {code} für 20 % Rabatt auf Ihre erste monatliche Zahlung.",
-    personalTag: "Für Einzelpersonen", personalName: "Personal", personalDesc: "Für selbstständige Fachleute, die KI mit echten Kunden- und Personendaten nutzen.",
+    plansTitle: "Tarife & Preise", plansIntro: "7 Tage Testphase für berechtigte neue Abonnenten. Karte erforderlich; vor Ablauf kündigen, um Kosten zu vermeiden. Pro ist der neue Name von Personal, zum gleichen Preis.",
+    personalTag: "Für Einzelpersonen", personalName: "Pro", personalDesc: "Für selbstständige Fachleute, die KI mit echten Kunden- und Personendaten nutzen.",
     startTrial: "7-tägige Testphase starten", yearlyPersonal: "79,90 € jährlich",
     businessTag: "Für Teams · bis zu 3 Nutzer", businessName: "Business", businessDesc: "Teamkontrollen und eine klare Datenschutzgrenze für wachsende Teams. Wählen Sie ein bis drei Plätze.",
     seatsLabel: "Plätze", seat1: "1 Nutzer", seat2: "2 Nutzer", seat3: "3 Nutzer", yearlyBusiness: "149,90 € jährlich / Nutzer",
@@ -280,7 +280,7 @@ export function saveHistory(text: string, findings: Finding[]): HistoryEntry[] {
     id: crypto.randomUUID(),
     createdAt: new Date().toISOString(),
     findings: findings.length,
-    preview: text.replace(/\s+/g, " ").trim().slice(0, 76),
+    preview: "Prompt content is not stored.",
     byKind
   };
   // Stores more than the 8 shown in the "Recent checks" list so the weekly
@@ -293,9 +293,31 @@ export function saveHistory(text: string, findings: Finding[]): HistoryEntry[] {
 
 export function readHistory(): HistoryEntry[] {
   try {
-    const value: unknown = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
-    return Array.isArray(value) ? value as HistoryEntry[] : [];
-  } catch { return []; }
+    const serialized = localStorage.getItem(storageKey) ?? "[]";
+    const value: unknown = JSON.parse(serialized);
+    if (!Array.isArray(value)) { localStorage.removeItem(storageKey); return []; }
+    const valid: HistoryEntry[] = [];
+    for (const item of value.slice(0, 40)) {
+      if (!item || typeof item !== "object" || typeof item.id !== "string" || item.id.length > 100 ||
+          typeof item.createdAt !== "string" || !Number.isFinite(Date.parse(item.createdAt)) ||
+          !Number.isSafeInteger(item.findings) || item.findings < 0 || item.findings > 10000 ||
+          !item.byKind || typeof item.byKind !== "object" || Array.isArray(item.byKind)) continue;
+      const byKind: Record<string, number> = {};
+      for (const [kind, amount] of Object.entries(item.byKind)) {
+        if (Object.hasOwn(findingLabelsByLanguage.en, kind) && typeof amount === "number" && Number.isSafeInteger(amount) && amount >= 0 && amount <= 10000) byKind[kind] = amount;
+      }
+      // Migrate previous versions which retained the first 76 raw characters.
+      // Reconstruct allowed fields so old prompt content and unknown fields disappear.
+      valid.push({ id: item.id, createdAt: new Date(item.createdAt).toISOString(), findings: item.findings,
+        preview: "Prompt content is not stored.", byKind });
+    }
+    const sanitized = JSON.stringify(valid);
+    if (sanitized !== serialized) localStorage.setItem(storageKey, sanitized);
+    return valid;
+  } catch {
+    try { localStorage.removeItem(storageKey); } catch { /* Storage can be unavailable. */ }
+    return [];
+  }
 }
 
 export function clearHistory(): void {
@@ -517,24 +539,27 @@ export function mountDashboard(): void {
   plansDialog.className = "drawer-backdrop";
   plansDialog.innerHTML = `
     <section class="drawer plans-drawer" role="dialog" aria-modal="true" aria-labelledby="plans-title">
-      <h2 id="plans-title">${words().plansTitle}</h2>
+      <h2 id="plans-title" tabindex="-1">${words().plansTitle}</h2>
       <p>${format(words().plansIntro, { code: "<b>SHIELD</b>" })}</p>
       <div class="plan-grid">
-        <article class="plan-card">
+        <article class="plan-card featured">
           <div class="plan-tag">${words().personalTag}</div>
           <h3>${words().personalName}</h3>
           <div class="plan-price">€7.99 <small>/ month</small></div>
           <p>${words().personalDesc}</p>
+          <ul class="rx-benefits"><li><strong>Prompt checks &amp; redaction</strong> on web, Windows and Chrome</li><li><strong>Custom protected terms</strong> for client and project names</li><li><strong>Local repository checks on Windows:</strong> files, history and a prioritized recap</li><li><strong>Redacted text reports</strong> for repository reviews</li></ul>
+          <p class="rx-preview-note">Repository checks require Redaxa 0.4.0 or later for Windows. Launch from the app or extension. Pro keeps the existing Personal billing plan and price.</p>
           <div class="plan-actions">
             <button type="button" class="primary" data-plan="personal" data-interval="monthly">${words().startTrial}</button>
             <button type="button" class="secondary" data-plan="personal" data-interval="yearly">${words().yearlyPersonal}</button>
           </div>
         </article>
-        <article class="plan-card featured">
+        <article class="plan-card">
           <div class="plan-tag">${words().businessTag}</div>
           <h3>${words().businessName}</h3>
           <div class="plan-price">€14.99 <small>/ user / month</small></div>
           <p>${words().businessDesc}</p>
+          <ul class="rx-benefits"><li><strong>Everything in Pro</strong></li><li><strong>Shared protected terms</strong> for every member</li><li><strong>Warn, redact or block</strong> through team policies</li><li><strong>Activity &amp; CSV export</strong> without prompt content</li></ul>
           <label class="pref-row">${words().seatsLabel}<select id="business-seats"><option value="1">${words().seat1}</option><option value="2">${words().seat2}</option><option value="3">${words().seat3}</option></select></label>
           <div class="plan-actions">
             <button type="button" class="primary" data-plan="business" data-interval="monthly">${words().startTrial}</button>
@@ -582,6 +607,8 @@ export function mountDashboard(): void {
   const closePlans = (): void => {
     plansDialog.classList.remove("open");
     document.documentElement.classList.remove("preferences-open");
+    if (window.location.hash === "#plans") window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    document.querySelector<HTMLButtonElement>('[data-nav="plans"]')?.focus();
   };
   const teamSection = required<HTMLElement>("#team-section");
   const teamSeats = required<HTMLElement>("#team-seats");
@@ -721,6 +748,8 @@ export function mountDashboard(): void {
 
   const openPlans = (): void => {
     plansDialog.classList.add("open");
+    required<HTMLElement>(".plans-drawer").scrollTop = 0;
+    required<HTMLElement>("#plans-title").focus({ preventScroll: true });
     document.documentElement.classList.add("preferences-open");
     void loadTeam();
     void loadOrganization();
@@ -729,6 +758,16 @@ export function mountDashboard(): void {
   document.querySelector("#side-fill-cta")?.addEventListener("click", (event) => { event.preventDefault(); openPlans(); });
   plansDialog.addEventListener("click", (event) => { if (event.target === plansDialog) closePlans(); });
   document.addEventListener("redaxa:need-upgrade", () => openPlans());
+  window.addEventListener("hashchange", () => { if (window.location.hash === "#plans") openPlans(); });
+  plansDialog.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") { event.preventDefault(); closePlans(); }
+    if (event.key === "Tab") {
+      const focusable = [...plansDialog.querySelectorAll<HTMLElement>('button:not(:disabled),a[href],select,input')].filter((element) => element.getClientRects().length > 0);
+      const first = focusable[0], last = focusable[focusable.length - 1];
+      if (event.shiftKey && (document.activeElement === first || document.activeElement?.id === "plans-title")) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    }
+  });
 
   const languageSelect = required<HTMLSelectElement>("#language");
   const scanModeSelect = required<HTMLSelectElement>("#scan-mode");
@@ -1163,7 +1202,7 @@ export function mountDashboard(): void {
     for (const entry of weekly) for (const [kind, n] of Object.entries(entry.byKind)) totals[kind] = (totals[kind] ?? 0) + n;
     const rows = Object.entries(totals).sort((a, b) => b[1] - a[1]).slice(0, 5);
     const max = rows.length ? rows[0][1] : 0;
-    analyticsRoot.innerHTML = rows.map(([kind, n]) => `<div class="analytics-row"><span class="analytics-label">${labels()[kind] ?? kind}</span><div class="analytics-track"><div class="analytics-fill" style="width:${Math.max(6, Math.round((n / max) * 100))}%"></div></div><span class="analytics-value">${n}</span></div>`).join("");
+    analyticsRoot.innerHTML = rows.map(([kind, n]) => `<div class="analytics-row"><span class="analytics-label">${escapeHtml(labels()[kind] ?? kind)}</span><div class="analytics-track"><div class="analytics-fill" style="width:${Math.max(6, Math.round((n / max) * 100))}%"></div></div><span class="analytics-value">${n}</span></div>`).join("");
 
     if (metricChecked) metricChecked.textContent = String(weekly.length);
     if (metricItems) metricItems.textContent = String(weekly.reduce((sum, entry) => sum + entry.findings, 0));
@@ -1446,6 +1485,7 @@ export function mountDashboard(): void {
   syncChipSelection();
   applyLanguage();
   avoidCornerOverlap();
+  if (window.location.hash === "#plans") openPlans();
 }
 
 type ScanRequestOptions = { includePersonalData?: boolean; includeCredentials?: boolean; includeFinancialData?: boolean; customTerms?: string[] };

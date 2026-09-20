@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Redaxa",
-  "version": "0.3.3",
+  "version": "0.4.0",
   "identifier": "com.aurelioavila.redaxa",
   "build": {
     "frontendDist": "../desktop-dist",
@@ -30,6 +30,7 @@
     }
   },
   "plugins": {
+    "deep-link": {"desktop": {"schemes": ["redaxa"]}},
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDMwNjlGQzhCM0U5QUZFOTEKUldTUi9wbytpL3hwTUdZbzVBdmRzNk5CRXc1REZKeHFFTDBNa0lESytMQmJMeSt5ZDA0YTZVZk0K",
       "endpoints": [
@@ -38,6 +39,7 @@
     }
   },
   "bundle": {
+    "resources": {"repository-runtime/": "repository-runtime/"},
     "active": true,
     "targets": "all",
     "createUpdaterArtifacts": true,

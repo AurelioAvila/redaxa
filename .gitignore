@@ -2,6 +2,7 @@ node_modules/
 .next/
 dist/
 desktop-dist/
+src-tauri/repository-runtime/
 src-tauri/icons/64x64.png
 src-tauri/icons/android/
 src-tauri/icons/ios/
@@ -19,3 +20,6 @@ public/
 
 # Per-release updater manifest, generated at release time — not source.
 latest.json
+
+# Local audit evidence and unsigned/signing probes are never release source.
+artifacts/

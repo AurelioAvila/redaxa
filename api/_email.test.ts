@@ -36,7 +36,7 @@ const base = {
   const html = subscriptionHtml({ ...base, priceLabel: null, renewsOn: null });
   assert.ok(!html.includes("Price"), "an unknown price should be omitted, not guessed");
   assert.ok(!html.includes("Renews on"));
-  assert.ok(html.includes("Personal"), "the plan is still named");
+  assert.ok(html.includes("Pro"), "the plan is still named");
 }
 
 // The buyer's own name reaches the markup, so it has to be escaped.
@@ -47,7 +47,7 @@ const base = {
 }
 
 assert.equal(planLabel("business", "year"), "Business — Yearly");
-assert.equal(planLabel("personal", "month"), "Personal — Monthly");
+assert.equal(planLabel("personal", "month"), "Pro — Monthly");
 assert.equal(planLabel(null, null), "Redaxa");
 assert.equal(planLabel("monthly", "month"), "Redaxa — Monthly");
 assert.equal(planLabel("yearly", "year"), "Redaxa — Yearly");

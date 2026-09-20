@@ -21,3 +21,15 @@
 .ps-auth-pw-wrap input{padding-right:64px!important}
 .ps-auth-toggle-pw{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:#9299a6;font-size:12px;font-weight:700;cursor:pointer;padding:6px 8px}
 .ps-auth-toggle-pw:hover{color:#f5f7fa}
+
+/* Shared Redaxa violet workspace: existing auth hooks and form behavior preserved. */
+.ps-auth-dialog{background:var(--rx-surface,#19171f);border-color:var(--rx-border,#493950);border-radius:20px;padding:30px;box-shadow:0 30px 100px #0009}
+.ps-auth-dialog h2{font-weight:650;letter-spacing:-.035em}
+.ps-auth-dialog p{color:var(--rx-muted,#b5afc1)}
+.ps-auth-field input{background:#110e16;border-color:#493850;border-radius:10px;min-height:45px}
+.ps-auth-submit{background:var(--rx-action,#b59aff);color:var(--rx-action-ink,#241a38);border-radius:10px;min-height:45px}
+.ps-auth-close{min-width:32px;min-height:32px;color:#c9b7d8}
+.ps-auth-link,.ps-auth-forgot,.ps-auth-legal a{color:#d1b6ef}
+.ps-auth-backdrop{backdrop-filter:blur(5px)}
+.ps-account-menu{background:var(--rx-surface,#19171f);border-color:#493850}
+.ps-avatar{background:var(--rx-action,#b59aff);color:var(--rx-action-ink,#241a38)}

@@ -1,55 +1,46 @@
 <!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>Redaxa</title>
-    <style>
-      :root { --ink:#090a08; --paper:#f4f6f1; --accent:#7c5cfc; --muted:#9da49a; --line:#2b3128; }
-      * { box-sizing:border-box; }
-      body { margin:0; width:280px; background:var(--ink); color:var(--paper); font-family:system-ui,-apple-system,"Segoe UI",sans-serif; padding:18px; }
-      h1 { font-size:15px; margin:0 0 4px; letter-spacing:-.02em; }
-      p { color:var(--muted); font-size:12px; line-height:1.5; margin:0 0 14px; }
-      label { display:block; font-size:12px; font-weight:600; margin:10px 0 5px; }
-      input { width:100%; border:1px solid var(--line); border-radius:8px; background:#0e100d; color:var(--paper); padding:9px 10px; font:inherit; font-size:13px; }
-      button { width:100%; border:0; border-radius:8px; padding:10px; font-weight:700; font-size:13px; cursor:pointer; margin-top:12px; }
-      .primary { background:var(--accent); color:#0a0c08; }
-      .secondary { background:transparent; border:1px solid var(--line); color:var(--paper); }
-      .msg { font-size:12px; margin-top:10px; min-height:16px; color:#ff9d8a; }
-      .status { display:none; }
-      .status.show { display:block; }
-      .status .row { display:flex; justify-content:space-between; align-items:center; font-size:13px; margin-bottom:6px; }
-      .pill { display:inline-flex; align-items:center; gap:6px; padding:5px 9px; border-radius:999px; background:#12180e; border:1px solid #3d4b34; font-size:11px; }
-      .pill i { width:6px; height:6px; border-radius:50%; background:var(--accent); }
-      .form { display:none; }
-      .form.show { display:block; }
-      .links { display:flex; justify-content:space-between; margin-top:10px; }
-      .link-btn { width:auto; background:transparent; border:0; color:var(--muted); font-size:11.5px; font-weight:600; padding:0; margin:0; text-decoration:underline; cursor:pointer; }
-      .link-btn:hover { color:var(--paper); }
-    </style>
-  </head>
-  <body>
-    <h1>Redaxa</h1>
-    <p>Scans your ChatGPT/Claude prompts for secrets and personal data before you send them.</p>
-
-    <div class="status" id="status">
-      <div class="row"><span id="status-email"></span><span class="pill" id="status-pill"><i></i><span id="status-pill-text">Active</span></span></div>
-      <button class="secondary" id="open-dashboard">Open dashboard</button>
-      <button class="secondary" id="sign-out">Sign out</button>
-    </div>
-
-    <form class="form" id="form">
-      <label for="email">Email</label>
-      <input id="email" type="email" autocomplete="username" required />
-      <label for="password">Password</label>
-      <input id="password" type="password" autocomplete="current-password" required />
-      <button class="primary" type="submit">Sign in</button>
-      <div class="links">
-        <button type="button" class="link-btn" id="create-account">Create account</button>
-        <button type="button" class="link-btn" id="forgot-password">Forgot password?</button>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Redaxa — Your privacy workspace</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <header class="brand"><img src="icons/48.png" alt="" width="32" height="32" /><div><strong>Redaxa</strong><span>YOUR PRIVACY WORKSPACE</span></div><span class="edition">EXTENSION</span></header>
+  <p id="preview-note" class="preview-note" hidden>Design preview · Account actions work in the installed extension.</p>
+  <nav class="tabs" aria-label="Protection tools"><button id="prompt-tab" class="tab selected" type="button" aria-pressed="true">Prompt protection</button><button id="repository-tab" class="tab" type="button" aria-pressed="false">Repository <span class="pro">PRO</span></button></nav>
+  <main>
+    <section id="prompt-panel" aria-labelledby="prompt-heading">
+      <div class="eyebrow">BEFORE YOU PRESS SEND</div>
+      <h1 id="prompt-heading">Keep private details<br /><span>out of your prompts.</span></h1>
+      <p class="intro">Spot personal data and credentials on supported AI sites. Review the match, then choose what to share.</p>
+      <div class="status" id="status" hidden>
+        <div class="account-card"><span class="pill" id="status-pill"><i></i><span id="status-pill-text">Checking plan</span></span><strong id="status-email"></strong><span id="status-plan"></span></div>
+        <p class="hint">Look for the Redaxa button on ChatGPT, Claude, Gemini, Copilot and Perplexity.</p>
+        <button class="primary" id="open-dashboard" type="button">Open your workspace <span>↗</span></button>
+        <button class="link-btn signout" id="sign-out" type="button">Sign out</button>
       </div>
-      <p class="msg" id="msg"></p>
-    </form>
-
-    <script src="popup.js"></script>
-  </body>
+      <form id="form" hidden>
+        <label for="email">Email</label><input id="email" type="email" autocomplete="username" placeholder="you@company.com" required />
+        <div class="label-row"><label for="password">Password</label><button type="button" class="link-btn" id="forgot-password">Forgot password?</button></div>
+        <div class="password-field"><input id="password" type="password" autocomplete="current-password" required /><button id="show-password" type="button" aria-label="Show password">Show</button></div>
+        <button class="primary" id="sign-in" type="submit">Sign in to Redaxa <span>→</span></button>
+        <div class="signup">New here? <button type="button" class="link-btn" id="create-account">Explore plans & create account</button></div>
+      </form>
+    </section>
+    <section id="repository-panel" aria-labelledby="repository-heading" hidden>
+      <div class="eyebrow">A SECOND LOOK BEFORE YOU SHIP <span class="pro">PRO</span></div>
+      <h1 id="repository-heading">Your repository.<br /><span>A clearer risk picture.</span></h1>
+      <p class="intro">Launch a local repository review in the Redaxa Windows app. Find potential credentials and sensitive data across public GitHub files and accessible history.</p>
+      <div class="repo-benefits"><div><b>01</b><span><strong>Focus on what matters</strong>Grouped findings, examples separated.</span></div><div><b>02</b><span><strong>See the scope</strong>Files, history and any coverage gaps.</span></div><div><b>03</b><span><strong>Leave with a clear next step</strong>A prioritized recap and text report.</span></div></div>
+      <form id="repository-form"><label for="repository-url">Public GitHub repository</label><input id="repository-url" type="url" placeholder="https://github.com/owner/repository" spellcheck="false" autocomplete="off" required /><p class="hint" id="repository-access">Repository checks are included with Pro and Business.</p><button class="primary" id="open-repository" type="submit">Continue with Pro <span>→</span></button></form>
+      <button class="secondary" id="repository-plans" type="button">See what Pro includes</button>
+      <p class="micro">Requires Redaxa 0.4.0 or later for Windows and an active Pro or Business plan. Opens the workspace first, then you choose “Open Windows app”. You may need to sign in again. Repository scans run on your PC. Detection does not confirm that a key works.</p>
+    </section>
+    <p class="msg" id="msg" role="status" aria-live="polite"></p>
+  </main>
+  <footer><span class="footer-dot"></span>Review first. Share with confidence.</footer>
+  <script src="config.js"></script><script src="popup.js"></script>
+</body>
 </html>
