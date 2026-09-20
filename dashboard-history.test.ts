@@ -21,7 +21,9 @@ data.set(key, JSON.stringify([
 const migrated = readHistory();
 assert.equal(migrated.length, 1);
 assert.deepEqual(migrated[0].byKind, { email: 1 });
-assert.doesNotMatch(data.get(key)!, /legacy-sensitive|secret-raw|<img|<script>|sourceText/);
+for (const discarded of ['legacy-sensitive', 'secret-raw', '<img', '<script>', 'sourceText']) {
+  assert.equal(data.get(key)!.includes(discarded), false);
+}
 assert.equal(migrated[0].preview, 'Prompt content is not stored.');
 
 data.set(key, JSON.stringify(Array.from({length: 80}, (_, i) => ({ id: String(i), createdAt: '2026-09-20', findings: 0, preview: 'do-not-retain', byKind: {} }))));
