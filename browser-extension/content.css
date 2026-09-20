@@ -3,16 +3,16 @@
   right: 22px;
   bottom: 88px;
   z-index: 2147483000;
-  border: 1px solid #3d4b34;
+  border: 1px solid #493b59;
   border-radius: 999px;
   padding: 10px 16px;
-  background: #0d0f0c;
-  color: #f4f6f1;
+  background: #15121b;
+  color: #f2eef9;
   font: 600 13px system-ui, sans-serif;
   cursor: pointer;
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
 }
-#redaxa-check-btn:hover { border-color: #7c5cfc; color: #7c5cfc; }
+#redaxa-check-btn:hover { border-color: #ae95ff; color: #ae95ff; }
 
 #redaxa-panel {
   position: fixed;
@@ -22,9 +22,9 @@
   width: 300px;
   max-height: 60vh;
   overflow: auto;
-  background: #0d0f0c;
-  color: #f4f6f1;
-  border: 1px solid #2b3128;
+  background: #15121b;
+  color: #f2eef9;
+  border: 1px solid #393240;
   border-radius: 14px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
   display: none;
@@ -33,19 +33,19 @@
 #redaxa-panel.open { display: block; }
 .ps-panel-head {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 12px 14px; border-bottom: 1px solid #2b3128; font-weight: 700;
+  padding: 12px 14px; border-bottom: 1px solid #393240; font-weight: 700;
 }
-.ps-panel-head button { border: 0; background: transparent; color: #9da49a; font-size: 18px; cursor: pointer; }
+.ps-panel-head button { border: 0; background: transparent; color: #aaa2b7; font-size: 18px; cursor: pointer; }
 .ps-panel-body { padding: 12px 14px; }
-.ps-empty { color: #9da49a; margin: 0; }
-.ps-loading { color: #9da49a; margin: 0; }
+.ps-empty { color: #aaa2b7; margin: 0; }
+.ps-loading { color: #aaa2b7; margin: 0; }
 .ps-count { margin: 0 0 8px; font-weight: 700; }
-.ps-reason { margin: 0 0 8px; padding: 7px 9px; border-left: 3px solid #a3e635; background: rgba(163, 230, 53, 0.08); font-size: 12px; color: inherit; border-radius: 0 6px 6px 0; }
-.ps-finding { padding: 8px 0; border-top: 1px solid #2b3128; }
+.ps-reason { margin: 0 0 8px; padding: 7px 9px; border-left: 3px solid #ae95ff; background: rgba(174, 149, 255, 0.08); font-size: 12px; color: inherit; border-radius: 0 6px 6px 0; }
+.ps-finding { padding: 8px 0; border-top: 1px solid #393240; }
 .ps-finding b { font-size: 12.5px; }
 .ps-use-redacted {
   margin-top: 12px; width: 100%; border: 0; border-radius: 8px; padding: 9px;
-  background: #7c5cfc; color: #0a0c08; font-weight: 700; cursor: pointer;
+  background: #ae95ff; color: #1b102c; font-weight: 700; cursor: pointer;
 }
 
 #redaxa-intercept {
@@ -55,21 +55,21 @@
 }
 .ps-intercept-card {
   width: 340px; max-height: 80vh; overflow: auto;
-  background: #0d0f0c; color: #f4f6f1;
-  border: 1px solid #2b3128; border-radius: 14px;
+  background: #15121b; color: #f2eef9;
+  border: 1px solid #393240; border-radius: 14px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   font: 13px/1.5 system-ui, sans-serif;
 }
 .ps-int-secondary {
-  margin-top: 8px; width: 100%; border: 1px solid #2b3128; border-radius: 8px; padding: 9px;
-  background: transparent; color: #f4f6f1; font-weight: 600; cursor: pointer;
+  margin-top: 8px; width: 100%; border: 1px solid #393240; border-radius: 8px; padding: 9px;
+  background: transparent; color: #f2eef9; font-weight: 600; cursor: pointer;
 }
-.ps-int-secondary:hover { border-color: #7c5cfc; color: #7c5cfc; }
+.ps-int-secondary:hover { border-color: #ae95ff; color: #ae95ff; }
 .ps-int-head {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 14px 16px; border-bottom: 1px solid #2b3128; font-weight: 700;
+  padding: 14px 16px; border-bottom: 1px solid #393240; font-weight: 700;
 }
-.ps-int-x { border: 0; background: transparent; color: #9da49a; font-size: 20px; cursor: pointer; }
+.ps-int-x { border: 0; background: transparent; color: #aaa2b7; font-size: 20px; cursor: pointer; }
 .ps-int-body { padding: 14px 16px; }
 .ps-int-body .ps-use-redacted { margin-top: 4px; }
 
@@ -79,11 +79,12 @@
   bottom: 26px;
   transform: translateX(-50%);
   z-index: 2147483647;
-  background: #0d0f0c;
-  color: #f4f6f1;
-  border: 1px solid #7c5cfc;
+  background: #15121b;
+  color: #f2eef9;
+  border: 1px solid #ae95ff;
   border-radius: 999px;
   padding: 11px 18px;
   font: 600 13px system-ui, sans-serif;
   box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45);
 }
+

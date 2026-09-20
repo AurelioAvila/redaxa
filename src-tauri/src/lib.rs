@@ -6,6 +6,7 @@
 // keeping the refresh token off disk in the clear.
 const KEYRING_SERVICE: &str = "com.redaxa.desktop";
 const KEYRING_USER: &str = "session";
+mod repository;
 
 #[tauri::command]
 fn secure_store_set(value: String) -> Result<(), String> {
@@ -73,15 +74,31 @@ async fn check_for_updates(app: tauri::AppHandle) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+            for arg in args { repository::open_deep_link(app, &arg); }
+        }))
+        .plugin(tauri_plugin_deep_link::init())
+        .manage(repository::RepositoryState::default())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![
             secure_store_set,
             secure_store_get,
-            secure_store_delete
+            secure_store_delete,
+            repository::repository_scan,
+            repository::repository_progress,
+            repository::repository_cancel
         ])
         .setup(|app| {
+            use tauri_plugin_deep_link::DeepLinkExt;
+            #[cfg(windows)]
+            app.deep_link().register_all()?;
+            let deep_handle = app.handle().clone();
+            app.deep_link().on_open_url(move |event| {
+                for url in event.urls() { repository::open_deep_link(&deep_handle, url.as_str()); }
+            });
+            for arg in std::env::args().skip(1) { repository::open_deep_link(app.handle(), &arg); }
             if cfg!(debug_assertions) {
                 app.handle().plugin(
                     tauri_plugin_log::Builder::default()
@@ -100,6 +117,12 @@ pub fn run() {
                 });
             }
             Ok(())
+        })
+        .on_window_event(|window, event| {
+            if matches!(event, tauri::WindowEvent::Destroyed) {
+                use tauri::Manager;
+                repository::cancel(window.state::<repository::RepositoryState>().inner());
+            }
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -1,0 +1,4 @@
+{
+  "build": {"devUrl": "http://127.0.0.1:4186", "beforeDevCommand": "npm run start"},
+  "app": {"windows": [{"label":"main", "url":"github.html", "title":"Redaxa — Repository check · Development", "width":1180, "height":850, "minWidth":760, "minHeight":540, "resizable":true}]}
+}

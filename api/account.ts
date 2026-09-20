@@ -108,6 +108,7 @@ export default async function handler(request: RequestLike, response: ResponseLi
     response.status(200).json({
       email: user.email,
       active: entitlement.active,
+      repositoryAccess: entitlement.active && (entitlement.role === 'member' || ['personal','pro','business'].includes(account?.plan ?? '')),
       status: account?.subscription_status ?? null,
       currentPeriodEnd: account?.current_period_end ?? null,
       plan: account?.plan ?? null,

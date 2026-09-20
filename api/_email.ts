@@ -83,7 +83,7 @@ export function planLabel(plan: string | null, interval: string | null): string 
   // Legacy metadata sometimes contains a billing cadence instead of a tier.
   // Do not invent an entitlement or repeat "monthly — Monthly".
   const cadenceOnly = ["month", "monthly", "year", "yearly", "annual"].includes((plan || "").toLowerCase());
-  const name = plan === "business" ? "Business" : plan === "personal" ? "Personal" : cadenceOnly ? "Redaxa" : plan || "Redaxa";
+  const name = plan === "business" ? "Business" : plan === "personal" || plan === "pro" ? "Pro" : cadenceOnly ? "Redaxa" : plan || "Redaxa";
   const cadence = interval === "year" ? "Yearly" : interval === "month" ? "Monthly" : null;
   return cadence ? `${name} — ${cadence}` : name;
 }

@@ -12,3 +12,7 @@ api/**/*.test.ts
 *.zip
 Dockerfile
 railway.toml
+artifacts
+REPOSITORY-PREVIEW.md
+dev-repository.json
+browser-extension
