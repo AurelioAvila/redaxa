@@ -1,6 +1,6 @@
 [package]
 name = "redaxa-desktop"
-version = "0.3.3"
+version = "0.4.0"
 description = "Redaxa AI privacy desktop companion"
 authors = ["Aurelio Avila"]
 license-file = "../LICENSE"
@@ -31,3 +31,5 @@ keyring = { version = "3.6.3", features = ["windows-native"] }
 tauri-plugin-global-shortcut = "2"
 tauri-plugin-updater = "2"
 tauri-plugin-dialog = "2"
+tauri-plugin-deep-link = "2"
+tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }

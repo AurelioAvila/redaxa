@@ -1,6 +1,6 @@
 {
   "name": "redaxa",
-  "version": "0.3.3",
+  "version": "0.4.0",
   "type": "module",
   "private": true,
   "license": "UNLICENSED",
@@ -12,13 +12,16 @@
     "build:desktop": "npm run build && node scripts/build-desktop.mjs",
     "build:web": "npm run build && node scripts/build-web.mjs",
     "check": "tsc --noEmit",
-    "test": "tsx scanner.test.ts && tsx policy.test.ts && tsx tokens.test.ts && tsx api/_billing.test.ts && tsx api/auth/session.test.ts && tsx api/_email.test.ts && tsx api/_audit.test.ts && tsx api/_stripe-webhook.test.ts && tsx api/auth/signup.test.ts && npm run build && node scripts/landing-demo.test.mjs",
+    "test": "tsx scanner.test.ts && tsx policy.test.ts && tsx tokens.test.ts && tsx api/_billing.test.ts && tsx api/auth/session.test.ts && tsx api/_email.test.ts && tsx api/_audit.test.ts && tsx api/_stripe-webhook.test.ts && tsx api/auth/signup.test.ts && npm run build && node scripts/landing-demo.test.mjs && npm run test:repository",
     "start": "npm run build && tsx server.ts",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "test:repository": "tsx repository-scanner.test.ts && tsx repository-full.test.ts && tsx repository-report.test.ts && tsx repository-access.test.ts && tsx dashboard-history.test.ts && node browser-extension/repository.test.mjs && node scripts/service-worker.test.mjs"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.11.4",
     "@types/node": "^22.10.2",
+    "@types/tar-stream": "^3.1.4",
+    "@types/yauzl": "^3.4.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3"
   },
@@ -27,6 +30,8 @@
     "@tauri-apps/plugin-clipboard-manager": "^2.3.2",
     "@tauri-apps/plugin-global-shortcut": "^2.3.2",
     "@tauri-apps/plugin-shell": "^2.3.5",
-    "stripe": "^22.5.0"
+    "stripe": "^22.5.0",
+    "tar-stream": "^3.2.1",
+    "yauzl": "^3.4.0"
   }
 }

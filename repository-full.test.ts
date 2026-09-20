@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {printableContent,submoduleURLs,allowedLfsURL} from './repository-full.js';
+import {inspectFile} from './repository-scanner.js';
+const key='ghp_'+'aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789ab';
+const bytes=Buffer.concat([Buffer.from([0,255,1]),Buffer.from('TOKEN='+key),Buffer.from([0,128]),Buffer.from('TOKEN='+key,'utf16le'),Buffer.from([0])]);
+const extracted=printableContent(bytes);assert.ok(extracted.binary);assert.ok(extracted.text.includes(key));
+assert.ok(inspectFile('app.bin',extracted.text,true).some(f=>f.value===key));
+const utf16=printableContent(Buffer.concat([Buffer.from([255,254]),Buffer.from('TOKEN='+key,'utf16le')]));assert.equal(utf16.binary,false);assert.ok(utf16.text.includes(key));
+const modules=submoduleURLs('[submodule "a"]\npath = deps/a\nurl = ../other.git\n[submodule "b"]\npath = deps/b\nurl = https://127.0.0.1/private\n[submodule "c"]\npath = deps/c\nurl = git@github.com:public/project.git','owner/main');
+assert.equal(modules.get('deps/a'),'owner/other');assert.ok(!modules.has('deps/b'));assert.equal(modules.get('deps/c'),'public/project');
+assert.ok(allowedLfsURL('https://media.githubusercontent.com/media/a/b/main/file'));
+for(const url of ['http://github.com/file','https://127.0.0.1/file','https://github.com.evil.com/file','https://user:password@github.com/file','file:///C:/private','https://github.com:444/file'])assert.ok(!allowedLfsURL(url));
+console.log('Extended scan helpers passed: binary ASCII/UTF-16 extraction, secret detection, relative/public submodules, LFS destination restrictions.');

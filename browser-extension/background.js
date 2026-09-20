@@ -3,8 +3,30 @@
 // Supabase access/refresh token pair itself, sent as `Authorization: Bearer`
 // on every call. Stored in chrome.storage.local (extension-private, not
 // reachable by the pages it's injected into).
+importScripts("config.js");
 const API_BASE = "https://promptshield-beta.vercel.app";
 const SESSION_KEY = "redaxa_session";
+
+function repositoryEntitlement(account) {
+  // Personal is the existing billing ID for Pro. Business includes Pro.
+  // New API derives Business member access from the owner's verified entitlement.
+  if (typeof account?.repositoryAccess === "boolean") return account.active === true && account.repositoryAccess;
+  return account?.active === true && ["active", "trialing"].includes(account.status)
+    && ["personal", "pro", "business"].includes(account.plan);
+}
+
+function repositoryURL(input) {
+  let url;
+  try { url = new URL(input); } catch { throw new Error("Enter a public GitHub repository URL."); }
+  const parts = url.pathname.replace(/\/$/, "").split("/").filter(Boolean);
+  if (url.protocol !== "https:" || url.hostname !== "github.com" || url.port || url.username || url.password || url.search || url.hash
+    || parts.length !== 2 || !parts.every(part => /^[A-Za-z0-9_.-]+$/.test(part)) || parts.some(part => part === "." || part === "..")) {
+    throw new Error("Use a repository URL like https://github.com/owner/repository, without a file or branch path.");
+  }
+  const repo = parts[1].replace(/\.git$/, "");
+  if (!repo || repo === "." || repo === "..") throw new Error("Enter a valid repository name.");
+  return `https://github.com/${parts[0]}/${repo}`;
+}
 
 async function readSession() {
   const stored = await chrome.storage.local.get(SESSION_KEY);
@@ -72,6 +94,10 @@ async function apiRequest(path, body, method = "POST", { timeoutMs = 15_000, ret
 }
 
 async function handleMessage(message, sender) {
+  if (["SIGN_IN", "SIGN_OUT", "OPEN_REPOSITORY"].includes(message.type)
+    && sender?.url !== chrome.runtime.getURL("popup.html")) {
+    throw new Error("Use the Redaxa popup for this account action.");
+  }
   switch (message.type) {
     case "SIGN_IN": {
       const payload = await apiRequest("/api/auth/signin", { email: message.email, password: message.password });
@@ -96,10 +122,24 @@ async function handleMessage(message, sender) {
       if (!token) return { signedIn: false };
       try {
         const account = await apiRequest("/api/account", undefined, "GET");
-        return { signedIn: true, email: session.email, active: Boolean(account.active) };
+        return { signedIn: true, email: session.email, active: account.active === true, plan: account.plan,
+          repositoryAccess: repositoryEntitlement(account) };
       } catch {
-        return { signedIn: true, email: session.email, active: false };
+        return { signedIn: true, email: session.email, active: false, repositoryAccess: false, unavailable: true };
       }
+    }
+    case "OPEN_REPOSITORY": {
+      // Navigation and credentials remain popup-only. Content scripts only need STATUS/SCAN.
+      if (sender?.url !== chrome.runtime.getURL("popup.html")) throw new Error("Open Repository check from the Redaxa popup.");
+      const repository = repositoryURL(message.repository);
+      const account = await apiRequest("/api/account", undefined, "GET");
+      if (!repositoryEntitlement(account)) throw new Error("Repository checks require an active Pro or Business plan.");
+      const url = new URL("/github.html", REDAXA_WORKSPACE_URL);
+      url.searchParams.set("repo", repository);
+      url.searchParams.set("source", "extension");
+      // Do not put access tokens in URLs or bridge them into page storage.
+      await chrome.tabs.create({ url: url.href });
+      return { opened: true };
     }
     case "SCAN": {
       // Audit metadata only: which AI app the prompt was headed to. Derived
