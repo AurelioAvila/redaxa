@@ -53,7 +53,7 @@
         <tr><td>Email and optional first name (older accounts may retain previously supplied profile information)</td><td>Create and secure your account (via Supabase Auth)</td></tr>
         <tr><td>Prompt text you scan — which may contain personally identifiable information (names, email addresses, phone numbers, physical addresses), financial and payment information (card numbers, IBANs, crypto wallet addresses), and authentication information (passwords, API keys, tokens, private keys)</td><td>Sent over an encrypted connection to compute the scan result, then discarded — never stored, logged, or used for any other purpose</td></tr>
         <tr><td>Subscription status, Stripe customer ID</td><td>Billing. We never see or store your card number — Stripe collects that directly</td></tr>
-        <tr><td>Scan history (a short local preview and counts by category)</td><td>Stored only in your own browser's local storage, to show you "Recent checks." We never receive this — it never leaves your device</td></tr>
+        <tr><td>Local scan history (timestamps and counts by category)</td><td>Stored only in your own browser’s local storage to show “Recent checks.” Prompt text and detected values are not retained in this history. Older local text previews are removed when this version reads the history; account activity metadata is described separately below</td></tr>
         <tr><td>Session tokens</td><td>Keep you signed in (httpOnly cookies on the web app; a locally-stored token on the desktop app)</td></tr>
         <tr><td>Team invite tokens</td><td>If you're on a Business plan, link-based invites so you can add teammates. We don't collect a teammate's email before they join</td></tr>
       </table>

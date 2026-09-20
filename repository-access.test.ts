@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import { repositoryEntitled, verifyRepositoryAccess } from './repository-access.js';
+for (const plan of ['personal','pro','business']) assert.equal(repositoryEntitled({active:true,status:'active',plan}),true);
+for (const status of ['past_due','canceled','unpaid',null]) assert.equal(repositoryEntitled({active:true,status,plan:'personal'}),false);
+assert.equal(repositoryEntitled({active:false,status:'active',plan:'pro'}),false);
+assert.equal(repositoryEntitled({active:true,status:'active',plan:'free'}),false);
+assert.equal(repositoryEntitled({active:true,status:'active',plan:'personal',repositoryAccess:false}),false);
+assert.equal(repositoryEntitled({active:true,status:null,plan:null,repositoryAccess:true}),true);
+assert.equal(await verifyRepositoryAccess(undefined),false);
+assert.equal(await verifyRepositoryAccess('Bearer fake',async()=>new Response(JSON.stringify({active:true,status:'active',plan:'personal'}))),true);
+assert.equal(await verifyRepositoryAccess('Bearer fake',async()=>new Response('{}',{status:401})),false);
+assert.equal(await verifyRepositoryAccess('Bearer fake',async()=>{throw new Error('offline');}),false);
+console.log('Repository access: Pro/Business, expired, missing and unavailable account checks passed.');

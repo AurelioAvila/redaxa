@@ -13,7 +13,13 @@ type DesktopSession = { email: string; access_token: string; refresh_token: stri
 // doesn't reopen the XSS-session-theft risk the cookie migration closed), and it
 // only applies to the desktop build.
 const webAppUrl = "https://promptshield-beta.vercel.app";
-const apiBase = isTauri() ? webAppUrl : "";
+const localDesktopPreview = isTauri() && location.origin === 'http://127.0.0.1:4186';
+const apiBase = localDesktopPreview ? '/api/desktop-preview' : isTauri() ? webAppUrl : "";
+function authFetch(input: string, init: RequestInit = {}): Promise<Response> {
+  const headers = new Headers(init.headers);
+  if(localDesktopPreview) headers.set('X-Redaxa-Desktop','1');
+  return fetch(input,{...init,headers});
+}
 
 let config: AuthConfig | null = null;
 let mode: "signup" | "signin" | "recovery" = "signup";
@@ -89,7 +95,7 @@ async function desktopAccessToken(): Promise<string | null> {
   const session = await readDesktopSession();
   if (!session) return null;
   if (session.expires_at > Date.now() + 30_000) return session.access_token;
-  const response = await fetch(`${apiBase}/api/auth/session`, {
+  const response = await authFetch(`${apiBase}/api/auth/session`, {
     headers: { Authorization: `Bearer ${session.access_token}`, "X-Refresh-Token": session.refresh_token }
   });
   const payload = await response.json().catch(() => ({})) as { email?: string | null; access_token?: string; refresh_token?: string; expires_in?: number };
@@ -98,13 +104,40 @@ async function desktopAccessToken(): Promise<string | null> {
   return payload.access_token;
 }
 
+// Repository requests use the native session without exposing tokens to callers.
+// The local engine independently verifies the subscription with the official API.
+export async function repositoryRequest(body: Record<string, unknown>, signal: AbortSignal, scanId: string): Promise<Response> {
+  if(nativeRepositoryEngine()) {
+    const invoke=(window as any).__TAURI_INTERNALS__.invoke as (command:string,args?:Record<string,unknown>)=>Promise<unknown>;
+    const abort=()=>{void invoke('repository_cancel').catch(()=>{});};
+    signal.addEventListener('abort',abort,{once:true});
+    try {
+      const accessToken=body.demo===true?'':await desktopAccessToken();
+      signal.throwIfAborted();
+      const report=await invoke('repository_scan',{url:String(body.url??''),accessToken:accessToken??'',demo:body.demo===true});
+      return Response.json(report);
+    } catch(error) {
+      const message=String(error);return Response.json({error:message.replace(/^PRO_REQUIRED:\s*/,''),...(message.includes('PRO_REQUIRED')?{code:'PRO_REQUIRED'}:{})},{status:message.includes('PRO_REQUIRED')?403:400});
+    } finally {signal.removeEventListener('abort',abort);}
+  }
+  const headers: Record<string,string> = {'Content-Type':'application/json','X-Redaxa-Preview':'1','X-Redaxa-Scan':scanId};
+  if(isTauri()) {const token=await desktopAccessToken();if(token)headers.Authorization=`Bearer ${token}`;}
+  return fetch('/api/repository-scan',{method:'POST',headers,body:JSON.stringify(body),signal});
+}
+
+export function nativeRepositoryEngine():boolean {return isTauri()&&!localDesktopPreview;}
+export async function repositoryProgress(scanId:string,signal:AbortSignal):Promise<Record<string,any>> {
+  if(nativeRepositoryEngine())return (window as any).__TAURI_INTERNALS__.invoke('repository_progress');
+  return fetch('/api/repository-progress',{headers:{'X-Redaxa-Preview':'1','X-Redaxa-Scan':scanId},signal}).then(r=>r.json());
+}
+
 async function apiRequest(path: string, body?: Record<string, unknown>, method: "GET" | "POST" = "POST"): Promise<Record<string, unknown>> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (isTauri()) {
     const token = await desktopAccessToken();
     if (token) headers.Authorization = `Bearer ${token}`;
   }
-  const response = await fetch(`${apiBase}${path}`, { method, headers, body: method === "GET" ? undefined : JSON.stringify(body ?? {}) });
+  const response = await authFetch(`${apiBase}${path}`, { method, headers, body: method === "GET" ? undefined : JSON.stringify(body ?? {}) });
   const payload: unknown = await response.json().catch(() => ({}));
   if (!response.ok) {
     const message = typeof payload === "object" && payload !== null && "error" in payload ? String((payload as { error?: unknown }).error) : "We could not complete that request.";
@@ -128,7 +161,7 @@ async function apiDownload(path: string): Promise<Blob> {
     const token = await desktopAccessToken();
     if (token) headers.Authorization = `Bearer ${token}`;
   }
-  const response = await fetch(`${apiBase}${path}`, { method: "GET", headers });
+  const response = await authFetch(`${apiBase}${path}`, { method: "GET", headers });
   if (!response.ok) {
     const payload: unknown = await response.json().catch(() => ({}));
     const message = typeof payload === "object" && payload !== null && "error" in payload ? String((payload as { error?: unknown }).error) : "We could not prepare that download.";
@@ -272,7 +305,7 @@ function installStylesheet(): void {
 }
 
 async function loadConfig(): Promise<AuthConfig> {
-  const response = await fetch(`${apiBase}/api/auth-config`, { cache: "no-store" });
+  const response = await authFetch(`${apiBase}/api/auth-config`, { cache: "no-store" });
   if (!response.ok) return { configured: false };
   return response.json() as Promise<AuthConfig>;
 }
@@ -289,7 +322,7 @@ async function loadSession(): Promise<string | null> {
     } catch { return (await readDesktopSession())?.email ?? null; }
   }
   try {
-    const response = await fetch(`${apiBase}/api/auth/session`, { cache: "no-store" });
+    const response = await authFetch(`${apiBase}/api/auth/session`, { cache: "no-store" });
     if (!response.ok) return null;
     const payload = await response.json() as { email?: string | null };
     return payload.email ?? null;
@@ -310,7 +343,7 @@ function authRedirect(): string { return `${webAppUrl}/`; }
 // it issue its own /api/account request (and race this one), the single
 // response already fetched here is published as an event.
 export type SyncedSettings = { detectPersonal?: boolean; detectCredentials?: boolean; detectFinancial?: boolean; scanMode?: "standard" | "strict"; customTerms?: string[] };
-export type AccountState = { active: boolean; status: string | null; currentPeriodEnd: string | null; plan: string | null; settings?: SyncedSettings | null };
+export type AccountState = { active: boolean; status: string | null; currentPeriodEnd: string | null; plan: string | null; repositoryAccess?: boolean; settings?: SyncedSettings | null };
 function publishAccountState(state: AccountState | null): void {
   document.dispatchEvent(new CustomEvent("redaxa:account", { detail: state }));
 }
@@ -324,15 +357,16 @@ async function refreshEntitlement(): Promise<void> {
       if (!token) { accountActive = false; publishAccountState(null); return; }
       headers.Authorization = `Bearer ${token}`;
     }
-    const response = await fetch(`${apiBase}/api/account`, { headers, cache: "no-store" });
+    const response = await authFetch(`${apiBase}/api/account`, { headers, cache: "no-store" });
     if (!response.ok) { accountActive = false; publishAccountState(null); return; }
-    const payload = await response.json() as { active?: boolean; status?: string | null; currentPeriodEnd?: string | null; plan?: string | null; settings?: SyncedSettings | null };
+    const payload = await response.json() as { active?: boolean; status?: string | null; currentPeriodEnd?: string | null; plan?: string | null; repositoryAccess?: boolean; settings?: SyncedSettings | null };
     accountActive = Boolean(payload.active);
     publishAccountState({
       active: accountActive,
       status: payload.status ?? null,
       currentPeriodEnd: payload.currentPeriodEnd ?? null,
       plan: payload.plan ?? null,
+      repositoryAccess: payload.repositoryAccess,
       settings: payload.settings ?? null
     });
   } catch { accountActive = false; publishAccountState(null); }
@@ -571,7 +605,7 @@ async function boot(): Promise<void> {
       const session = cachedDesktopSession();
       void clearDesktopSession();
       renderAccount(null);
-      if (session) void fetch(`${apiBase}/api/auth/signout`, { method: "POST", headers: { Authorization: `Bearer ${session.access_token}` } }).catch(() => undefined);
+      if (session) void authFetch(`${apiBase}/api/auth/signout`, { method: "POST", headers: { Authorization: `Bearer ${session.access_token}` } }).catch(() => undefined);
     } else {
       void apiRequest("/api/auth/signout").catch(() => undefined).finally(() => renderAccount(null));
     }

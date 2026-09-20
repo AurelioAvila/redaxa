@@ -361,7 +361,7 @@ html.preferences-open #pwa-install,html.preferences-open #inspect-clipboard{disp
 }
 #inspect-clipboard:hover{border-color:var(--accent);color:var(--accent)}
 /* Covers the live-result state (see revealResults()/renderRiskCopy() in
-   dashboard.ts, which toggle a "corner-blocked" class on <body> based on an
+   dashboard.ts, which toggle a "corner-blocked" class on <body class="redaxa-workspace"> based on an
    actual measured overlap against #results-card -- both this state and the
    pre-scan preview demo can render tall enough on ordinary viewport heights
    to reach this same corner, and a fixed pixel guess at "tall enough" was
@@ -479,13 +479,14 @@ body.corner-blocked #inspect-clipboard{display:none}
   #inspect-clipboard{bottom:74px}
 }
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
-</style></head>
-<body>
+</style><link rel="stylesheet" href="/brand-system.css"></head>
+<body class="redaxa-workspace">
 <div class="app">
   <aside class="side">
-    <div class="brand"><div class="mark">R</div>Redaxa</div>
+    <div class="brand"><img src="/outputs/redaxa-mark.svg" alt="" width="35" height="35"><span class="rx-brand-name">Redaxa<small>Privacy workspace</small></span></div>
     <nav class="nav" aria-label="Workspace">
       <div class="nav-label" data-i18n="workspace">Workspace</div>
+      <a class="nav-item" href="/github.html"><i class="ico" aria-hidden="true">⌘</i> Repository check <small class="rx-pro-badge">PRO</small></a>
       <button class="nav-item active" type="button" data-nav="check" aria-current="page">
         <i class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg></i>
         <span data-i18n="privateCheck">Check a prompt</span>
@@ -512,8 +513,8 @@ body.corner-blocked #inspect-clipboard{display:none}
         <p class="usage-note" id="plan-status-note" data-i18n="planNoneNote">Start a 7-day free trial to run checks.</p>
       </div>
       <div class="side-fill" id="side-fill">
-        <b data-i18n="freeTrialBadge">What a plan unlocks</b>
-        <span data-i18n="freeTrialDesc">Unlimited checks, custom protected terms, and up to 3 team seats.</span>
+        <b data-i18n="freeTrialBadge">More clarity with Pro</b>
+        <span data-i18n="freeTrialDesc">Prompt checks, protected terms, and local repository reviews on Windows.</span>
         <a href="#" id="side-fill-cta" data-i18n="seePlans">Compare plans →</a>
       </div>
     </div>
@@ -523,15 +524,19 @@ body.corner-blocked #inspect-clipboard{display:none}
     <section class="top">
       <div>
         <div class="eyebrow" data-i18n="eyebrow">Personal workspace</div>
-        <h1 data-i18n="title">Your private AI checkpoint.</h1>
-        <p data-i18n="subtitle">Review a prompt before it reaches any AI tool.</p>
+        <h1 data-i18n="title">Share the work. Keep the secrets.</h1>
+        <p data-i18n="subtitle">Review sensitive data before it reaches your next AI conversation.</p>
       </div>
       <div class="top-right">
         <a class="small-btn" href="#account" data-i18n="createAccountBtn">Create account</a>
-        <div class="status"><i aria-hidden="true"></i><span data-i18n="protectionActive">Protection active</span></div>
+        <div class="status"><i aria-hidden="true"></i><span data-i18n="protectionActive">Review before sharing</span></div>
       </div>
     </section>
 
+    <section class="rx-workflows" aria-label="Choose what to review">
+      <a class="rx-workflow is-current" href="#prompt" aria-current="page"><span class="rx-workflow-icon" aria-hidden="true">◇</span><div><span class="rx-workflow-title">Check a prompt</span><p>Find sensitive details. Copy a redacted version.</p></div><span class="rx-workflow-arrow" aria-hidden="true">↗</span></a>
+      <a class="rx-workflow" href="/github.html"><span class="rx-workflow-icon" aria-hidden="true">⌘</span><div><span class="rx-workflow-title">Review a repository <span class="rx-pro-badge">PRO</span></span><p>Review files and history locally in the Windows app. Get a clear report.</p></div><span class="rx-workflow-arrow" aria-hidden="true">↗</span></a>
+    </section>
     <section class="onboarding" id="onboarding" aria-label="Setup checklist">
       <button class="onboarding-close" id="onboarding-close" type="button" aria-label="Dismiss checklist">×</button>
       <ul id="onboarding-list">
