@@ -70,6 +70,12 @@ function phoneValid(raw: string): boolean {
   return digits.length >= 7 && digits.length <= 15;
 }
 
+function emailValid(raw: string): boolean {
+  const [local, domain] = raw.split('@');
+  return raw.length <= 254 && local.length <= 64 && domain.length <= 253 &&
+    domain.split('.').every(label => label.length <= 63);
+}
+
 function ssnValid(raw: string): boolean {
   // Filters out the reserved/invalid SSN ranges (area 000/666/900-999, group
   // 00, serial 0000) that a bare \d{3}-\d{2}-\d{4} pattern would otherwise
@@ -98,12 +104,22 @@ function nameValid(raw: string): boolean {
 function credentialValid(_value: string, groups: string[] = []): boolean {
   const [, separator, token] = groups;
   if (!token) return false;
+  if (/^\[(?:SECRET|PRIVATE KEY|EMAIL|REDACTED)\]/.test(token)) return false;
   if (separator && /[:=]/.test(separator)) return true;
   return /\d/.test(token) || (/[a-z]/.test(token) && /[A-Z]/.test(token));
 }
 
+export function apiCredentialReference(value: string): string | undefined {
+  if (/^pk_(?:live|test)_/.test(value)) return 'Publishable-key prefix: a public client identifier, not a secret API key.';
+  const payload = value.replace(/^(?:sk-(?:proj-|ant-api\d+-)?|[spr]k_(?:live|test)_|github_pat_|gh[pousr]_|AIza|AKIA|xox[baprs]-|Bearer\s+)/, '');
+  if (/^(?:x{8,}|your[_-](?:api[_-])?(?:key|token|secret)(?:[_-]here)?|replace[_-]?me|placeholder)$/i.test(payload.replace(/(?<=x)_(?=x)/gi, ''))) return 'Explicit credential placeholder. Example filenames alone do not dismiss credentials.';
+  return undefined;
+}
+
 const rules: Rule[] = [
-  { kind: "email", category: "personal", severity: "medium",  label: "Email address", replacement: "[EMAIL]", pattern: /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi },
+  // Match complete dot-atom addresses, not fragments of malformed tokens.
+  // A lone @, consecutive dots, invalid domain labels and npm versions are not email.
+  { kind: "email", category: "personal", severity: "medium", label: "Email address", replacement: "[EMAIL]", pattern: /(?<![A-Z0-9.%+_@-])[A-Z0-9_%+-][A-Z0-9_%+'-]*(?:\.[A-Z0-9_%+'-]+)*@(?:[A-Z0-9](?:[A-Z0-9-]*[A-Z0-9])?\.)+[A-Z]{2,}(?![A-Z0-9_@-]|\.[A-Z0-9.-])/gi, validate: emailValid },
   { kind: "ssn", category: "personal", severity: "high",  label: "Social Security Number", replacement: "[SSN]", pattern: /\b\d{3}-\d{2}-\d{4}\b/g, validate: ssnValid },
   {
     kind: "name", category: "personal", severity: "low", label: "Personal name", replacement: "[NAME]",
@@ -116,7 +132,8 @@ const rules: Rule[] = [
   },
   {
     kind: "secret", category: "credentials", severity: "critical", label: "API key or token", replacement: "[SECRET]",
-    pattern: /\b(?:sk-[A-Za-z0-9_-]{16,}|sk_(?:live|test)_[A-Za-z0-9]{10,}|pk_(?:live|test)_[A-Za-z0-9]{10,}|rk_live_[A-Za-z0-9]{10,}|gh[pousr]_[A-Za-z0-9_]{20,}|AIza[\w-]{20,}|AKIA[0-9A-Z]{16}|xox[baprs]-[A-Za-z0-9-]{10,}|eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}|Bearer\s+[A-Za-z0-9._-]{16,})\b/g
+    validate: value => !apiCredentialReference(value),
+    pattern: /\b(?:sk-[A-Za-z0-9_-]{16,}|sk_(?:live|test)_[A-Za-z0-9]{10,}|pk_(?:live|test)_[A-Za-z0-9]{10,}|rk_live_[A-Za-z0-9]{10,}|github_pat_[A-Za-z0-9_]{82}|gh[pousr]_[A-Za-z0-9_]{20,}|AIza[\w-]{20,}|AKIA[0-9A-Z]{16}|xox[baprs]-[A-Za-z0-9-]{10,}|eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}|Bearer\s+[A-Za-z0-9._-]{16,})\b/g
   },
   { kind: "privateKey", category: "credentials", severity: "critical",  label: "Private key", replacement: "[PRIVATE KEY]", pattern: /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----/g },
   { kind: "card", category: "financial", severity: "high",  label: "Card number", replacement: "[CARD]", pattern: /\b(?:\d[ -]*?){13,16}\b/g, validate: luhnValid },
@@ -145,7 +162,7 @@ const rules: Rule[] = [
   }
 ];
 
-export function inspectPrompt(text: string, options: ScanOptions = { includePersonalData: true, includeCredentials: true, includeFinancialData: true }): { findings: Finding[]; redactedText: string } {
+export function inspectPrompt(text: string, options: ScanOptions = { includePersonalData: true, includeCredentials: true, includeFinancialData: true }, retainCredentialReferences=false): { findings: Finding[]; redactedText: string } {
   const findings: Finding[] = [];
   let redactedText = text;
   for (const rule of rules) {
@@ -161,7 +178,7 @@ export function inspectPrompt(text: string, options: ScanOptions = { includePers
         // to the callback -- drop the trailing offset/fullString to leave just
         // the capture groups, so rules can validate/substitute using them.
         const groups = args.slice(1, -2) as string[];
-        if (!validate(value, groups)) return value;
+        if (!(retainCredentialReferences && rule.kind === 'secret') && !validate(value, groups)) return value;
         findings.push({ kind: rule.kind, category: rule.category, severity: rule.severity, label: rule.label, value, replacement: rule.replacement });
         return rule.replacement.includes("$")
           ? rule.replacement.replace(/\$(\d)/g, (_, i) => groups[Number(i) - 1] ?? "")

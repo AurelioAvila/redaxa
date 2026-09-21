@@ -14,8 +14,26 @@ if(initialRepo&&initialRepo.length<=250)$<HTMLInputElement>('repo-url').value=in
 document.addEventListener('redaxa:account',event=>{const a=(event as CustomEvent<AccountState|null>).detail;if(a?.active&&['personal','pro','business'].includes(a.plan??'')){$('pro-access').classList.add('unlocked');$('pro-access').querySelector('h2')!.textContent='Your Pro workspace is ready.';}});
 document.addEventListener('redaxa:need-upgrade',()=>{location.href='/dashboard.html#plans';});
 const duration=(seconds:number)=>seconds<60?`${Math.max(5,Math.round(seconds/5)*5)} sec`:`${Math.ceil(seconds/60)} min`;
+let apiNoticeDismissed=false;
+function resetApiNotice(){document.getElementById('repository-api-notice')?.remove();apiNoticeDismissed=false;}
+function notifyApiKeys(count:number,demo=false,complete=false){
+ if(!Number.isSafeInteger(count)||count<1||apiNoticeDismissed)return;
+ let notice=document.getElementById('repository-api-notice');
+ if(!notice){
+  notice=text('aside','','repository-api-notice');notice.id='repository-api-notice';
+  const message=text('div','');message.id='repository-api-message';message.setAttribute('role','alert');message.setAttribute('aria-atomic','true');
+  const dismiss=text('button','Dismiss','reveal-button') as HTMLButtonElement;dismiss.type='button';dismiss.setAttribute('aria-label','Dismiss API key notification');dismiss.onclick=()=>{apiNoticeDismissed=true;notice?.remove();};
+  const review=text('button','View API findings','reveal-button') as HTMLButtonElement;review.id='repository-api-review';review.type='button';review.hidden=true;review.onclick=()=>{const section=document.getElementById('api-findings');section?.scrollIntoView({block:'start'});section?.focus({preventScroll:true});};
+  notice.append(message,review,dismiss);document.body.append(notice);
+ }
+ const message=$('repository-api-message');const title=`${demo?'Example · ':''}API ${count===1?'key or token':'keys or tokens'} found · ${count} potential ${count===1?'match':'matches'}`;
+ const detail=complete?'Review the first results. Validity has not been tested.':'Scan continues. Review these first when results are ready; validity is not tested.';
+ if(message.textContent!==title+detail)message.replaceChildren(text('strong',title),text('p',detail));
+ $('repository-api-review').hidden=!complete;
+}
 async function scan(demo=false){
  await bootConfig;
+ resetApiNotice();
  if(hostedRepository){
   if(demo){$('empty').hidden=true;$('results').replaceChildren();render(repositoryExample());$('status').textContent='Illustrative example — no live scan';$('results').scrollIntoView({block:'start'});return;}
   const repository=$<HTMLInputElement>('repo-url').value.trim();
@@ -29,18 +47,19 @@ async function scan(demo=false){
  $('scan').setAttribute('disabled','');$('demo').setAttribute('disabled','');$('cancel').hidden=false;$('results').replaceChildren();$('empty').hidden=true;
  $('status').textContent=demo?'Preparing a synthetic example…':'Connecting and mapping the repository…';$('estimate').hidden=demo;$('estimate').textContent='Estimating time after the repository is mapped. Larger histories take longer.';$('progress').hidden=false;
  const started=Date.now();
- const polling=demo?undefined:setInterval(()=>{if(pollBusy)return;pollBusy=true;void repositoryProgress(scanId,active.signal).then(p=>{if(!pollingActive||!p.stage)return;$('status').textContent=`${p.stage} · ${p.checked.toLocaleString()} entries checked`;const elapsed=Math.round((Date.now()-started)/1000);$('estimate').textContent=p.estimatedRemainingSeconds?`About ${duration(p.estimatedRemainingSeconds)} remaining · ${duration(elapsed)} elapsed · estimate adjusts as new content is found`:`${duration(elapsed)} elapsed · estimating remaining time…`;}).catch(()=>{}).finally(()=>{pollBusy=false;});},1500);
+ const polling=demo?undefined:setInterval(()=>{if(pollBusy)return;pollBusy=true;void repositoryProgress(scanId,active.signal).then(p=>{if(!pollingActive||controller!==active||!p.stage)return;notifyApiKeys(p.apiKeyCandidates);$('status').textContent=`${p.stage} · ${p.checked.toLocaleString()} entries checked`;const elapsed=Math.round((Date.now()-started)/1000);$('estimate').textContent=p.estimatedRemainingSeconds?`About ${duration(p.estimatedRemainingSeconds)} remaining · ${duration(elapsed)} elapsed · estimate adjusts as new content is found`:`${duration(elapsed)} elapsed · estimating remaining time…`;}).catch(()=>{}).finally(()=>{pollBusy=false;});},1500);
  try{
   const response=await repositoryRequest({url:$<HTMLInputElement>('repo-url').value,demo},active.signal,scanId);const data=await response.json();
   if(!response.ok){if(data.code==='PRO_REQUIRED')window.promptShieldAuth?.requestAccess('Sign in to your Pro account to check repositories.');throw new Error(data.error||'Unable to start this check.');}
   render(data);$('status').textContent=data.demo?'Example complete — synthetic data':data.partial?'Review ready · some content could not be checked':'Review ready · inventory checked';$('estimate').textContent=`Completed in ${duration(data.durationMs/1000)}. Review distinct findings below.`;$('results').scrollIntoView({block:'start',behavior:'auto'});
- }catch(e){$('status').textContent=active.signal.aborted?'Scan cancelled. No report saved.':e instanceof Error?e.message:'Unable to scan.';$('empty').hidden=false;$('estimate').hidden=true;}
+ }catch(e){resetApiNotice();$('status').textContent=active.signal.aborted?'Scan cancelled. No report saved.':e instanceof Error?e.message:'Unable to scan.';$('empty').hidden=false;$('estimate').hidden=true;}
  finally{pollingActive=false;clearInterval(polling);$('scan').removeAttribute('disabled');$('demo').removeAttribute('disabled');$('cancel').hidden=true;$('progress').hidden=true;}
 }
 function render(r:RepoReport){
  const {summary:s,groups}=aggregateRepositoryReport(r);const root=$('results');
  const summary=text('section','','result-summary');summary.append(text('span',r.demo?'SYNTHETIC EXAMPLE':r.partial?'PARTIAL COVERAGE':'YOUR REPOSITORY REVIEW','eyebrow'),text('h2',s.actionable?`${s.actionable} distinct findings to review`:'No actionable matches found'));
  const apiKeys=apiKeyCandidates(groups);
+ notifyApiKeys(apiKeys.length,r.demo,true);
  if(apiKeys.length){const alert=text('div','','api-key-alert');alert.setAttribute('role','status');alert.append(text('strong',`${apiKeys.length} potential API ${apiKeys.length===1?'key or token':'keys or tokens'} found`),text('p',`${apiKeys.filter(g=>!g.historyOnly).length} in current files · ${apiKeys.filter(g=>g.historyOnly).length} only in history. Review these first; validity has not been tested.`));summary.prepend(alert);}
  summary.append(text('p',`${r.repository} · ${r.scanned.toLocaleString()} / ${r.total.toLocaleString()} entries checked · ${r.folders} folders · ${r.skipped} not scanned`));
  const metrics=text('div','','triage-grid');for(const [label,value,cls] of [['Critical priority',s.critical,'critical'],['High priority',s.high,'high'],['Medium priority',s.medium,'medium'],['Low priority',s.low,'low']] as const){const tile=text('div','','triage-tile '+cls);tile.append(text('strong',String(value)),text('span',label));metrics.append(tile);}summary.append(metrics);
@@ -59,7 +78,7 @@ function render(r:RepoReport){
  if(g.url&&/^https:\/\/github\.com\//.test(g.url)){const a=text('a','Open current file on GitHub ↗') as HTMLAnchorElement;a.href=g.url;a.target='_blank';a.rel='noopener noreferrer';card.append(a);}
  const locations=text('details','','occurrences');locations.append(text('summary',`${g.occurrenceCount} occurrence${g.occurrenceCount===1?'':'s'} · ${g.currentCount} current / ${g.historyCount} historical`));for(const o of g.occurrences){locations.append(text('code',`${o.path}${o.location?' · '+o.location:' : '+o.line}`));}card.append(locations);return card;};
  const sections:[string,string,FindingGroup[]][]=[['api','API keys & tokens — review first',apiKeys],['urgent','Other high-priority findings',groups.filter(g=>g.disposition==='review'&&g.kind!=='secret'&&['critical','high'].includes(g.severity))],['context','Needs context',groups.filter(g=>g.disposition==='review'&&g.kind!=='secret'&&!['critical','high'].includes(g.severity))],['reference','Examples & informational references',groups.filter(g=>g.disposition==='reference')]];
- for(const [key,label,items] of sections){if(!items.length)continue;const section=text(key==='reference'?'details':'section','','finding-section '+(key==='reference'?'reference-group':''));if(key==='reference')section.append(text('summary',`${label} (${items.length})`));const heading=text('div','','finding-head section-heading');heading.append(text('h3',`${label} · ${items.length}`));control(heading,key);section.append(heading);const listing=text('div','');section.append(listing);let count=0;const more=text('button','Show more findings','reveal-button') as HTMLButtonElement;const append=()=>{for(const g of items.slice(count,count+12))listing.append(row(g,key));count+=12;more.hidden=count>=items.length;more.textContent=`Show more findings (${Math.max(0,items.length-count)} remaining)`;update();};append();more.onclick=append;section.append(more);root.append(section);}
+ for(const [key,label,items] of sections){if(!items.length)continue;const section=text(key==='reference'?'details':'section','','finding-section '+(key==='reference'?'reference-group':''));if(key==='api'){section.id='api-findings';section.tabIndex=-1;}if(key==='reference')section.append(text('summary',`${label} (${items.length})`));const heading=text('div','','finding-head section-heading');heading.append(text('h3',`${label} · ${items.length}`));control(heading,key);section.append(heading);const listing=text('div','');section.append(listing);let count=0;const more=text('button','Show more findings','reveal-button') as HTMLButtonElement;const append=()=>{for(const g of items.slice(count,count+12))listing.append(row(g,key));count+=12;more.hidden=count>=items.length;more.textContent=`Show more findings (${Math.max(0,items.length-count)} remaining)`;update();};append();more.onclick=append;section.append(more);root.append(section);}
  const coverage=text('details','','coverage-list');coverage.append(text('summary',`Coverage & limitations · ${r.total.toLocaleString()} entries`));coverage.append(text('p',r.inventoryComplete?'Accessible inventory reconciled.':'Inventory incomplete: totals may be a lower bound.'));r.warnings.forEach(w=>coverage.append(text('p',w)));for(const f of [...r.coverage].sort((a,b)=>Number(a.status==='scanned')-Number(b.status==='scanned'))){const el=text('div','','coverage-row');el.append(text('code',f.path),text('span',`${f.status==='scanned'?'Checked':'Not scanned'} — ${f.reason}`));coverage.append(el);}root.append(coverage);
 }
 $('repo-form').addEventListener('submit',e=>{e.preventDefault();void scan();});$('demo').addEventListener('click',()=>void scan(true));$('cancel').addEventListener('click',()=>controller?.abort());

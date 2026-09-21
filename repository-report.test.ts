@@ -3,6 +3,22 @@ import {inspectFile,demoReport} from './repository-scanner.js';
 import {aggregateRepositoryReport,reportToText,apiKeyCandidates} from './repository-report.js';
 
 const synthetic='ghp_'+'sYnThEtIcDoNoTuSe9876543210123456789012';
+assert.equal(inspectFile('.env.example',"MAIL_FROM='onboarding@resend.dev'")[0]?.disposition,'reference');
+for(const value of ['ghp_'+'x'.repeat(36),'sk-proj-'+'x'.repeat(40)]) {
+  const r=demoReport();r.findings=inspectFile('.env.example',value);
+  assert.equal(aggregateRepositoryReport(r).summary.actionable,0);
+  assert.equal(apiKeyCandidates(aggregateRepositoryReport(r).groups).length,0);
+  assert.equal(r.findings[0]?.disposition,'reference','Keep recognized placeholders available as references');
+}
+assert.equal(inspectFile('src/auth.ts','password = computedPassword')[0]?.disposition,'reference');
+assert.equal(inspectFile('.env','password = computedPassword')[0]?.disposition,'review','Environment values are literal');
+assert.equal(inspectFile('src/images.ts','image="icon@2x.png"')[0]?.disposition,'reference');
+assert.equal(inspectFile('teaser.mp4','qXz@qwer.ty')[0]?.disposition,'reference','Unlabelled media byte patterns are not exposure alerts');
+assert.equal(inspectFile('teaser.mp4','customer_email=person@company.com')[0]?.disposition,'review','Meaningful email metadata stays reviewable');
+assert.equal(inspectFile('teaser.mp4',synthetic)[0]?.disposition,'review','Never suppress API key candidates just because they occur in media');
+const priority=demoReport();priority.findings=[...inspectFile('a.env','password = "literal-credential-789"'),...inspectFile('z.env','KEY=AIza'+'aBcd1234'.repeat(4))];
+assert.equal(aggregateRepositoryReport(priority).groups[0]?.kind,'secret','API candidates first even with medium context severity');
+assert.ok(reportToText(priority).indexOf('API key or token —')<reportToText(priority).indexOf('Password or credential —'),'Text report follows screen order');
 for(const source of ['password: string','password = process.env.USER_PASSWORD','secret: config.apiSecret','password = getPassword()','password = password','password resetToken','password: undefined','secret = ${SECRET_VALUE}','password = "your_password_here"']) {
   const findings=inspectFile('src/auth.ts',source);
   assert.ok(findings.length>0,source);

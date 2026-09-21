@@ -12,7 +12,7 @@ import {inspectFile,parseRepository,type RepoReport,type RepoFinding} from './re
 const exec=promisify(execFile);
 const MEMORY=64*1024*1024,TOTAL=2*1024*1024*1024;
 type Source={path:string;url?:string;repo:string;depth:number;historical?:boolean};
-export type Progress={stage:string;checked:number;findings:number;elapsedSeconds?:number;estimatedRemainingSeconds?:number|null;estimatedTotal?:number|null};
+export type Progress={stage:string;checked:number;findings:number;apiKeyCandidates?:number;elapsedSeconds?:number;estimatedRemainingSeconds?:number|null;estimatedTotal?:number|null};
 
 export function submoduleURLs(text:string,parent:string):Map<string,string>{
  const result=new Map<string,string>();let path='',url='';
@@ -37,7 +37,8 @@ export async function scanFullRepository(input:string,outer?:AbortSignal,reveal=
  const run=(directory:string,args:string[])=>exec('git',[...base,...(directory?['--git-dir='+directory]:[]),...args],options);
  const r:RepoReport={repository:initial,commit:'',scanned:0,total:0,skipped:0,partial:false,findings:[],warnings:[],durationMs:0,demo:false,coverage:[],inventoryComplete:false,folders:0,findingsTruncated:false,deep:{refs:0,historyVersions:0,binaryFiles:0,lfsObjects:0,submodules:0,archiveEntries:0}};
  let used=0,expected=0,inspectionStart=0;const visited=new Set<string>(),lfsSeen=new Set<string>(),folders=new Set<string>(),findingSeen=new Set<string>();
- const progress=(stage:string)=>{const elapsedSeconds=Math.round((Date.now()-start)/1000);const done=r.scanned+r.skipped;const remaining=inspectionStart&&done>=20&&expected>done?Math.ceil((Date.now()-inspectionStart)/1000/done*(expected-done)):null;onProgress?.({stage,checked:r.scanned,findings:r.findings.filter(f=>f.disposition==='review').length,elapsedSeconds,estimatedRemainingSeconds:remaining,estimatedTotal:expected||null});};
+ const apiIdentities=new Set<string>();
+ const progress=(stage:string)=>{const elapsedSeconds=Math.round((Date.now()-start)/1000);const done=r.scanned+r.skipped;const remaining=inspectionStart&&done>=20&&expected>done?Math.ceil((Date.now()-inspectionStart)/1000/done*(expected-done)):null;onProgress?.({stage,checked:r.scanned,findings:r.findings.filter(f=>f.disposition==='review').length,apiKeyCandidates:apiIdentities.size,elapsedSeconds,estimatedRemainingSeconds:remaining,estimatedTotal:expected||null});};
  const record=(s:Source,reason:string,ok:boolean)=>{r.coverage.push({path:s.path,status:ok?'scanned':'skipped',reason});if(ok)r.scanned++;else{r.skipped++;r.partial=true;}};
  const charge=(n:number)=>{signal.throwIfAborted();used+=n;if(used>TOTAL)throw new Error('Total 2 GiB content budget reached.');};
  const addFindings=(bytes:Buffer,s:Source,segment?:number)=>{
@@ -48,6 +49,7 @@ export async function scanFullRepository(input:string,outer?:AbortSignal,reveal=
     if(decoded.binary||segment!==undefined)f.location=decoded.binary?'Extracted binary string'+(segment!==undefined?` near byte ${segment}`:''):`Text segment near byte ${segment}`;
     if(s.historical)f.reason+=' Historical file version; it may already be removed, but an exposed credential may still require rotation.';
     if(s.url)f.url=s.url;r.findings.push(f);
+    if(f.kind==='secret'&&f.disposition==='review'&&f.fingerprint&&!apiIdentities.has(f.fingerprint)){apiIdentities.add(f.fingerprint);progress('Potential API key or token detected; continuing the scan…');}
    }
    return decoded;
  };

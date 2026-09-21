@@ -36,7 +36,7 @@ export function aggregateRepositoryReport(report:RepoReport):RepositoryAssessmen
     if(occurrence.historical)group.historyCount++;else group.currentCount++;
     group.historyOnly=group.currentCount===0;
   }
-  const groups=[...grouped.values()].sort((a,b)=>Number(a.disposition==='reference')-Number(b.disposition==='reference')||(rank[b.severity]??0)-(rank[a.severity]??0)||Number(a.historyOnly)-Number(b.historyOnly)||a.path.localeCompare(b.path)||a.line-b.line);
+  const groups=[...grouped.values()].sort((a,b)=>Number(a.disposition==='reference')-Number(b.disposition==='reference')||Number(b.kind==='secret')-Number(a.kind==='secret')||(rank[b.severity]??0)-(rank[a.severity]??0)||Number(a.historyOnly)-Number(b.historyOnly)||a.path.localeCompare(b.path)||a.line-b.line);
   const review=groups.filter(g=>g.disposition==='review');
   const count=(severity:string)=>review.filter(g=>g.severity===severity).length;
   return {groups,summary:{rawMatches:report.findings.length,uniqueFindings:groups.length,actionable:review.length,reference:groups.length-review.length,current:review.filter(g=>!g.historyOnly).length,historyOnly:review.filter(g=>g.historyOnly).length,critical:count('critical'),high:count('high'),medium:count('medium'),low:count('low'),duplicatesCollapsed:report.findings.length-groups.length}};
@@ -50,6 +50,7 @@ export function reportToText(report:RepoReport):string {
     `Repository: ${report.repository}`,`Revision: ${report.commit}`,
     `Coverage: ${report.scanned}/${report.total} inventoried items checked; ${report.skipped} skipped. ${report.partial||!report.inventoryComplete?'PARTIAL — inspect coverage limitations.':'Inventory traversal completed within the stated scope.'}`,
     '',`${s.actionable} unique candidates need review: ${s.critical} critical-priority, ${s.high} high, ${s.medium} medium, ${s.low} low.`,
+    `${apiKeyCandidates(groups).length} potential API keys or tokens — review these first; validity is not tested.`,
     `${s.current} present in the current snapshot; ${s.historyOnly} found only in history.`,
     `${s.rawMatches} raw matches; ${s.duplicatesCollapsed} repeated matches grouped; ${s.reference} unique informational/reference values.`,
     'Priority describes potential impact, not a confirmed vulnerability. No credential was tested against a provider.',
