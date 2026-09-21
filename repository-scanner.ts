@@ -1,4 +1,4 @@
-import { inspectPrompt, type Finding } from './scanner.js';
+import { inspectPrompt, apiCredentialReference, type Finding } from './scanner.js';
 import { extract } from 'tar-stream';
 import { Readable, Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
@@ -33,6 +33,7 @@ function classify(f:Finding,path:string,text:string,offset:number):{disposition:
   if(f.kind==='email' && /@(?:[a-z0-9-]+\.)*(?:example\.(?:com|org|net)|invalid|test|localhost)$/i.test(f.value))return {disposition:'reference',reason:'Reserved example/test domain: demonstrative address, not evidence of exposed personal data.'};
   if(f.kind==='email' && f.value.toLowerCase()==='onboarding@resend.dev')return {disposition:'reference',reason:'Public provider onboarding address; not an API credential or private customer address.'};
   if(f.kind==='email' && /@(?:users\.)?noreply\.github\.com$/i.test(f.value))return reference('GitHub no-reply attribution address, designed for public commit attribution.');
+  if(f.kind==='email' && /@\d+x\.(?:png|jpe?g|webp|gif|svg|ico)$/i.test(f.value))return reference('Retina image filename with a scale suffix, not an email address.');
   if(f.kind==='ip') {
     if(/^(?:127\.|0\.0\.0\.0$|192\.0\.2\.|198\.51\.100\.|203\.0\.113\.|255\.255\.255\.255$)/.test(f.value))return {disposition:'reference',reason:'Loopback, wildcard or reserved documentation address; not evidence of a secret.'};
     if(/(?:\bv|\bversion[\s:="']*|\brelease[\s:="']*)$/i.test(text.slice(Math.max(0,offset-35),offset)))return {disposition:'reference',reason:'Version-like value in release/version context, not a confirmed IP exposure.'};
@@ -48,7 +49,7 @@ function classify(f:Finding,path:string,text:string,offset:number):{disposition:
     if(f.value.replace(/\D/g,'')==='4242424242424242'&&/\btest\b/i.test(line)&&/\b(?:card|visa|mastercard|amex)\b/i.test(line))return reference('Documented Stripe test-card number in an explicit testing example, not a real payment credential.');
     if(!/\b(?:card|pan|payment|visa|mastercard|amex|credit|debit)\b/i.test(text.slice(Math.max(0,lineStart-180),lineEnd<0?text.length:lineEnd).replace(/_/g,' ')))return reference('Checksum-compatible number without payment-card context; a numeric match alone is insufficient evidence of card data.');
   }
-  if(f.kind==='secret' && /^pk_(?:live|test)_/.test(f.value))return {disposition:'reference',reason:'Publishable-key prefix: a public client identifier, not a secret API key.'};
+  if(f.kind==='secret'){const reason=apiCredentialReference(f.value);if(reason)return reference(reason);}
   if(f.kind==='secret' && /^eyJ/.test(f.value)) {
     try {const payload=JSON.parse(Buffer.from(f.value.split('.')[1],'base64url').toString());if(payload.role==='anon'&&typeof payload.iss==='string'&&/supabase/i.test(payload.iss))return reference('Supabase anonymous client token: designed to be public. Security depends on database policies; those policies are not audited by this exposure check.');}catch{/* An undecodable token remains reviewable. */}
   }
@@ -66,6 +67,7 @@ function classify(f:Finding,path:string,text:string,offset:number):{disposition:
       if(/^(?:string|str|String|boolean|bool|number|unknown|undefined|null|None|true|false|never|any|Buffer|SecretString)(?:[;\]})>.]|$)/.test(unquoted))return reference('Type annotation or language constant, not a password value.');
       if(/^(?:process\.env\b|import\.meta\.env\b|Deno\.env\b|os\.environ\b|std::env\b|env[.(\[]|\$|\{|\[|<)/.test(token)||/^[A-Za-z_$][\w$]*(?:\??\.[A-Za-z_$]|\(|\[|::)/.test(token))return reference('Computed value, variable/property access or environment lookup; no literal credential is exposed in this expression.');
       if(/^[A-Za-z_$][\w$]*(?:[)}\]]+|\s*=>)$/.test(token)||/^(?:password|passwd|secret|token|credentials|newPassword|currentPassword|hashedPassword|passwordHash|apiKey|secretKey)$/i.test(token))return reference('Code identifier or function argument, not a literal credential.');
+      if(/\.(?:[cm]?[jt]sx?|py|rs|java|go|cs|cpp|hpp|c|h)(?:$|\s)/i.test(path)&&/^[A-Za-z_$][\w$]*$/.test(token))return reference('Unquoted source-code identifier, not a literal string credential. Environment/config values are still reviewed.');
       if(/^(?:your[_-].*|insert[_-].*|replace[_-].*|change[_-]?me|placeholder|redacted|REDACTED|\*{3,}|x{4,}|example[_-].*|test[_-](?:password|secret))$/i.test(unquoted))return reference('Explicit redaction or demonstration placeholder; retained separately for transparency.');
       // The prose scanner deliberately accepts loose assignment syntax. Repository
       // source contains many form attributes and object schemas with that syntax.
@@ -75,12 +77,15 @@ function classify(f:Finding,path:string,text:string,offset:number):{disposition:
     if(f.kind==='secret'&&/^AIza/.test(f.value))return {disposition:'review',severity:'medium',confidence:'medium',reason:'Google API key pattern. Some browser keys are intentionally public; verify application/API restrictions and billing scope before deciding whether rotation is needed.'};
     return {disposition:'review',confidence:'high',reason:exampleFile?'Credential-shaped value in an example/test file. It still needs review: example files can contain genuine secrets.':'Credential pattern matched. Validity is not tested; review and rotate if genuine.'};
   }
-  if(f.kind==='email'&&/\.(?:mp4|mov|webm|mp3|wav|png|jpe?g|webp|ico)(?:$|\s|!)/i.test(path))return {disposition:'review',severity:'low',confidence:'low',reason:'Email-shaped readable string extracted from media bytes. Random byte patterns can resemble addresses; inspect the context before treating this as personal data.'};
+  if(f.kind==='email'&&/\.(?:mp4|mov|webm|mp3|wav|png|jpe?g|webp|ico)(?:$|\s|!)/i.test(path)) {
+    if(!/\b(?:email|e-mail|recipient|customer|user|account)\b/i.test(line.replace(/_/g,' ')))return {disposition:'reference',confidence:'low',reason:'Address-shaped string in media bytes without email context; random bytes can resemble addresses. Retained for manual inspection, not counted as an exposure.'};
+    return {disposition:'review',severity:'low',confidence:'low',reason:'Email-shaped string in media metadata with email context. Inspect the source; binary extraction does not confirm personal data.'};
+  }
   return {disposition:'review',reason:'Potential sensitive data. Context and authorization must be reviewed; this is not a confirmed vulnerability.'};
 }
 
 export function inspectFile(path:string,text:string,allowReveal=false):RepoFinding[] {
-  const {findings}=inspectPrompt(text);const offsets=new Map<string,number>();
+  const {findings}=inspectPrompt(text,undefined,true);const offsets=new Map<string,number>();
   return findings.flatMap(f=>{
     const key=f.kind+'\0'+f.value;const offset=text.indexOf(f.value,offsets.get(key)??0);
     // inspectPrompt progressively redacts text. A later generic rule can match

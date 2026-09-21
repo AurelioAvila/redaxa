@@ -1,6 +1,24 @@
 import assert from "node:assert/strict";
 import { inspectPrompt } from "./scanner.js";
 
+for (const value of ['@', '@scope/package', 'someone@', '@company.com', 'name..surname@company.com', '.name@company.com', 'name.@company.com', 'name@-company.com', 'name@company-.com', 'name@company..com', 'name@company.com_extra', 'a@@company.com', 'react@18.2.0', 'foo@localhost', 'a'.repeat(65)+'@company.com', 'a@'+'b'.repeat(64)+'.com']) {
+  assert.equal(inspectPrompt(value).findings.filter(f=>f.kind==='email').length,0,`Malformed email/technical token: ${value}`);
+}
+for (const value of ['name.surname+tag@sub.company.com', "o'brien@company.com", 'first_last@company.io']) {
+  const result=inspectPrompt(`Contact <${value}>.`);
+  assert.equal(result.findings.filter(f=>f.kind==='email').length,1,value);
+  assert.ok(!result.redactedText.includes(value));
+}
+assert.equal(inspectPrompt("EMAIL='person@company.com'").findings[0]?.value,'person@company.com','Do not capture opening source-code quotes');
+assert.equal(inspectPrompt("EMAIL='person@company.com'").redactedText,"EMAIL='[EMAIL]'");
+const pat='github_pat_'+'Ab9cDe1Fg2Hi3Jk4Lm5No6Pq7Rs8Tu9Vw0'.repeat(3).slice(0,82);
+assert.equal(inspectPrompt(pat).findings[0]?.kind,'secret','fine-grained GitHub token');
+for(const value of [pat.slice(0,-1),pat+'A']) assert.equal(inspectPrompt(value).findings.filter(f=>f.kind==='secret').length,0,'Reject wrong-length fine-grained token');
+for(const value of ['ghp_'+'x'.repeat(36),'sk-proj-'+'x'.repeat(40),'pk_live_1234567890abcdefghijkl']) {
+  assert.equal(inspectPrompt(value).findings.filter(f=>f.category==='credentials').length,0,'Known placeholder/public key is not a prompt credential alert');
+}
+assert.equal(inspectPrompt('secret = '+pat).findings.filter(f=>f.category==='credentials').length,1,'No second finding for generated redaction marker');
+
 const fullScan = inspectPrompt("Contact maria@example.com, call +39 333 123 4567, server 192.168.1.20, password=demo-secret-123.");
 assert.deepEqual(fullScan.findings.map((finding) => finding.kind), ["email", "phone", "ip", "credential"]);
 assert.match(fullScan.redactedText, /\[EMAIL\]/);
