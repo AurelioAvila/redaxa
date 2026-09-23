@@ -2,7 +2,7 @@
   <img src="src-tauri/icons/128x128.png" width="112" alt="Redaxa logo">
 </p>
 
-<h1 align="center">Redaxa — Secret and PII Detection for AI Prompts</h1>
+<h1 align="center">Redaxa — Sensitive Data Checks for AI Prompts and Repositories</h1>
 
 <p align="center">
   <strong>Catch what you're about to leak, before it reaches an AI tool.</strong><br>
@@ -17,18 +17,18 @@
 
 <p align="center"><sub>Want safer AI workflows? ⭐ Star Redaxa to follow new protections and help others find it.</sub></p>
 
-<p align="center"><sub><strong>Redaxa was previously known as PromptShield.</strong> The product was renamed to establish a distinctive, searchable identity; existing links and releases remain valid.</sub></p>
+<p align="center"><sub><strong>Redaxa was previously known as PromptShield.</strong> The web app still uses the promptshield-beta.vercel.app address; existing links and releases remain valid.</sub></p>
 
 <p align="center">
   <img src="store-assets/screenshot-1-intercept.png" width="88%" alt="Redaxa flagging secrets, cards and private keys in a prompt before it is sent to an AI assistant">
 </p>
 
 **Fastest way to try it — [web app](https://promptshield-beta.vercel.app), nothing to install** ·
-[⬇ Windows desktop app](../../releases/latest) (v0.3.3 EXE and MSI installers verified as Certum-signed; publisher: **Aurelio Avila**) ·
+[⬇ Latest Windows desktop app](../../releases/latest) ·
 [Changelog](CHANGELOG.md) · [Privacy Policy](https://promptshield-beta.vercel.app/privacy.html) ·
 [Terms](https://promptshield-beta.vercel.app/terms.html)
 
-See the [Windows signing inventory and verification guide](https://github.com/AurelioAvila/.github/blob/master/CODE_SIGNING.md). This claim applies to the listed Windows installers, not older builds, the web app or browser extension.
+The [v0.4.1 Windows release](../../releases/tag/v0.4.1) was checked on September 23, 2026. Its setup EXE (SHA-256 `234d896db504deeaf2b3918f9d82918db3e1df43f01f91094f05d693fb6184f1`) and MSI (SHA-256 `f75daf5377590666141a001b77fd67586a3a5889fe0a0ca2299da7caee1aeab9`) had valid Authenticode signatures from **Aurelio Avila** with trusted timestamps. The Tauri updater signature matched the published installer and `latest.json`. See the [Windows signing inventory and verification guide](https://github.com/AurelioAvila/.github/blob/master/CODE_SIGNING.md) to verify a downloaded file. This evidence is specific to those v0.4.1 assets; it does not cover other builds, the web app or browser extension.
 
 **WinGet status:** the [initial package submission](https://github.com/microsoft/winget-pkgs/pull/426231)
 is awaiting review. A successful submission workflow is not catalog approval;
@@ -68,6 +68,10 @@ Detection combines patterns, known credential prefixes and category-specific
 checks. A tracking number can still pass a card checksum, and an unfamiliar
 secret can be missed. Review matches in context and use custom terms for
 sensitive values outside the built-in rules.
+
+### Review a GitHub repository on Windows
+
+Pro and Business users can check a public GitHub repository for possible exposed credentials in the Windows app. The focused check reads current files; an optional extended check includes accessible Git history, dependencies and supported archives. Redaxa prioritizes likely API keys and tokens, shows coverage and exclusions, and exports a redacted report. The repository check runs locally, unlike prompt scanning through Redaxa's backend. Findings need human review: Redaxa does not test whether a key works, revoke it, or perform a complete code vulnerability audit. [See the repository workflow](https://promptshield-beta.vercel.app/#repository) and [v0.4.1 release notes](RELEASE-NOTES-0.4.1.md).
 
 ## For teams: the control layer
 
