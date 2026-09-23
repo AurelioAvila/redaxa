@@ -18,6 +18,41 @@ export function isTauri(): boolean {
   return tauriInvoke() !== null;
 }
 
+/** Only the desktop development webview uses the guarded loopback proxy. */
+export function usesDesktopPreviewTransport(desktop: boolean, origin: string): boolean {
+  if (!desktop) return false;
+  try { const url = new URL(origin); return url.protocol === "http:" && url.hostname === "127.0.0.1"; }
+  catch { return false; }
+}
+
+export function installDesktopTitlebar(): void {
+  const invoke = tauriInvoke();
+  if (!invoke || document.querySelector(".rx-titlebar")) return;
+  document.body.classList.add("rx-native-window");
+  const bar = document.createElement("div"); bar.className = "rx-titlebar";
+  bar.innerHTML = `<div class="rx-window-title"><img src="/outputs/redaxa-mark.svg" alt="">Redaxa</div><div class="rx-window-controls"><button type="button" data-window-action="minimize" aria-label="Minimize window" title="Minimize"><svg viewBox="0 0 12 12"><path d="M1 6h10"/></svg></button><button type="button" data-window-action="toggle_maximize" aria-label="Maximize window" title="Maximize"><svg viewBox="0 0 12 12"><rect x="1.5" y="1.5" width="9" height="9"/></svg></button><button type="button" data-window-action="close" aria-label="Close window" title="Close"><svg viewBox="0 0 12 12"><path d="m1 1 10 10M11 1 1 11"/></svg></button></div>`;
+  document.body.prepend(bar);
+  const maximize = bar.querySelector<HTMLButtonElement>('[data-window-action="toggle_maximize"]')!;
+  const refreshMaximized = async (): Promise<void> => {
+    try {
+      const maximized = await invoke("plugin:window|is_maximized", {label:"main"});
+      const label = maximized ? "Restore window" : "Maximize window";
+      maximize.setAttribute("aria-label", label); maximize.title = label;
+      maximize.innerHTML = maximized ? '<svg viewBox="0 0 12 12"><path d="M4 2V1h7v7h-1"/><rect x="1" y="4" width="7" height="7"/></svg>' : '<svg viewBox="0 0 12 12"><rect x="1.5" y="1.5" width="9" height="9"/></svg>';
+    } catch { /* Window controls remain accessible if the state query fails. */ }
+  };
+  const action = async (command: string): Promise<void> => {
+    try { await invoke("plugin:window|" + command, {label:"main"}); if(command==="toggle_maximize") await refreshMaximized(); }
+    catch { bar.querySelector(".rx-window-title")!.textContent = "Window action unavailable · use Alt+Space"; }
+  };
+  bar.querySelectorAll<HTMLButtonElement>("[data-window-action]").forEach(button => button.addEventListener("click", () => void action(button.dataset.windowAction!)));
+  const drag = bar.querySelector<HTMLElement>(".rx-window-title")!;
+  drag.addEventListener("mousedown", event => { if(event.button===0 && event.detail===1) void action("start_dragging"); });
+  drag.addEventListener("dblclick", () => void action("toggle_maximize"));
+  window.addEventListener("resize", () => void refreshMaximized());
+  void refreshMaximized();
+}
+
 // The desktop shell has no domain of its own, so account creation and billing are
 // never handled in the embedded webview: they open the user's regular browser against
 // the hosted web app instead. This avoids needing cross-origin cookies (which would
@@ -46,7 +81,10 @@ export function enableDesktopCompanion(onPrompt: (value: string) => void): void 
   control.textContent = "Inspect clipboard";
   control.title = "Read the clipboard only when you press this button";
   control.setAttribute("aria-label", "Inspect text currently in the clipboard");
-  document.body.append(control);
+  const actions=document.querySelector('#clear-prompt')?.parentElement;
+  if(!actions||document.getElementById(control.id))return;
+  control.className='ghost-btn';
+  actions.insertBefore(control,document.getElementById('clear-prompt'));
 
   control.addEventListener("click", async () => {
     const value = await readClipboard();

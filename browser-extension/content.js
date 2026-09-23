@@ -175,13 +175,26 @@ function decisionReason(result) {
   return reason ? `<p class="ps-reason">${escapeHtml(reason)}</p>` : "";
 }
 
+function findingPriority(findings) {
+  const severity = { critical: 4, high: 3, medium: 2, low: 1 };
+  return [...findings].sort((a, b) => Number(b.kind === 'secret') - Number(a.kind === 'secret') || (severity[b.severity] || 0) - (severity[a.severity] || 0));
+}
+function apiWarning(findings) {
+  const matches = findings.filter(f => f.kind === 'secret');
+  if (!matches.length) return '';
+  // No raw values, excerpts or file paths in notifications or their markup.
+  const count = new Set(matches.map((f, i) => f.value || `match-${i}`)).size;
+  return `<div class="ps-api-warning" role="alert"><strong>API key or token found · ${count} potential ${count === 1 ? 'match' : 'matches'}</strong><p>Review these first. Validity has not been tested. Replace with the safer version before sharing.</p></div>`;
+}
+
 function renderFindings(body, result, composer, onHandled) {
   if (!result.findings.length) {
     body.innerHTML = `<p class="ps-empty">Nothing obvious found. This is a helpful signal, not a guarantee.</p>`;
     return;
   }
-  const list = result.findings.map((f) => `<div class="ps-finding"><b>${escapeHtml(f.label)}</b></div>`).join("");
+  const list = findingPriority(result.findings).map((f) => `<div class="ps-finding"><b>${escapeHtml(f.label)}</b></div>`).join("");
   body.innerHTML = `
+    ${apiWarning(result.findings)}
     <p class="ps-count">${result.findings.length} item${result.findings.length === 1 ? "" : "s"} to review</p>
     ${decisionReason(result)}
     ${list}
@@ -294,7 +307,7 @@ async function gate(composer, resend) {
     return;
   }
 
-  const list = result.findings.map((f) => `<div class="ps-finding"><b>${escapeHtml(f.label)}</b></div>`).join("");
+  const list = findingPriority(result.findings).map((f) => `<div class="ps-finding"><b>${escapeHtml(f.label)}</b></div>`).join("");
   // Enforcement follows the policy decision: when the winning rule says
   // "block" there is no "Send anyway" -- the prompt stays unsent until fixed.
   // (The default personal policy never blocks; this path exists for
@@ -303,6 +316,7 @@ async function gate(composer, resend) {
   showModal(`
     <div class="ps-int-head">${blocked ? "Blocked by your organization's policy" : `Found ${result.findings.length} item${result.findings.length === 1 ? "" : "s"} before sending`}<button type="button" class="ps-int-x" id="ps-int-close">×</button></div>
     <div class="ps-int-body">
+      ${apiWarning(result.findings)}
       ${decisionReason(result)}
       ${list}
       <button type="button" class="ps-use-redacted" id="ps-int-fix">Fix it first</button>
