@@ -7,18 +7,17 @@
   <link rel="stylesheet" href="popup.css" />
 </head>
 <body>
-  <header class="brand"><img src="icons/48.png" alt="" width="32" height="32" /><div><strong>Redaxa</strong><span>YOUR PRIVACY WORKSPACE</span></div><span class="edition">EXTENSION</span></header>
+  <header class="brand"><img src="icons/48.png" alt="" width="32" height="32" /><strong>Redaxa</strong><span class="edition">Browser extension</span></header>
   <p id="preview-note" class="preview-note" hidden>Design preview · Account actions work in the installed extension.</p>
   <nav class="tabs" aria-label="Protection tools"><button id="prompt-tab" class="tab selected" type="button" aria-pressed="true">Prompt protection</button><button id="repository-tab" class="tab" type="button" aria-pressed="false">Repository <span class="pro">PRO</span></button></nav>
   <main>
     <section id="prompt-panel" aria-labelledby="prompt-heading">
-      <div class="eyebrow">BEFORE YOU PRESS SEND</div>
-      <h1 id="prompt-heading">Keep private details<br /><span>out of your prompts.</span></h1>
-      <p class="intro">Spot personal data and credentials on supported AI sites. Review the match, then choose what to share.</p>
+      <h1 id="prompt-heading">Prompt protection</h1>
+      <p class="intro">Check for sensitive data before sending a prompt. Use Redaxa on supported AI sites to review what you share.</p>
       <div class="status" id="status" hidden>
         <div class="account-card"><span class="pill" id="status-pill"><i></i><span id="status-pill-text">Checking plan</span></span><strong id="status-email"></strong><span id="status-plan"></span></div>
         <p class="hint">Look for the Redaxa button on ChatGPT, Claude, Gemini, Copilot and Perplexity.</p>
-        <button class="primary" id="open-dashboard" type="button">Open your workspace <span>↗</span></button>
+        <button class="primary" id="open-dashboard" type="button">Open workspace <span aria-hidden="true">↗</span></button>
         <button class="link-btn signout" id="sign-out" type="button">Sign out</button>
       </div>
       <form id="form" hidden>
@@ -26,21 +25,20 @@
         <div class="label-row"><label for="password">Password</label><button type="button" class="link-btn" id="forgot-password">Forgot password?</button></div>
         <div class="password-field"><input id="password" type="password" autocomplete="current-password" required /><button id="show-password" type="button" aria-label="Show password">Show</button></div>
         <button class="primary" id="sign-in" type="submit">Sign in to Redaxa <span>→</span></button>
-        <div class="signup">New here? <button type="button" class="link-btn" id="create-account">Explore plans & create account</button></div>
+        <div class="signup">New to Redaxa? <button type="button" class="link-btn" id="create-account">Create an account</button></div>
       </form>
     </section>
     <section id="repository-panel" aria-labelledby="repository-heading" hidden>
-      <div class="eyebrow">A SECOND LOOK BEFORE YOU SHIP <span class="pro">PRO</span></div>
-      <h1 id="repository-heading">Your repository.<br /><span>A clearer risk picture.</span></h1>
-      <p class="intro">Launch a local repository review in the Redaxa Windows app. Find potential credentials and sensitive data across public GitHub files and accessible history.</p>
-      <div class="repo-benefits"><div><b>01</b><span><strong>Focus on what matters</strong>Grouped findings, examples separated.</span></div><div><b>02</b><span><strong>See the scope</strong>Files, history and any coverage gaps.</span></div><div><b>03</b><span><strong>Leave with a clear next step</strong>A prioritized recap and text report.</span></div></div>
+      <h1 id="repository-heading">Repository check</h1>
+      <p class="intro">Review public GitHub files and accessible history for potential credentials and sensitive data in the Redaxa Windows app.</p>
       <form id="repository-form"><label for="repository-url">Public GitHub repository</label><input id="repository-url" type="url" placeholder="https://github.com/owner/repository" spellcheck="false" autocomplete="off" required /><p class="hint" id="repository-access">Repository checks are included with Pro and Business.</p><button class="primary" id="open-repository" type="submit">Continue with Pro <span>→</span></button></form>
       <button class="secondary" id="repository-plans" type="button">See what Pro includes</button>
-      <p class="micro">Requires Redaxa 0.4.0 or later for Windows and an active Pro or Business plan. Opens the workspace first, then you choose “Open Windows app”. You may need to sign in again. Repository scans run on your PC. Detection does not confirm that a key works.</p>
+      <div class="repo-benefits"><h2>Included with Pro</h2><ul><li>Potential API keys shown first</li><li>Grouped findings and coverage details</li><li>Prioritized recap and text report</li></ul></div>
+      <details class="requirements"><summary>How it opens on Windows</summary><p class="micro">Requires Redaxa 0.4.0 or later for Windows and an active Pro or Business plan. Opens the workspace first, then choose “Open Windows app”. You may need to sign in again. Repository scans run on your PC. Detection does not confirm that a key works.</p></details>
     </section>
     <p class="msg" id="msg" role="status" aria-live="polite"></p>
   </main>
-  <footer><span class="footer-dot"></span>Review first. Share with confidence.</footer>
+  <footer>Redaxa for Chrome <span aria-hidden="true">·</span> Review before sharing</footer>
   <script src="config.js"></script><script src="popup.js"></script>
 </body>
 </html>

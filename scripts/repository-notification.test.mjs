@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
+import {aggregateRepositoryReport,reportToText,apiKeyCandidates} from '../dist/repository-report.js';
+import {demoReport,inspectFile} from '../dist/repository-scanner.js';
 
 // Execute the built UI notification functions with a small DOM fixture, never
 // test-only hooks in the production app. Existing browser handlers remain inert.
@@ -16,11 +18,13 @@ class Element {
   remove(){this.parent.children=this.parent.children.filter(c=>c!==this);}
   scrollIntoView(){this.scrolled=true;}
   focus(){this.focused=true;}
+  querySelector(selector){return walk(this).find(node=>selector.startsWith('#')?node.id===selector.slice(1):false);}
 }
+const walk=node=>[node,...node.children.flatMap(walk)];
 const body=new Element('body');
 const find=(id,node=body)=>node.id===id?node:node.children.map(c=>find(id,c)).find(Boolean);
-for(const id of ['repo-form','demo','cancel','scan','status','preview-notice','api-findings']){const node=new Element('div');node.id=id;body.append(node);}
-const sandbox=vm.createContext({document:{body,createElement:tag=>new Element(tag),getElementById:find,addEventListener(){}},location:{origin:'https://preview.invalid',search:''},URLSearchParams,nativeRepositoryEngine:()=>false});
+for(const id of ['repo-form','demo','cancel','scan','status','preview-notice','api-findings','results']){const node=new Element('div');node.id=id;body.append(node);}
+const sandbox=vm.createContext({aggregateRepositoryReport,reportToText,apiKeyCandidates,document:{body,createElement:tag=>new Element(tag),getElementById:find,addEventListener(){}},location:{origin:'https://preview.invalid',search:''},URLSearchParams,nativeRepositoryEngine:()=>false});
 const source=readFileSync(new URL('../dist/repository-ui.js',import.meta.url),'utf8').replace(/^import .*;\r?\n/gm,'');
 vm.runInContext(source,sandbox);
 const notify=vm.runInContext('notifyApiKeys',sandbox),reset=vm.runInContext('resetApiNotice',sandbox);
@@ -47,3 +51,25 @@ assert.match(find('repository-api-notice').textContent,/Example/);
 reset();
 assert.equal(find('repository-api-notice'),undefined,'New/cancelled scans clear stale alerts');
 console.log('Repository notification: live count, deduplication, dismissal, focus, demo label and reset passed.');
+const report=demoReport(true);
+report.findings=Array.from({length:25},(_,i)=>inspectFile('file'+i+'.csv',`customer${i}@company.io`,true)[0]);
+report.findings.push(...inspectFile('example.txt','you@example.com',true));
+report.coverage=Array.from({length:205},(_,i)=>({path:'file'+i,status:'scanned',reason:'Synthetic check'}));
+vm.runInContext('render',sandbox)(report);
+const results=find('results'), all=()=>walk(results);
+assert.equal(all().filter(n=>n.className==='coverage-row').length,100,'Large inventories load one page initially');
+all().find(n=>n.tag==='button'&&n.textContent.startsWith('Show more files')).onclick();
+assert.equal(all().filter(n=>n.className==='coverage-row').length,200);
+assert.equal(all().filter(n=>n.tag==='article').length,13,'Pagination starts with 12 review rows and one reference');
+const global=()=>all().find(n=>n.tag==='button'&&/^(Show|Hide) all$/.test(n.textContent));
+global().onclick();
+assert.equal(all().filter(n=>n.tag==='article').length,26,'Show all includes every additional page');
+assert.equal(all().filter(n=>n.className==='masked').some(n=>n.textContent.includes('Value hidden')),false);
+assert.equal(all().find(n=>n.className?.includes('reference-group')).open,true,'Show all opens references');
+assert.equal(global().textContent,'Hide all');global().onclick();
+assert.equal(all().filter(n=>n.className==='masked').every(n=>n.textContent.includes('Value hidden')),true);
+all().find(n=>n.tag==='button'&&n.textContent==='Show section').onclick();
+assert.equal(global().textContent,'Show all','A section reveal must not claim global visibility');
+global().onclick();
+assert.equal(all().filter(n=>n.className==='masked').some(n=>n.textContent.includes('Value hidden')),false);
+console.log('Global reveal covers pagination and references; section and hide controls stay independent.');

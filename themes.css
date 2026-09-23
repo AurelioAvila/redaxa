@@ -1,0 +1,41 @@
+/* Full surface palettes, modelled on the PC Tweaker site theme system. */
+html[data-theme="ice"]{--theme-bg:#141a22;--theme-surface:#1c2530;--theme-inset:#171f29;--theme-hover:#263447;--theme-text:#edf1f7;--theme-muted:#abb8cb;--theme-line:#2a3544;--theme-strong:#44536a;--theme-accent:#b6cfff;--theme-ink:#16243b}
+html[data-theme="amber"]{--theme-bg:#100c09;--theme-surface:#1d1712;--theme-inset:#15100c;--theme-hover:#302317;--theme-text:#faf1e8;--theme-muted:#bfab99;--theme-line:#3a2e24;--theme-strong:#6a503a;--theme-accent:#ffb66d;--theme-ink:#241608}
+html[data-theme="coral"]{--theme-bg:#17100c;--theme-surface:#241a13;--theme-inset:#1b130e;--theme-hover:#38281d;--theme-text:#f9f1ea;--theme-muted:#c0ac9c;--theme-line:#49372a;--theme-strong:#71513b;--theme-accent:#efa476;--theme-ink:#301a0b}
+html[data-theme="gold"]{--theme-bg:#14120a;--theme-surface:#221e10;--theme-inset:#19160d;--theme-hover:#342d17;--theme-text:#f7f4e9;--theme-muted:#bfb693;--theme-line:#413a22;--theme-strong:#6c6034;--theme-accent:#ebca68;--theme-ink:#282108}
+html[data-theme="lime"]{--theme-bg:#101409;--theme-surface:#1b2210;--theme-inset:#14190c;--theme-hover:#2c3519;--theme-text:#f1f6e9;--theme-muted:#afbd95;--theme-line:#364124;--theme-strong:#5c6a3d;--theme-accent:#c1e779;--theme-ink:#20290d}
+html[data-theme="emerald"]{--theme-bg:#0a1510;--theme-surface:#12251c;--theme-inset:#0d1b14;--theme-hover:#1d382b;--theme-text:#edf8f1;--theme-muted:#a0beaf;--theme-line:#2a4436;--theme-strong:#466b56;--theme-accent:#78dda6;--theme-ink:#102d1d}
+html[data-theme="teal"]{--theme-bg:#0a1517;--theme-surface:#11272a;--theme-inset:#0e1d20;--theme-hover:#1b3b3e;--theme-text:#edf7f8;--theme-muted:#9ebfc2;--theme-line:#28454a;--theme-strong:#426971;--theme-accent:#81dce1;--theme-ink:#102c30}
+:root,html[data-theme="ocean"]{--theme-bg:#0c1322;--theme-surface:#14223a;--theme-inset:#101a2d;--theme-hover:#203454;--theme-text:#eff4fc;--theme-muted:#a5b7d4;--theme-line:#2c405e;--theme-strong:#45658d;--theme-accent:#8cbbff;--theme-ink:#132746}
+html[data-theme="crimson"]{--theme-bg:#190d11;--theme-surface:#2b171e;--theme-inset:#211118;--theme-hover:#40232d;--theme-text:#f9eff2;--theme-muted:#c9a4b2;--theme-line:#4c303b;--theme-strong:#775062;--theme-accent:#ffa0b7;--theme-ink:#351421}
+html[data-theme="slate"]{--theme-bg:#111213;--theme-surface:#1e2022;--theme-inset:#17181a;--theme-hover:#2c2f33;--theme-text:#f2f3f5;--theme-muted:#b0b5bc;--theme-line:#373c42;--theme-strong:#5d656f;--theme-accent:#d6dce5;--theme-ink:#20252d}
+
+.theme-swatch-ice{--swatch:#b6cfff}
+.theme-swatch-amber{--swatch:#ffb66d}
+.theme-swatch-coral{--swatch:#efa476}
+.theme-swatch-gold{--swatch:#ebca68}
+.theme-swatch-lime{--swatch:#c1e779}
+.theme-swatch-emerald{--swatch:#78dda6}
+.theme-swatch-teal{--swatch:#81dce1}
+.theme-swatch-ocean{--swatch:#8cbbff}
+.theme-swatch-crimson{--swatch:#ffa0b7}
+.theme-swatch-slate{--swatch:#d6dce5}
+.redaxa-workspace .theme-pref-row{display:block}
+.redaxa-workspace .theme-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}
+.redaxa-workspace .theme-swatch{display:flex;align-items:center;gap:10px;appearance:none;width:auto;height:auto;min-height:40px;padding:9px 12px;flex:auto;border:1px solid var(--theme-line);border-radius:8px;background:var(--theme-inset);color:var(--theme-text);box-shadow:none;outline:none;font:450 12px/1.4 "Redaxa Inter",sans-serif;text-align:left;transform:none}
+.redaxa-workspace .theme-dot{display:block;flex:0 0 14px;width:14px;height:14px;border-radius:50%;background:var(--swatch)}
+.redaxa-workspace .theme-swatch:hover{background:var(--theme-hover);transform:none}
+.redaxa-workspace .theme-swatch.active{border-color:var(--theme-accent);box-shadow:inset 0 0 0 1px var(--theme-accent)}
+.redaxa-workspace .theme-swatch:focus-visible{outline:2px solid var(--theme-accent);outline-offset:2px}
+.rx-titlebar{position:fixed;inset:0 0 auto 0;height:34px;display:flex;align-items:center;background:var(--theme-bg);color:var(--theme-muted);z-index:1000;user-select:none}
+.rx-window-title{display:flex;align-items:center;flex:1;height:100%;padding-left:18px;font:450 11px "Redaxa Inter",sans-serif}
+.rx-window-title img{width:14px;height:14px;margin-right:8px;filter:grayscale(1) brightness(1.6)}
+.rx-window-controls{display:flex;height:100%}
+.rx-titlebar button{min-height:0;width:46px;height:34px;padding:0;border:0;border-radius:0;background:transparent;color:var(--theme-text);display:grid;place-items:center;cursor:default}
+.rx-titlebar button:hover{background:var(--theme-hover)}
+.rx-titlebar button[data-window-action="close"]:hover{background:#c42b1c;color:white}
+.rx-titlebar svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1;pointer-events:none}
+body.rx-native-window{padding-top:34px}
+.rx-native-window.redaxa-workspace .side,.rx-native-window.repository-page .sidebar{top:34px;height:calc(100dvh - 34px);min-height:0}
+.rx-native-window.redaxa-workspace .app{min-height:calc(100dvh - 34px)}
+@media(max-width:540px){.rx-native-window.redaxa-workspace .side,.rx-native-window.repository-page .sidebar{height:auto}}

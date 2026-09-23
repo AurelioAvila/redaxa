@@ -1,5 +1,5 @@
-const CACHE_NAME = "redaxa-shell-v3";
-const APP_SHELL = ["/", "/index.html", "/dashboard.html", "/github.html", "/manifest.webmanifest", "/outputs/redaxa-mark.svg", "/auth.css", "/brand-system.css", "/repository.css", "/dist/dashboard.js", "/dist/auth.js", "/dist/desktop.js", "/dist/pwa.js", "/dist/repository-ui.js", "/dist/repository-report.js"];
+const CACHE_NAME = "redaxa-shell-v5";
+const APP_SHELL = ["/", "/index.html", "/dashboard.html", "/github.html", "/manifest.webmanifest", "/outputs/redaxa-mark.svg", "/outputs/redaxa-inter.woff2", "/themes.css", "/dist/themes.js", "/auth.css", "/brand-system.css", "/repository.css", "/dist/dashboard.js", "/dist/auth.js", "/dist/desktop.js", "/dist/pwa.js", "/dist/repository-ui.js", "/dist/repository-report.js"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));

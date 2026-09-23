@@ -1,0 +1,2 @@
+# Redaxa product context
+Redaxa reviews prompts before sharing with AI and checks public GitHub repositories for potential exposed credentials and sensitive data. Audience: people sharing work with AI and developers reviewing public code. Repository checks run locally in Windows and require Pro or Business; the browser extension hands repository checks to that workspace. Matches are candidates, never confirmed valid keys or a comprehensive code audit. Preserve hidden values, explicit reveal controls, redacted exports, coverage limits, authentication and subscription checks.

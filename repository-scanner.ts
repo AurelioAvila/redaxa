@@ -4,8 +4,9 @@ import { Readable, Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { createGunzip } from 'node:zlib';
 import { createHmac, randomBytes } from 'node:crypto';
+import {credentialContext,type CredentialContext} from './credential-context.js';
 
-export type RepoFinding = { path:string; line:number; label:string; severity:string; category:string; masked:string; value?:string; action:string; url?:string; disposition:'review'|'reference'; reason:string; location?:string; kind?:string; fingerprint?:string; confidence?:'high'|'medium'|'low' };
+export type RepoFinding = { path:string; line:number; label:string; severity:string; category:string; masked:string; value?:string; action:string; url?:string; disposition:'review'|'reference'; reason:string; location?:string; kind?:string; fingerprint?:string; confidence?:'high'|'medium'|'low'; credential?:CredentialContext };
 export type FileCoverage = {path:string; status:'scanned'|'skipped'; reason:string};
 export type RepoReport = { repository:string; commit:string; scanned:number; total:number; skipped:number; partial:boolean; findings:RepoFinding[]; warnings:string[]; durationMs:number; demo:boolean; coverage:FileCoverage[]; inventoryComplete:boolean; folders:number; findingsTruncated:boolean; deep?:{refs:number;historyVersions:number;binaryFiles:number;lfsObjects:number;submodules:number;archiveEntries:number} };
 const MAX_FILE = 10 * 1024 * 1024;
@@ -23,7 +24,7 @@ export function parseRepository(input:string):{owner:string;repo:string} {
   return {owner:m[1],repo};
 }
 
-function classify(f:Finding,path:string,text:string,offset:number):{disposition:'review'|'reference';reason:string;severity?:string;confidence?:'high'|'medium'|'low'} {
+function classify(f:Finding,path:string,text:string,offset:number):{disposition:'review'|'reference';reason:string;severity?:string;confidence?:'high'|'medium'|'low';label?:string} {
   const exampleFile=/(?:^|[/. _-])(?:example|sample|template|fixture|test)(?:s|[/. _-]|$)/i.test(path);
   const lineStart=text.lastIndexOf('\n',offset)+1;
   const lineEnd=text.indexOf('\n',offset);
@@ -51,7 +52,17 @@ function classify(f:Finding,path:string,text:string,offset:number):{disposition:
   }
   if(f.kind==='secret'){const reason=apiCredentialReference(f.value);if(reason)return reference(reason);}
   if(f.kind==='secret' && /^eyJ/.test(f.value)) {
-    try {const payload=JSON.parse(Buffer.from(f.value.split('.')[1],'base64url').toString());if(payload.role==='anon'&&typeof payload.iss==='string'&&/supabase/i.test(payload.iss))return reference('Supabase anonymous client token: designed to be public. Security depends on database policies; those policies are not audited by this exposure check.');}catch{/* An undecodable token remains reviewable. */}
+    try {
+      const header=JSON.parse(Buffer.from(f.value.split('.')[0],'base64url').toString());
+      const payload=JSON.parse(Buffer.from(f.value.split('.')[1],'base64url').toString());
+      if(!header||typeof header.alg!=='string'||!payload||typeof payload!=='object'||Array.isArray(payload))throw new Error('Invalid JWT structure');
+      const prefix=text.slice(Math.max(0,offset-2048),offset).match(/https?:\/\/[^\s<>"']*$/)?.[0];
+      let unsubscribeLink=false;try{unsubscribeLink=!!prefix&&(/(?:^|\/)unsubscribe(?:[/.]|$)/i.test(new URL(prefix+f.value).pathname)||/(?:\[\s*unsubscribe\s*\]\s*\(|\bunsubscribe\s*[:\-]?\s*[(<]?)\s*$/i.test(text.slice(Math.max(0,offset-2048),offset-prefix.length)));}catch{}
+      if(payload?.role==='anon'&&typeof payload.iss==='string'&&/supabase/i.test(payload.iss))return {...reference('Supabase anonymous client token: designed to be public. Security depends on database policies; those policies are not audited by this exposure check.'),label:'JWT · public Supabase client token'};
+      if(['service_role','admin','owner','root'].includes(payload?.role))return {disposition:'review',severity:'critical',confidence:'medium',label:'JWT · privileged-role claim',reason:'The decoded payload declares a privileged role. Review access and rotate if genuine. Claims, signature and validity have not been verified.'};
+      if(!payload?.role&&(unsubscribeLink||[payload?.act,payload?.action,payload?.purpose].includes('unsubscribe')))return {disposition:'review',severity:'medium',confidence:'medium',label:'JWT · unsubscribe-link token',reason:'The explicit link label, URL path or decoded payload identifies an unsubscribe action. This appears to authorize an email preference link, not general API access. Its signature and actual permissions have not been verified; review whether the link was intended to be public.'};
+    }catch{return {...reference('JWT-shaped text with an invalid JSON header/payload; not a structurally valid JWT credential.'),label:'Malformed JWT-like text'};}
+    return {disposition:'review',severity:'high',confidence:'medium',label:'JWT · signed-token candidate',reason:'JWT-shaped token, not necessarily an API key. It may represent a session, access token or signed link. Signature, permissions and validity are not verified; identify the issuing service before deciding what to revoke.'};
   }
   if(f.category==='credentials') {
     const value=f.value.replace(/^(?:password|passwd|pwd|secret)\s*[:=]\s*/i,'').replace(/^["']|["']$/g,'');
@@ -84,8 +95,8 @@ function classify(f:Finding,path:string,text:string,offset:number):{disposition:
   return {disposition:'review',reason:'Potential sensitive data. Context and authorization must be reviewed; this is not a confirmed vulnerability.'};
 }
 
-export function inspectFile(path:string,text:string,allowReveal=false):RepoFinding[] {
-  const {findings}=inspectPrompt(text,undefined,true);const offsets=new Map<string,number>();
+export function inspectFile(path:string,text:string,allowReveal=false,credentialsOnly=false):RepoFinding[] {
+  const {findings}=inspectPrompt(text,credentialsOnly?{includePersonalData:false,includeFinancialData:false,includeCredentials:true}:undefined,true);const offsets=new Map<string,number>();
   return findings.flatMap(f=>{
     const key=f.kind+'\0'+f.value;const offset=text.indexOf(f.value,offsets.get(key)??0);
     // inspectPrompt progressively redacts text. A later generic rule can match
@@ -93,10 +104,12 @@ export function inspectFile(path:string,text:string,allowReveal=false):RepoFindi
     if(offset<0)return [];
     offsets.set(key,offset+f.value.length);
     const c=classify(f,path,text,offset);
+    if(credentialsOnly&&(c.disposition==='reference'||c.label==='JWT · unsubscribe-link token'))return [];
+    const credential=f.category==='credentials'?credentialContext(f.kind,f.value,c.label??f.label,c.disposition==='reference'):undefined;
     const identity=f.kind==='credential'?f.value.replace(/^(?:password|passwd|pwd|secret)\s*[:=]\s*/i,'').replace(/^["']|["']$/g,''):f.kind==='email'?f.value.toLowerCase():f.value;
     const fingerprint=createHmac('sha256',fingerprintKey).update(f.kind+'\0'+identity).digest('hex');
-    return [{path,line:text.slice(0,offset).split('\n').length,label:f.label,category:f.category,masked:'[REDACTED]',kind:f.kind,fingerprint,...(allowReveal?{value:f.value}:{}),...c,severity:c.disposition==='reference'?'info':c.severity??f.severity,
-      action:c.disposition==='reference'?'Informational or recognized reference. Kept for transparency; excluded from the review count.':f.category==='credentials'?'If genuine, revoke or rotate this secret first. Move its replacement to a secret manager, remove the exposed value and review Git history.':'Check whether this data is intentional and authorized for public sharing. Remove or anonymize it if needed.'}];
+    return [{path,line:text.slice(0,offset).split('\n').length,label:f.label,category:f.category,masked:'[REDACTED]',kind:f.kind,fingerprint,...(credential?{credential}:{}),...(allowReveal?{value:f.value}:{}),...c,severity:c.disposition==='reference'?'info':c.severity??f.severity,
+      action:credential?.guidance??(c.disposition==='reference'?'Informational or recognized reference. Kept for transparency; excluded from the review count.':'Check whether this data is intentional and authorized for public sharing. Remove or anonymize it if needed.')}];
   });
 }
 

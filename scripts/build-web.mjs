@@ -8,7 +8,7 @@ if(dirname(output)!==resolve(root)||basename(output)!=='public')throw new Error(
 rmSync(output, { recursive: true, force: true });
 mkdirSync(output, { recursive: true });
 
-for (const file of ["index.html", "dashboard.html", "github.html", "repository.css", "brand-system.css", "privacy.html", "terms.html", "api-docs.html", "redact-sensitive-data-before-chatgpt.html", "auth.css", "manifest.webmanifest", "service-worker.js", "robots.txt", "sitemap.xml"]) {
+for (const file of ["index.html", "dashboard.html", "github.html", "repository.css", "brand-system.css", "themes.css", "privacy.html", "terms.html", "api-docs.html", "redact-sensitive-data-before-chatgpt.html", "auth.css", "manifest.webmanifest", "service-worker.js", "robots.txt", "sitemap.xml"]) {
   cpSync(resolve(root, file), resolve(output, file));
 }
 
@@ -19,7 +19,7 @@ for (const file of ["index.html", "dashboard.html", "github.html", "repository.c
 // straight from the browser console, fully bypassing the trial/subscription
 // gate that api/scan.ts enforces server-side.
 mkdirSync(resolve(output, 'dist'), {recursive:true});
-for(const module of ['auth','dashboard','desktop','pwa','landing','growth','repository-ui','repository-report','repository-example']) {
+for(const module of ['themes','auth','dashboard','desktop','pwa','landing','growth','repository-ui','repository-report','repository-example']) {
   cpSync(resolve(root,'dist',module+'.js'),resolve(output,'dist',module+'.js'));
 }
 mkdirSync(resolve(output, "outputs"), { recursive: true });
@@ -28,3 +28,5 @@ cpSync(resolve(root, "outputs", "redaxa-mark.svg"), resolve(output, "outputs", "
 // previews on X/LinkedIn/Slack need the wide ratio, and a square source gets
 // centre-cropped into an unreadable tile.
 cpSync(resolve(root, "brand", "og-image.png"), resolve(output, "og-image.png"));
+
+for(const file of ["redaxa-inter.woff2", "Inter-LICENSE.txt"]) cpSync(resolve(root,"outputs",file),resolve(output,"outputs",file));
