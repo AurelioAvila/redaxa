@@ -12,7 +12,8 @@ const mimeTypes: Record<string, string> = {
   ".js": "text/javascript; charset=utf-8",
   ".webmanifest": "application/manifest+json; charset=utf-8",
   ".svg": "image/svg+xml",
-  ".css": "text/css; charset=utf-8"
+  ".css": "text/css; charset=utf-8",
+  ".woff2": "font/woff2"
 };
 
 let repositoryScanBusy = false;
@@ -46,7 +47,13 @@ createServer(async (request, response) => {
       for(const name of ['authorization','x-refresh-token']) {const value=request.headers[name];if(typeof value==='string') headers[name]=value;}
       const query=new URL(request.url!,origin).search;
       const upstream=await fetch('https://promptshield-beta.vercel.app'+target+query,{method:request.method,headers,body:request.method==='POST'?body:undefined,redirect:'error',signal:AbortSignal.timeout(20_000)});
-      response.writeHead(upstream.status,securityHeaders('application/json'));response.end(await upstream.text());
+      const reply = await upstream.text();
+      // Opt-in local diagnostics: never print identities, tokens or response bodies.
+      if(process.env.REDAXA_ACCOUNT_DEBUG==='1' && target==='/api/account' && !query){
+        let verified=false;try{verified=typeof JSON.parse(reply).active==='boolean';}catch{}
+        console.info('Desktop account lookup', JSON.stringify({httpStatus:upstream.status,verifiedState:verified}));
+      }
+      response.writeHead(upstream.status,securityHeaders('application/json'));response.end(reply);
     } catch {reject(502,'Unable to reach Redaxa account services. Please try again.');}
     return;
   }
@@ -60,7 +67,7 @@ createServer(async (request, response) => {
     let body = '';
     try { for await(const chunk of request) {body += chunk; if(Buffer.byteLength(body)>2048) throw new Error('Request too large.');} }
     catch {reply(400,{error:'Invalid scan request.'});return;}
-    let input: {url?:string;demo?:boolean};
+    let input: {url?:string;demo?:boolean;includeHistory?:boolean};
     try {input=JSON.parse(body);if(!input || typeof input !== 'object') throw new Error();} catch {reply(400,{error:'Invalid scan request.'});return;}
     if(input.demo === true) {reply(200,demoReport(true));return;}
     if(typeof input.url !== 'string') {reply(400,{error:'Enter a GitHub repository URL.'});return;}
@@ -74,7 +81,7 @@ createServer(async (request, response) => {
     const abort = new AbortController();response.on('close',()=>abort.abort());
     repositoryScanBusy=true;lastRepositoryScan=Date.now();repositoryProgressId=scanId;
     repositoryProgress={stage:'Starting complete repository check…',checked:0,findings:0};
-    try {reply(200,await scanFullRepository(input.url,abort.signal,true,p=>{repositoryProgress=p;}));}
+    try {reply(200,await scanFullRepository(input.url,abort.signal,true,p=>{repositoryProgress=p;},input.includeHistory===true));}
     catch(e) {reply(400,{error:e instanceof Error && !/fetch|abort|timeout/i.test(e.message) ? e.message : 'The scan timed out or could not connect. Please try again.'});}
     finally {repositoryScanBusy=false;}
     return;
@@ -95,7 +102,7 @@ createServer(async (request, response) => {
 
   const relativePath = pathname === "/" ? "index.html" : pathname.replace(/^\/+/, "");
   // Development server serves UI assets only, never source, credentials or Git metadata.
-  if (!/^(?:[a-zA-Z0-9_-]+\.(?:html|css|webmanifest)|dist\/(?:auth|dashboard|desktop|pwa|landing|growth|repository-ui|repository-report|repository-example)\.js|browser-extension\/(?:popup\.(?:html|css|js)|config\.js|icons\/48\.png)|outputs\/[a-zA-Z0-9_.-]+\.(?:svg|png|webp)|service-worker\.js)$/.test(relativePath)) {
+  if (!/^(?:[a-zA-Z0-9_-]+\.(?:html|css|webmanifest)|dist\/(?:themes|auth|dashboard|desktop|pwa|landing|growth|repository-ui|repository-report|repository-example)\.js|browser-extension\/(?:popup\.(?:html|css|js)|config\.js|icons\/48\.png)|outputs\/[a-zA-Z0-9_.-]+\.(?:svg|png|webp|woff2)|service-worker\.js)$/.test(relativePath)) {
     response.writeHead(404, securityHeaders('text/plain'));response.end('Not found');return;
   }
   const filePath = resolve(root, relativePath);
