@@ -9,7 +9,7 @@ import {join,resolve,dirname} from 'node:path';
 import {pathToFileURL} from 'node:url';
 const parent=resolve(tmpdir()),root=await mkdtemp(join(parent,'redaxa-fixture-'));
 const original=cp.execFile,exec=promisify(original);
-const git=args=>exec('git',['-c','core.hooksPath='+join(root,'no-hooks'),'-c','user.name=Fixture','-c','user.email=fixture@example.com',...args],{cwd:root,windowsHide:true});
+const git=args=>exec('git',['-c','core.hooksPath='+join(root,'no-hooks'),'-c','commit.gpgsign=false','-c','user.name=Fixture','-c','user.email=fixture@example.com',...args],{cwd:root,windowsHide:true});
 const key='ghp_'+'aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789ab',old=key+'old';
 try {
  await git(['init','-q']);await writeFile(join(root,'config.env'),'KEY='+old);await git(['add','.']);await git(['commit','-qm','old fixture']);
@@ -18,7 +18,8 @@ try {
  await writeFile(join(root,'empty.txt'),'');await writeFile(join(root,'node_modules','fixture.env'),'KEY='+key+'dependency');await writeFile(join(root,'contacts.csv'),'person@company.io\n10.0.0.5');
  await git(['add','.']);await git(['commit','-qm','current fixture']);
  // Redirect only this test repository's clone to a local Git fixture.
- const redirect=args=>args.includes('https://github.com/example/focused-fixture')?['-c','protocol.file.allow=always',...args.map(a=>a==='https://github.com/example/focused-fixture'?pathToFileURL(root).href:a)]:args;
+ const fixtureUrl='https://github.com/example/focused-fixture';
+ const redirect=args=>args.some(arg=>arg===fixtureUrl)?['-c','protocol.file.allow=always',...args.map(arg=>arg===fixtureUrl?pathToFileURL(root).href:arg)]:args;
  const wrapped=(file,args,options,callback)=>original(file,redirect(args),options,callback);
  wrapped[promisify.custom]=(file,args,options)=>exec(file,redirect(args),options);
  cp.execFile=wrapped;syncBuiltinESMExports();
