@@ -758,8 +758,8 @@ async function boot(): Promise<void> {
     if(action==="overview" || action==="photo"){paintAccountSheet();accountSheet.showModal();if(action==="photo")photoInput.focus();return;}
     if(action==="billing"){void manageBilling();return;}
     if(action==="password"){setMode("recovery");dialog.email.value=currentEmail??"";show();return;}
-    const target=action==="privacy"?webAppUrl+"/privacy.html":action==="support"?"mailto:aurelio_11@outlook.it?subject=Redaxa%20support":null;
-    if(target)void openInSystemBrowser(target).then(opened=>{if(!opened)location.assign(target);}).catch(()=>{setMode("signin");setMessage("Could not open the link. Contact aurelio_11@outlook.it for support.",true);show();});
+    const target=action==="privacy"?webAppUrl+"/privacy.html":action==="support"?"mailto:canadesino91@gmail.com?subject=Redaxa%20support":null;
+    if(target)void openInSystemBrowser(target).then(opened=>{if(!opened)location.assign(target);}).catch(()=>{setMode("signin");setMessage("Could not open the link. Contact canadesino91@gmail.com for support.",true);show();});
   }));
   dialog.backdrop.querySelector(".ps-auth-close")?.addEventListener("click", close);
   dialog.backdrop.addEventListener("click", (event) => { if (event.target === dialog.backdrop) close(); });
