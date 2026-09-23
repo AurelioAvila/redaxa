@@ -1,4 +1,6 @@
-import { isTauri, openInSystemBrowser } from "./desktop.js";
+import { isTauri, openInSystemBrowser, usesDesktopPreviewTransport } from "./desktop.js";
+import { restoreTheme } from "./themes.js";
+import { installDesktopTitlebar } from "./desktop.js";
 import type { Finding } from "./scanner.js";
 
 type AuthConfig = { configured: boolean };
@@ -13,7 +15,7 @@ type DesktopSession = { email: string; access_token: string; refresh_token: stri
 // doesn't reopen the XSS-session-theft risk the cookie migration closed), and it
 // only applies to the desktop build.
 const webAppUrl = "https://promptshield-beta.vercel.app";
-const localDesktopPreview = isTauri() && location.origin === 'http://127.0.0.1:4186';
+const localDesktopPreview = usesDesktopPreviewTransport(isTauri(), location.origin);
 const apiBase = localDesktopPreview ? '/api/desktop-preview' : isTauri() ? webAppUrl : "";
 function authFetch(input: string, init: RequestInit = {}): Promise<Response> {
   const headers = new Headers(init.headers);
@@ -25,6 +27,7 @@ let config: AuthConfig | null = null;
 let mode: "signup" | "signin" | "recovery" = "signup";
 let currentEmail: string | null = null;
 let accountActive = false;
+let latestAccount: AccountState | null = null;
 
 type ScanRequestOptions = { includePersonalData?: boolean; includeCredentials?: boolean; includeFinancialData?: boolean; customTerms?: string[] };
 // The policy layer's verdict, passed through untouched from /api/scan so every
@@ -98,6 +101,8 @@ async function desktopAccessToken(): Promise<string | null> {
   const response = await authFetch(`${apiBase}/api/auth/session`, {
     headers: { Authorization: `Bearer ${session.access_token}`, "X-Refresh-Token": session.refresh_token }
   });
+  // Temporary failures must not delete a customer's saved session.
+  if (!response.ok && response.status !== 401 && response.status !== 403) throw new Error("Account service is temporarily unavailable. Please retry.");
   const payload = await response.json().catch(() => ({})) as { email?: string | null; access_token?: string; refresh_token?: string; expires_in?: number };
   if (!payload.email || !payload.access_token || !payload.refresh_token) { await clearDesktopSession(); return null; }
   await saveDesktopSession({ email: payload.email, access_token: payload.access_token, refresh_token: payload.refresh_token, expires_at: Date.now() + (payload.expires_in ?? 3600) * 1000 });
@@ -114,7 +119,7 @@ export async function repositoryRequest(body: Record<string, unknown>, signal: A
     try {
       const accessToken=body.demo===true?'':await desktopAccessToken();
       signal.throwIfAborted();
-      const report=await invoke('repository_scan',{url:String(body.url??''),accessToken:accessToken??'',demo:body.demo===true});
+      const report=await invoke('repository_scan',{url:String(body.url??''),accessToken:accessToken??'',demo:body.demo===true,includeHistory:body.includeHistory===true});
       return Response.json(report);
     } catch(error) {
       const message=String(error);return Response.json({error:message.replace(/^PRO_REQUIRED:\s*/,''),...(message.includes('PRO_REQUIRED')?{code:'PRO_REQUIRED'}:{})},{status:message.includes('PRO_REQUIRED')?403:400});
@@ -125,7 +130,7 @@ export async function repositoryRequest(body: Record<string, unknown>, signal: A
   return fetch('/api/repository-scan',{method:'POST',headers,body:JSON.stringify(body),signal});
 }
 
-export function nativeRepositoryEngine():boolean {return isTauri()&&!localDesktopPreview;}
+export function nativeRepositoryEngine():boolean {return isTauri()&&location.origin!=='http://127.0.0.1:4186';}
 export async function repositoryProgress(scanId:string,signal:AbortSignal):Promise<Record<string,any>> {
   if(nativeRepositoryEngine())return (window as any).__TAURI_INTERNALS__.invoke('repository_progress');
   return fetch('/api/repository-progress',{headers:{'X-Redaxa-Preview':'1','X-Redaxa-Scan':scanId},signal}).then(r=>r.json());
@@ -212,7 +217,24 @@ function accountControls(): { trigger: HTMLAnchorElement; login: HTMLAnchorEleme
     <div class="ps-account-menu" role="menu" hidden>
       <div class="ps-account-menu-head">
         <span class="ps-avatar ps-avatar-lg" aria-hidden="true"></span>
-        <span class="ps-account-email"></span>
+        <div class="ps-account-identity"><span class="ps-account-email"></span><span class="ps-account-plan">Checking your plan…</span></div>
+      </div>
+      <div class="ps-menu-group">
+        <button class="ps-menu-link" type="button" role="menuitem" data-account-action="overview">Your account <span>Photo, plan & access</span></button>
+        <button class="ps-menu-link" type="button" role="menuitem" data-account-action="photo">Profile photo</button>
+        <a class="ps-menu-link" role="menuitem" href="/dashboard.html#plans">Plans & benefits <span>Compare options</span></a>
+        <button class="ps-menu-link" type="button" role="menuitem" data-account-action="billing">Subscription & invoices <span>Billing portal</span></button>
+      </div>
+      <div class="ps-menu-group">
+        <a class="ps-menu-link" role="menuitem" href="/dashboard.html#preferences">Preferences <span>Language, appearance, privacy</span></a>
+        <a class="ps-menu-link" role="menuitem" href="/dashboard.html#api-keys">Developer API keys <span>Manage Redaxa access keys</span></a>
+        <a class="ps-menu-link" role="menuitem" href="/dashboard.html#workspace">Workspace &amp; team <span>Members, policies &amp; protected terms</span></a>
+        <a class="ps-menu-link" role="menuitem" href="/dashboard.html#history">Recent checks <span>Local summaries</span></a>
+        <button class="ps-menu-link" type="button" role="menuitem" data-account-action="password">Password & security <span>Request a reset link</span></button>
+      </div>
+      <div class="ps-menu-group">
+        <button class="ps-menu-link" type="button" role="menuitem" data-account-action="support">Help & support</button>
+        <button class="ps-menu-link" type="button" role="menuitem" data-account-action="privacy">Privacy policy</button>
       </div>
       <button class="ps-signout" type="button" role="menuitem">Sign out</button>
     </div>`;
@@ -227,7 +249,33 @@ function accountControls(): { trigger: HTMLAnchorElement; login: HTMLAnchorEleme
   avatarButton.addEventListener("click", (event) => { event.stopPropagation(); setMenuOpen(menu.hidden); });
   document.addEventListener("click", (event) => { if (!account.contains(event.target as Node)) setMenuOpen(false); });
   document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !menu.hidden) { setMenuOpen(false); avatarButton.focus(); } });
-  account.querySelector(".ps-signout")?.addEventListener("click", () => setMenuOpen(false));
+  menu.addEventListener("click", (event) => {
+    if ((event.target as HTMLElement).closest('[role="menuitem"]')) setMenuOpen(false);
+  });
+  avatarButton.addEventListener("keydown", event => {
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault(); setMenuOpen(true);
+      const items = menu.querySelectorAll<HTMLElement>('[role="menuitem"]');
+      (event.key === "ArrowUp" ? items[items.length - 1] : items[0])?.focus();
+    }
+  });
+  menu.addEventListener("keydown", event => {
+    const items = [...menu.querySelectorAll<HTMLElement>('[role="menuitem"]')];
+    const index = items.indexOf(document.activeElement as HTMLElement);
+    if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
+      event.preventDefault();
+      const next = event.key === "Home" ? 0 : event.key === "End" ? items.length - 1 : (index + (event.key === "ArrowDown" ? 1 : -1) + items.length) % items.length;
+      items[next]?.focus();
+    }
+  });
+  account.addEventListener("focusout", event => {
+    // Use the destination: activeElement can briefly be body between blur/focus.
+    if (event.relatedTarget instanceof Node && !account.contains(event.relatedTarget)) setMenuOpen(false);
+  });
+  document.addEventListener("redaxa:account", event => {
+    const state = (event as CustomEvent<AccountState | null>).detail;
+    account.querySelector<HTMLElement>(".ps-account-plan")!.textContent = accountPlanLabel(state);
+  });
 
   return {
     trigger, login, account,
@@ -238,6 +286,14 @@ function accountControls(): { trigger: HTMLAnchorElement; login: HTMLAnchorEleme
   };
 }
 
+/** Display verified account state; an unavailable lookup is not a free plan. */
+function accountPlanLabel(state: AccountState | null): string {
+  if (!state) return "Plan status unavailable";
+  if (!state.active) return "No active subscription";
+  const plan = state.plan === "personal" || state.plan === "pro" ? "Pro" : state.plan === "business" ? "Business" : "Active subscription";
+  return plan + (state.status === "trialing" ? " · Trial" : " · Active");
+}
+
 // "m.rossi@acme.com" -> "MR", "canadesino91@gmail.com" -> "C". Derived from the
 // address because the dashboard never receives the first/last name fields.
 function initialsFor(email: string): string {
@@ -245,6 +301,46 @@ function initialsFor(email: string): string {
   const parts = local.split(/[._\-+]/).filter(Boolean);
   const letters = parts.slice(0, 2).map((part) => part[0]).join("");
   return (letters || local[0] || "?").toUpperCase();
+}
+
+async function photoStorageKey(email: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(email.trim().toLowerCase()));
+  return "redaxa.profile-photo.v1." + [...new Uint8Array(digest)].map(value => value.toString(16).padStart(2, "0")).join("");
+}
+
+function paintAvatars(email: string | null, photo: string | null = null): void {
+  document.querySelectorAll<HTMLElement>(".ps-account .ps-avatar, .ps-account-sheet .ps-avatar").forEach(avatar => {
+    avatar.replaceChildren();
+    if (email && photo) {
+      const img = document.createElement("img"); img.src = photo; img.alt = "";
+      avatar.append(img);
+    } else avatar.textContent = email ? initialsFor(email) : "";
+  });
+}
+
+async function loadProfilePhoto(email: string | null): Promise<void> {
+  paintAvatars(email);
+  if (!email) return;
+  try {
+    const value = localStorage.getItem(await photoStorageKey(email));
+    if (currentEmail === email && value && value.length < 200_000 && /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(value)) paintAvatars(email, value);
+  } catch { /* Initials remain available when local storage is disabled. */ }
+}
+
+/** Decode and re-encode the selected image; metadata and original bytes never persist. */
+async function prepareProfilePhoto(file: File): Promise<string> {
+  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) throw new Error("Choose a JPG, PNG or WebP image.");
+  if (file.size > 5 * 1024 * 1024) throw new Error("Choose an image smaller than 5 MB.");
+  const bitmap = await createImageBitmap(file);
+  try {
+    if (!bitmap.width || !bitmap.height || bitmap.width * bitmap.height > 20_000_000) throw new Error("Choose an image under 20 megapixels.");
+    const canvas = document.createElement("canvas"); canvas.width = canvas.height = 256;
+    const context = canvas.getContext("2d"); if (!context) throw new Error("Image editing is unavailable. Please try again.");
+    context.fillStyle = "#202731"; context.fillRect(0, 0, 256, 256);
+    const side = Math.min(bitmap.width, bitmap.height);
+    context.drawImage(bitmap, (bitmap.width - side) / 2, (bitmap.height - side) / 2, side, side, 0, 0, 256, 256);
+    return canvas.toDataURL("image/jpeg", .88);
+  } finally { bitmap.close(); }
 }
 
 function installDialog(): {
@@ -345,6 +441,7 @@ function authRedirect(): string { return `${webAppUrl}/`; }
 export type SyncedSettings = { detectPersonal?: boolean; detectCredentials?: boolean; detectFinancial?: boolean; scanMode?: "standard" | "strict"; customTerms?: string[] };
 export type AccountState = { active: boolean; status: string | null; currentPeriodEnd: string | null; plan: string | null; repositoryAccess?: boolean; settings?: SyncedSettings | null };
 function publishAccountState(state: AccountState | null): void {
+  latestAccount = state;
   document.dispatchEvent(new CustomEvent("redaxa:account", { detail: state }));
 }
 
@@ -373,6 +470,8 @@ async function refreshEntitlement(): Promise<void> {
 }
 
 async function boot(): Promise<void> {
+  restoreTheme();
+  installDesktopTitlebar();
   installStylesheet();
   const desktop = isTauri();
   const controls = accountControls();
@@ -410,7 +509,7 @@ async function boot(): Promise<void> {
     currentEmail = email;
     controls.account.classList.toggle("open", Boolean(email)); controls.trigger.hidden = Boolean(email); controls.login.hidden = Boolean(email);
     controls.email.textContent = email ?? "";
-    controls.avatars.forEach((avatar) => { avatar.textContent = email ? initialsFor(email) : ""; });
+    void loadProfilePhoto(email);
     if (!email) { controls.closeMenu(); publishAccountState(null); }
   };
   renderAccount(currentEmail);
@@ -558,6 +657,7 @@ async function boot(): Promise<void> {
     request: (path, body, method) => apiRequest(path, body, method),
     download: (path) => apiDownload(path)
   };
+  document.dispatchEvent(new Event("redaxa:auth-ready"));
   controls.trigger.addEventListener("click", (event) => { event.preventDefault(); if (!config?.configured) { setMessage("Account setup is being completed. Please try again shortly.", true); } setMode("signup"); show(); });
   controls.login.addEventListener("click", (event) => { event.preventDefault(); if (!config?.configured) { setMessage("Account setup is being completed. Please try again shortly.", true); } setMode("signin"); show(); });
 
@@ -586,17 +686,81 @@ async function boot(): Promise<void> {
     }
   };
   document.querySelectorAll<HTMLElement>("[data-plan]").forEach((button) => button.addEventListener("click", () => void beginCheckout(button)));
-  document.querySelector<HTMLButtonElement>("#manage-billing")?.addEventListener("click", async () => {
-    if (!currentEmail) { setMode("signin"); setMessage("Sign in to manage your subscription."); show(); return; }
+  let billingBusy = false;
+  const manageBilling = async (): Promise<void> => {
+    if (billingBusy) return;
+    billingBusy = true;
+    if (!currentEmail) { billingBusy = false; setMode("signin"); setMessage("Sign in to manage your subscription."); show(); return; }
     try {
       const payload = await apiRequest("/api/billing?action=portal") as { url?: string };
       if (!payload.url) throw new Error("Billing management is unavailable.");
-      if (desktop) void openInSystemBrowser(payload.url); else location.assign(payload.url);
+      if (desktop) await openInSystemBrowser(payload.url); else location.assign(payload.url);
     } catch (error) {
       if (error instanceof Error && error.message === "UNAUTHORIZED") { renderAccount(null); void clearDesktopSession(); setMode("signin"); setMessage("Please sign in again to continue."); show(); }
-      else { setMessage(error instanceof Error ? error.message : "Billing management is unavailable.", true); show(); }
+      else { paintAccountSheet(); accountSheet.querySelector<HTMLElement>(".ps-account-message")!.textContent = error instanceof Error ? error.message : "Billing management is unavailable."; if (!accountSheet.open) accountSheet.showModal(); }
     }
+    finally { billingBusy = false; }
+  };
+  document.querySelector<HTMLButtonElement>("#manage-billing")?.addEventListener("click", () => void manageBilling());
+
+  const accountSheet = document.createElement("dialog");
+  accountSheet.className = "ps-account-sheet";
+  accountSheet.setAttribute("aria-labelledby", "ps-account-title");
+  accountSheet.innerHTML = `<header><div><h2 id="ps-account-title">Your account</h2><p>Subscription, access and account settings.</p></div><button type="button" data-sheet-close aria-label="Close account details">×</button></header>
+    <section class="ps-profile-editor" aria-label="Profile photo"><span class="ps-avatar ps-profile-preview" aria-hidden="true"></span><div><label for="ps-profile-file">Profile photo</label><p>Saved on this device only. JPG, PNG or WebP, up to 5 MB.</p><input id="ps-profile-file" type="file" accept="image/jpeg,image/png,image/webp"><button type="button" data-photo-remove>Remove photo</button><p data-photo-message role="status"></p></div></section>
+    <dl class="ps-account-facts"><div><dt>Email</dt><dd data-account-email></dd></div><div><dt>Plan</dt><dd data-account-plan></dd></div><div><dt>Current period ends</dt><dd data-account-period></dd></div><div><dt>Repository access</dt><dd data-account-access></dd></div></dl>
+    <p class="ps-account-message" role="status"></p><div class="ps-account-actions"><button type="button" data-sheet-billing>Subscription & invoices</button><button type="button" data-sheet-refresh>Refresh account</button></div>`;
+  document.body.append(accountSheet);
+  const paintAccountSheet = (): void => {
+    void loadProfilePhoto(currentEmail);
+    accountSheet.querySelector<HTMLElement>("[data-account-email]")!.textContent = currentEmail ?? "Signed out";
+    accountSheet.querySelector<HTMLElement>("[data-account-plan]")!.textContent = accountPlanLabel(latestAccount);
+    const period = latestAccount?.currentPeriodEnd ? new Date(latestAccount.currentPeriodEnd) : null;
+    accountSheet.querySelector<HTMLElement>("[data-account-period]")!.textContent = period && Number.isFinite(period.getTime()) ? period.toLocaleDateString(undefined, {year:"numeric",month:"long",day:"numeric"}) : "Not available";
+    accountSheet.querySelector<HTMLElement>("[data-account-access]")!.textContent = !latestAccount ? "Could not verify access" : latestAccount.repositoryAccess === true ? "Included · Windows app required" : latestAccount.repositoryAccess === false || !latestAccount.active ? "Not included in current access" : "Check your plan details";
+  };
+  const sheetClose = (): void => accountSheet.close();
+  const photoInput = accountSheet.querySelector<HTMLInputElement>("#ps-profile-file")!;
+  const photoRemove = accountSheet.querySelector<HTMLButtonElement>("[data-photo-remove]")!;
+  const photoMessage = accountSheet.querySelector<HTMLElement>("[data-photo-message]")!;
+  let photoBusy = false;
+  photoInput.addEventListener("change", async () => {
+    const file = photoInput.files?.[0]; const owner = currentEmail;
+    if (!file || !owner || photoBusy) return;
+    photoBusy = true; photoInput.disabled = photoRemove.disabled = true; photoMessage.textContent = "Preparing photo…";
+    try {
+      const value = await prepareProfilePhoto(file); const key = await photoStorageKey(owner);
+      if (currentEmail !== owner) return;
+      localStorage.setItem(key, value); paintAvatars(owner, value); photoMessage.textContent = "Photo saved on this device.";
+    } catch (error) { photoMessage.textContent = error instanceof Error ? error.message : "Photo could not be saved. Try another image."; }
+    finally { photoBusy = false; photoInput.disabled = photoRemove.disabled = false; photoInput.value = ""; }
   });
+  photoRemove.addEventListener("click", async () => {
+    const owner = currentEmail; if (!owner || photoBusy) return;
+    photoBusy = true; photoInput.disabled = photoRemove.disabled = true;
+    try { const key = await photoStorageKey(owner); if (currentEmail !== owner) return; localStorage.removeItem(key); paintAvatars(owner); photoMessage.textContent = "Photo removed."; }
+    catch { photoMessage.textContent = "Photo could not be removed. Please retry."; }
+    finally { photoBusy = false; photoInput.disabled = photoRemove.disabled = false; }
+  });
+  accountSheet.addEventListener("close", () => controls.account.querySelector<HTMLButtonElement>(".ps-avatar-btn")?.focus());
+  accountSheet.querySelector("[data-sheet-close]")!.addEventListener("click", sheetClose);
+  accountSheet.addEventListener("click", event => { if(event.target===accountSheet){const rect=accountSheet.getBoundingClientRect();if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)sheetClose();} });
+  accountSheet.querySelector("[data-sheet-billing]")!.addEventListener("click", () => { sheetClose(); void manageBilling(); });
+  accountSheet.querySelector("[data-sheet-refresh]")!.addEventListener("click", async event => {
+    const button=event.currentTarget as HTMLButtonElement;button.disabled=true;
+    await refreshEntitlement();paintAccountSheet();
+    accountSheet.querySelector<HTMLElement>(".ps-account-message")!.textContent = latestAccount ? "Account status refreshed." : "Account service unavailable. Try again shortly.";
+    button.disabled=false;
+  });
+  controls.account.querySelectorAll<HTMLButtonElement>("[data-account-action]").forEach(button => button.addEventListener("click", event => {
+    const action=(event.currentTarget as HTMLButtonElement).dataset.accountAction;
+    if(!action)return;
+    if(action==="overview" || action==="photo"){paintAccountSheet();accountSheet.showModal();if(action==="photo")photoInput.focus();return;}
+    if(action==="billing"){void manageBilling();return;}
+    if(action==="password"){setMode("recovery");dialog.email.value=currentEmail??"";show();return;}
+    const target=action==="privacy"?webAppUrl+"/privacy.html":action==="support"?"mailto:aurelio_11@outlook.it?subject=Redaxa%20support":null;
+    if(target)void openInSystemBrowser(target).then(opened=>{if(!opened)location.assign(target);}).catch(()=>{setMode("signin");setMessage("Could not open the link. Contact aurelio_11@outlook.it for support.",true);show();});
+  }));
   dialog.backdrop.querySelector(".ps-auth-close")?.addEventListener("click", close);
   dialog.backdrop.addEventListener("click", (event) => { if (event.target === dialog.backdrop) close(); });
   controls.signout.addEventListener("click", () => {

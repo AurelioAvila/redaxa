@@ -5,7 +5,7 @@ import { enableDesktopCompanion } from "./desktop.js";
 
 type HistoryEntry = { id: string; createdAt: string; findings: number; preview: string; byKind: Record<string, number> };
 type Language = "en" | "it" | "es" | "fr" | "de";
-type ThemeName = "lime" | "violet" | "teal" | "amber" | "crimson" | "ocean" | "emerald" | "gold" | "slate" | "indigo" | "coral";
+import { themes, restoreTheme, applyTheme, type ThemeName } from "./themes.js";
 type Preferences = ScanOptions & { language: Language; theme: ThemeName; scanMode: "standard" | "strict"; saveHistory: boolean; autoClearAfterCopy: boolean; showRawValues: boolean; customTerms: string[] };
 type RiskLevel = "none" | "medium" | "high";
 
@@ -13,41 +13,21 @@ const storageKey = "redaxa.personal-history.v1";
 const preferencesKey = "redaxa.personal-preferences.v1";
 const maxPromptLength = 10_000;
 
-const defaultPreferences: Preferences = { language: "en", theme: "violet", scanMode: "standard", includePersonalData: true, includeCredentials: true, includeFinancialData: true, saveHistory: true, autoClearAfterCopy: false, showRawValues: true, customTerms: [] };
-
-const themes: { code: ThemeName; label: string; accent: string; accentInk: string; swatch: [string, string] }[] = [
-  { code: "lime", label: "Lime", accent: "#b9ff00", accentInk: "#080a07", swatch: ["#b9ff00", "#6dd400"] },
-  { code: "violet", label: "Violet", accent: "#b59aff", accentInk: "#241a38", swatch: ["#7c5cfc", "#5b3de0"] },
-  { code: "teal", label: "Teal Depths", accent: "#35e0c0", accentInk: "#062019", swatch: ["#35e0c0", "#ff5c8a"] },
-  { code: "amber", label: "Amber Dusk", accent: "#ffb84d", accentInk: "#241202", swatch: ["#ffb84d", "#5bd1ff"] },
-  { code: "crimson", label: "Crimson Steel", accent: "#ff4d6d", accentInk: "#1c0509", swatch: ["#ff4d6d", "#4ce0b3"] },
-  { code: "ocean", label: "Ocean Blue", accent: "#3d8bff", accentInk: "#04101f", swatch: ["#3d8bff", "#ffb74d"] },
-  { code: "emerald", label: "Forest Emerald", accent: "#2ecc71", accentInk: "#052012", swatch: ["#2ecc71", "#ff6f91"] },
-  { code: "gold", label: "Royal Gold", accent: "#e8b923", accentInk: "#201802", swatch: ["#e8b923", "#6f5bff"] },
-  { code: "slate", label: "Slate Mono", accent: "#9aa5b1", accentInk: "#14171a", swatch: ["#9aa5b1", "#6ee7b7"] },
-  { code: "indigo", label: "Indigo Night", accent: "#6c63ff", accentInk: "#0d0a1f", swatch: ["#6c63ff", "#ffc155"] },
-  { code: "coral", label: "Coral Sunset", accent: "#ff7a45", accentInk: "#200902", swatch: ["#ff7a45", "#4dd9e8"] }
-];
-
-function applyTheme(theme: ThemeName): void {
-  const match = themes.find((candidate) => candidate.code === theme) ?? themes[0];
-  document.documentElement.style.setProperty("--accent", match.accent);
-  document.documentElement.style.setProperty("--accent-ink", match.accentInk);
-}
+const defaultPreferences: Preferences = { language: "en", theme: "ocean", scanMode: "standard", includePersonalData: true, includeCredentials: true, includeFinancialData: true, saveHistory: true, autoClearAfterCopy: false, showRawValues: true, customTerms: [] };
 
 const languageNames: Record<Language, string> = { en: "English", it: "Italiano", es: "Español", fr: "Français", de: "Deutsch" };
 const copyByLanguage: Record<Language, Record<string, string>> = {
   en: {
     workspace: "Workspace", privateCheck: "Check a prompt", recent: "Recent checks", account: "Account", plans: "Plans & pricing", preferences: "Preferences",
-    eyebrow: "Personal workspace", title: "Share the work. Keep the secrets.", subtitle: "Review sensitive data before it reaches your next AI conversation.",
+    eyebrow: "Personal workspace", title: "Prompt check", subtitle: "Review sensitive details before sharing with AI.",
     scan: "Inspect prompt →", clear: "Clear", history: "Recent local checks", clearHistory: "Clear history",
     placeholder: "e.g. Draft a reply to Marco Rossi (m.rossi@acme.com) about the ACME invoice — my direct line is +39 02 5555 0180",
-    composerTitle: "Check your prompt before sharing it with AI", composerSub: "Paste anything you are about to send to ChatGPT, Claude, Gemini or Copilot.", promptLabel: "Prompt to check",
+    composerTitle: "Prompt to review", composerSub: "Paste your text below, then inspect it for sensitive data.", promptLabel: "Prompt to check",
     tryLabel: "Try an example", sampleBrief: "Client brief", sampleApiKey: "API key", sampleEmail: "Email draft", samplePersonal: "Personal details",
     metaLabel: "Private scan — your prompt is never stored or logged.", howPrivacyWorks: "How privacy works", interfaceLanguage: "Interface language",
     scanModeStandard: "Standard — balanced checks", scanModeStrict: "Strict — careful review mode",
     resultsTitle: "Results", previewItems: "3 sensitive items in this prompt",
-    redactBeforeSharing: "Redact before sharing", previewFoot: "Paste your own prompt on the left to run a real check.", detectsLabel: "Also detects",
+    redactBeforeSharing: "Redact before sharing", previewFoot: "Paste your own prompt to run a real check.", detectsLabel: "Also detects",
     riskHigh: "High risk", riskMedium: "Review before sharing", riskNone: "No risks found",
     actionHigh: "{n} sensitive item found. Replace it, or copy the redacted version below.|{n} sensitive items found. Replace them, or copy the redacted version below.",
     actionMedium: "{n} item to review before sharing this prompt.|{n} items to review before sharing this prompt.",
@@ -78,7 +58,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
   },
   it: {
     workspace: "Spazio di lavoro", privateCheck: "Controlla un prompt", recent: "Controlli recenti", account: "Account", plans: "Piani e prezzi", preferences: "Impostazioni",
-    eyebrow: "Spazio personale", title: "Condividi il lavoro. Proteggi i segreti.", subtitle: "Rivedi i dati sensibili prima della tua prossima conversazione con l’AI.",
+    eyebrow: "Spazio personale", title: "Controllo prompt", subtitle: "Rivedi i dati sensibili prima della tua prossima conversazione con l’AI.",
     scan: "Controlla prompt →", clear: "Svuota", history: "Controlli locali recenti", clearHistory: "Cancella cronologia",
     placeholder: "es. Scrivi una risposta a Marco Rossi (m.rossi@acme.com) sulla fattura ACME — il mio numero diretto è +39 02 5555 0180",
     composerTitle: "Controlla il prompt prima di condividerlo con l'AI", composerSub: "Incolla qualsiasi cosa tu stia per inviare a ChatGPT, Claude, Gemini o Copilot.", promptLabel: "Prompt da controllare",
@@ -86,7 +66,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     metaLabel: "Controllo privato — il prompt non viene mai salvato né registrato.", howPrivacyWorks: "Come funziona la privacy", interfaceLanguage: "Lingua dell'interfaccia",
     scanModeStandard: "Standard — controlli bilanciati", scanModeStrict: "Rigorosa — modalità di revisione attenta",
     resultsTitle: "Risultati", previewItems: "3 elementi sensibili in questo prompt",
-    redactBeforeSharing: "Rimuovi i dati prima di condividere", previewFoot: "Incolla il tuo prompt a sinistra per eseguire un controllo reale.", detectsLabel: "Rileva anche",
+    redactBeforeSharing: "Rimuovi i dati prima di condividere", previewFoot: "Incolla il tuo prompt per eseguire un controllo reale.", detectsLabel: "Rileva anche",
     riskHigh: "Rischio alto", riskMedium: "Rivedi prima di condividere", riskNone: "Nessun rischio rilevato",
     actionHigh: "{n} elemento sensibile trovato. Sostituiscilo o copia la versione sicura qui sotto.|{n} elementi sensibili trovati. Sostituiscili o copia la versione sicura qui sotto.",
     actionMedium: "{n} elemento da rivedere prima di condividere il prompt.|{n} elementi da rivedere prima di condividere il prompt.",
@@ -117,7 +97,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
   },
   es: {
     workspace: "Espacio de trabajo", privateCheck: "Revisar un prompt", recent: "Revisiones recientes", account: "Cuenta", plans: "Planes y precios", preferences: "Preferencias",
-    eyebrow: "Espacio personal", title: "Tu punto de control privado para IA.", subtitle: "Revisa un prompt antes de enviarlo a una herramienta de IA.",
+    eyebrow: "Espacio personal", title: "Revisión de prompts", subtitle: "Revisa un prompt antes de enviarlo a una herramienta de IA.",
     scan: "Revisar prompt →", clear: "Limpiar", history: "Revisiones locales recientes", clearHistory: "Borrar historial",
     placeholder: "p. ej. Redacta una respuesta a Marco Rossi (m.rossi@acme.com) sobre la factura de ACME — mi línea directa es +39 02 5555 0180",
     composerTitle: "Revisa tu prompt antes de compartirlo con la IA", composerSub: "Pega lo que estés a punto de enviar a ChatGPT, Claude, Gemini o Copilot.", promptLabel: "Prompt para revisar",
@@ -125,7 +105,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     metaLabel: "Revisión privada — tu prompt nunca se guarda ni se registra.", howPrivacyWorks: "Cómo funciona la privacidad", interfaceLanguage: "Idioma de la interfaz",
     scanModeStandard: "Estándar — revisiones equilibradas", scanModeStrict: "Estricto — modo de revisión cuidadosa",
     resultsTitle: "Resultados", previewItems: "3 elementos sensibles en este prompt",
-    redactBeforeSharing: "Oculta los datos antes de compartir", previewFoot: "Pega tu propio prompt a la izquierda para hacer una revisión real.", detectsLabel: "También detecta",
+    redactBeforeSharing: "Oculta los datos antes de compartir", previewFoot: "Pega tu propio prompt para hacer una revisión real.", detectsLabel: "También detecta",
     riskHigh: "Riesgo alto", riskMedium: "Revisa antes de compartir", riskNone: "Sin riesgos detectados",
     actionHigh: "{n} elemento sensible encontrado. Sustitúyelo o copia la versión segura de abajo.|{n} elementos sensibles encontrados. Sustitúyelos o copia la versión segura de abajo.",
     actionMedium: "{n} elemento para revisar antes de compartir este prompt.|{n} elementos para revisar antes de compartir este prompt.",
@@ -138,7 +118,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     itemsReviewed: "{n} elemento revisado|{n} elementos revisados",
     createAccountTrial: "Crea tu cuenta y comienza tu prueba gratuita de 7 días para revisar prompts.", startTrialToInspect: "Comienza tu prueba gratuita de 7 días para revisar prompts.",
     usageLabel: "Revisiones esta semana", freeTrialBadge: "Qué desbloquea un plan", freeTrialDesc: "Revisiones ilimitadas, términos protegidos propios y hasta 3 puestos de equipo.", seePlans: "Comparar planes →",
-    zeroRetentionDesc: "Los prompts se revisan, nunca se guardan ni se registran.", createAccountBtn: "Crear cuenta", protectionActive: "Protección activa",
+    zeroRetentionDesc: "Los prompts se revisan, nunca se guardan ni se registran.", createAccountBtn: "Crear cuenta", protectionActive: "Revisa antes de compartir",
     onboardCheckTitle: "Haz tu primera revisión", onboardCheckDesc: "Pega un prompt y revísalo una vez.",
     onboardTermsTitle: "Añade un término personalizado", onboardTermsDesc: "Protege el nombre de un cliente o proyecto en Preferencias.",
     onboardThemeTitle: "Elige un tema", onboardThemeDesc: "Personaliza tu espacio de trabajo en Preferencias.",
@@ -156,7 +136,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
   },
   fr: {
     workspace: "Espace de travail", privateCheck: "Vérifier un prompt", recent: "Vérifications récentes", account: "Compte", plans: "Offres et tarifs", preferences: "Préférences",
-    eyebrow: "Espace personnel", title: "Votre contrôle IA privé.", subtitle: "Vérifiez un prompt avant de l’envoyer à un outil d’IA.",
+    eyebrow: "Espace personnel", title: "Vérification du prompt", subtitle: "Vérifiez un prompt avant de l’envoyer à un outil d’IA.",
     scan: "Vérifier le prompt →", clear: "Effacer", history: "Vérifications locales récentes", clearHistory: "Effacer l’historique",
     placeholder: "ex. Rédige une réponse à Marco Rossi (m.rossi@acme.com) au sujet de la facture ACME — ma ligne directe est le +39 02 5555 0180",
     composerTitle: "Vérifiez votre prompt avant de le partager avec l’IA", composerSub: "Collez ce que vous vous apprêtez à envoyer à ChatGPT, Claude, Gemini ou Copilot.", promptLabel: "Prompt à vérifier",
@@ -164,7 +144,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     metaLabel: "Vérification privée — votre prompt n’est jamais stocké ni enregistré.", howPrivacyWorks: "Comment fonctionne la confidentialité", interfaceLanguage: "Langue de l’interface",
     scanModeStandard: "Standard — vérifications équilibrées", scanModeStrict: "Stricte — mode de révision attentive",
     resultsTitle: "Résultats", previewItems: "3 éléments sensibles dans ce prompt",
-    redactBeforeSharing: "Masquez les données avant de partager", previewFoot: "Collez votre propre prompt à gauche pour lancer une vraie vérification.", detectsLabel: "Détecte aussi",
+    redactBeforeSharing: "Masquez les données avant de partager", previewFoot: "Collez votre propre prompt pour lancer une vraie vérification.", detectsLabel: "Détecte aussi",
     riskHigh: "Risque élevé", riskMedium: "Vérifiez avant de partager", riskNone: "Aucun risque détecté",
     actionHigh: "{n} élément sensible trouvé. Remplacez-le ou copiez la version sécurisée ci-dessous.|{n} éléments sensibles trouvés. Remplacez-les ou copiez la version sécurisée ci-dessous.",
     actionMedium: "{n} élément à vérifier avant de partager ce prompt.|{n} éléments à vérifier avant de partager ce prompt.",
@@ -195,7 +175,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
   },
   de: {
     workspace: "Arbeitsbereich", privateCheck: "Prompt prüfen", recent: "Letzte Prüfungen", account: "Konto", plans: "Tarife & Preise", preferences: "Einstellungen",
-    eyebrow: "Persönlicher Bereich", title: "Ihr privater KI-Prüfpunkt.", subtitle: "Prüfen Sie einen Prompt, bevor er ein KI-Tool erreicht.",
+    eyebrow: "Persönlicher Bereich", title: "Prompt prüfen", subtitle: "Prüfen Sie einen Prompt, bevor er ein KI-Tool erreicht.",
     scan: "Prompt prüfen →", clear: "Leeren", history: "Letzte lokale Prüfungen", clearHistory: "Verlauf löschen",
     placeholder: "z. B. Entwirf eine Antwort an Marco Rossi (m.rossi@acme.com) zur ACME-Rechnung — meine Durchwahl ist +39 02 5555 0180",
     composerTitle: "Prüfen Sie Ihren Prompt, bevor Sie ihn mit KI teilen", composerSub: "Fügen Sie ein, was Sie gerade an ChatGPT, Claude, Gemini oder Copilot senden wollen.", promptLabel: "Zu prüfender Prompt",
@@ -203,7 +183,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     metaLabel: "Private Prüfung — Ihr Prompt wird nie gespeichert oder protokolliert.", howPrivacyWorks: "So funktioniert der Datenschutz", interfaceLanguage: "Oberflächensprache",
     scanModeStandard: "Standard — ausgewogene Prüfungen", scanModeStrict: "Streng — sorgfältiger Prüfmodus",
     resultsTitle: "Ergebnisse", previewItems: "3 sensible Elemente in diesem Prompt",
-    redactBeforeSharing: "Vor dem Teilen schwärzen", previewFoot: "Fügen Sie links Ihren eigenen Prompt ein, um eine echte Prüfung zu starten.", detectsLabel: "Erkennt außerdem",
+    redactBeforeSharing: "Vor dem Teilen schwärzen", previewFoot: "Fügen Sie Ihren eigenen Prompt ein, um eine echte Prüfung zu starten.", detectsLabel: "Erkennt außerdem",
     riskHigh: "Hohes Risiko", riskMedium: "Vor dem Teilen prüfen", riskNone: "Keine Risiken gefunden",
     actionHigh: "{n} sensibles Element gefunden. Ersetzen Sie es oder kopieren Sie die sichere Version unten.|{n} sensible Elemente gefunden. Ersetzen Sie sie oder kopieren Sie die sichere Version unten.",
     actionMedium: "{n} Element vor dem Teilen dieses Prompts prüfen.|{n} Elemente vor dem Teilen dieses Prompts prüfen.",
@@ -216,7 +196,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     itemsReviewed: "{n} geprüftes Element|{n} geprüfte Elemente",
     createAccountTrial: "Erstellen Sie Ihr Konto und starten Sie die 7-tägige kostenlose Testphase, um Prompts zu prüfen.", startTrialToInspect: "Starten Sie die 7-tägige kostenlose Testphase, um Prompts zu prüfen.",
     usageLabel: "Prüfungen diese Woche", freeTrialBadge: "Was ein Tarif freischaltet", freeTrialDesc: "Unbegrenzte Prüfungen, eigene geschützte Begriffe und bis zu 3 Teamplätze.", seePlans: "Tarife vergleichen →",
-    zeroRetentionDesc: "Prompts werden geprüft, nie gespeichert oder protokolliert.", createAccountBtn: "Konto erstellen", protectionActive: "Schutz aktiv",
+    zeroRetentionDesc: "Prompts werden geprüft, nie gespeichert oder protokolliert.", createAccountBtn: "Konto erstellen", protectionActive: "Vor dem Teilen prüfen",
     onboardCheckTitle: "Erste Prüfung durchführen", onboardCheckDesc: "Fügen Sie einen Prompt ein und prüfen Sie ihn einmal.",
     onboardTermsTitle: "Eigenen Begriff hinzufügen", onboardTermsDesc: "Schützen Sie einen Kunden- oder Projektnamen in den Einstellungen.",
     onboardThemeTitle: "Ein Thema wählen", onboardThemeDesc: "Gestalten Sie den Arbeitsbereich in den Einstellungen nach Ihrem Geschmack.",
@@ -325,6 +305,7 @@ export function clearHistory(): void {
 }
 
 function readPreferences(): Preferences {
+  restoreTheme();
   try {
     const stored: unknown = JSON.parse(localStorage.getItem(preferencesKey) ?? "{}");
     if (typeof stored === "object" && stored !== null) {
@@ -332,7 +313,7 @@ function readPreferences(): Preferences {
       return {
         ...defaultPreferences,
         language: ["en", "it", "es", "fr", "de"].includes(String(candidate.language)) ? candidate.language as Language : "en",
-        theme: themes.some((t) => t.code === candidate.theme) ? candidate.theme as ThemeName : "violet",
+        theme: themes.some((t) => t.code === candidate.theme) ? candidate.theme as ThemeName : "ocean",
         scanMode: candidate.scanMode === "strict" ? "strict" : "standard",
         includePersonalData: candidate.includePersonalData !== false,
         includeCredentials: candidate.includeCredentials !== false,
@@ -483,13 +464,9 @@ export function mountDashboard(): void {
       <div class="drawer-actions"><button class="secondary" id="close-preferences" type="button">Close</button><button class="primary" id="save-preferences" type="button">Save preferences</button></div>
     </section>`;
   document.body.append(preferenceDialog);
-  // Same swatch-picker pattern as PC Tweaker, but the per-theme color comes from a
-  // static CSS class (theme-swatch-lime, etc., defined in dashboard.html) instead
-  // of an inline style="" attribute: Tauri computes CSP hashes only for inline
-  // style/script present at build time, so runtime-injected style attributes are
-  // silently dropped in the desktop build.
+  // Static palette classes work under desktop CSP and repaint every surface.
   const themeRow = required<HTMLElement>("#theme-row");
-  themeRow.innerHTML = themes.map((theme) => `<button type="button" class="theme-swatch theme-swatch-${theme.code}${theme.code === preferences.theme ? " active" : ""}" data-theme="${theme.code}" title="${theme.label}" aria-label="${theme.label} theme"></button>`).join("");
+  themeRow.innerHTML = themes.map((theme) => `<button type="button" class="theme-swatch theme-swatch-${theme.code}${theme.code === preferences.theme ? " active" : ""}" data-theme="${theme.code}" title="${theme.label}" aria-label="${theme.label} theme" aria-pressed="${theme.code === preferences.theme}"><span class="theme-dot" aria-hidden="true"></span><span>${theme.label}</span></button>`).join("");
   themeRow.addEventListener("click", (event) => {
     const button = (event.target as HTMLElement).closest<HTMLButtonElement>(".theme-swatch");
     const code = button?.dataset.theme as ThemeName | undefined;
@@ -497,7 +474,7 @@ export function mountDashboard(): void {
     preferences.theme = code;
     applyTheme(code);
     savePreferences(preferences);
-    themeRow.querySelectorAll(".theme-swatch").forEach((swatch) => swatch.classList.toggle("active", swatch === button));
+    themeRow.querySelectorAll(".theme-swatch").forEach((swatch) => { swatch.classList.toggle("active", swatch === button); swatch.setAttribute("aria-pressed", String(swatch === button)); });
     renderOnboarding();
   });
 
@@ -540,7 +517,8 @@ export function mountDashboard(): void {
   plansDialog.innerHTML = `
     <section class="drawer plans-drawer" role="dialog" aria-modal="true" aria-labelledby="plans-title">
       <h2 id="plans-title" tabindex="-1">${words().plansTitle}</h2>
-      <p>${format(words().plansIntro, { code: "<b>SHIELD</b>" })}</p>
+      <p>Choose your plan. Start with a 7-day trial.</p>
+      <div class="billing-switch" role="group" aria-label="Billing period"><button type="button" data-billing="monthly" aria-pressed="false">Monthly</button><button type="button" data-billing="yearly" aria-pressed="true">Yearly · save 2 months</button></div>
       <div class="plan-grid">
         <article class="plan-card featured">
           <div class="plan-tag">${words().personalTag}</div>
@@ -548,10 +526,9 @@ export function mountDashboard(): void {
           <div class="plan-price">€7.99 <small>/ month</small></div>
           <p>${words().personalDesc}</p>
           <ul class="rx-benefits"><li><strong>Prompt checks &amp; redaction</strong> on web, Windows and Chrome</li><li><strong>Custom protected terms</strong> for client and project names</li><li><strong>Local repository checks on Windows:</strong> files, history and a prioritized recap</li><li><strong>Redacted text reports</strong> for repository reviews</li></ul>
-          <p class="rx-preview-note">Repository checks require Redaxa 0.4.0 or later for Windows. Launch from the app or extension. Pro keeps the existing Personal billing plan and price.</p>
           <div class="plan-actions">
             <button type="button" class="primary" data-plan="personal" data-interval="monthly">${words().startTrial}</button>
-            <button type="button" class="secondary" data-plan="personal" data-interval="yearly">${words().yearlyPersonal}</button>
+            <button type="button" class="primary" data-plan="personal" data-interval="yearly">${words().yearlyPersonal}</button>
           </div>
         </article>
         <article class="plan-card">
@@ -563,7 +540,7 @@ export function mountDashboard(): void {
           <label class="pref-row">${words().seatsLabel}<select id="business-seats"><option value="1">${words().seat1}</option><option value="2">${words().seat2}</option><option value="3">${words().seat3}</option></select></label>
           <div class="plan-actions">
             <button type="button" class="primary" data-plan="business" data-interval="monthly">${words().startTrial}</button>
-            <button type="button" class="secondary" data-plan="business" data-interval="yearly">${words().yearlyBusiness}</button>
+            <button type="button" class="primary" data-plan="business" data-interval="yearly">${words().yearlyBusiness}</button>
           </div>
         </article>
         <article class="plan-card">
@@ -604,6 +581,39 @@ export function mountDashboard(): void {
       <div class="drawer-actions"><button class="secondary" id="close-plans" type="button">${settingsByLanguage[preferences.language][10]}</button></div>
     </section>`;
   document.body.append(plansDialog);
+  required<HTMLElement>(".plans-drawer").prepend(required("#close-plans"));
+  plansDialog.querySelectorAll(".drawer-actions").forEach(element => element.remove());
+  const workspaceDialog = document.createElement("div");
+  workspaceDialog.className = "drawer-backdrop";
+  workspaceDialog.innerHTML = '<section class="drawer workspace-drawer" role="dialog" aria-modal="true" aria-labelledby="workspace-title"><h2 id="workspace-title" tabindex="-1">Workspace & team</h2><p>Manage members, shared protection and your subscription.</p><p id="workspace-empty" hidden>Sign in to manage your workspace. Team controls are available with Business.</p><div class="workspace-content"></div><div class="drawer-actions"><button class="secondary" id="close-workspace" type="button">Close</button></div></section>';
+  document.body.append(workspaceDialog);
+  const management = workspaceDialog.querySelector(".workspace-content")!;
+  management.append(plansDialog.querySelector(".plan-card:last-child")!, required("#team-section"), required("#org-section"));
+  let billingInterval: "monthly" | "yearly" = "yearly";
+  const renderBilling = (): void => {
+    plansDialog.querySelectorAll<HTMLElement>("[data-billing]").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.billing === billingInterval)));
+    plansDialog.querySelectorAll<HTMLElement>("[data-plan]").forEach(button => { button.hidden = button.dataset.interval !== billingInterval; button.textContent = words().startTrial; });
+    const cards = plansDialog.querySelectorAll<HTMLElement>(".plan-card");
+    cards[0].querySelector(".plan-price")!.innerHTML = billingInterval === "yearly" ? '€79.90 <small>/ year</small>' : '€7.99 <small>/ month</small>';
+    cards[1].querySelector(".plan-price")!.innerHTML = billingInterval === "yearly" ? '€149.90 <small>/ user / year</small>' : '€14.99 <small>/ user / month</small>';
+    cards[0].querySelector(".plan-tag")!.textContent = billingInterval === "yearly" ? "Recommended · Pro yearly" : words().personalTag;
+  };
+  plansDialog.querySelectorAll<HTMLElement>("[data-billing]").forEach(button => button.addEventListener("click", () => { billingInterval = button.dataset.billing === "monthly" ? "monthly" : "yearly"; renderBilling(); }));
+  const closeWorkspace = (): void => {
+    workspaceDialog.classList.remove("open"); document.documentElement.classList.remove("preferences-open");
+    if (location.hash === "#workspace") history.replaceState(null, "", location.pathname + location.search);
+    document.querySelector<HTMLElement>('.ps-account-trigger')?.focus();
+  };
+  required("#close-workspace").addEventListener("click", closeWorkspace);
+  workspaceDialog.addEventListener("click", event => { if (event.target === workspaceDialog) closeWorkspace(); });
+  workspaceDialog.addEventListener("keydown", event => {
+    if (event.key === "Escape") { event.preventDefault(); closeWorkspace(); }
+    if (event.key === "Tab") {
+      const items = [...workspaceDialog.querySelectorAll<HTMLElement>('button:not(:disabled),a[href],select,input')].filter(el => el.getClientRects().length);
+      if (event.shiftKey && (document.activeElement === items[0] || document.activeElement?.id === "workspace-title")) { event.preventDefault(); items.at(-1)?.focus(); }
+      else if (!event.shiftKey && document.activeElement === items.at(-1)) { event.preventDefault(); items[0]?.focus(); }
+    }
+  });
   const closePlans = (): void => {
     plansDialog.classList.remove("open");
     document.documentElement.classList.remove("preferences-open");
@@ -751,14 +761,25 @@ export function mountDashboard(): void {
     required<HTMLElement>(".plans-drawer").scrollTop = 0;
     required<HTMLElement>("#plans-title").focus({ preventScroll: true });
     document.documentElement.classList.add("preferences-open");
-    void loadTeam();
-    void loadOrganization();
+    renderBilling();
   };
+  const openWorkspace = (): void => {
+    workspaceDialog.classList.add("open"); document.documentElement.classList.add("preferences-open");
+    required<HTMLElement>("#workspace-title").focus({preventScroll:true});
+    required<HTMLElement>("#workspace-empty").hidden = !!window.promptShieldAuth?.hasAccess();
+    void loadTeam(); void loadOrganization();
+  };
+  document.addEventListener("redaxa:account", () => {
+    if (workspaceDialog.classList.contains("open")) {
+      required<HTMLElement>("#workspace-empty").hidden = !!window.promptShieldAuth?.hasAccess();
+      void loadTeam(); void loadOrganization();
+    }
+  });
   required<HTMLButtonElement>("#close-plans").addEventListener("click", closePlans);
   document.querySelector("#side-fill-cta")?.addEventListener("click", (event) => { event.preventDefault(); openPlans(); });
   plansDialog.addEventListener("click", (event) => { if (event.target === plansDialog) closePlans(); });
   document.addEventListener("redaxa:need-upgrade", () => openPlans());
-  window.addEventListener("hashchange", () => { if (window.location.hash === "#plans") openPlans(); });
+
   plansDialog.addEventListener("keydown", (event) => {
     if (event.key === "Escape") { event.preventDefault(); closePlans(); }
     if (event.key === "Tab") {
@@ -795,6 +816,7 @@ export function mountDashboard(): void {
     preferenceDialog.classList.remove("open");
     document.documentElement.classList.remove("preferences-open");
   };
+  document.addEventListener("redaxa:auth-ready", () => { if (preferenceDialog.classList.contains("open")) void loadApiKeys(); });
   const openPreferences = (): void => {
     void loadApiKeys();
     preferenceDialog.classList.add("open");
@@ -840,8 +862,9 @@ export function mountDashboard(): void {
     // rebuilding would detach the click handlers auth.ts bound to these exact
     // button elements at boot.
     required<HTMLElement>("#plans-title").textContent = w.plansTitle;
-    required<HTMLElement>(".plans-drawer > p").innerHTML = format(w.plansIntro, { code: "<b>SHIELD</b>" });
-    const [personalCard, businessCard, manageCard] = Array.from(plansDialog.querySelectorAll<HTMLElement>(".plan-card"));
+
+    const [personalCard, businessCard] = Array.from(plansDialog.querySelectorAll<HTMLElement>(".plan-card"));
+    const manageCard = workspaceDialog.querySelector<HTMLElement>(".plan-card")!;
     personalCard.querySelector(".plan-tag")!.textContent = w.personalTag;
     personalCard.querySelector("h3")!.textContent = w.personalName;
     personalCard.querySelector("p")!.textContent = w.personalDesc;
@@ -864,6 +887,7 @@ export function mountDashboard(): void {
     required<HTMLElement>("#team-invite-btn").textContent = w.inviteCreate;
     required<HTMLElement>("#close-plans").textContent = settings[10];
 
+    renderBilling();
     updateCharacterCount();
     renderPlanStatus();
     renderHistory();
@@ -1214,7 +1238,8 @@ export function mountDashboard(): void {
   const updateCharacterCount = (): void => {
     characterCount.innerHTML = `<strong>${num(prompt.value.length)}</strong> / ${num(maxPromptLength)}`;
   };
-  const syncScanButton = (): void => { scanButton.disabled = !prompt.value.trim(); };
+  let scanInFlight = false;
+  const syncScanButton = (): void => { scanButton.disabled = scanInFlight || !prompt.value.trim(); };
   // Derived from the textarea contents rather than tracked in a variable, so
   // the selected chip clears itself as soon as the user edits or replaces the
   // sample, instead of lying about what is in the box.
@@ -1314,6 +1339,7 @@ export function mountDashboard(): void {
   };
 
   const showResults = (): void => {
+    required<HTMLElement>("#res-empty").hidden = true;
     resPreview.hidden = true;
     resLive.hidden = false;
     riskBanner.hidden = false;
@@ -1342,6 +1368,7 @@ export function mountDashboard(): void {
   };
 
   const scan = async (): Promise<void> => {
+    if (scanInFlight) return;
     if (!prompt.value.trim()) { prompt.focus(); return; }
     if (!window.promptShieldAuth?.hasAccess()) {
       window.promptShieldAuth?.requestAccess(words().createAccountTrial);
@@ -1362,12 +1389,15 @@ export function mountDashboard(): void {
       revealResults();
       return;
     }
+    const sourceText = prompt.value;
+    scanInFlight = true;
     scanButton.disabled = true;
+    clearPrompt.disabled = true; required<HTMLButtonElement>("#clear-results").disabled = true;
     scanButton.textContent = words().checking;
     try {
-      const scanned = await window.promptShieldAuth!.scanPrompt(prompt.value, preferences);
-      const result = storeResult(prompt.value, scanned.findings, scanned.redactedText, preferences);
-      lastResult = { findings: result.findings, redactedText: result.redactedText, sourceText: prompt.value, decision: scanned.decision };
+      const scanned = await window.promptShieldAuth!.scanPrompt(sourceText, preferences);
+      const result = storeResult(sourceText, scanned.findings, scanned.redactedText, preferences);
+      lastResult = { findings: result.findings, redactedText: result.redactedText, sourceText, decision: scanned.decision };
       showResults();
       renderRiskCopy();
       redacted.textContent = result.redactedText;
@@ -1392,6 +1422,8 @@ export function mountDashboard(): void {
         revealResults();
       }
     } finally {
+      scanInFlight = false;
+      clearPrompt.disabled = false; required<HTMLButtonElement>("#clear-results").disabled = false;
       scanButton.textContent = words().scan;
       syncScanButton();
     }
@@ -1424,13 +1456,20 @@ export function mountDashboard(): void {
     syncChipSelection();
     void scan();
   });
+  const clearPromptResult = (): void => {
+    lastResult = null; redacted.textContent = ""; resultSnippet.replaceChildren(); findingsRoot.replaceChildren();
+    resLive.hidden = true; resPreview.hidden = true; required<HTMLElement>("#res-empty").hidden = false;
+  };
+  required("#clear-results").addEventListener("click", clearPromptResult);
   clearPrompt.addEventListener("click", () => {
+    clearPromptResult();
     prompt.value = "";
     updateCharacterCount();
     syncScanButton();
     syncChipSelection();
     prompt.focus();
   });
+  required("#clear-local-activity").addEventListener("click", () => { clearHistory(); renderHistory(); });
   clearHistoryButton.addEventListener("click", () => {
     clearHistory();
     renderHistory();
@@ -1485,7 +1524,22 @@ export function mountDashboard(): void {
   syncChipSelection();
   applyLanguage();
   avoidCornerOverlap();
-  if (window.location.hash === "#plans") openPlans();
+  const openAccountSection = (): void => {
+    switch (window.location.hash) {
+      case "#plans": openPlans(); break;
+      case "#workspace": openWorkspace(); break;
+      case "#preferences": openPreferences(); break;
+      case "#api-keys": openPreferences(); required<HTMLElement>("#api-keys-block").scrollIntoView({block:"center"}); required<HTMLButtonElement>("#api-key-create").focus({preventScroll:true}); break;
+      case "#history": historyCard.scrollIntoView({block:"start"}); historyCard.tabIndex=-1;historyCard.focus({preventScroll:true});break;
+    }
+  };
+  window.addEventListener("hashchange", openAccountSection);
+  // A repeated menu link still reopens a closed panel when its hash is unchanged.
+  document.addEventListener("click", event => {
+    const link=(event.target as HTMLElement).closest<HTMLAnchorElement>('.ps-menu-link[href]');
+    if(link && new URL(link.href).pathname===location.pathname && new URL(link.href).hash===location.hash){event.preventDefault();openAccountSection();}
+  });
+  openAccountSection();
 }
 
 type ScanRequestOptions = { includePersonalData?: boolean; includeCredentials?: boolean; includeFinancialData?: boolean; customTerms?: string[] };

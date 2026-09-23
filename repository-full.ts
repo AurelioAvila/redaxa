@@ -12,6 +12,10 @@ import {inspectFile,parseRepository,type RepoReport,type RepoFinding} from './re
 const exec=promisify(execFile);
 const MEMORY=64*1024*1024,TOTAL=2*1024*1024*1024;
 type Source={path:string;url?:string;repo:string;depth:number;historical?:boolean};
+export function focusedSkipReason(path:string):string|undefined {
+ if(/(?:^|\/)(?:node_modules|\.venv|venv|__pycache__|\.cache|\.tox|site-packages)(?:\/|$)/i.test(path))return 'Dependency/cache excluded from focused scan; enable the extended scan to inspect it.';
+ if(/\.(?:png|jpe?g|gif|webp|ico|avif|mp[34]|wav|flac|ogg|mov|webm|woff2?|ttf|otf|zip|gz|tgz|tar|7z|rar|xz|bz2|zst|pdf|exe|dll|so|dylib|pyc|pyo)$/i.test(path))return 'Media, binary or archive excluded from focused scan; enable the extended scan to inspect readable content.';
+}
 export type Progress={stage:string;checked:number;findings:number;apiKeyCandidates?:number;elapsedSeconds?:number;estimatedRemainingSeconds?:number|null;estimatedTotal?:number|null};
 
 export function submoduleURLs(text:string,parent:string):Map<string,string>{
@@ -28,27 +32,38 @@ export function printableContent(bytes:Buffer):{text:string;binary:boolean}{
 }
 export function allowedLfsURL(value:string):boolean{try{const u=new URL(value);return u.protocol==='https:'&&!u.username&&!u.password&&!u.port&&(u.hostname==='github.com'||u.hostname.endsWith('.githubusercontent.com')||/^github-production-repository-file-[a-z0-9-]+\.s3\.amazonaws\.com$/.test(u.hostname));}catch{return false;}}
 
-export async function scanFullRepository(input:string,outer?:AbortSignal,reveal=false,onProgress?:(p:Progress)=>void):Promise<RepoReport>{
+// Keep credentials ahead of informational noise when the display budget fills.
+export function retainFinding(findings:RepoFinding[],finding:RepoFinding,limit=10_000):boolean {
+ if(findings.length<limit){findings.push(finding);return true;}
+ const priority=(f:RepoFinding)=>f.disposition==='reference'?0:({critical:4,high:3,medium:2,low:1}[f.severity]??1)+(f.kind==='secret'?5:0);
+ const incoming=priority(finding);if(incoming===0)return false;let index=-1,lowest=incoming;
+ // ponytail: linear replacement only after 10k results; use a heap if profiling warrants it.
+ for(let i=0;i<findings.length;i++){const value=priority(findings[i]);if(value<lowest){lowest=value;index=i;if(value===0)break;}}
+ if(index<0)return false;findings[index]=finding;return true;
+}
+
+export async function scanFullRepository(input:string,outer?:AbortSignal,reveal=false,onProgress?:(p:Progress)=>void,includeHistory=false):Promise<RepoReport>{
  const parsed=parseRepository(input),initial=parsed.owner+'/'+parsed.repo;const start=Date.now();const signal=AbortSignal.any([AbortSignal.timeout(10*60_000),...(outer?[outer]:[])]);
  const parent=resolve(tmpdir()),temp=await mkdtemp(join(parent,'redaxa-full-'));
  const env={...process.env,GIT_TERMINAL_PROMPT:'0',GIT_ASKPASS:'',GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:process.platform==='win32'?'NUL':'/dev/null',GIT_LFS_SKIP_SMUDGE:'1'};
  const base=['-c','credential.helper=','-c','core.askPass=','-c','core.hooksPath='+join(temp,'no-hooks'),'-c','protocol.allow=never','-c','protocol.https.allow=always','-c','core.quotePath=false'];
  const options={env,signal,timeout:600_000,maxBuffer:64*1024*1024,windowsHide:true};
- const run=(directory:string,args:string[])=>exec('git',[...base,...(directory?['--git-dir='+directory]:[]),...args],options);
+ const run=(directory:string,args:string[])=>{signal.throwIfAborted();return exec('git',[...base,...(directory?['--git-dir='+directory]:[]),...args],options);};
  const r:RepoReport={repository:initial,commit:'',scanned:0,total:0,skipped:0,partial:false,findings:[],warnings:[],durationMs:0,demo:false,coverage:[],inventoryComplete:false,folders:0,findingsTruncated:false,deep:{refs:0,historyVersions:0,binaryFiles:0,lfsObjects:0,submodules:0,archiveEntries:0}};
  let used=0,expected=0,inspectionStart=0;const visited=new Set<string>(),lfsSeen=new Set<string>(),folders=new Set<string>(),findingSeen=new Set<string>();
+ const closeReaders:(()=>Promise<void>)[]=[];
  const apiIdentities=new Set<string>();
  const progress=(stage:string)=>{const elapsedSeconds=Math.round((Date.now()-start)/1000);const done=r.scanned+r.skipped;const remaining=inspectionStart&&done>=20&&expected>done?Math.ceil((Date.now()-inspectionStart)/1000/done*(expected-done)):null;onProgress?.({stage,checked:r.scanned,findings:r.findings.filter(f=>f.disposition==='review').length,apiKeyCandidates:apiIdentities.size,elapsedSeconds,estimatedRemainingSeconds:remaining,estimatedTotal:expected||null});};
  const record=(s:Source,reason:string,ok:boolean)=>{r.coverage.push({path:s.path,status:ok?'scanned':'skipped',reason});if(ok)r.scanned++;else{r.skipped++;r.partial=true;}};
  const charge=(n:number)=>{signal.throwIfAborted();used+=n;if(used>TOTAL)throw new Error('Total 2 GiB content budget reached.');};
  const addFindings=(bytes:Buffer,s:Source,segment?:number)=>{
    const decoded=printableContent(bytes);if(decoded.binary)r.deep!.binaryFiles++;
-   for(const f of inspectFile(s.path,decoded.text,reveal)){
+   for(const f of inspectFile(s.path,decoded.text,reveal,true)){
     const signature=createHash('sha256').update(s.path+'\0'+f.label+'\0'+f.line+'\0'+(f.value??JSON.stringify(f))).digest('hex');if(findingSeen.has(signature))continue;findingSeen.add(signature);
-    if(r.findings.length>=10_000){r.findingsTruncated=true;continue;}
+    if(r.findings.length>=10_000)r.findingsTruncated=true;
     if(decoded.binary||segment!==undefined)f.location=decoded.binary?'Extracted binary string'+(segment!==undefined?` near byte ${segment}`:''):`Text segment near byte ${segment}`;
     if(s.historical)f.reason+=' Historical file version; it may already be removed, but an exposed credential may still require rotation.';
-    if(s.url)f.url=s.url;r.findings.push(f);
+    if(s.url)f.url=s.url;retainFinding(r.findings,f);
     if(f.kind==='secret'&&f.disposition==='review'&&f.fingerprint&&!apiIdentities.has(f.fingerprint)){apiIdentities.add(f.fingerprint);progress('Potential API key or token detected; continuing the scan…');}
    }
    return decoded;
@@ -89,28 +104,59 @@ export async function scanFullRepository(input:string,outer?:AbortSignal,reveal=
  async function scanRepo(name:string,prefix:string,pinned?:string,depth=0):Promise<void>{
   const visit=name+'@'+(pinned??'all');if(visited.has(visit))return;visited.add(visit);
   if(depth>4||visited.size>20){record({path:prefix,repo:name,depth},'Submodule traversal budget reached.',false);return;}
-  progress('Downloading repository and Git history…');const directory=join(temp,'repo-'+visited.size+'.git');
-  await run('',['clone','--mirror','--','https://github.com/'+name,directory]);
+  progress(includeHistory?'Downloading repository and Git history…':'Downloading current repository snapshot…');const directory=join(temp,'repo-'+visited.size+'.git');
+  await run('',['clone',...(includeHistory?['--mirror']:['--bare','--depth=1','--single-branch','--no-tags']),'--','https://github.com/'+name,directory]);
+  if(pinned&&!includeHistory)await run(directory,['fetch','--depth=1','origin',pinned]);
   const head=pinned??(await run(directory,['rev-parse','HEAD'])).stdout.trim();if(!/^[a-f0-9]{40}$/.test(head))throw new Error('Invalid revision');
   if(pinned)await run(directory,['cat-file','-e',pinned+'^{commit}']);else r.commit=head;
   const refs=(await run(directory,['for-each-ref','--format=%(refname)'])).stdout.trim().split('\n').filter(Boolean);r.deep!.refs+=refs.length;
   const inventory=(await run(directory,['ls-tree','-r','-z','-l',head])).stdout;
   const entries=inventory.split('\0').filter(Boolean).map(line=>{const m=/^(\d+) (\w+) ([a-f0-9]{40})\s+(\d+|-)\t([\s\S]+)$/.exec(line);if(!m)throw new Error('Invalid tree');return {mode:m[1],type:m[2],sha:m[3],size:Number(m[4]),path:m[5]};});
   const current=new Set<string>(entries.filter(e=>e.type==='blob').map(e=>e.sha));let modules=new Map<string,string>();
-  progress('Mapping current files and reachable history…');
-  const history=(await run(directory,['rev-list','--objects','--all'])).stdout.split('\n').filter(Boolean);const objects=new Map<string,string>();for(const row of history){const m=/^([a-f0-9]{40})(?: (.*))?$/.exec(row);if(m&&!current.has(m[1]))objects.set(m[1],m[2]??'object');}
-  const check=exec('git',[...base,'--git-dir='+directory,'cat-file','--batch-check'],options);check.child.stdin?.end([...objects.keys()].join('\n')+'\n');const checked=(await check).stdout;
+  progress(includeHistory?'Mapping current files and reachable history…':'Mapping files across every current folder…');
+  const history=includeHistory?(await run(directory,['rev-list','--objects','--all'])).stdout.split('\n').filter(Boolean):[];const objects=new Map<string,string>();for(const row of history){const m=/^([a-f0-9]{40})(?: (.*))?$/.exec(row);if(m&&!current.has(m[1]))objects.set(m[1],m[2]??'object');}
+  let checked='';
+  if(objects.size){
+  const check=exec('git',[...base,'--git-dir='+directory,'cat-file','--batch-check'],options);
+  // Git may stop before reading stdin (abort, missing object or process failure).
+  // Handle its pipe error locally instead of terminating the entire Node engine.
+  let inputError: Error | undefined;
+  check.child.stdin?.on('error', error => { inputError = error; });
+  check.child.stdin?.end([...objects.keys()].join('\n')+'\n');
+  checked=(await check).stdout;
+  if(inputError)throw new Error('Git inventory input interrupted.');
+  }
   expected+=entries.length+checked.split('\n').filter(row=>/^[a-f0-9]{40} (blob|commit|tag) \d+$/.test(row)).length;
   if(!inspectionStart)inspectionStart=Date.now();
   const gm=entries.find(e=>e.path==='.gitmodules');if(gm){const text=(await run(directory,['cat-file','blob',gm.sha])).stdout;modules=submoduleURLs(text,name);}
+  // One private Git pipe per repository, instead of starting Git for every file.
+  let readBlob:((sha:string,size:number)=>Promise<Buffer>)|undefined;
+  const blob=async(sha:string,size:number)=>{
+   signal.throwIfAborted();
+   if(!readBlob){
+    const child=spawn('git',[...base,'--git-dir='+directory,'cat-file','--batch'],{env,signal,windowsHide:true,stdio:['pipe','pipe','ignore']});
+    let failure:Error|undefined;child.on('error',e=>{failure=e;});child.stdin.on('error',e=>{failure=e;});
+    const closed=new Promise<void>(done=>child.once('close',()=>done()));closeReaders.push(async()=>{child.stdin.destroy();if(child.exitCode===null)child.kill();await closed;});
+    const chunks=child.stdout[Symbol.asyncIterator]();let pending=Buffer.alloc(0);
+    const take=async(n:number)=>{const parts:Buffer[]=[];let left=n;while(left){if(!pending.length){const next=await chunks.next();if(next.done)throw failure??new Error('Git object pipe closed');pending=Buffer.from(next.value);}const count=Math.min(left,pending.length);parts.push(pending.subarray(0,count));pending=pending.subarray(count);left-=count;}return Buffer.concat(parts,n);};
+    readBlob=async(id,length)=>{
+     signal.throwIfAborted();if(failure)throw failure;child.stdin.write(id+'\n');
+     let header='';while(!header.endsWith('\n')){if(header.length>=256)throw new Error('Invalid Git object header');header+=(await take(1)).toString('ascii');}
+     if(header!==`${id} blob ${length}\n`)throw new Error('Git object metadata mismatch');
+     const bytes=await take(length);if((await take(1))[0]!==10)throw new Error('Invalid Git object delimiter');return bytes;
+    };
+   }
+   return readBlob(sha,size);
+  };
   async function object(sha:string,size:number,s:Source):Promise<void>{
     progress(s.historical?'Checking historical file versions…':'Checking files, binary strings and embedded archives…');
     if(signal.aborted||used+size>TOTAL){record(s,'Time or total 2 GiB content budget reached.',false);return;}
-    try{if(size<=MEMORY){const {stdout}=await exec('git',[...base,'--git-dir='+directory,'cat-file','blob',sha],{...options,encoding:'buffer',maxBuffer:MEMORY+1024});charge(stdout.length);await analyze(stdout,s);}
+    try{if(size<=MEMORY){const bytes=await blob(sha,size);charge(bytes.length);await analyze(bytes,s);}
      else {const child=spawn('git',[...base,'--git-dir='+directory,'cat-file','blob',sha],{env,signal,windowsHide:true,stdio:['ignore','pipe','ignore']});const exited=new Promise<number|null>((res,rej)=>{child.on('error',rej);child.on('close',res);});exited.catch(()=>{});let carry=Buffer.alloc(0),offset=0;try{for await(const raw of child.stdout){const chunk=Buffer.from(raw);charge(chunk.length);const joined=Buffer.concat([carry,chunk]);addFindings(joined,s,Math.max(0,offset-carry.length));carry=joined.subarray(Math.max(0,joined.length-65536));offset+=chunk.length;}if(await exited!==0)throw new Error();record(s,'All bytes read in overlapping chunks; text/ASCII/UTF-16 patterns checked.',true);if(/\.(?:zip|gz|tar|7z|rar|pdf|xz|bz2|zst)$/i.test(s.path))record({...s,path:s.path+' [encoded contents]'},'Large container read as strings; nested contents exceed the memory budget.',false);}finally{if(child.exitCode===null)child.kill();}}
     }catch{record(s,signal.aborted?'Scan cancelled or ten-minute deadline reached.':'Object could not be completely analyzed or resource budget reached.',false);}
   }
   for(const e of entries){const path=prefix+e.path;const parts=path.split('/');for(let i=1;i<parts.length;i++)folders.add(parts.slice(0,i).join('/'));const s={path,repo:name,depth:0,url:`https://github.com/${name}/blob/${head}/${e.path.split('/').map(encodeURIComponent).join('/')}`};
+   const excluded=includeHistory?undefined:focusedSkipReason(path);if(excluded){record(s,excluded,false);continue;}
    if(e.type==='commit'){const target=modules.get(e.path);if(!target)record(s,'Submodule URL is missing or is not a supported public GitHub URL.',false);else try{r.deep!.submodules++;await scanRepo(target,path+'/',e.sha,depth+1);record(s,'Pinned submodule and its accessible history traversed.',true);}catch{record(s,'Pinned submodule unavailable or requires authentication.',false);}continue;}
    current.add(e.sha);await object(e.sha,e.size,s);
   }
@@ -119,7 +165,7 @@ export async function scanFullRepository(input:string,outer?:AbortSignal,reveal=
    else {const source={path:prefix+'['+m[2]+' message '+m[1].slice(0,12)+']',repo:name,depth:0,historical:true};try{const raw=(await run(directory,['cat-file',m[2],m[1]])).stdout;const message=raw.slice(raw.indexOf('\n\n')+2);charge(Buffer.byteLength(message));await analyze(Buffer.from(message),source);}catch{record(source,'Commit/tag message could not be checked.',false);}}
   }
   // A submodule removed from HEAD is still in scope when an older configuration references it.
-  if([...objects.values()].some(path=>path==='.gitmodules')||gm){
+  if(includeHistory&&([...objects.values()].some(path=>path==='.gitmodules')||gm)){
    progress('Checking historical submodule references…');const commits=(await run(directory,['rev-list','--all'])).stdout.trim().split('\n');const configCache=new Map<string,Map<string,string>>();
    for(const revision of commits){if(signal.aborted){record({path:prefix+'[historical submodules]',repo:name,depth},'Historical submodule traversal timed out.',false);break;}
     const listing=(await run(directory,['ls-tree','-r','-z',revision])).stdout.split('\0');const links=listing.map(line=>/^(\d+) (\w+) ([a-f0-9]{40})\t([\s\S]+)$/.exec(line)).filter(x=>x!==null);
@@ -133,9 +179,10 @@ export async function scanFullRepository(input:string,outer?:AbortSignal,reveal=
  }
  try{await scanRepo(initial,'');}
  catch{r.partial=true;r.inventoryComplete=false;r.warnings.push('Repository/history inventory interrupted, inaccessible or resource limit reached. Uninventoried items cannot be counted.');if(!r.coverage.length)throw new Error('Unable to read the public repository. Check its URL, Git availability and network access.');}
- finally{if(dirname(resolve(temp))===parent&&basename(temp).startsWith('redaxa-full-'))await rm(temp,{recursive:true,force:true,maxRetries:3});}
+ finally{await Promise.all(closeReaders.map(close=>close()));if(dirname(resolve(temp))===parent&&basename(temp).startsWith('redaxa-full-'))await rm(temp,{recursive:true,force:true,maxRetries:3});}
  r.total=r.coverage.length;r.folders=folders.size;r.durationMs=Date.now()-start;r.partial ||=r.skipped>0||!r.inventoryComplete||r.findingsTruncated;
- r.warnings.push('Checks current files plus unique historical blob versions reachable from accessible branches/tags; not server-deleted or inaccessible objects. Counts include historical versions and embedded entries, not just current filenames.');
+ r.warnings.push(includeHistory?'Credential-focused check of current files plus reachable historical versions, branches and tags; inaccessible/deleted objects remain outside scope.':'Focused check of current application/configuration files across folders. Dependency/cache directories, common media/binary/archive formats, Git history and other branches are excluded. Enable the extended scan to include them; each excluded current file is listed.');
+ r.warnings.push('Only plausible credential candidates are reported. Personal data, public identifiers, recognized placeholders and unsubscribe-link tokens are excluded. This does not establish whether a credential is active.');
  r.warnings.push('Binary coverage means readable ASCII/UTF-16 strings, not OCR, decompilation or every possible encoding. ZIP, gzip and tar contents are inspected within budgets. No code or credential is executed/tested.');
  r.warnings.push('LFS objects and current/historical pinned public GitHub submodules are attempted. Access failures, unsupported hosts/formats and resource limits remain visible.');
  if(r.findingsTruncated)r.warnings.push('Display capped at 10,000 findings; traversal continues.');
