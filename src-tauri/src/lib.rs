@@ -7,6 +7,7 @@
 const KEYRING_SERVICE: &str = "com.redaxa.desktop";
 const KEYRING_USER: &str = "session";
 mod repository;
+mod update_identity;
 
 #[tauri::command]
 fn secure_store_set(value: String) -> Result<(), String> {
@@ -109,7 +110,10 @@ pub fn run() {
             #[cfg(desktop)]
             {
                 app.handle()
-                    .plugin(tauri_plugin_updater::Builder::new().build())?;
+                    .plugin(tauri_plugin_updater::Builder::new().default_version_comparator(|current, release| {
+                        release.version > current
+                            && update_identity::release_matches(&release.version.to_string(), &release.data)
+                    }).build())?;
                 app.handle().plugin(tauri_plugin_dialog::init())?;
                 let handle = app.handle().clone();
                 tauri::async_runtime::spawn(async move {
