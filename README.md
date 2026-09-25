@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="src-tauri/icons/128x128.png" width="112" alt="Redaxa logo">
+  <img src="brand/og-image.png" width="88%" alt="Redaxa — review sensitive data before sharing it with AI">
 </p>
 
 <h1 align="center">Redaxa — Sensitive Data Checks for AI Prompts and Repositories</h1>
@@ -18,10 +18,6 @@
 <p align="center"><sub>Want safer AI workflows? ⭐ Star Redaxa to follow new protections and help others find it.</sub></p>
 
 <p align="center"><sub><strong>Redaxa was previously known as PromptShield.</strong> The web app still uses the promptshield-beta.vercel.app address; existing links and releases remain valid.</sub></p>
-
-<p align="center">
-  <img src="store-assets/screenshot-1-intercept.png" width="88%" alt="Redaxa flagging secrets, cards and private keys in a prompt before it is sent to an AI assistant">
-</p>
 
 **Fastest way to try it — [web app](https://promptshield-beta.vercel.app), nothing to install** ·
 [⬇ Latest Windows desktop app](../../releases/latest) ·
