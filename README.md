@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="brand/og-image.png" width="88%" alt="Redaxa — review sensitive data before sharing it with AI">
+  <img src="brand/github-preview-ocean.png" width="88%" alt="Redaxa — current Ocean desktop app showing Repository check">
 </p>
 
 <h1 align="center">Redaxa — Sensitive Data Checks for AI Prompts and Repositories</h1>
