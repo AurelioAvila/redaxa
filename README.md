@@ -13,6 +13,7 @@
   <a href="https://promptshield-beta.vercel.app"><img src="https://img.shields.io/badge/TRY_IT_NOW-No_install%2C_no_SmartScreen-2E7D32?style=for-the-badge" alt="Try the web app, no install required"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Proprietary-3DA639?style=for-the-badge" alt="Proprietary License"></a>
   <a href="../../releases"><img src="https://img.shields.io/github/v/release/AurelioAvila/redaxa?display_name=tag&style=for-the-badge&color=7C3AED" alt="Latest release"></a>
+  <a href="https://github.com/microsoft/winget-pkgs/tree/master/manifests/a/AurelioAvila/Redaxa"><img src="https://img.shields.io/badge/WinGet-available-0078D4?style=for-the-badge" alt="WinGet catalog entry"></a>
 </p>
 
 <p align="center"><sub>Want safer AI workflows? ⭐ Star Redaxa to follow new protections and help others find it.</sub></p>
@@ -24,12 +25,9 @@
 [Changelog](CHANGELOG.md) · [Privacy Policy](https://promptshield-beta.vercel.app/privacy.html) ·
 [Terms](https://promptshield-beta.vercel.app/terms.html)
 
-The [v0.4.2 Windows setup EXE](../../releases/tag/v0.4.2) was checked on September 24, 2026. Its SHA-256 is `4a1d8418ef098861ac0c0b2f3a490a855f97dea138496e3b7a301a5acd48bda3`; its Authenticode signature identifies **Aurelio Avila** and includes a trusted timestamp. Its Tauri updater signature was also verified against the published installer. See the [Windows signing inventory and verification guide](https://github.com/AurelioAvila/.github/blob/master/CODE_SIGNING.md) to verify a downloaded file. This evidence applies to that specific setup EXE, not every release asset, future build, the web app or browser extension. Use [latest release](../../releases/latest) for current downloads and release notes; changes on the default branch may not yet be included in an installer.
+The [v0.4.3 Windows setup EXE](../../releases/tag/v0.4.3) was checked on September 26, 2026. Its SHA-256 is `a6f5fc540212a6483ff4cd60239a0e4d9a416211fe0062dd9cb9cee20161d3eb`; its Authenticode signature identifies **Aurelio Avila** and includes a trusted timestamp. See the [Windows signing inventory and verification guide](https://github.com/AurelioAvila/.github/blob/master/CODE_SIGNING.md) to verify a downloaded file. This evidence applies to that specific setup EXE, not every release asset, future build, the web app or browser extension. Use [latest release](../../releases/latest) for current downloads and release notes; changes on the default branch may not yet be included in an installer.
 
-**WinGet status:** the [initial package submission](https://github.com/microsoft/winget-pkgs/pull/426231)
-is awaiting review. A successful submission workflow is not catalog approval;
-use the web app or the verified Windows release linked above until the package
-is accepted into the upstream index.
+**WinGet status:** version 0.4.2 is available in the [official catalog](https://github.com/microsoft/winget-pkgs/tree/master/manifests/a/AurelioAvila/Redaxa) after the [initial submission was merged](https://github.com/microsoft/winget-pkgs/pull/426231). The [0.4.3 update](https://github.com/microsoft/winget-pkgs/pull/441483) is under review. Until it is merged, install the latest signed version from [GitHub Releases](../../releases/latest) if you need 0.4.3.
 
 > The browser extension (source in [`browser-extension/`](browser-extension))
 > is available on the [Chrome Web Store](https://chromewebstore.google.com/detail/redaxa/clkobbjoaegkgnmkibjghlboeoplpmok). A Redaxa account and an active trial or subscription are required.
