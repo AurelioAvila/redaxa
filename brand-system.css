@@ -1,10 +1,11 @@
 @font-face{font-family:"Redaxa Inter";src:url("/outputs/redaxa-inter.woff2") format("woff2");font-style:normal;font-weight:100 900;font-display:swap}
+:root{--rx-font-ui:"Segoe UI Variable Text","Segoe UI","Redaxa Inter",sans-serif}
 /* Redaxa shared visual language. Primitive > semantic > component tokens.
    Page-specific selectors keep the repository workspace and theme chooser intact. */
 .redaxa-landing {
-  --rx-void:#101014; --rx-panel:#19171f; --rx-panel-raised:#211e2a;
-  --rx-violet:#b59aff; --rx-violet-dark:#241a38; --rx-white:#f4f1fa;
-  --rx-gray:#b5afc1; --rx-border:#36303f; --rx-mint:#a0d8bf;
+  --rx-void:var(--theme-bg); --rx-panel:var(--theme-surface); --rx-panel-raised:var(--theme-inset);
+  --rx-violet:var(--theme-accent); --rx-violet-dark:var(--theme-ink); --rx-white:var(--theme-text);
+  --rx-gray:var(--theme-muted); --rx-border:var(--theme-line); --rx-mint:#94d8c0;
   --rx-bg:var(--rx-void); --rx-surface:var(--rx-panel); --rx-text:var(--rx-white);
   --rx-muted:var(--rx-gray); --rx-action:var(--rx-violet); --rx-action-ink:var(--rx-violet-dark);
   --rx-radius:16px; --rx-button-radius:9px; --rx-space:24px;
@@ -12,64 +13,65 @@
 }
 .redaxa-landing {
   --bg:var(--rx-bg); --surface-1:var(--rx-surface); --surface-2:var(--rx-panel-raised);
-  --inset:#121016; --line:var(--rx-border); --line-strong:#51455f;
-  --text:var(--rx-text); --text-2:var(--rx-muted); --text-3:#a49aaf;
-  --s1:var(--rx-surface); --s2:var(--rx-panel-raised); --line-2:#45394f;
-  --ink:var(--rx-text); --mut:var(--rx-muted); --dim:#a49aaf;
-  --acid:var(--rx-action); --acid-hover:#c5b0ff; --acid-ink:var(--rx-action-ink);
+  --inset:var(--theme-inset); --line:var(--rx-border); --line-strong:var(--theme-strong);
+  --text:var(--rx-text); --text-2:var(--rx-muted); --text-3:var(--theme-muted);
+  --s1:var(--rx-surface); --s2:var(--rx-panel-raised); --line-2:var(--theme-line);
+  --ink:var(--rx-text); --mut:var(--rx-muted); --dim:var(--theme-muted);
+  --acid:var(--rx-action); --acid-hover:color-mix(in srgb,var(--theme-accent) 80%,white); --acid-ink:var(--rx-action-ink);
   --ok:var(--rx-mint); --r-lg:var(--rx-radius);
-  background:radial-gradient(ellipse at 75% 0,#35254644,transparent 48%),var(--rx-bg);
-  background-size:auto; font-family:Inter,"Segoe UI",ui-sans-serif,system-ui,sans-serif;
+  background:radial-gradient(ellipse at 75% 0,color-mix(in srgb,var(--theme-accent) 8%,transparent),transparent 48%),var(--rx-bg);
+  background-size:auto; font-family:var(--rx-font-ui);
 }
 .redaxa-landing a {text-underline-offset:4px}
 .redaxa-landing button {min-height:36px}
 .redaxa-landing :focus-visible {outline:2px solid var(--rx-violet);outline-offset:4px}
-.rx-pro-badge {display:inline-flex;align-items:center;flex:0 0 auto;padding:4px 7px;border:1px solid #9a7ada55;border-radius:5px;background:#b59aff16;color:#d0bbff;font:700 9px/1.1 Inter,"Redaxa Inter","Segoe UI",sans-serif;letter-spacing:.1em;vertical-align:middle}
+.rx-pro-badge {display:inline-flex;align-items:center;flex:0 0 auto;padding:4px 7px;border:1px solid var(--theme-strong);border-radius:5px;background:color-mix(in srgb,var(--theme-accent) 8%,transparent);color:var(--theme-accent);font:700 9px/1.1 var(--rx-font-ui);letter-spacing:.1em;vertical-align:middle}
 .rx-benefits {list-style:none;padding:0;margin:12px 0 20px;display:grid;gap:11px;color:var(--rx-muted);font-size:12px;line-height:1.6}
 .rx-benefits li {position:relative;padding-left:23px}
 .rx-benefits li::before {content:"✓";position:absolute;left:0;top:0;color:var(--rx-violet);font-weight:700}
 .rx-benefits strong {color:var(--rx-text);font-weight:650}
-.rx-preview-note {font-size:11px!important;line-height:1.65!important;color:#b8adc9!important;flex:none!important}
+.rx-preview-note {font-size:11px!important;line-height:1.65!important;color:var(--theme-muted)!important;flex:none!important}
 .rx-inline-link {color:var(--rx-violet);text-decoration:underline}
 
 /* Public product story */
-.redaxa-landing .frame {background:transparent;border-color:#302735;max-width:1320px}
-.redaxa-landing .nav {background:#131016ed;border-color:#362b3e;height:76px}
+.redaxa-landing .frame {background:transparent;border-color:var(--theme-line);max-width:1320px}
+.redaxa-landing .nav {background:color-mix(in srgb,var(--theme-bg) 95%,transparent);border-color:var(--theme-line);height:76px}
 .redaxa-landing .brand {font-size:23px;gap:12px}
 .redaxa-landing .mark {width:34px;height:34px}
-.redaxa-landing .hero {gap:54px;padding-top:88px;padding-bottom:84px;background:radial-gradient(ellipse at 80% 25%,#714a9e18,transparent 65%)}
-.redaxa-landing .hero h1 {font-size:clamp(45px,5.4vw,76px);line-height:1.04;letter-spacing:-.055em;font-weight:620}
+.redaxa-landing .mark img,.redaxa-landing .footer-brand img {filter:grayscale(1) brightness(1.7)}
+.redaxa-landing .hero {gap:54px;padding-top:88px;padding-bottom:84px;background:radial-gradient(ellipse at 80% 25%,color-mix(in srgb,var(--theme-accent) 5%,transparent),transparent 65%)}
+.redaxa-landing .hero h1 {font-size:clamp(45px,5.4vw,76px);line-height:1.04;letter-spacing:-.025em;font-weight:600}
 .redaxa-landing .hero .sub {font-size:16px;max-width:510px}
-.redaxa-landing .hero-meta {font-size:11px;line-height:1.8;max-width:510px;color:#a497b2}
-.redaxa-landing .hero-meta b {color:#c5b5d4}
-.redaxa-landing .shield-card {padding:27px;border-radius:20px;background:linear-gradient(135deg,#282031,#19151f);border-color:#51415d;box-shadow:0 24px 75px #0004;transform:rotate(1deg)}
-.redaxa-landing .sc-raw,.redaxa-landing .scanner textarea {background:#130f19;border-color:#47364f}
-.redaxa-landing .protect {background:#19141f}
+.redaxa-landing .hero-meta {font-size:11px;line-height:1.8;max-width:510px;color:var(--theme-muted)}
+.redaxa-landing .hero-meta b {color:var(--theme-text)}
+.redaxa-landing .shield-card {padding:27px;border-radius:20px;background:linear-gradient(135deg,var(--theme-surface),var(--theme-inset));border-color:var(--theme-strong);box-shadow:0 24px 75px #0004;transform:none}
+.redaxa-landing .sc-raw,.redaxa-landing .scanner textarea {background:var(--theme-bg);border-color:var(--theme-line)}
+.redaxa-landing .protect {background:var(--theme-inset)}
 .redaxa-landing .protect-item h2 {font-weight:650}
-.redaxa-landing .section h2 {letter-spacing:-.045em;font-weight:620}
-.redaxa-landing .scanner {background:#1a1520;border-color:#4b3958;border-radius:17px}
+.redaxa-landing .section h2 {letter-spacing:-.02em;font-weight:600}
+.redaxa-landing .scanner {background:var(--theme-inset);border-color:var(--theme-line);border-radius:17px}
 .redaxa-landing .plans {gap:18px}
-.redaxa-landing .plan {background:#1a1520;border-color:#49394f;border-radius:15px;padding:26px}
-.redaxa-landing .plan.featured {border-color:#aa80cb;background:linear-gradient(150deg,#352441,#211729);box-shadow:0 0 0 1px #b28dd41a}
+.redaxa-landing .plan {background:var(--theme-inset);border-color:var(--theme-line);border-radius:15px;padding:26px}
+.redaxa-landing .plan.featured {border-color:var(--theme-accent);background:linear-gradient(150deg,var(--theme-hover),var(--theme-inset));box-shadow:0 0 0 1px color-mix(in srgb,var(--theme-accent) 10%,transparent)}
 .redaxa-landing .plan h3 {font-size:28px;font-weight:650;letter-spacing:-.025em}
-.redaxa-landing .plan .price {font-size:36px;letter-spacing:-.05em}
-.redaxa-landing .plan .tag {color:#d0b4eb}
+.redaxa-landing .plan .price {font-size:36px;letter-spacing:-.02em;font-weight:600;font-variant-numeric:tabular-nums}
+.redaxa-landing .plan .tag {color:var(--theme-accent)}
 .redaxa-landing .plan .rx-benefits {margin-top:20px;font-size:12px}
 .redaxa-landing .plan button {border-radius:9px;min-height:43px}
-.rx-repository-story {display:grid;grid-template-columns:1fr 1fr;gap:52px;align-items:center;padding:70px 56px;background:linear-gradient(115deg,#201627,#151019)}
+.rx-repository-story {display:grid;grid-template-columns:1fr 1fr;gap:52px;align-items:center;padding:70px 56px;background:linear-gradient(115deg,var(--theme-inset),var(--theme-bg))}
 .rx-repository-story h2 {font-size:clamp(30px,3.2vw,45px);line-height:1.1;font-weight:620;letter-spacing:-.045em;margin:18px 0}
 .rx-repository-story p {font-size:14px;line-height:1.8;color:var(--rx-muted)}
 .rx-repository-story .btn-ghost {display:inline-block;margin-top:10px;font-size:13px}
-.rx-repo-visual {padding:25px;border:1px solid #584263;border-radius:16px;background:#1e1725;box-shadow:0 20px 50px #0003}
-.rx-repo-visual-label {display:flex;justify-content:space-between;align-items:center;gap:15px;color:#c7b1d9;font-size:10px;letter-spacing:.09em;text-transform:uppercase}
+.rx-repo-visual {padding:25px;border:1px solid var(--theme-line);border-radius:16px;background:var(--theme-surface);box-shadow:0 20px 50px #0003}
+.rx-repo-visual-label {display:flex;justify-content:space-between;align-items:center;gap:15px;color:var(--theme-muted);font-size:10px;letter-spacing:.09em;text-transform:uppercase}
 .rx-repo-visual h3 {font-size:21px;font-weight:600;letter-spacing:-.03em;margin:23px 0 18px}
-.rx-repo-example {padding:13px 0;border-top:1px solid #49324f;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#c8b9d2}
-.rx-repo-example span:last-child {font-size:10px;padding:4px 7px;background:#b69fcd13;border-radius:5px}
-.rx-repo-example.is-priority {color:#efc1ca}
-.rx-trial-terms {font-size:12px;color:#b4a4c0;line-height:1.7;margin-top:18px}
+.rx-repo-example {padding:13px 0;border-top:1px solid var(--theme-line);display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--theme-text)}
+.rx-repo-example span:last-child {font-size:10px;padding:4px 7px;background:color-mix(in srgb,var(--theme-accent) 8%,transparent);border-radius:5px}
+.rx-repo-example.is-priority {color:var(--theme-accent)}
+.rx-trial-terms {font-size:12px;color:var(--theme-muted);line-height:1.7;margin-top:18px}
 .rx-plans-compare {display:grid;grid-template-columns:1fr 1fr;gap:15px;margin:24px 0 0}
-.rx-plans-compare div {padding:17px 20px;border:1px solid #45334d;border-radius:11px;font-size:12px;color:#bbaaC6;line-height:1.7}
-.rx-plans-compare strong {display:block;color:#e2cdee;font-size:13px;margin-bottom:4px}
+.rx-plans-compare div {padding:17px 20px;border:1px solid var(--theme-line);border-radius:11px;font-size:12px;color:var(--theme-muted);line-height:1.7}
+.rx-plans-compare strong {display:block;color:var(--theme-text);font-size:13px;margin-bottom:4px}
 /* Night workspace — quiet navy surfaces, clear hierarchy and ice-blue actions. */
 .redaxa-workspace {
   --rx-bg:var(--theme-bg);--rx-surface:var(--theme-surface);--rx-panel-raised:var(--theme-inset);
@@ -81,7 +83,7 @@
   --danger:#ff9ca7;--warn:#f4ca82;--ok:var(--theme-accent);--r-lg:12px;--r:8px;--r-sm:6px;
   --accent:var(--theme-accent);--accent-ink:var(--theme-ink);--saved-accent-ink:var(--theme-accent);
   color-scheme:dark;background:var(--bg);color:var(--text);
-  font:13px/1.5 "Redaxa Inter","Segoe UI",sans-serif;
+  font:13px/1.5 var(--rx-font-ui);
 }
 .redaxa-workspace a{color:var(--rx-violet);text-underline-offset:3px}
 .redaxa-workspace button{min-height:34px}
@@ -99,10 +101,10 @@
 .redaxa-workspace .nav-item:hover:not(.active){background:var(--theme-surface);color:var(--theme-text)}
 .redaxa-workspace .nav-item.active{background:transparent;color:var(--theme-text);font-weight:600;border-bottom:2px solid var(--theme-accent);border-radius:0}
 .redaxa-workspace .nav-item i.ico{color:inherit;width:16px;flex-basis:16px}
-.redaxa-workspace .rx-pro-badge{border:1px solid var(--theme-strong);border-radius:3px;background:transparent;color:var(--theme-accent);font:600 9px/1 "Redaxa Inter","Segoe UI",sans-serif;padding:3px 4px;letter-spacing:.06em}
+.redaxa-workspace .rx-pro-badge{border:1px solid var(--theme-strong);border-radius:3px;background:transparent;color:var(--theme-accent);font:600 9px/1 var(--rx-font-ui);padding:3px 4px;letter-spacing:.06em}
 .redaxa-workspace main{max-width:1240px;padding:24px 28px 48px}
 .redaxa-workspace .top{display:flex;flex-direction:row;align-items:center;gap:16px;padding-bottom:20px;border-bottom:1px solid var(--theme-line)}
-.redaxa-workspace .top h1{margin:0 0 5px;font:650 30px/1.13 "Redaxa Inter","Segoe UI",sans-serif;letter-spacing:-.025em}
+.redaxa-workspace .top h1{margin:0 0 5px;font:650 30px/1.13 var(--rx-font-ui);letter-spacing:-.025em}
 .redaxa-workspace .top p{max-width:65ch;font-size:13px;line-height:1.5}
 .redaxa-workspace .top-right{align-items:flex-end;gap:7px;flex:0 0 auto}
 .redaxa-workspace .status{background:transparent;border:0;padding:0;color:var(--theme-muted);font-size:11px}
@@ -175,7 +177,7 @@
 .redaxa-workspace #pwa-install,.redaxa-workspace #inspect-clipboard{background:var(--theme-surface);color:var(--theme-accent);border-color:var(--line-strong);box-shadow:0 6px 24px #00000015;border-radius:6px}
 .redaxa-workspace .drawer-backdrop,.redaxa-workspace .ps-auth-backdrop{background:#00000070;backdrop-filter:none}
 .redaxa-workspace .drawer,.redaxa-workspace .ps-auth-dialog{background:var(--surface-1);color:var(--text);border:0;border-radius:12px;box-shadow:0 24px 70px #00000030;padding:24px}
-.redaxa-workspace .drawer h2,.redaxa-workspace .ps-auth-dialog h2{font:650 26px/1.2 "Redaxa Inter","Segoe UI",sans-serif;letter-spacing:-.02em}
+.redaxa-workspace .drawer h2,.redaxa-workspace .ps-auth-dialog h2{font:650 26px/1.2 var(--rx-font-ui);letter-spacing:-.02em}
 .redaxa-workspace .pref-row select,.redaxa-workspace .term-editor,.redaxa-workspace .plan-card select,.redaxa-workspace .drawer input:not([type=checkbox]),.redaxa-workspace .drawer select{border-color:var(--line-strong);background:var(--inset);color:var(--text)}
 .redaxa-workspace .theme-swatch{min-height:26px;box-shadow:0 0 0 1px var(--theme-strong)}
 .redaxa-workspace .theme-swatch.active{outline:2px solid var(--theme-accent);outline-offset:3px;box-shadow:none}
@@ -247,13 +249,13 @@
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-avatar-btn{background:var(--theme-surface);border-color:var(--theme-strong)}
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-avatar{background:var(--theme-accent);color:var(--theme-ink)}
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-menu-group{padding:6px 0;border-bottom:1px solid var(--theme-line)}
-:is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-menu-link{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;border:0;border-radius:5px;padding:8px 10px;background:transparent;color:var(--theme-text);text-decoration:none;font:600 12px/1.4 "Redaxa Inter","Segoe UI",sans-serif;text-align:left;cursor:pointer;min-height:34px}
+:is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-menu-link{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;border:0;border-radius:5px;padding:8px 10px;background:transparent;color:var(--theme-text);text-decoration:none;font:600 12px/1.4 var(--rx-font-ui);text-align:left;cursor:pointer;min-height:34px}
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-menu-link span,:is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-menu-caption{color:var(--theme-muted);font-size:10px;font-weight:400;line-height:1.4}
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-menu-link:hover,:is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-menu-link:focus-visible{background:var(--theme-hover);color:var(--theme-text)}
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-menu-link:focus-visible{outline:2px solid var(--theme-accent);outline-offset:-2px}
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-signout{background:transparent;color:#ffadb5;border:0;text-align:left;border-radius:5px;padding:9px 10px;margin-top:5px}
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-signout:hover{background:#34252d;color:#ffd7db}
-:is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-account-sheet{width:min(460px,calc(100vw - 32px));max-height:calc(100dvh - 40px);overflow:auto;padding:24px;border:1px solid var(--theme-strong);border-radius:12px;background:var(--theme-surface);color:var(--theme-text);box-shadow:0 22px 65px #00000060;font:13px/1.5 "Redaxa Inter","Segoe UI",sans-serif}
+:is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-account-sheet{width:min(460px,calc(100vw - 32px));max-height:calc(100dvh - 40px);overflow:auto;padding:24px;border:1px solid var(--theme-strong);border-radius:12px;background:var(--theme-surface);color:var(--theme-text);box-shadow:0 22px 65px #00000060;font:13px/1.5 var(--rx-font-ui)}
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-account-sheet::backdrop{background:#020a10b3}
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-account-sheet header{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-account-sheet h2{font-size:23px;font-weight:650;letter-spacing:-.025em;line-height:1.3;margin:0}
@@ -264,7 +266,7 @@
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-account-facts dt{color:var(--theme-muted);font-size:12px}
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-account-facts dd{margin:0;font-size:12px;overflow-wrap:anywhere;color:var(--theme-text)}
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-account-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
-:is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-account-actions button{background:var(--theme-accent);color:var(--theme-ink);border:1px solid transparent;border-radius:6px;font:600 12px/1.4 "Redaxa Inter","Segoe UI",sans-serif;padding:10px 12px;cursor:pointer}
+:is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-account-actions button{background:var(--theme-accent);color:var(--theme-ink);border:1px solid transparent;border-radius:6px;font:600 12px/1.4 var(--rx-font-ui);padding:10px 12px;cursor:pointer}
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-account-actions button+button{background:transparent;color:var(--theme-text);border-color:var(--theme-strong)}
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-account-actions button:hover{filter:brightness(1.1)}
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-account-message{font-size:12px;color:var(--theme-muted);line-height:1.5}
@@ -292,14 +294,14 @@
 @media(prefers-reduced-motion:reduce){.redaxa-workspace *,.redaxa-landing *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 
 /* Integrated desktop workspace: one shell, a quiet navigation rail, readable type. */
-:is(.repository-page,.redaxa-workspace){font-family:"Redaxa Inter","Segoe UI",sans-serif;font-size:13px;line-height:1.55;-webkit-font-smoothing:antialiased}
+:is(.repository-page,.redaxa-workspace){font-family:var(--rx-font-ui);font-size:13px;line-height:1.55;-webkit-font-smoothing:antialiased}
 :is(.repository-page,.redaxa-workspace) :is(button,input,select){font-family:inherit}
 .redaxa-workspace .app{display:grid;grid-template-columns:176px minmax(0,1fr);align-items:start}
 .redaxa-workspace .side,.repository-page .sidebar{position:sticky;top:0;height:100dvh;min-height:520px;display:flex;flex-direction:column;align-items:stretch;gap:30px;padding:26px 12px 18px;background:transparent;border:0;border-right:1px solid var(--theme-line);z-index:20}
-.redaxa-workspace .brand,.repository-page .brand{font-size:21px;font-weight:550;letter-spacing:-.045em;gap:9px;padding:0 8px;color:var(--theme-text)}
+.redaxa-workspace .brand,.repository-page .brand{font-size:21px;font-weight:600;letter-spacing:-.02em;gap:9px;padding:0 8px;color:var(--theme-text)}
 .redaxa-workspace .brand img,.repository-page .brand img{width:27px;height:27px}
 .redaxa-workspace .nav,.repository-page .sidebar nav{display:flex;flex-direction:column;align-items:stretch;gap:5px;margin:0;width:100%}
-.redaxa-workspace .nav-item,.repository-page .sidebar .nav{display:flex;flex-direction:row;align-items:center;justify-content:flex-start;white-space:normal;gap:9px;margin:0;width:100%;padding:11px 9px;min-height:42px;border:0;border-radius:8px;background:transparent;font-size:12px;font-weight:450;line-height:1.45;color:var(--theme-muted);text-align:left}
+.redaxa-workspace .nav-item,.repository-page .sidebar .nav{display:flex;flex-direction:row;align-items:center;justify-content:flex-start;white-space:normal;gap:9px;margin:0;width:100%;padding:11px 9px;min-height:42px;border:0;border-radius:8px;background:transparent;font-size:13px;font-weight:400;line-height:1.45;color:var(--theme-muted);text-align:left}
 .redaxa-workspace .nav-item.active,.repository-page .sidebar .nav.active{background:var(--theme-hover);color:var(--theme-text);border:0;font-weight:550}
 .redaxa-workspace .nav-item:hover,.repository-page .sidebar .nav:hover{background:var(--theme-surface);color:var(--theme-text)}
 .redaxa-workspace .nav-item i.ico,.repository-page .nav svg{display:block;width:17px;height:17px;flex:0 0 17px;color:inherit}
@@ -312,7 +314,7 @@
 .redaxa-workspace .side-fill{display:none}
 .redaxa-workspace main{width:100%;max-width:1280px;min-width:0;padding:28px 26px 40px;margin:0 auto}
 .redaxa-workspace .top{padding-bottom:22px;border:0;align-items:flex-start}
-.redaxa-workspace .top h1,.repository-page .hero h1{font-family:"Redaxa Inter","Segoe UI",sans-serif;font-size:28px;font-weight:520;line-height:1.2;letter-spacing:-.035em}
+.redaxa-workspace .top h1,.repository-page .hero h1{font-family:var(--rx-font-ui);font-size:27px;font-weight:600;line-height:1.25;letter-spacing:-.015em}
 .redaxa-workspace .top p,.repository-page .hero p{font-size:13px;line-height:1.65;color:var(--theme-muted)}
 .redaxa-workspace .top-right{flex-direction:row;align-items:center}
 .redaxa-workspace .status{display:none}
@@ -320,7 +322,7 @@
 .redaxa-workspace .composer{padding:0;border:0;background:transparent}
 .redaxa-workspace .composer h2{font-size:13px;font-weight:550;letter-spacing:0}
 .redaxa-workspace .composer-sub{font-size:12px;margin-top:4px}
-.redaxa-workspace .editor{background:var(--theme-surface);border:1px solid var(--theme-strong);border-radius:12px;font:400 14px/1.7 "Redaxa Inter","Segoe UI",sans-serif;padding:16px;height:166px}
+.redaxa-workspace .editor{background:var(--theme-surface);border:1px solid var(--theme-strong);border-radius:12px;font:400 14px/1.7 var(--rx-font-ui);padding:16px;height:166px}
 .redaxa-workspace .editor::placeholder{color:var(--theme-muted)}
 .redaxa-workspace .primary,.redaxa-workspace .small-btn{border-radius:8px;font-size:12px;font-weight:550}
 .redaxa-workspace .results{position:static;max-height:none;overflow:visible;background:var(--theme-surface);border:0;border-radius:12px}
@@ -336,25 +338,35 @@
 .repository-page main>header{height:34px;min-height:34px}
 .repository-page .workspace-label{font-size:11px;color:var(--theme-muted)}
 .repository-page .hero{padding:16px 0 26px}
-.repository-page .scan-card{padding:0;border:0;background:transparent;border-radius:0}
-.repository-page .scan-card label{font-weight:550;font-size:13px}
+.repository-page .scan-card{padding:20px;border:1px solid var(--theme-line);background:var(--theme-inset);border-radius:12px}
+.repository-page .scan-card label{font-weight:600;font-size:13px}
 .repository-page .input-row{border-radius:10px;background:var(--theme-surface)}
 .repository-page #scan{font-weight:550}
 .repository-page .scan-guide{grid-template-columns:1fr;gap:16px}
 .repository-page .scan-guide h2{max-width:none;font-size:16px;font-weight:520;letter-spacing:-.02em}
-.repository-page .scan-guide dl>div{grid-template-columns:155px minmax(0,1fr);gap:18px}
+.repository-page .scan-guide dl>div{grid-template-columns:155px minmax(0,1fr);gap:18px;padding-block:12px}
 .repository-page .side-note{display:block;margin-top:auto;padding:14px 8px 0;border-top:1px solid var(--theme-line);color:var(--theme-muted);font-size:10px;line-height:1.7}
 .repository-page .side-note p{margin-bottom:0}
-.repository-page .result-summary h2{font-weight:520}
+.repository-page .result-summary h2{font-weight:600;letter-spacing:-.015em}
+.repository-page .triage-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;border:1px solid var(--theme-line);border-radius:10px;overflow:hidden;background:var(--theme-line)}
+.repository-page .triage-tile{min-width:0;display:flex;flex-direction:column;gap:5px;padding:15px;background:var(--theme-inset)}
+.repository-page .triage-tile strong{font-weight:600;font-size:26px;line-height:1}
+.repository-page .report-actions{padding:12px 0;gap:8px}
+.repository-page .finding{padding:22px 0}
+.repository-page .finding h3{font-size:16px;line-height:1.5}
+.repository-page .credential-context{max-width:none}
+.repository-page .credential-response{padding:14px 16px;border:1px solid var(--theme-line);border-radius:8px;background:var(--theme-inset)}
+.repository-page .section-heading{position:relative;padding-block:12px}
+@media(max-width:740px){.repository-page .triage-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.repository-page .scan-card{padding:16px}}
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-account-menu{padding:8px;width:276px;max-height:min(76vh,510px);border:0;border-radius:12px;background:var(--theme-surface);box-shadow:0 16px 45px #0006}
-:is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-menu-link{padding:8px 10px;font-family:"Redaxa Inter","Segoe UI",sans-serif;font-size:12px;font-weight:450;min-height:33px;border-radius:6px}
+:is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-menu-link{padding:8px 10px;font-family:var(--rx-font-ui);font-size:12px;font-weight:450;min-height:33px;border-radius:6px}
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-menu-link span{display:none}
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-account-menu-head{padding:8px 7px 13px;gap:10px}
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-account-plan{font-size:11px}
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-avatar-btn{padding:2px;border:1px solid var(--theme-strong);background:transparent}
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-avatar{overflow:hidden;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
 .ps-avatar img{width:100%;height:100%;object-fit:cover}
-:is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-account-sheet{border:0;background:var(--theme-surface);font-family:"Redaxa Inter","Segoe UI",sans-serif}
+:is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-account-sheet{border:0;background:var(--theme-surface);font-family:var(--rx-font-ui)}
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-account-sheet h2{font-weight:520}
 .ps-profile-editor{display:flex;align-items:flex-start;gap:16px;padding:6px 0 22px}
 .ps-profile-editor>div{min-width:0;flex:1}

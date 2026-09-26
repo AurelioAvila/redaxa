@@ -1,4 +1,4 @@
-const CACHE_NAME = "redaxa-shell-v5";
+const CACHE_NAME = "redaxa-shell-v6";
 const APP_SHELL = ["/", "/index.html", "/dashboard.html", "/github.html", "/manifest.webmanifest", "/outputs/redaxa-mark.svg", "/outputs/redaxa-inter.woff2", "/themes.css", "/dist/themes.js", "/auth.css", "/brand-system.css", "/repository.css", "/dist/dashboard.js", "/dist/auth.js", "/dist/desktop.js", "/dist/pwa.js", "/dist/repository-ui.js", "/dist/repository-report.js"];
 
 self.addEventListener("install", (event) => {

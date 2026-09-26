@@ -39,6 +39,17 @@ export function retainFinding(findings:RepoFinding[],finding:RepoFinding,limit=1
  const incoming=priority(finding);if(incoming===0)return false;let index=-1,lowest=incoming;
  // ponytail: linear replacement only after 10k results; use a heap if profiling warrants it.
  for(let i=0;i<findings.length;i++){const value=priority(findings[i]);if(value<lowest){lowest=value;index=i;if(value===0)break;}}
+ // Repeated versions of one key must not crowd out a distinct key of equal
+ // priority. Keep one representative and prefer dropping a historical repeat.
+ if(index<0&&finding.fingerprint&&!findings.some(f=>f.fingerprint===finding.fingerprint)){
+  const counts=new Map<string,number>();
+  for(const f of findings)if(f.fingerprint)counts.set(f.fingerprint,(counts.get(f.fingerprint)??0)+1);
+  const historical=(f:RepoFinding)=>/\[(?:history |historical submodule |commit message |tag message )/.test(f.path);
+  for(let i=0;i<findings.length;i++){
+   const f=findings[i];
+   if(f.fingerprint&&(counts.get(f.fingerprint)??0)>1&&priority(f)<=incoming&&(index<0||historical(f)&&!historical(findings[index])))index=i;
+  }
+ }
  if(index<0)return false;findings[index]=finding;return true;
 }
 
