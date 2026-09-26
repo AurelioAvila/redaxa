@@ -107,7 +107,7 @@ function send(message) {
   return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage(message, (response) => {
       if (!response) { reject(new Error("Redaxa extension is unavailable.")); return; }
-      if (!response.ok) { reject(new Error(response.error)); return; }
+      if (!response.ok) { reject(Object.assign(new Error(response.error), { httpStatus: response.httpStatus })); return; }
       resolve(response.result);
     });
   });
@@ -118,9 +118,8 @@ function escapeHtml(value) {
 }
 
 // ---------------------------------------------------------------------------
-// Manual "Check" panel -- always available regardless of subscription status,
-// so a signed-out visitor can still see what it would find (STATUS below
-// tells them to sign in before it will run a real scan).
+// Manual guest checks use the existing server quota, after an explicit click.
+// Automatic interception below still requires an active account.
 // ---------------------------------------------------------------------------
 function buildUI() {
   const button = document.createElement("button");
@@ -153,7 +152,20 @@ function buildUI() {
     try {
       const status = await send({ type: "STATUS" });
       if (!status.signedIn) {
-        body.innerHTML = `<p class="ps-empty">Sign in to Redaxa from the extension icon to run a check.</p>`;
+        body.innerHTML = `<p class="ps-empty">Try a real check without an account. Up to 5 checks per 24 hours, shared by network. Your prompt is sent to Redaxa for checking, not stored or sent to an AI provider.</p><button type="button" class="ps-use-redacted" id="redaxa-guest-check">Check this prompt</button>`;
+        body.querySelector("#redaxa-guest-check").addEventListener("click", async () => {
+          const latestComposer = findComposer();
+          const latestText = composerText(latestComposer).trim();
+          body.innerHTML = `<p class="ps-loading">Checking…</p>`;
+          try {
+            const result = await runScan(latestText);
+            renderFindings(body, result, latestComposer, () => panel.classList.remove("open"));
+          } catch (error) {
+            body.innerHTML = error.httpStatus === 402 || error.message === "TRIAL_REQUIRED"
+              ? `<p class="ps-empty">The free check limit for this network has been reached. Sign in with an active plan from the extension icon, <a href="https://promptshield-beta.vercel.app/dashboard.html?source=extension#plans" target="_blank" rel="noopener">compare Pro plans</a>, or try again after the daily window resets.</p>`
+              : `<p class="ps-empty">${escapeHtml(error.message || "Check failed.")}</p>`;
+          }
+        });
         return;
       }
       if (!status.active) {
@@ -177,7 +189,8 @@ function decisionReason(result) {
 
 function findingPriority(findings) {
   const severity = { critical: 4, high: 3, medium: 2, low: 1 };
-  return [...findings].sort((a, b) => Number(b.kind === 'secret') - Number(a.kind === 'secret') || (severity[b.severity] || 0) - (severity[a.severity] || 0));
+  const credential = f => f.category === 'credentials' || ['secret', 'privateKey', 'credential'].includes(f.kind);
+  return [...findings].sort((a, b) => Number(b.kind === 'secret') - Number(a.kind === 'secret') || Number(credential(b)) - Number(credential(a)) || (severity[b.severity] || 0) - (severity[a.severity] || 0));
 }
 function apiWarning(findings) {
   const matches = findings.filter(f => f.kind === 'secret');
@@ -192,7 +205,7 @@ function renderFindings(body, result, composer, onHandled) {
     body.innerHTML = `<p class="ps-empty">Nothing obvious found. This is a helpful signal, not a guarantee.</p>`;
     return;
   }
-  const list = findingPriority(result.findings).map((f) => `<div class="ps-finding"><b>${escapeHtml(f.label)}</b></div>`).join("");
+  const list = findingPriority(result.findings).map((f) => `<div class="ps-finding"><b>${escapeHtml(f.credential ? f.credential.service+' · '+f.credential.type : f.label)}</b>${f.credential?`<details><summary>${escapeHtml(f.credential.response)}</summary><p>${escapeHtml(f.credential.evidence+' '+f.credential.guidance)}</p></details>`:''}</div>`).join("");
   body.innerHTML = `
     ${apiWarning(result.findings)}
     <p class="ps-count">${result.findings.length} item${result.findings.length === 1 ? "" : "s"} to review</p>
