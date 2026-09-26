@@ -6,7 +6,7 @@ let account = { active: true, plan: 'personal', status: 'active' };
 let session = { email: 'fixture@example.test', access_token: 'nonworking-test-token', refresh_token: 'fixture', expires_at: Date.now() + 3600000 };
 const opened = [];
 let calls = 0;
-const context = vm.createContext({ URL, AbortController, setTimeout, clearTimeout, console,
+const context = vm.createContext({ URL, AbortController, AbortSignal, setTimeout, clearTimeout, console,
   fetch: async () => { calls++; return { ok: true, json: async () => account }; },
   chrome: { storage: { local: { get: async () => ({ redaxa_session: session }), set: async value => { session = value.redaxa_session; }, remove: async () => { session = null; } } },
     tabs: { create: async value => { opened.push(value); } },

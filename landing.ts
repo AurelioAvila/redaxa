@@ -13,6 +13,15 @@ function escapeHtml(value: string): string {
 }
 
 function mountLanding(): void {
+  const billingButtons = document.querySelectorAll<HTMLButtonElement>('[data-billing]');
+  billingButtons.forEach(button => button.addEventListener('click', () => {
+    const yearly = button.dataset.billing === 'yearly';
+    billingButtons.forEach(option => option.setAttribute('aria-pressed', String(option === button)));
+    required('#pro-plan-price').innerHTML = yearly ? '€79.90 <small>/ year</small>' : '€7.99 <small>/ month</small>';
+    required('#business-plan-price').innerHTML = yearly ? '€149.90 <small>/ user / year</small>' : '€14.99 <small>/ user / month</small>';
+    required('#pro-plan-tag').textContent = yearly ? 'Recommended · Pro yearly' : 'Your everyday privacy toolkit';
+    document.querySelectorAll<HTMLElement>('[data-plan]').forEach(cta => { cta.dataset.interval = yearly ? 'yearly' : 'monthly'; });
+  }));
   const prompt = required<HTMLTextAreaElement>("#prompt");
   const findings = required<HTMLElement>("#findings");
   const output = required<HTMLElement>("#safe-output");

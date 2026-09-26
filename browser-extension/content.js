@@ -201,13 +201,22 @@ function renderFindings(body, result, composer, onHandled) {
     <button type="button" class="ps-use-redacted" id="redaxa-use-redacted">Replace with safer version</button>
   `;
   body.querySelector("#redaxa-use-redacted")?.addEventListener("click", () => {
+    if (!sameCheckedPrompt(composer, result.checkedText)) return;
     setComposerText(composer, result.redactedText);
     onHandled();
   });
 }
 
 async function runScan(text) {
-  return send({ type: "SCAN", text, options: { includePersonalData: true, includeCredentials: true, includeFinancialData: true } });
+  const result = await send({ type: "SCAN", text, options: { includePersonalData: true, includeCredentials: true, includeFinancialData: true } });
+  return { ...result, checkedText: text };
+}
+
+function sameCheckedPrompt(composer, checkedText) {
+  if (composer?.isConnected !== false && composerText(composer).trim() === checkedText) return true;
+  closeModal();
+  psToast("Your prompt changed. Check it again before sending or replacing it.");
+  return false;
 }
 
 // ---------------------------------------------------------------------------
@@ -281,6 +290,7 @@ function resendVia(kind, target) {
 
 async function gate(composer, resend) {
   const text = composerText(composer).trim();
+  const sendChecked = () => { if (sameCheckedPrompt(composer, text)) { closeModal(); resend(); } };
   showModal(`
     <div class="ps-int-head">Redaxa</div>
     <div class="ps-int-body"><p class="ps-loading">Checking before this sends…</p></div>
@@ -297,13 +307,12 @@ async function gate(composer, resend) {
       </div>
     `);
     modalEl.querySelector("#ps-int-close")?.addEventListener("click", closeModal);
-    modalEl.querySelector("#ps-int-send-anyway")?.addEventListener("click", () => { closeModal(); resend(); });
+    modalEl.querySelector("#ps-int-send-anyway")?.addEventListener("click", sendChecked);
     return;
   }
 
   if (!result.findings.length) {
-    closeModal();
-    resend();
+    sendChecked();
     return;
   }
 
@@ -325,10 +334,11 @@ async function gate(composer, resend) {
   `);
   modalEl.querySelector("#ps-int-close")?.addEventListener("click", closeModal);
   modalEl.querySelector("#ps-int-fix")?.addEventListener("click", () => {
+    if (!sameCheckedPrompt(composer, text)) return;
     setComposerText(composer, result.redactedText);
     closeModal();
   });
-  modalEl.querySelector("#ps-int-send-anyway")?.addEventListener("click", () => { closeModal(); resend(); });
+  modalEl.querySelector("#ps-int-send-anyway")?.addEventListener("click", sendChecked);
 }
 
 function withinComposer(node, composer) {

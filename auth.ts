@@ -92,19 +92,23 @@ async function clearDesktopSession(): Promise<void> {
 // boot(), so by the time a user can click anything it is already warm.
 function cachedDesktopSession(): DesktopSession | null { return sessionCache ?? null; }
 
-// Returns a Bearer token good for at least 30 more seconds, transparently
-// refreshing (and re-persisting) it first if the stored one is stale or absent.
+// Recheck tokens near expiry; the server may confirm the existing token before
+// it expires, or return a refreshed pair after expiry.
 async function desktopAccessToken(): Promise<string | null> {
   const session = await readDesktopSession();
   if (!session) return null;
   if (session.expires_at > Date.now() + 30_000) return session.access_token;
   const response = await authFetch(`${apiBase}/api/auth/session`, {
-    headers: { Authorization: `Bearer ${session.access_token}`, "X-Refresh-Token": session.refresh_token }
+    headers: { Authorization: `Bearer ${session.access_token}`, "X-Refresh-Token": session.refresh_token },
+    signal: AbortSignal.timeout(15_000)
   });
   // Temporary failures must not delete a customer's saved session.
   if (!response.ok && response.status !== 401 && response.status !== 403) throw new Error("Account service is temporarily unavailable. Please retry.");
   const payload = await response.json().catch(() => ({})) as { email?: string | null; access_token?: string; refresh_token?: string; expires_in?: number };
-  if (!payload.email || !payload.access_token || !payload.refresh_token) { await clearDesktopSession(); return null; }
+  if (response.status === 401 || response.status === 403 || payload.email === null) { await clearDesktopSession(); return null; }
+  if (!payload.email) throw new Error("Account service returned an incomplete response. Please retry.");
+  if (!payload.access_token && !payload.refresh_token) return session.access_token;
+  if (!payload.access_token || !payload.refresh_token) throw new Error("Account service returned an incomplete session. Please retry.");
   await saveDesktopSession({ email: payload.email, access_token: payload.access_token, refresh_token: payload.refresh_token, expires_at: Date.now() + (payload.expires_in ?? 3600) * 1000 });
   return payload.access_token;
 }

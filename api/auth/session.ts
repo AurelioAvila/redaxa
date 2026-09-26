@@ -52,6 +52,7 @@ export default async function handler(request: RequestLike, response: ResponseLi
   // header and (if that token is stale) its refresh token in a custom header so
   // this endpoint can mint a fresh pair for it to store, mirroring the cookie
   // refresh flow below.
+  try {
   const bearerAccess = bearerToken(request.headers);
   if (bearerAccess) {
     const user = await supabaseAuthUser(bearerAccess);
@@ -96,4 +97,7 @@ export default async function handler(request: RequestLike, response: ResponseLi
     clearSessionCookies(response);
   }
   response.status(200).json({ email: null });
+  } catch {
+    response.status(503).json({ error: "Account service is temporarily unavailable. Please retry." });
+  }
 }

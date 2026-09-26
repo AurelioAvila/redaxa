@@ -48,4 +48,24 @@ assert.equal(extension.headers.get("Access-Control-Allow-Origin"), "chrome-exten
 const preflight = invoke("OPTIONS", appOrigin);
 assert.equal(preflight.statusCode, 204);
 
+// A provider outage must never expire cookies or report an invalid session.
+const originalFetch = globalThis.fetch;
+try {
+  globalThis.fetch = async () => Response.json({error:"temporary"}, {status:503});
+  for (const headers of [{authorization:"Bearer fixture", "x-refresh-token":"fixture"}, {cookie:"ps_at=fixture; ps_rt=fixture"}]) {
+    let status = 0;
+    let body: unknown;
+    const written = new Map<string,string|string[]>();
+    const response = {
+      setHeader(name:string,value:string|string[]) { written.set(name,value); },
+      status(code:number) { status=code; return response; },
+      json(value:unknown) { body=value; }, end() {}
+    };
+    await handler({method:"GET",url:"/api/auth/session",headers},response);
+    assert.equal(status,503);
+    assert.equal(written.has("Set-Cookie"),false);
+    assert.deepEqual(body,{error:"Account service is temporarily unavailable. Please retry."});
+  }
+} finally { globalThis.fetch=originalFetch; }
+
 console.log("Redaxa auth configuration tests passed.");
