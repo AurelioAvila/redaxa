@@ -1,6 +1,6 @@
 # Extension 0.4.3
 
-Desktop release 0.4.5 includes the matching shared scanner update. Extension 0.4.3 supersedes the 0.4.2 submission when sent to Chrome Web Store review. Approval and publication are external steps.
+Desktop release 0.4.5 includes the matching shared scanner update. Extension 0.4.3 replaced the 0.4.2 submission on September 26, 2026 and is awaiting Chrome Web Store review, with automatic publication enabled after approval. The console still lists 0.4.0 as published. Approval and publication are external steps.
 
 - Paste a prompt, email or draft directly into the popup; check it, review grouped findings and copy the redacted version.
 - Try a fictional example before creating an account. Real anonymous checks use the existing server quota: 5 per 24 hours per network. No new free entitlement or client-side quota bypass.
