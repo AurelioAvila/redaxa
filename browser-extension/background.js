@@ -46,13 +46,18 @@ async function accessToken() {
   if (!session) return null;
   if (session.expires_at > Date.now() + 30_000) return session.access_token;
   const response = await fetch(`${API_BASE}/api/auth/session`, {
-    headers: { Authorization: `Bearer ${session.access_token}`, "X-Refresh-Token": session.refresh_token }
+    headers: { Authorization: `Bearer ${session.access_token}`, "X-Refresh-Token": session.refresh_token },
+    signal: AbortSignal.timeout(15_000)
   });
+  if (!response.ok && response.status !== 401 && response.status !== 403) throw new Error("Account service is temporarily unavailable. Please retry.");
   const payload = await response.json().catch(() => ({}));
-  if (!payload.email || !payload.access_token || !payload.refresh_token) {
+  if (response.status === 401 || response.status === 403 || payload.email === null) {
     await clearSession();
     return null;
   }
+  if (!payload.email) throw new Error("Account service returned an incomplete response. Please retry.");
+  if (!payload.access_token && !payload.refresh_token) return session.access_token;
+  if (!payload.access_token || !payload.refresh_token) throw new Error("Account service returned an incomplete session. Please retry.");
   await saveSession({
     email: payload.email,
     access_token: payload.access_token,

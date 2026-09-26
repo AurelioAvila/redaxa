@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Redaxa",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "identifier": "com.aurelioavila.redaxa",
   "build": {
     "frontendDist": "../desktop-dist",
@@ -28,7 +28,7 @@
     },
     "trayIcon": {
       "iconPath": "icons/32x32.png",
-      "tooltip": "Redaxa — AI privacy and prompt protection"
+      "tooltip": "Redaxa \u2014 AI privacy and prompt protection"
     }
   },
   "plugins": {
@@ -54,7 +54,7 @@
     "targets": "all",
     "createUpdaterArtifacts": true,
     "publisher": "Aurelio Avila",
-    "copyright": "Copyright © 2026 Aurelio Avila. All rights reserved.",
+    "copyright": "Copyright \u00a9 2026 Aurelio Avila. All rights reserved.",
     "shortDescription": "Catches personal data and secrets in your prompt before it reaches an AI tool",
     "icon": [
       "icons/32x32.png",

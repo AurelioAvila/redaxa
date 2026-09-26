@@ -1,17 +1,29 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const elements = new Map();
-for (const id of ['prompt','findings','safe-output','redacted','result-title','result-copy','scan','sample','copy']) {
+for (const id of ['prompt','findings','safe-output','redacted','result-title','result-copy','scan','sample','copy','pro-plan-price','business-plan-price','pro-plan-tag']) {
   elements.set('#'+id,{value:'',textContent:'',innerHTML:'',className:'',style:{},handlers:{},addEventListener(event,fn){this.handlers[event]=fn;}});
 }
 let authCalls=0, scans=0, scanOutcome=null;
-const document={querySelector:s=>elements.get(s),addEventListener(){}};
+const billingButtons=['monthly','yearly'].map(billing=>({dataset:{billing},handlers:{},attributes:{},addEventListener(event,fn){this.handlers[event]=fn;},setAttribute(key,value){this.attributes[key]=value;}}));
+const checkoutButtons=['personal','business'].map(plan=>({dataset:{plan,interval:'yearly'}}));
+const document={querySelector:s=>elements.get(s),querySelectorAll:s=>s==='[data-billing]'?billingButtons:s==='[data-plan]'?checkoutButtons:[],addEventListener(){}};
 // scanOutcome is null while the demo path is under test: any scan there is a
 // bug. The anonymous-scan cases below set it to the result the server would
 // have produced.
 const window={promptShieldAuth:{hasAccess:()=>false,requestAccess:()=>authCalls++,scanPrompt:async()=>{scans++;if(!scanOutcome)throw Error('Demo must not scan');if(scanOutcome.error)throw Error(scanOutcome.error);return scanOutcome;}}};
 const script=readFileSync(new URL('../dist/landing.js',import.meta.url),'utf8').replace(/import \{ track \} from ['"]\.\/growth.js['"];?/, 'const track=()=>{};');
 new Function('document','window',script)(document,window);
+
+for (const [index,interval,personal,business] of [[0,'monthly','€7.99','€14.99'],[1,'yearly','€79.90','€149.90']]) {
+  billingButtons[index].handlers.click();
+  assert.ok(elements.get('#pro-plan-price').innerHTML.startsWith(personal));
+  assert.ok(elements.get('#business-plan-price').innerHTML.startsWith(business));
+  assert.equal(billingButtons[index].attributes['aria-pressed'],'true');
+  assert.equal(billingButtons[1-index].attributes['aria-pressed'],'false');
+  assert.ok(checkoutButtons.every(button=>button.dataset.interval===interval),'checkout must match the displayed billing period');
+}
+assert.match(elements.get('#pro-plan-tag').textContent,/Recommended/);
 elements.get('#sample').handlers.click();
 assert.equal(authCalls,0);
 assert.equal(scans,0);

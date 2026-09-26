@@ -99,10 +99,20 @@ export async function refreshSession(refreshToken: string): Promise<{ access_tok
   const response = await fetch(`${supabaseUrl()}/auth/v1/token?grant_type=refresh_token`, {
     method: "POST",
     headers: { apikey: required("SUPABASE_PUBLISHABLE_KEY"), "Content-Type": "application/json" },
-    body: JSON.stringify({ refresh_token: refreshToken })
+    body: JSON.stringify({ refresh_token: refreshToken }),
+    signal: AbortSignal.timeout(15_000)
   });
-  if (!response.ok) return null;
-  return response.json() as Promise<{ access_token: string; refresh_token: string; expires_in: number; user?: { email?: string } }>;
+  if (!response.ok) {
+    if ([400, 401, 403].includes(response.status)) return null;
+    throw new Error("Authentication service temporarily unavailable.");
+  }
+  const body = await response.json() as { access_token?: string; refresh_token?: string; expires_in?: number; user?: { email?: string } } | null;
+  if (!body || typeof body.access_token !== "string" || !body.access_token.trim()
+    || typeof body.refresh_token !== "string" || !body.refresh_token.trim()
+    || typeof body.expires_in !== "number" || !Number.isFinite(body.expires_in) || body.expires_in <= 0) {
+    throw new Error("Authentication service returned an incomplete session.");
+  }
+  return { access_token: body.access_token, refresh_token: body.refresh_token, expires_in: body.expires_in, user: body.user };
 }
 
 export type AuthUser = {
@@ -119,11 +129,17 @@ export type AuthUser = {
 
 export async function supabaseAuthUser(accessToken: string): Promise<AuthUser | null> {
   const response = await fetch(`${supabaseUrl()}/auth/v1/user`, {
-    headers: { apikey: required("SUPABASE_PUBLISHABLE_KEY"), Authorization: `Bearer ${accessToken}` }
+    headers: { apikey: required("SUPABASE_PUBLISHABLE_KEY"), Authorization: `Bearer ${accessToken}` },
+    signal: AbortSignal.timeout(15_000)
   });
-  if (!response.ok) return null;
-  const body = await response.json() as { id?: string; email?: string; email_confirmed_at?: string; created_at?: string; user_metadata?: Record<string, unknown> };
-  if (!body.id || !body.email) return null;
+  if (!response.ok) {
+    if ([401, 403].includes(response.status)) return null;
+    throw new Error("Authentication service temporarily unavailable.");
+  }
+  const body = await response.json() as { id?: string; email?: string; email_confirmed_at?: string; created_at?: string; user_metadata?: Record<string, unknown> } | null;
+  if (!body || typeof body.id !== "string" || !body.id.trim() || typeof body.email !== "string" || !body.email.trim()) {
+    throw new Error("Authentication service returned an incomplete user.");
+  }
   return {
     id: body.id,
     email: body.email,
