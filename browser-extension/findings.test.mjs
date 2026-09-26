@@ -73,3 +73,26 @@ handlers.get('#redaxa-use-redacted')();
 assert.equal(composer.value,'edited after results','Manual check also protects newer edits');
 assert.equal(vm.runInContext('sameCheckedPrompt',sandbox)({value:'checked',isConnected:false},'checked'),false,'Replaced editors cannot reuse an old scan');
 console.log('Extension: API alert, deduplication, priority, escaping and secret-free markup passed.');
+// Guest manual checks disclose the destination before sending anything.
+const ui = new Map();
+const uiNode = () => ({ innerHTML: '', handlers: {}, classList: { add() {}, remove() {} },
+  addEventListener(event, handler) { this.handlers[event] = handler; },
+  querySelector(selector) { if (!ui.has(selector)) ui.set(selector, uiNode()); return ui.get(selector); }
+});
+let guestScans = 0;
+sandbox.document.createElement = uiNode;
+sandbox.document.body = { append(node) { ui.set(`#${node.id}`, node); } };
+sandbox.findComposer = () => ({ value: 'Synthetic guest text' });
+sandbox.chrome.runtime.sendMessage = (message, callback) => {
+  if (message.type === 'SCAN') { guestScans++; callback({ ok: false, error: 'TRIAL_REQUIRED', httpStatus: 402 }); }
+  else callback({ ok: true, result: { signedIn: false } });
+};
+vm.runInContext('buildUI()', sandbox);
+await ui.get('#redaxa-check-btn').handlers.click();
+assert.equal(guestScans, 0);
+assert.match(ui.get('#redaxa-body').innerHTML, /sent to Redaxa/);
+await ui.get('#redaxa-guest-check').handlers.click();
+assert.equal(guestScans, 1);
+assert.match(ui.get('#redaxa-body').innerHTML, /free check limit/);
+assert.match(ui.get('#redaxa-body').innerHTML, /compare Pro plans/);
+console.log('Guest manual check: disclosure, explicit action and quota handling passed.');

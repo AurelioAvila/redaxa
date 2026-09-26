@@ -1327,10 +1327,13 @@ export function mountDashboard(): void {
       groups.set(finding.kind, bucket);
     }
     const shorten = (value: string): string => value.length > 42 ? `${value.slice(0, 20)}…${value.slice(-14)}` : value;
-    findingsRoot.innerHTML = [...groups.entries()].map(([kind, items]) => {
+    const priority=(kind:string)=>kind==='secret'?3:kind==='privateKey'||kind==='credential'?2:1;
+    findingsRoot.innerHTML = [...groups.entries()].sort(([a],[b])=>priority(b)-priority(a)).map(([kind, items]) => {
       const rows = items.map((finding) => {
         const shown = preferences.showRawValues ? escapeHtml(shorten(finding.value)) : `<em>${escapeHtml(words().sensitiveValueHidden)}</em>`;
-        return `<div class="fitem"><code>${shown}</code><span class="arrow" aria-hidden="true">→</span><span class="repl">${escapeHtml(finding.replacement.replace("$1$2", ""))}</span></div>`;
+        const context=finding.credential;
+        const advice=context?`<details class="credential-advice"><summary>${escapeHtml(context.service+' · '+context.type)}</summary><p>${escapeHtml(context.evidence)}</p><p>${escapeHtml(context.response+': '+context.guidance)}</p></details>`:'';
+        return `<div class="fitem"><code>${shown}</code><span class="arrow" aria-hidden="true">→</span><span class="repl">${escapeHtml(finding.replacement.replace("$1$2", ""))}</span></div>${advice}`;
       }).join("");
       return `<div class="fgroup"><div class="fgroup-head"><b>${escapeHtml(labels()[kind] ?? kind)}</b><span class="fgroup-count">${items.length}</span></div>${rows}</div>`;
     }).join("");

@@ -123,9 +123,9 @@ async function handleMessage(message, sender) {
     case "STATUS": {
       const session = await readSession();
       if (!session) return { signedIn: false };
-      const token = await accessToken();
-      if (!token) return { signedIn: false };
       try {
+        const token = await accessToken();
+        if (!token) return { signedIn: false };
         const account = await apiRequest("/api/account", undefined, "GET");
         return { signedIn: true, email: session.email, active: account.active === true, plan: account.plan,
           repositoryAccess: repositoryEntitlement(account) };
@@ -147,6 +147,9 @@ async function handleMessage(message, sender) {
       return { opened: true };
     }
     case "SCAN": {
+      if (typeof message.text !== "string" || !message.text.trim() || message.text.length > 20_000) {
+        throw new Error("Enter between 1 and 20,000 characters to check.");
+      }
       // Audit metadata only: which AI app the prompt was headed to. Derived
       // from the sender tab's host here (trusted context), never from the
       // page itself.
@@ -158,6 +161,9 @@ async function handleMessage(message, sender) {
         host.includes("copilot") ? "copilot" :
         host.includes("perplexity") ? "perplexity" : "extension";
       const result = await apiRequest("/api/scan", { text: message.text, application, options: message.options ?? {} });
+      if (!Array.isArray(result.findings) || typeof result.redactedText !== "string") {
+        throw new Error("The check returned an incomplete result. Please try again.");
+      }
       // The decision (which policy rule fired, why, and whether the send is
       // blocked) must survive this hop — the content script's modal depends
       // on it. Dropping it here silently degraded block to warn.
@@ -176,6 +182,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (sender.id !== chrome.runtime.id) return false;
   handleMessage(message, sender)
     .then((result) => sendResponse({ ok: true, result }))
-    .catch((error) => sendResponse({ ok: false, error: error instanceof Error ? error.message : "Unexpected error." }));
+    .catch((error) => sendResponse({ ok: false, error: error instanceof Error ? error.message : "Unexpected error.", httpStatus: error.httpStatus }));
   return true; // keep the message channel open for the async response
 });

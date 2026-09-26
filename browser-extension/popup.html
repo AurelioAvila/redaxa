@@ -7,13 +7,34 @@
   <link rel="stylesheet" href="popup.css" />
 </head>
 <body>
-  <header class="brand"><img src="icons/48.png" alt="" width="32" height="32" /><strong>Redaxa</strong><span class="edition">Browser extension</span></header>
+  <header class="brand"><img src="icons/48.png" alt="" width="32" height="32" /><strong>Redaxa</strong><button class="link-btn edition" id="open-account" type="button">Account</button></header>
   <p id="preview-note" class="preview-note" hidden>Design preview · Account actions work in the installed extension.</p>
   <nav class="tabs" aria-label="Protection tools"><button id="prompt-tab" class="tab selected" type="button" aria-pressed="true">Prompt protection</button><button id="repository-tab" class="tab" type="button" aria-pressed="false">Repository <span class="pro">PRO</span></button></nav>
   <main>
     <section id="prompt-panel" aria-labelledby="prompt-heading">
-      <h1 id="prompt-heading">Prompt protection</h1>
-      <p class="intro">Check for sensitive data before sending a prompt. Use Redaxa on supported AI sites to review what you share.</p>
+      <h1 id="prompt-heading">Check before you share.</h1>
+      <p class="intro">Catch credentials and personal details in a prompt, email or draft.</p>
+      <form id="quick-check">
+        <div class="label-row"><label for="check-text">Text to review</label><button type="button" class="link-btn" id="try-example">Try an example</button></div>
+        <textarea id="check-text" rows="4" maxlength="20000" spellcheck="false" autocomplete="off" placeholder="Paste text here. Nothing is read from your tabs or clipboard automatically." required aria-describedby="check-privacy check-access"></textarea>
+        <div class="input-meta"><span id="text-count">0 / 20,000</span><button type="button" class="link-btn" id="clear-check">Clear</button></div>
+        <p class="micro" id="check-privacy">Sent to Redaxa only when you check. Text is not stored or sent to an AI provider.</p>
+        <button class="primary" id="check-button" type="submit">Check text <span aria-hidden="true">→</span></button>
+        <p class="hint" id="check-access">5 free checks per 24 hours, shared by network. No account needed.</p>
+      </form>
+      <p id="check-message" class="hint" role="status" aria-live="polite"></p>
+      <section id="check-result" class="check-result" hidden aria-labelledby="result-heading">
+        <h2 id="result-heading"></h2><p id="result-note" class="hint"></p>
+        <ul id="finding-list"></ul>
+        <label for="redacted-text">Reviewed version</label><textarea id="redacted-text" rows="3" readonly></textarea>
+        <button class="secondary" id="copy-result" type="button">Copy reviewed text</button>
+      </section>
+      <aside id="pro-benefits" class="upgrade">
+        <div><span class="pro">PRO</span><strong>Make it part of your workflow</strong></div>
+        <p>Checks before you send on supported AI sites. Public repository checks in the Windows app. One plan across your workspace.</p>
+        <button class="secondary" id="compare-plans" type="button">Compare Pro plans →</button>
+      </aside>
+      <details id="account-details" class="account-details"><summary id="account-summary">Already have an account? Sign in</summary>
       <div class="status" id="status" hidden>
         <div class="account-card"><span class="pill" id="status-pill"><i></i><span id="status-pill-text">Checking plan</span></span><strong id="status-email"></strong><span id="status-plan"></span></div>
         <p class="hint">Look for the Redaxa button on ChatGPT, Claude, Gemini, Copilot and Perplexity.</p>
@@ -27,6 +48,7 @@
         <button class="primary" id="sign-in" type="submit">Sign in to Redaxa <span>→</span></button>
         <div class="signup">New to Redaxa? <button type="button" class="link-btn" id="create-account">Create an account</button></div>
       </form>
+      </details>
     </section>
     <section id="repository-panel" aria-labelledby="repository-heading" hidden>
       <h1 id="repository-heading">Repository check</h1>
