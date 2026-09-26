@@ -27,6 +27,34 @@ function bearerToken(init: RequestInit | undefined): string | undefined {
   return headers?.Authorization?.replace(/^Bearer /, "");
 }
 
+// Provider outages/rate limits must not turn a recoverable session into logout.
+for (const status of [429, 500, 503]) {
+  await withMockFetch(async (_url, init) => {
+    assert.ok(init?.signal, "Auth provider requests need a deadline");
+    return Response.json({error:"temporary"}, {status});
+  }, async () => {
+    await assert.rejects(billing.supabaseAuthUser("fixture"), /temporarily unavailable/);
+    await assert.rejects(billing.refreshSession("fixture"), /temporarily unavailable/);
+  });
+}
+await withMockFetch(async () => Response.json({error:"invalid"}, {status:401}), async () => {
+  assert.equal(await billing.supabaseAuthUser("fixture"), null);
+  assert.equal(await billing.refreshSession("fixture"), null);
+});
+for (const payload of [null, {}, {id:12,email:true}, {id:" ",email:"fixture@example.test"}]) {
+  await withMockFetch(async () => Response.json(payload), async () => {
+    await assert.rejects(billing.supabaseAuthUser("fixture"), /incomplete user/);
+  });
+}
+for (const payload of [null, {}, {access_token:"fixture",refresh_token:"fixture"},
+  {access_token:"fixture",refresh_token:" ",expires_in:3600},
+  {access_token:"fixture",refresh_token:"fixture",expires_in:-1},
+  {access_token:"fixture",refresh_token:"fixture",expires_in:"3600"}]) {
+  await withMockFetch(async () => Response.json(payload), async () => {
+    await assert.rejects(billing.refreshSession("fixture"), /incomplete session/);
+  });
+}
+
 // parseCookies
 assert.deepEqual(billing.parseCookies("ps_at=abc123; ps_rt=def%20456"), { ps_at: "abc123", ps_rt: "def 456" });
 assert.deepEqual(billing.parseCookies(undefined), {});

@@ -18,6 +18,15 @@ const secret=inspectFile('settings.env','TOKEN='+key,true).find(f=>f.kind==='sec
 const retained=[example,example];assert.equal(retainFinding(retained,secret,2),true);
 assert.ok(retained.includes(secret));assert.equal(retained.length,2);
 assert.equal(retainFinding([secret,secret],example,2),false);
+const distinct=inspectFile('other.env','TOKEN=ghp_'+'zYxWvUtSrQpOnMlKjIhGfEdCbA9876543210ab',true).find(f=>f.kind==='secret')!;
+const repeated=[{...secret,path:'current.env'},{...secret,path:'[history abcdef123456]/old.env'}];
+assert.equal(retainFinding(repeated,distinct,2),true,'A new credential survives a budget filled by duplicate occurrences');
+assert.equal(repeated.length,2,'The result memory budget stays bounded');
+assert.ok(repeated.some(f=>f.fingerprint===secret.fingerprint&&f.path==='current.env'),'Keep the current occurrence over its historical duplicate');
+assert.ok(repeated.some(f=>f.fingerprint===distinct.fingerprint));
+assert.equal(retainFinding([secret,secret],{...distinct,severity:'high'},2),false,'A lower-priority candidate cannot evict critical findings');
+const unique=[secret,distinct];
+assert.equal(retainFinding(unique,{...distinct,fingerprint:'another-identity'},2),false,'Never evict the only occurrence of an equally critical distinct finding');
 console.log('Result budget preserves credentials ahead of informational matches.');
 
 // A deadline/cancellation must prevent Git spawning, not spawn then kill it.
