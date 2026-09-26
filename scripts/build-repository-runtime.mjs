@@ -8,7 +8,7 @@ import {build} from 'esbuild';
 // installation: its root can contain unrelated user files and credentials.
 const root=process.cwd(),output=resolve(root,'src-tauri','repository-runtime');
 if(dirname(output)!==resolve(root,'src-tauri')||basename(output)!=='repository-runtime')throw new Error('Unsafe runtime output');
-const sourceFiles=['scripts/repository-engine.mjs','scripts/build-repository-runtime.mjs','dist/repository-full.js','dist/repository-scanner.js','dist/repository-git.js','dist/scanner.js','package-lock.json'];
+const sourceFiles=['scripts/repository-engine.mjs','scripts/build-repository-runtime.mjs','dist/repository-full.js','dist/repository-scanner.js','dist/repository-git.js','dist/scanner.js','dist/credential-context.js','package-lock.json'];
 const sourceFingerprint=createHash('sha256').update(sourceFiles.map(file=>file+'\0'+readFileSync(resolve(root,file),'utf8')).join('\0')).digest('hex');
 await (async()=>{
 if(process.env.REDAXA_RUNTIME_PREPARED==='1'){

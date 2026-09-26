@@ -2,8 +2,8 @@
   "manifest_version": 3,
   "name": "Redaxa",
   "short_name": "Redaxa",
-  "version": "0.4.2",
-  "description": "Catches personal data and secrets in your prompt before you send it to ChatGPT or Claude.",
+  "version": "0.4.3",
+  "description": "Check text for credentials and personal data, copy a redacted version, and review prompts before sharing with AI.",
   "permissions": [
     "storage",
     "clipboardWrite"

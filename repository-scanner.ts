@@ -4,7 +4,7 @@ import { Readable, Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { createGunzip } from 'node:zlib';
 import { createHmac, randomBytes } from 'node:crypto';
-import {credentialContext,type CredentialContext} from './credential-context.js';
+import {credentialContext,credentialValue,jwtClaims,supabaseIssuer,type CredentialContext} from './credential-context.js';
 
 export type RepoFinding = { path:string; line:number; label:string; severity:string; category:string; masked:string; value?:string; action:string; url?:string; disposition:'review'|'reference'; reason:string; location?:string; kind?:string; fingerprint?:string; confidence?:'high'|'medium'|'low'; credential?:CredentialContext };
 export type FileCoverage = {path:string; status:'scanned'|'skipped'; reason:string};
@@ -50,16 +50,15 @@ function classify(f:Finding,path:string,text:string,offset:number):{disposition:
     if(f.value.replace(/\D/g,'')==='4242424242424242'&&/\btest\b/i.test(line)&&/\b(?:card|visa|mastercard|amex)\b/i.test(line))return reference('Documented Stripe test-card number in an explicit testing example, not a real payment credential.');
     if(!/\b(?:card|pan|payment|visa|mastercard|amex|credit|debit)\b/i.test(text.slice(Math.max(0,lineStart-180),lineEnd<0?text.length:lineEnd).replace(/_/g,' ')))return reference('Checksum-compatible number without payment-card context; a numeric match alone is insufficient evidence of card data.');
   }
-  if(f.kind==='secret'){const reason=apiCredentialReference(f.value);if(reason)return reference(reason);}
-  if(f.kind==='secret' && /^eyJ/.test(f.value)) {
+  if(f.kind==='secret'&&!/^eyJ/.test(credentialValue(f.value))){const reason=apiCredentialReference(f.value);if(reason)return reference(reason);}
+  if(f.kind==='secret' && /^eyJ/.test(credentialValue(f.value))) {
     try {
-      const header=JSON.parse(Buffer.from(f.value.split('.')[0],'base64url').toString());
-      const payload=JSON.parse(Buffer.from(f.value.split('.')[1],'base64url').toString());
-      if(!header||typeof header.alg!=='string'||!payload||typeof payload!=='object'||Array.isArray(payload))throw new Error('Invalid JWT structure');
+      const claims=jwtClaims(f.value);if(!claims)throw new Error('Invalid JWT structure');
+      const {payload}=claims;
       const prefix=text.slice(Math.max(0,offset-2048),offset).match(/https?:\/\/[^\s<>"']*$/)?.[0];
       let unsubscribeLink=false;try{unsubscribeLink=!!prefix&&(/(?:^|\/)unsubscribe(?:[/.]|$)/i.test(new URL(prefix+f.value).pathname)||/(?:\[\s*unsubscribe\s*\]\s*\(|\bunsubscribe\s*[:\-]?\s*[(<]?)\s*$/i.test(text.slice(Math.max(0,offset-2048),offset-prefix.length)));}catch{}
-      if(payload?.role==='anon'&&typeof payload.iss==='string'&&/supabase/i.test(payload.iss))return {...reference('Supabase anonymous client token: designed to be public. Security depends on database policies; those policies are not audited by this exposure check.'),label:'JWT · public Supabase client token'};
-      if(['service_role','admin','owner','root'].includes(payload?.role))return {disposition:'review',severity:'critical',confidence:'medium',label:'JWT · privileged-role claim',reason:'The decoded payload declares a privileged role. Review access and rotate if genuine. Claims, signature and validity have not been verified.'};
+      if(payload.role==='anon'&&supabaseIssuer(payload.iss))return {...reference('Claims match a public Supabase anonymous client token. Signature and database policies are not verified by this exposure check.'),label:'JWT · public Supabase client token'};
+      if(typeof payload.role==='string'&&['service_role','admin','owner','root'].includes(payload.role))return {disposition:'review',severity:'critical',confidence:'medium',label:'JWT · privileged-role claim',reason:'The decoded payload declares a privileged role. Review access and rotate if genuine. Claims, signature and validity have not been verified.'};
       if(!payload?.role&&(unsubscribeLink||[payload?.act,payload?.action,payload?.purpose].includes('unsubscribe')))return {disposition:'review',severity:'medium',confidence:'medium',label:'JWT · unsubscribe-link token',reason:'The explicit link label, URL path or decoded payload identifies an unsubscribe action. This appears to authorize an email preference link, not general API access. Its signature and actual permissions have not been verified; review whether the link was intended to be public.'};
     }catch{return {...reference('JWT-shaped text with an invalid JSON header/payload; not a structurally valid JWT credential.'),label:'Malformed JWT-like text'};}
     return {disposition:'review',severity:'high',confidence:'medium',label:'JWT · signed-token candidate',reason:'JWT-shaped token, not necessarily an API key. It may represent a session, access token or signed link. Signature, permissions and validity are not verified; identify the issuing service before deciding what to revoke.'};
@@ -85,7 +84,8 @@ function classify(f:Finding,path:string,text:string,offset:number):{disposition:
       if(/["']$/.test(before)&&/^(?:type|label|value|required|name|id|autocomplete|form|input|field|schema|error|message|pattern|length|minimum|maximum)\b/i.test(unquoted))return reference('Form/schema metadata, not a literal password.');
       return {disposition:'review',severity:exampleFile?'medium':'high',confidence:exampleFile?'low':'medium',reason:exampleFile?'Password-like literal in test/example code. It may be a deliberately invalid test input or a temporary test-account password; check whether it is reused outside tests. No account validity is tested.':'Possible hard-coded password assignment. Confirm its context before treating it as a credential; no login or validity test is performed.'};
     }
-    if(f.kind==='secret'&&/^AIza/.test(f.value))return {disposition:'review',severity:'medium',confidence:'medium',reason:'Google API key pattern. Some browser keys are intentionally public; verify application/API restrictions and billing scope before deciding whether rotation is needed.'};
+    if(f.kind==='secret'&&/^AIza/.test(credentialValue(f.value)))return {disposition:'review',severity:'medium',confidence:'medium',reason:'Google API key pattern. Some browser keys are intentionally public; verify application/API restrictions and billing scope before deciding whether rotation is needed.'};
+    if(f.kind==='secret'&&/^(?:AKIA|ASIA)/.test(credentialValue(f.value)))return {disposition:'review',severity:'medium',confidence:'high',reason:'AWS access key identifier only. Check whether its paired secret and any session token are exposed before treating this as usable account access.'};
     return {disposition:'review',confidence:'high',reason:exampleFile?'Credential-shaped value in an example/test file. It still needs review: example files can contain genuine secrets.':'Credential pattern matched. Validity is not tested; review and rotate if genuine.'};
   }
   if(f.kind==='email'&&/\.(?:mp4|mov|webm|mp3|wav|png|jpe?g|webp|ico)(?:$|\s|!)/i.test(path)) {
@@ -105,8 +105,9 @@ export function inspectFile(path:string,text:string,allowReveal=false,credential
     offsets.set(key,offset+f.value.length);
     const c=classify(f,path,text,offset);
     if(credentialsOnly&&(c.disposition==='reference'||c.label==='JWT · unsubscribe-link token'))return [];
-    const credential=f.category==='credentials'?credentialContext(f.kind,f.value,c.label??f.label,c.disposition==='reference'):undefined;
-    const identity=f.kind==='credential'?f.value.replace(/^(?:password|passwd|pwd|secret)\s*[:=]\s*/i,'').replace(/^["']|["']$/g,''):f.kind==='email'?f.value.toLowerCase():f.value;
+    const assignment=text.slice(Math.max(0,offset-100),offset).match(/\b(OPENAI_API_KEY)["']?\s*[:=]\s*["']?$/)?.[1]??'';
+    const credential=f.category==='credentials'?credentialContext(f.kind,f.value,c.label??f.label,c.disposition==='reference',assignment):undefined;
+    const identity=f.kind==='credential'?f.value.replace(/^(?:password|passwd|pwd|secret)\s*[:=]\s*/i,'').replace(/^["']|["']$/g,''):f.kind==='email'?f.value.toLowerCase():f.kind==='secret'?credentialValue(f.value):f.value;
     const fingerprint=createHmac('sha256',fingerprintKey).update(f.kind+'\0'+identity).digest('hex');
     return [{path,line:text.slice(0,offset).split('\n').length,label:f.label,category:f.category,masked:'[REDACTED]',kind:f.kind,fingerprint,...(credential?{credential}:{}),...(allowReveal?{value:f.value}:{}),...c,severity:c.disposition==='reference'?'info':c.severity??f.severity,
       action:credential?.guidance??(c.disposition==='reference'?'Informational or recognized reference. Kept for transparency; excluded from the review count.':'Check whether this data is intentional and authorized for public sharing. Remove or anonymize it if needed.')}];
