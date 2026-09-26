@@ -30,7 +30,7 @@ The [v0.4.4 Windows setup EXE](../../releases/tag/v0.4.4) was checked on Septemb
 **WinGet status (September 26, 2026):** version 0.4.2 is available in the [official catalog](https://github.com/microsoft/winget-pkgs/tree/master/manifests/a/AurelioAvila/Redaxa). The [0.4.4 update](https://github.com/microsoft/winget-pkgs/pull/441593) has been submitted; the older 0.4.3 submission was closed as superseded. Until 0.4.4 is merged and indexed, install the latest signed version from [GitHub Releases](../../releases/latest).
 
 > The browser extension (source in [`browser-extension/`](browser-extension))
-> is available on the [Chrome Web Store](https://chromewebstore.google.com/detail/redaxa/clkobbjoaegkgnmkibjghlboeoplpmok). A Redaxa account and an active trial or subscription are required.
+> is available on the [Chrome Web Store](https://chromewebstore.google.com/detail/redaxa/clkobbjoaegkgnmkibjghlboeoplpmok). Extension source **0.4.3** adds manual text checks without an account (5 per 24 hours, shared by network), redacted output and copying inside the popup. Automatic checks require an active trial or subscription; Windows repository checks require Pro or Business. This source update is prepared locally and is not yet the store version. Desktop and extension versions are independent.
 
 ---
 
