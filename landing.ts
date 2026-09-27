@@ -94,7 +94,7 @@ function mountLanding(): void {
       const message = error instanceof Error ? error.message : "";
       if (message === "TRIAL_REQUIRED") {
         track('trial_gate');
-        auth.requestAccess("You have used the free checks for today. Start your 7-day trial to keep going.");
+        auth.requestAccess("You have used the free checks for today. Choose a plan to keep going; eligible new subscribers get a 7-day trial.");
       } else {
         resultTitle.textContent = "Check failed";
         resultCopy.textContent = "We could not run that check. Please try again.";
