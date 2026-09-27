@@ -44,6 +44,8 @@ candidates, mod-97 for IBANs and reserved-range filtering for SSNs. These
 checks reduce some false positives; they do not prove that a match is
 genuine or that every sensitive value will be found.
 
+For a worked example, see [how to redact sensitive data before ChatGPT](https://promptshield-beta.vercel.app/redact-sensitive-data-before-chatgpt.html).
+
 ---
 
 ## What it does
