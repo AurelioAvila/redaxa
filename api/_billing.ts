@@ -151,10 +151,11 @@ export async function supabaseAuthUser(accessToken: string): Promise<AuthUser | 
 
 /** Records that the welcome has gone out, so it goes out exactly once. */
 export async function markWelcomed(userId: string, metadata: Record<string, unknown> | undefined): Promise<void> {
-  await supabaseService(`/auth/v1/admin/users/${encodeURIComponent(userId)}`, {
+  const response = await supabaseService(`/auth/v1/admin/users/${encodeURIComponent(userId)}`, {
     method: "PUT",
     body: JSON.stringify({ user_metadata: { ...(metadata ?? {}), welcomed_at: new Date().toISOString() } }),
   });
+  if (!response.ok) throw new Error("Could not record the welcome email.");
 }
 
 // Exported for other API modules (scan events audit): a service-role REST
