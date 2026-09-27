@@ -1,4 +1,5 @@
 import { corsHeaders, setSessionCookies } from "../_billing.js";
+import { welcomeOnce } from "../_welcome.js";
 import { clientIp, rateLimited } from "../_rateLimit.js";
 
 type RequestLike = { method?: string; body?: unknown; headers?: Record<string, string | string[] | undefined> };
@@ -33,12 +34,15 @@ export default async function handler(request: RequestLike, response: ResponseLi
       headers: { apikey: publishableKey, "Content-Type": "application/json" },
       body: JSON.stringify({ email, password })
     });
-    const payload = await upstream.json().catch(() => ({})) as { access_token?: string; refresh_token?: string; expires_in?: number; user?: { email?: string }; msg?: string; error_description?: string };
+    const payload = await upstream.json().catch(() => ({})) as { access_token?: string; refresh_token?: string; expires_in?: number; user?: { id?: string; email?: string; email_confirmed_at?: string; created_at?: string; user_metadata?: Record<string, unknown> }; msg?: string; error_description?: string };
     if (!upstream.ok || !payload.access_token || !payload.refresh_token) {
       response.status(upstream.status || 401).json({ error: payload.msg ?? payload.error_description ?? "Incorrect email or password." });
       return;
     }
     setSessionCookies(response, payload.access_token, payload.refresh_token, payload.expires_in ?? 3600, remember);
+    if (payload.user?.id && payload.user.email) {
+      await welcomeOnce({ id: payload.user.id, email: payload.user.email, emailConfirmedAt: payload.user.email_confirmed_at, createdAt: payload.user.created_at, metadata: payload.user.user_metadata });
+    }
     // Cookies drive the web dashboard; the desktop app has no cookie jar of its
     // own, so it reads the tokens from the body instead and holds them itself.
     response.status(200).json({
