@@ -118,8 +118,8 @@ assert.equal(formatChargedAmount(null, "eur", "month"), null);
   const previousFrom = process.env.REDAXA_MAIL_FROM;
   const sent: unknown[] = [];
   const realFetch = globalThis.fetch;
-  globalThis.fetch = (async (_url: string, init: { body: string }) => {
-    sent.push(JSON.parse(init.body));
+  globalThis.fetch = (async (_url: string, init: { body: string; headers: Record<string, string> }) => {
+    sent.push({ ...JSON.parse(init.body), headers: init.headers });
     return new Response("{}", { status: 200 });
   }) as typeof globalThis.fetch;
 
@@ -127,7 +127,7 @@ assert.equal(formatChargedAmount(null, "eur", "month"), null);
     process.env.RESEND_API_KEY = "re_test";
     delete process.env.REDAXA_MAIL_FROM;
     assert.equal(
-      await sendWelcomeEmail("someone@example.com", "Giulia", "https://redaxa.example"),
+      await sendWelcomeEmail("someone@example.com", "Giulia", "https://redaxa.example", "user-123"),
       false,
       "an unconfigured sender must refuse rather than guess a domain",
     );
@@ -135,7 +135,7 @@ assert.equal(formatChargedAmount(null, "eur", "month"), null);
 
     process.env.REDAXA_MAIL_FROM = "Redaxa <noreply@example.com>";
     assert.equal(
-      await sendWelcomeEmail("someone@example.com", "Giulia", "https://redaxa.example"),
+      await sendWelcomeEmail("someone@example.com", "Giulia", "https://redaxa.example", "user-123"),
       true,
     );
     assert.equal(sent.length, 1);
@@ -147,12 +147,46 @@ assert.equal(formatChargedAmount(null, "eur", "month"), null);
     assert.ok(payload.reply_to.includes("@"));
     assert.ok(payload.text, "every message carries a text part");
     assert.ok(payload.html);
+    assert.equal((sent[0] as { headers: Record<string, string> }).headers["Idempotency-Key"], "redaxa-welcome/user-123");
   } finally {
     globalThis.fetch = realFetch;
     if (previousKey === undefined) delete process.env.RESEND_API_KEY;
     else process.env.RESEND_API_KEY = previousKey;
     if (previousFrom === undefined) delete process.env.REDAXA_MAIL_FROM;
     else process.env.REDAXA_MAIL_FROM = previousFrom;
+  }
+}
+
+{
+  const envNames = ["RESEND_API_KEY", "REDAXA_MAIL_FROM", "SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "STRIPE_SECRET_KEY"] as const;
+  const previous = Object.fromEntries(envNames.map((name) => [name, process.env[name]]));
+  const realFetch = globalThis.fetch;
+  let sends = 0;
+  let marks = 0;
+  globalThis.fetch = (async (url: string) => {
+    if (url === "https://api.resend.com/emails") return new Response("{}", { status: ++sends === 1 ? 503 : 200 });
+    if (url.endsWith("/auth/v1/admin/users/user-123")) { marks++; return new Response("{}", { status: 200 }); }
+    throw new Error(`Unexpected test URL: ${url}`);
+  }) as typeof globalThis.fetch;
+  try {
+    process.env.RESEND_API_KEY = "re_test";
+    process.env.REDAXA_MAIL_FROM = "Redaxa <hello@example.com>";
+    process.env.SUPABASE_URL = "https://supabase.example";
+    process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-key";
+    process.env.STRIPE_SECRET_KEY = "sk_test_redaxa_email_test";
+    const { welcomeOnce } = await import("./_welcome.js");
+    const user = { id: "user-123", email: "someone@example.com", emailConfirmedAt: new Date().toISOString(), createdAt: new Date().toISOString(), metadata: {} };
+    await welcomeOnce(user);
+    assert.equal(marks, 0, "a failed send must not permanently suppress the welcome");
+    await welcomeOnce(user);
+    assert.equal(sends, 2);
+    assert.equal(marks, 1, "a successful retry must record the welcome");
+  } finally {
+    globalThis.fetch = realFetch;
+    for (const name of envNames) {
+      if (previous[name] === undefined) delete process.env[name];
+      else process.env[name] = previous[name];
+    }
   }
 }
 
