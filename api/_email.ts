@@ -277,7 +277,7 @@ export function formatChargedAmount(
  * first impression. Every caller now has to say what the message reads as
  * without markup.
  */
-async function send(to: string, subject: string, html: string, text: string): Promise<boolean> {
+async function send(to: string, subject: string, html: string, text: string, idempotencyKey?: string): Promise<boolean> {
   const key = process.env.RESEND_API_KEY;
   if (!key || !to) return false;
   const from = sender();
@@ -292,7 +292,7 @@ async function send(to: string, subject: string, html: string, text: string): Pr
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       signal: AbortSignal.timeout(10000),
-      headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
+      headers: { authorization: `Bearer ${key}`, "content-type": "application/json", ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {}) },
       // reply_to, because the subscription email says "Questions? Just reply
       // to this email" and the address it is sent from is a noreply@. A
       // promise in the copy that the transport quietly breaks is worse than
@@ -358,7 +358,7 @@ export async function sendSubscriptionEmail(input: SubscriptionEmailInput): Prom
  */
 export function welcomeHtml(firstName: string | null | undefined, appUrl: string): string {
   const name = escapeHtml(firstName || "there");
-  const intro = "Redaxa watches what you paste into an assistant and takes the sensitive parts out before they leave your browser. Nothing you type is sent to us — the matching happens on your machine.";
+  const intro = "Redaxa helps you review prompts for sensitive details before sharing them with AI. Web and Windows checks are processed by Redaxa's scanner without storing the prompt text or forwarding it to an AI provider.";
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -427,7 +427,7 @@ export function welcomeText(firstName: string | null | undefined, appUrl: string
   return [
     `Your account is confirmed, ${name}.`,
     "",
-    "Redaxa watches what you paste into an assistant and takes the sensitive parts out before they leave your browser. Nothing you type is sent to us - the matching happens on your machine.",
+    "Redaxa helps you review prompts for sensitive details before sharing them with AI. Web and Windows checks are processed by Redaxa's scanner without storing the prompt text or forwarding it to an AI provider.",
     "",
     "Three minutes to set up:",
     "1. Install the browser extension or the desktop app",
@@ -537,8 +537,8 @@ export async function sendPasswordChangedEmail(to: string, firstName: string | n
 }
 
 /** Sends the welcome. Never throws; the caller has already succeeded. */
-export async function sendWelcomeEmail(to: string, firstName: string | null | undefined, appUrl: string): Promise<boolean> {
-  return send(to, "Welcome to Redaxa", welcomeHtml(firstName, appUrl), welcomeText(firstName, appUrl));
+export async function sendWelcomeEmail(to: string, firstName: string | null | undefined, appUrl: string, userId?: string): Promise<boolean> {
+  return send(to, "Welcome to Redaxa", welcomeHtml(firstName, appUrl), welcomeText(firstName, appUrl), userId ? `redaxa-welcome/${userId}` : undefined);
 }
 
 /** Tells the owner a sale happened. Never throws, and never blocks the

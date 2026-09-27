@@ -360,7 +360,7 @@ function installDialog(): {
   backdrop.className = "ps-auth-backdrop";
   backdrop.innerHTML = `<section class="ps-auth-dialog" role="dialog" aria-modal="true" aria-labelledby="ps-auth-title">
     <button class="ps-auth-close" type="button" aria-label="Close account dialog">×</button>
-    <h2 id="ps-auth-title">Create your account</h2><p id="ps-auth-description">Start your 7-day free trial. Your prompt is checked to power the scan and never stored or logged.</p>
+    <h2 id="ps-auth-title">Create your account</h2><p id="ps-auth-description">Eligible new subscribers can try Redaxa for 7 days. Prompt text is processed by Redaxa's scanner without being stored or logged.</p>
     <form>
     <div id="ps-auth-register-fields">
       <label class="ps-auth-field">First name (optional)<input id="ps-auth-first-name" type="text" autocomplete="given-name"></label>
@@ -644,7 +644,7 @@ async function boot(): Promise<void> {
     requestAccess: (message) => {
       if (!currentEmail) {
         setMode("signup");
-        setMessage(message ?? "Create your account to start your 7-day free trial.");
+        setMessage(message ?? "Create an account to choose a plan. Eligible new subscribers get a 7-day trial.");
         show();
         return;
       }
@@ -668,7 +668,7 @@ async function boot(): Promise<void> {
   const beginCheckout = async (button: HTMLElement): Promise<void> => {
     if (!currentEmail) {
       setMode("signup");
-      setMessage("Create your account first to start a secure trial.");
+      setMessage("Create an account first to choose a plan.");
       show();
       return;
     }
