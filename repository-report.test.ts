@@ -3,6 +3,11 @@ import {inspectFile,demoReport} from './repository-scanner.js';
 import {aggregateRepositoryReport,reportToText,apiKeyCandidates} from './repository-report.js';
 
 const synthetic='ghp_'+'sYnThEtIcDoNoTuSe9876543210123456789012';
+const uncertain=demoReport();
+uncertain.findings=inspectFile('README.md','Bearer opaqueUnattributedCredential12345');
+assert.equal(apiKeyCandidates(aggregateRepositoryReport(uncertain).groups).length,0,'Weak signals do not trigger an API alert');
+assert.equal(aggregateRepositoryReport(uncertain).summary.actionable,1,'Weak signals remain available for review');
+assert.match(reportToText(uncertain),/Detection confidence: low/);
 assert.equal(inspectFile('.env.example',"MAIL_FROM='onboarding@resend.dev'")[0]?.disposition,'reference');
 for(const value of ['ghp_'+'x'.repeat(36),'sk-proj-'+'x'.repeat(40)]) {
   const r=demoReport();r.findings=inspectFile('.env.example',value);

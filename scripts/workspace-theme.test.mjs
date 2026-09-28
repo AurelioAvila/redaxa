@@ -1,0 +1,32 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { applyTheme, restoreTheme, themes } from '../dist/themes.js';
+
+globalThis.document = { documentElement: { dataset: {} } };
+let saved = null;
+globalThis.localStorage = { getItem: () => saved, setItem: () => assert.fail('Restoring a theme must not overwrite preferences') };
+for (const [value, expected] of [[null, 'graphite'], ['{}', 'graphite'], ['null', 'graphite'], ['invalid json', 'graphite'], ['{"theme":"missing"}', 'graphite'], ['{"theme":"ocean"}', 'ocean']]) {
+  saved = value;
+  restoreTheme();
+  assert.equal(document.documentElement.dataset.theme, expected);
+}
+for (const { code } of themes) {
+  saved = JSON.stringify({ theme: code });
+  restoreTheme();
+  assert.equal(document.documentElement.dataset.theme, code);
+}
+applyTheme('unknown');
+assert.equal(document.documentElement.dataset.theme, 'graphite');
+
+const css = readFileSync(new URL('../themes.css', import.meta.url), 'utf8');
+const luminance = hex => hex.match(/[\da-f]{2}/gi).map(value => parseInt(value, 16) / 255).map(v => v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4).reduce((n, v, i) => n + v * [.2126, .7152, .0722][i], 0);
+const contrast = (a, b) => (Math.max(luminance(a), luminance(b)) + .05) / (Math.min(luminance(a), luminance(b)) + .05);
+for (const { code } of themes) {
+  const palette = css.match(new RegExp(`html\\[data-theme="${code}"\\]\\{([^}]+)`))[1];
+  const token = name => palette.match(new RegExp(`--theme-${name}:(#[\\da-f]+)`))[1];
+  for (const surface of ['bg', 'surface', 'inset', 'hover']) {
+    for (const foreground of ['text', 'muted']) assert.ok(contrast(token(foreground), token(surface)) >= 4.5, `${code}: ${foreground} on ${surface}`);
+  }
+  assert.ok(contrast(token('accent'), token('ink')) >= 4.5, `${code}: primary button contrast`);
+}
+console.log('Workspace themes: defaults, saved selections, invalid storage and all palette text contrasts passed.');

@@ -23,11 +23,20 @@ class Element {
 const walk=node=>[node,...node.children.flatMap(walk)];
 const body=new Element('body');
 const find=(id,node=body)=>node.id===id?node:node.children.map(c=>find(id,c)).find(Boolean);
-for(const id of ['repo-form','demo','cancel','scan','status','preview-notice','api-findings','results']){const node=new Element('div');node.id=id;body.append(node);}
+for(const id of ['repo-form','demo','cancel','scan','status','preview-notice','api-findings','results','repository-loading']){const node=new Element('div');node.id=id;body.append(node);}
 const sandbox=vm.createContext({aggregateRepositoryReport,reportToText,apiKeyCandidates,document:{body,createElement:tag=>new Element(tag),getElementById:find,addEventListener(){}},location:{origin:'https://preview.invalid',search:''},URLSearchParams,nativeRepositoryEngine:()=>false});
 const source=readFileSync(new URL('../dist/repository-ui.js',import.meta.url),'utf8').replace(/^import .*;\r?\n/gm,'');
 vm.runInContext(source,sandbox);
 const notify=vm.runInContext('notifyApiKeys',sandbox),reset=vm.runInContext('resetApiNotice',sandbox);
+const setBusy=vm.runInContext('setScanBusy',sandbox);
+setBusy(true);
+assert.equal(find('scan').disabled,true);
+assert.equal(find('scan').attributes['aria-busy'],'true');
+assert.equal(find('repository-loading').hidden,true,'Hosted account verification does not simulate a local scan');
+setBusy(false);
+assert.equal(find('scan').disabled,false);
+assert.equal(find('scan').attributes['aria-busy'],'false');
+assert.match(find('scan').textContent,/Open in Windows app/);
 for(const count of [0,-1,NaN,undefined,1.5])notify(count);
 assert.equal(find('repository-api-notice'),undefined);
 notify(1);
