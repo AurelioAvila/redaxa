@@ -161,4 +161,25 @@ pub fn open_deep_link(app: &tauri::AppHandle, value: &str) {
   assert!(repository_deep_link("redaxa://repository?repo=https%3A%2F%2Fgithub.com%2FAurelioAvila%2Fpc-tweaker-app").is_some());
   for bad in ["redaxa://repository?repo=http://127.0.0.1/x", "redaxa://repository?repo=https://github.com/a/b&exec=1", "redaxa://repository?repo=https://github.com/a/b/tree/main", "redaxa://repository?repo=https://user@github.com/a/b", "redaxa://elsewhere?repo=https://github.com/a/b"] {assert!(repository_deep_link(bad).is_none());}
  }
+
+ #[test]
+ #[cfg(windows)]
+ #[ignore = "Downloads a public GitHub repository; account response is a test-only fixture"]
+ fn canonical_runtime_scans_public_repository() {
+  let runtime=std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("repository-runtime").canonicalize().unwrap();
+  let mut command=engine_command(&runtime);
+  // Only the account endpoint is stubbed; bundled Node/Git and GitHub are real.
+  command.env("NODE_OPTIONS", "--import=data:text/javascript,const%20original=globalThis.fetch;globalThis.fetch=(url,options)=>String(url)==='https://promptshield-beta.vercel.app/api/account'?Promise.resolve(Response.json({active:true,repositoryAccess:true})):original(url,options)");
+  let mut child=command.spawn().unwrap();
+  let mut input=child.stdin.take().unwrap();
+  input.write_all(b"{\"type\":\"scan\",\"url\":\"https://github.com/AurelioAvila/pc-tweaker-app\",\"accessToken\":\"test-fixture\"}\n").unwrap();
+  // Keep stdin open until the engine completes, as the desktop does.
+  let output=child.wait_with_output().unwrap();
+  drop(input);
+  assert!(output.status.success(), "Engine exited: {:?}", output.status.code());
+  let text=String::from_utf8(output.stdout).unwrap();
+  let message:Value=serde_json::from_str(text.lines().last().unwrap()).unwrap();
+  assert_eq!(message["type"], "result", "Outcome: {} {}", message["code"], message["error"]);
+  assert!(message["report"]["scanned"].as_u64().unwrap()>0);
+ }
 }

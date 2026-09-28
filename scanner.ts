@@ -113,6 +113,7 @@ function credentialValid(_value: string, groups: string[] = []): boolean {
 
 export function apiCredentialReference(value: string): string | undefined {
   value=credentialValue(value);
+  if (/^(?:your[_-](?:(?:api|access|auth)[_-])?(?:key|token|secret)(?:[_-]here)?|replace[_-]with[_-](?:your[_-])?(?:api[_-])?(?:key|token|secret)|example[_-](?:api[_-])?(?:key|token|secret))$/i.test(value.replace(/^sk-/, ''))) return 'Explicit instruction placeholder, not a literal credential.';
   if(/^sb_publishable_/.test(value))return 'Supabase publishable client identifier, not a secret API key. Database policies still need review.';
   if(/^eyJ/.test(value)&&value.split('.').length===3){
     const claims=jwtClaims(value);

@@ -9,6 +9,7 @@ import {Readable} from 'node:stream';
 import {extract} from 'tar-stream';
 import * as zip from 'yauzl';
 import {inspectFile,parseRepository,type RepoReport,type RepoFinding} from './repository-scanner.js';
+import {isApiKeyCandidate} from './repository-report.js';
 const exec=promisify(execFile);
 const MEMORY=64*1024*1024,TOTAL=2*1024*1024*1024;
 type Source={path:string;url?:string;repo:string;depth:number;historical?:boolean};
@@ -35,7 +36,7 @@ export function allowedLfsURL(value:string):boolean{try{const u=new URL(value);r
 // Keep credentials ahead of informational noise when the display budget fills.
 export function retainFinding(findings:RepoFinding[],finding:RepoFinding,limit=10_000):boolean {
  if(findings.length<limit){findings.push(finding);return true;}
- const priority=(f:RepoFinding)=>f.disposition==='reference'?0:({critical:4,high:3,medium:2,low:1}[f.severity]??1)+(f.kind==='secret'?5:0);
+ const priority=(f:RepoFinding)=>f.disposition==='reference'?0:2*({critical:4,high:3,medium:2,low:1}[f.severity]??1)+(isApiKeyCandidate(f)?1:0);
  const incoming=priority(finding);if(incoming===0)return false;let index=-1,lowest=incoming;
  // ponytail: linear replacement only after 10k results; use a heap if profiling warrants it.
  for(let i=0;i<findings.length;i++){const value=priority(findings[i]);if(value<lowest){lowest=value;index=i;if(value===0)break;}}
@@ -75,7 +76,7 @@ export async function scanFullRepository(input:string,outer?:AbortSignal,reveal=
     if(decoded.binary||segment!==undefined)f.location=decoded.binary?'Extracted binary string'+(segment!==undefined?` near byte ${segment}`:''):`Text segment near byte ${segment}`;
     if(s.historical)f.reason+=' Historical file version; it may already be removed, but an exposed credential may still require rotation.';
     if(s.url)f.url=s.url;retainFinding(r.findings,f);
-    if(f.kind==='secret'&&f.disposition==='review'&&f.fingerprint&&!apiIdentities.has(f.fingerprint)){apiIdentities.add(f.fingerprint);progress('Potential API key or token detected; continuing the scan…');}
+    if(isApiKeyCandidate(f)&&f.fingerprint&&!apiIdentities.has(f.fingerprint)){apiIdentities.add(f.fingerprint);progress('Potential API key or token detected; continuing the scan…');}
    }
    return decoded;
  };

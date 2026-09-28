@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Redaxa — Personal workspace</title><meta name="robots" content="noindex,nofollow"><link rel="icon" type="image/svg+xml" href="/outputs/redaxa-mark.svg"><style>
+<html lang="en" data-account-loading data-plan-loading><head><script src="/theme-boot.js"></script><link rel="stylesheet" href="/auth.css"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Redaxa — Personal workspace</title><meta name="robots" content="noindex,nofollow"><link rel="icon" type="image/svg+xml" href="/outputs/redaxa-mark.svg"><style>
 :root{
   --bg:#0c1322;
   --surface-1:#14223a;
@@ -475,11 +475,11 @@ body.corner-blocked #inspect-clipboard{display:none}
     <div class="brand"><img src="/outputs/redaxa-mark.svg" alt="" width="35" height="35"><span class="rx-brand-name">Redaxa<small>Privacy workspace</small></span></div>
     <nav class="nav" aria-label="Workspace">
       <div class="nav-label" data-i18n="workspace">Workspace</div>
-      <a class="nav-item" href="/github.html"><i class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="6" r="2"/><path d="M6 7v10M18 8v2a5 5 0 0 1-5 5H6"/></svg></i> Repository check <small class="rx-pro-badge">PRO</small></a>
       <button class="nav-item active" type="button" data-nav="check" aria-current="page">
         <i class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg></i>
         <span data-i18n="privateCheck">Check a prompt</span>
       </button>
+      <a class="nav-item" href="/github.html"><i class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="6" r="2"/><path d="M6 7v10M18 8v2a5 5 0 0 1-5 5H6"/></svg></i> Repository check</a>
       <button class="nav-item" type="button" data-nav="recent">
         <i class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></i>
         <span data-i18n="recent">Recent checks</span>
@@ -523,7 +523,12 @@ body.corner-blocked #inspect-clipboard{display:none}
 
 
 
-    <section class="workspace">
+    <nav class="task-switch" aria-label="Check type">
+      <a href="#prompt-workspace" aria-current="page"><span data-i18n="textMode">Text for AI</span><small data-i18n="textModeNote">Remove private details before sending</small></a>
+      <a href="/github.html"><span data-i18n="repoMode">GitHub repository</span><small data-i18n="repoModeNote">Find exposed credentials · Pro &amp; Business</small></a>
+    </nav>
+    <ol class="review-journey" aria-label="Review workflow"><li><b>1</b><span data-i18n="stepInput">Add your text</span></li><li><b>2</b><span data-i18n="stepReview">Review what was found</span></li><li><b>3</b><span data-i18n="stepCopy">Copy a safer version</span></li></ol>
+    <section class="workspace" id="prompt-workspace">
       <article class="card composer">
         <h2 id="composer-title" data-i18n="composerTitle">Prompt to review</h2>
         <p class="composer-sub" data-i18n="composerSub">Paste your text below, then inspect it for sensitive data.</p>
@@ -539,7 +544,7 @@ body.corner-blocked #inspect-clipboard{display:none}
         </div>
 
         <div class="samples">
-          <span class="samples-label" data-i18n="tryLabel">Try an example</span>
+          <span class="samples-label" data-i18n="sampleLead">Start with a sample</span>
           <div class="sample-row">
             <button class="sample-chip" type="button" aria-pressed="false" data-sample="brief" data-i18n="sampleBrief">Client brief</button>
             <button class="sample-chip" type="button" aria-pressed="false" data-sample="apikey" data-i18n="sampleApiKey">API key</button>
@@ -572,30 +577,15 @@ body.corner-blocked #inspect-clipboard{display:none}
 
         <div class="results-scroll" id="results-scroll" tabindex="0" role="group" aria-labelledby="results-title">
         <p id="res-empty" class="empty" role="status" hidden>Results cleared. Run a new check when you are ready.</p><div id="res-preview">
-          <span class="preview-note"><b data-i18n="previewBadge">Preview</b><span data-i18n="previewLabel">example result — not your prompt</span></span>
-          <div class="preview-demo">
-          <div class="risk-banner risk-high">
-            <span class="risk-mark" aria-hidden="true">3</span>
-            <div>
-              <b data-i18n="riskHigh">High risk</b>
-              <span data-i18n="previewItems">3 sensitive items in this prompt</span>
-            </div>
-          </div>
-          <div class="snippet">Hi <mark>Marco Rossi</mark>, send the invoice to <mark>m.rossi@acme.com</mark> — my direct line is <mark>+39 02 5555 0180</mark>.</div>
-          <div class="pill-row">
-            <span class="pill" data-kind="name">Personal name</span><span class="pill" data-kind="email">Email</span><span class="pill" data-kind="phone">Phone</span>
-          </div>
-          <div class="res-hint">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/></svg>
-            <span data-i18n="redactBeforeSharing">Redact before sharing</span>
-          </div>
-          </div>
-          <p class="preview-foot" data-i18n="previewFoot">Paste your own prompt to run a real check.</p>
-          <div class="detects">
-            <span class="findings-empty-label" data-i18n="detectsLabel">Also detects</span>
-            <div class="chip-row">
-              <span class="chip" data-kind="card">Card</span><span class="chip" data-kind="iban">IBAN</span><span class="chip" data-kind="secret">API key</span><span class="chip" data-kind="ip">IP address</span><span class="chip" data-kind="ssn">SSN</span><span class="chip" data-kind="crypto">Wallet address</span><span class="chip" data-kind="privateKey">Private key</span><span class="chip" data-kind="address">Street address</span><span class="chip" data-kind="custom">Custom term</span>
-            </div>
+          <div class="review-ready">
+            <span class="review-kicker" data-i18n="previewBadge">Preview</span>
+            <h3 data-i18n="previewHeadline">See what stays private.</h3>
+            <p data-i18n="previewExplain">An example of the text you could share after redaction.</p>
+            <label class="compare-toggle"><input id="compare-redaction" type="checkbox"><span data-i18n="compareAction">Show redacted version</span><i aria-hidden="true"></i></label>
+            <div class="preview-scenarios" role="group" aria-label="Preview scenario"><button type="button" data-preview="personal" aria-pressed="true">Personal data</button><button type="button" data-preview="credential" aria-pressed="false">Credentials</button></div>
+            <div class="compare-paper"><span class="compare-original">Hi <mark>Marco Rossi</mark>, send the invoice to <mark>m.rossi@acme.com</mark>.</span><span class="compare-redacted">Hi <em>[NAME]</em>, send the invoice to <em>[EMAIL]</em>.</span></div>
+            <button type="button" class="sample-chip preview-use" data-sample="email" id="preview-use">Try this type of check →</button>
+            <p class="compare-caption" data-i18n="previewLabel">Example result — not your prompt</p>
           </div>
         </div>
 

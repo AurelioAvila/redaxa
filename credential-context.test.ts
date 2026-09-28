@@ -51,3 +51,21 @@ assert.equal(same.length,2);assert.equal(same[0].fingerprint,same[1].fingerprint
 console.log('Credential accuracy: provider prefixes, Bearer normalization, public keys, strict issuer/JWT shape, context and secret-free metadata passed.');
 
 assert.equal(inspectFile('config.env',jwt({role:['admin']}))[0].severity,'high','Role arrays do not establish a privileged claim');
+
+// Explicit examples must not inflate live alerts; ambiguous tokens remain reviewable.
+for(const value of ['Bearer YOUR_ACCESS_TOKEN_HERE','Bearer replace_with_your_api_key','sk-your_api_key_here']) {
+ assert.equal(inspectFile('.env',value,false,true).length,0,value);
+ assert.equal(inspectPrompt(value).findings.filter(f=>f.kind==='secret').length,0,value);
+}
+for(const value of ['sk-'+suffix,'Bearer opaqueUnattributedCredential12345']) {
+ const finding=inspectFile('README.md',value)[0];
+ assert.equal(finding.disposition,'review');
+ assert.equal(finding.confidence,'low');
+ assert.equal(finding.severity,'medium');
+}
+const explicit=inspectFile('.env','OPENAI_API_KEY="sk-'+suffix+'"')[0];
+assert.equal(explicit.confidence,'medium');
+assert.equal(explicit.severity,'high');
+assert.equal(inspectFile('fixtures/example.env','TOKEN=ghp_'+suffix)[0].severity,'critical','An example filename must not suppress a provider-specific credential');
+assert.equal(inspectFile('token.txt',jwt({sub:'example'}, {alg:'none'}),false,true).length,0,'Unsigned data is not presented as a signed access token');
+console.log('Precision regressions: explicit placeholders, generic signals, assignment evidence and unsigned JWTs passed.');

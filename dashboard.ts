@@ -13,16 +13,17 @@ const storageKey = "redaxa.personal-history.v1";
 const preferencesKey = "redaxa.personal-preferences.v1";
 const maxPromptLength = 10_000;
 
-const defaultPreferences: Preferences = { language: "en", theme: "ocean", scanMode: "standard", includePersonalData: true, includeCredentials: true, includeFinancialData: true, saveHistory: true, autoClearAfterCopy: false, showRawValues: true, customTerms: [] };
+const defaultPreferences: Preferences = { language: "en", theme: "graphite", scanMode: "standard", includePersonalData: true, includeCredentials: true, includeFinancialData: true, saveHistory: true, autoClearAfterCopy: false, showRawValues: true, customTerms: [] };
 
 const languageNames: Record<Language, string> = { en: "English", it: "Italiano", es: "Español", fr: "Français", de: "Deutsch" };
 const copyByLanguage: Record<Language, Record<string, string>> = {
   en: {
+    textMode: "Text for AI", textModeNote: "Remove private details before sending", repoMode: "GitHub repository", repoModeNote: "Find exposed credentials · Pro & Business", stepInput: "Add your text", stepReview: "Review what was found", stepCopy: "Copy a safer version", previewHeadline: "See what stays private.", previewExplain: "An example of the text you could share after redaction.", compareAction: "Show redacted version", sampleLead: "Start with a sample",
     workspace: "Workspace", privateCheck: "Check a prompt", recent: "Recent checks", account: "Account", plans: "Plans & pricing", preferences: "Preferences",
-    eyebrow: "Personal workspace", title: "Prompt check", subtitle: "Review sensitive details before sharing with AI.",
+    eyebrow: "Personal workspace", title: "Review before you share.", subtitle: "Find sensitive details in text for AI, or exposed credentials in a GitHub repository.",
     scan: "Inspect prompt →", clear: "Clear", history: "Recent local checks", clearHistory: "Clear history",
-    placeholder: "e.g. Draft a reply to Marco Rossi (m.rossi@acme.com) about the ACME invoice — my direct line is +39 02 5555 0180",
-    composerTitle: "Prompt to review", composerSub: "Paste your text below, then inspect it for sensitive data.", promptLabel: "Prompt to check",
+    placeholder: "Paste the text you want to check…",
+    composerTitle: "What are you about to share?", composerSub: "Paste your message, email or code. Nothing is sent to an AI provider.", promptLabel: "Prompt to check",
     tryLabel: "Try an example", sampleBrief: "Client brief", sampleApiKey: "API key", sampleEmail: "Email draft", samplePersonal: "Personal details",
     metaLabel: "Private scan — your prompt is never stored or logged.", howPrivacyWorks: "How privacy works", interfaceLanguage: "Interface language",
     scanModeStandard: "Standard — balanced checks", scanModeStrict: "Strict — careful review mode",
@@ -57,6 +58,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     previewBadge: "Preview", previewLabel: "example result — not your prompt", planNone: "No active plan", planNoneNote: "Choose a plan to run checks. Eligible new subscribers get a 7-day trial.", planTrial: "Free trial", planTrialNote: "Your trial covers unlimited checks. Add a plan to keep them running.", planActive: "Active plan", planActiveNote: "Unlimited checks and custom protected terms are on.", planDayOf: "Day {day} of {total}", planEndsToday: "Ends today", planDaysLeft: "{n} day left|{n} days left", foundInPrompt: "Found in your prompt"
   },
   it: {
+    textMode: "Testo per AI", textModeNote: "Rimuovi i dettagli privati prima di inviare", repoMode: "Repository GitHub", repoModeNote: "Trova chiavi e credenziali esposte", stepInput: "Aggiungi il testo", stepReview: "Rivedi i risultati", stepCopy: "Copia una versione più sicura", previewHeadline: "Scopri cosa resta privato.", previewExplain: "Un esempio del testo da condividere dopo la rimozione dei dati.", compareAction: "Mostra versione oscurata", sampleLead: "Inizia con un esempio",
     workspace: "Spazio di lavoro", privateCheck: "Controlla un prompt", recent: "Controlli recenti", account: "Account", plans: "Piani e prezzi", preferences: "Impostazioni",
     eyebrow: "Spazio personale", title: "Controllo prompt", subtitle: "Rivedi i dati sensibili prima della tua prossima conversazione con l’AI.",
     scan: "Controlla prompt →", clear: "Svuota", history: "Controlli locali recenti", clearHistory: "Cancella cronologia",
@@ -96,6 +98,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     previewBadge: "Anteprima", previewLabel: "risultato di esempio — non il tuo prompt", planNone: "Nessun piano attivo", planNoneNote: "Scegli un piano per eseguire controlli. La prova di 7 giorni è riservata ai nuovi abbonati idonei.", planTrial: "Prova gratuita", planTrialNote: "La prova include controlli illimitati. Aggiungi un piano per non interromperli.", planActive: "Piano attivo", planActiveNote: "Controlli illimitati e termini protetti personalizzati sono attivi.", planDayOf: "Giorno {day} di {total}", planEndsToday: "Scade oggi", planDaysLeft: "{n} giorno rimasto|{n} giorni rimasti", foundInPrompt: "Trovato nel tuo prompt"
   },
   es: {
+    textMode: "Texto para IA", textModeNote: "Elimina detalles privados antes de enviar", repoMode: "Repositorio GitHub", repoModeNote: "Encuentra claves y credenciales expuestas", stepInput: "Añade el texto", stepReview: "Revisa los resultados", stepCopy: "Copia una versión más segura", previewHeadline: "Mira qué se mantiene privado.", previewExplain: "Un ejemplo del texto que podrías compartir sin datos sensibles.", compareAction: "Mostrar versión redactada", sampleLead: "Empieza con un ejemplo",
     workspace: "Espacio de trabajo", privateCheck: "Revisar un prompt", recent: "Revisiones recientes", account: "Cuenta", plans: "Planes y precios", preferences: "Preferencias",
     eyebrow: "Espacio personal", title: "Revisión de prompts", subtitle: "Revisa un prompt antes de enviarlo a una herramienta de IA.",
     scan: "Revisar prompt →", clear: "Limpiar", history: "Revisiones locales recientes", clearHistory: "Borrar historial",
@@ -135,6 +138,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     previewBadge: "Vista previa", previewLabel: "resultado de ejemplo — no es tu prompt", planNone: "Sin plan activo", planNoneNote: "Elige un plan para hacer revisiones. La prueba de 7 días es para nuevos suscriptores elegibles.", planTrial: "Prueba gratuita", planTrialNote: "Tu prueba incluye revisiones ilimitadas. Añade un plan para no interrumpirlas.", planActive: "Plan activo", planActiveNote: "Revisiones ilimitadas y términos protegidos propios están activos.", planDayOf: "Día {day} de {total}", planEndsToday: "Termina hoy", planDaysLeft: "Queda {n} día|Quedan {n} días", foundInPrompt: "Encontrado en tu prompt"
   },
   fr: {
+    textMode: "Texte pour IA", textModeNote: "Retirez les détails privés avant envoi", repoMode: "Dépôt GitHub", repoModeNote: "Repérez les clés et identifiants exposés", stepInput: "Ajoutez votre texte", stepReview: "Examinez les résultats", stepCopy: "Copiez une version plus sûre", previewHeadline: "Voyez ce qui reste privé.", previewExplain: "Un exemple du texte à partager après masquage des données.", compareAction: "Afficher la version masquée", sampleLead: "Commencez par un exemple",
     workspace: "Espace de travail", privateCheck: "Vérifier un prompt", recent: "Vérifications récentes", account: "Compte", plans: "Offres et tarifs", preferences: "Préférences",
     eyebrow: "Espace personnel", title: "Vérification du prompt", subtitle: "Vérifiez un prompt avant de l’envoyer à un outil d’IA.",
     scan: "Vérifier le prompt →", clear: "Effacer", history: "Vérifications locales récentes", clearHistory: "Effacer l’historique",
@@ -174,6 +178,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     previewBadge: "Aperçu", previewLabel: "résultat d’exemple — pas votre prompt", planNone: "Aucune offre active", planNoneNote: "Choisissez une offre pour lancer des vérifications. L’essai de 7 jours est réservé aux nouveaux abonnés éligibles.", planTrial: "Essai gratuit", planTrialNote: "Votre essai couvre des vérifications illimitées. Ajoutez une offre pour les poursuivre.", planActive: "Offre active", planActiveNote: "Vérifications illimitées et termes protégés personnalisés sont actifs.", planDayOf: "Jour {day} sur {total}", planEndsToday: "Se termine aujourd’hui", planDaysLeft: "{n} jour restant|{n} jours restants", foundInPrompt: "Trouvé dans votre prompt"
   },
   de: {
+    textMode: "Text für KI", textModeNote: "Private Angaben vor dem Senden entfernen", repoMode: "GitHub-Repository", repoModeNote: "Offengelegte Schlüssel und Zugangsdaten finden", stepInput: "Text hinzufügen", stepReview: "Ergebnisse prüfen", stepCopy: "Sicherere Version kopieren", previewHeadline: "Sehen Sie, was privat bleibt.", previewExplain: "Ein Beispieltext nach dem Entfernen sensibler Angaben.", compareAction: "Bereinigte Version anzeigen", sampleLead: "Mit einem Beispiel beginnen",
     workspace: "Arbeitsbereich", privateCheck: "Prompt prüfen", recent: "Letzte Prüfungen", account: "Konto", plans: "Tarife & Preise", preferences: "Einstellungen",
     eyebrow: "Persönlicher Bereich", title: "Prompt prüfen", subtitle: "Prüfen Sie einen Prompt, bevor er ein KI-Tool erreicht.",
     scan: "Prompt prüfen →", clear: "Leeren", history: "Letzte lokale Prüfungen", clearHistory: "Verlauf löschen",
@@ -313,7 +318,7 @@ function readPreferences(): Preferences {
       return {
         ...defaultPreferences,
         language: ["en", "it", "es", "fr", "de"].includes(String(candidate.language)) ? candidate.language as Language : "en",
-        theme: themes.some((t) => t.code === candidate.theme) ? candidate.theme as ThemeName : "ocean",
+        theme: themes.some((t) => t.code === candidate.theme) ? candidate.theme as ThemeName : "graphite",
         scanMode: candidate.scanMode === "strict" ? "strict" : "standard",
         includePersonalData: candidate.includePersonalData !== false,
         includeCredentials: candidate.includeCredentials !== false,
@@ -1358,7 +1363,7 @@ export function mountDashboard(): void {
   const revealResults = (): void => {
     avoidCornerOverlap();
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const singleColumn = window.matchMedia("(max-width: 1180px)").matches;
+    const singleColumn = getComputedStyle(workspace).gridTemplateColumns.split(" ").length === 1;
     const target = singleColumn ? resultsCard : workspace;
     target.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
     resultsScroll.scrollTop = 0;
@@ -1396,6 +1401,7 @@ export function mountDashboard(): void {
     const sourceText = prompt.value;
     scanInFlight = true;
     scanButton.disabled = true;
+    scanButton.setAttribute("aria-busy", "true");
     clearPrompt.disabled = true; required<HTMLButtonElement>("#clear-results").disabled = true;
     scanButton.textContent = words().checking;
     try {
@@ -1427,6 +1433,7 @@ export function mountDashboard(): void {
       }
     } finally {
       scanInFlight = false;
+      scanButton.removeAttribute("aria-busy");
       clearPrompt.disabled = false; required<HTMLButtonElement>("#clear-results").disabled = false;
       scanButton.textContent = words().scan;
       syncScanButton();
@@ -1450,6 +1457,16 @@ export function mountDashboard(): void {
       syncScanButton();
       syncChipSelection();
       prompt.focus();
+    });
+  });
+
+  document.querySelectorAll<HTMLButtonElement>('[data-preview]').forEach(button => {
+    button.addEventListener('click', () => {
+      const credential = button.dataset.preview === 'credential';
+      document.querySelectorAll('[data-preview]').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+      required('.compare-original').innerHTML = credential ? 'Connect with API_KEY=<mark>example-key-not-real</mark>.' : 'Hi <mark>Marco Rossi</mark>, send the invoice to <mark>m.rossi@acme.com</mark>.';
+      required('.compare-redacted').innerHTML = credential ? 'Connect with API_KEY=<em>[CREDENTIAL]</em>.' : 'Hi <em>[NAME]</em>, send the invoice to <em>[EMAIL]</em>.';
+      required<HTMLButtonElement>('#preview-use').dataset.sample = credential ? 'apikey' : 'email';
     });
   });
 

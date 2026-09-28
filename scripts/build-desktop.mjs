@@ -12,7 +12,7 @@ if(dirname(output)!==resolve(root)||basename(output)!=='desktop-dist')throw new 
 rmSync(output, { recursive: true, force: true });
 mkdirSync(output, { recursive: true });
 
-for (const file of ["dashboard.html", "github.html", "repository.css", "brand-system.css", "themes.css", "auth.css", "manifest.webmanifest", "service-worker.js"]) {
+for (const file of ["dashboard.html", "github.html", "repository.css", "brand-system.css", "themes.css", "theme-boot.js", "auth.css", "manifest.webmanifest", "service-worker.js"]) {
   cpSync(resolve(root, file), resolve(output, file));
 }
 // The desktop product opens the focused workspace, not the public marketing landing page.

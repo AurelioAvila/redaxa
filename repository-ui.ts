@@ -31,29 +31,39 @@ function notifyApiKeys(count:number,demo=false,complete=false){
  if(message.textContent!==title+detail)message.replaceChildren(text('strong',title),text('p',detail));
  $('repository-api-review').hidden=!complete;
 }
+function setScanBusy(busy:boolean){
+ const button=$<HTMLButtonElement>('scan');
+ button.disabled=busy;
+ button.setAttribute('aria-busy',String(busy));
+ button.textContent=busy?(hostedRepository?'Opening…':'Scanning…'):(hostedRepository?'Open in Windows app →':'Check repository');
+ $('repository-loading').hidden=!busy||hostedRepository;
+ $('results').setAttribute('aria-busy',String(busy));
+}
 async function scan(demo=false){
+ if($<HTMLButtonElement>('scan').disabled)return;
  await bootConfig;
  resetApiNotice();
  if(hostedRepository){
   if(demo){$('empty').hidden=true;$('results').replaceChildren();render(repositoryExample());$('status').textContent='Illustrative example — no live scan';$('results').scrollIntoView({block:'start'});return;}
   const repository=$<HTMLInputElement>('repo-url').value.trim();
   if(!/^https:\/\/github\.com\/[A-Za-z0-9_-]+\/[A-Za-z0-9_.-]+\/?$/.test(repository)){$('status').textContent='Use the public repository home URL on https://github.com.';return;}
+  setScanBusy(true);
   try{const res=await fetch('/api/account',{cache:'no-store'});const account=await res.json();const entitled=res.ok&&account.active===true&&(typeof account.repositoryAccess==='boolean'?account.repositoryAccess:['personal','pro','business'].includes(account.plan)&&['active','trialing'].includes(account.status));
    if(!entitled){window.promptShieldAuth?.requestAccess('Sign in with Pro or Business to review repositories.');$('status').textContent='Sign in with an active Pro or Business plan to continue.';return;}
    location.href='redaxa://repository?repo='+encodeURIComponent(repository);$('status').textContent='Opening Redaxa. If nothing happens, install the latest Windows app, then try again.';
-  }catch{$('status').textContent='Could not verify your subscription. Please try again.';}return;
+  }catch{$('status').textContent='Could not verify your subscription. Please try again.';}finally{setScanBusy(false);}return;
  }
  controller?.abort();const active=new AbortController();controller=active;const scanId=crypto.randomUUID();let pollingActive=true,pollBusy=false;
- $('clear-repository').setAttribute('disabled','');$('scan').setAttribute('disabled','');$('demo').setAttribute('disabled','');$('cancel').hidden=false;$('results').replaceChildren();$('empty').hidden=true;
+ setScanBusy(true);$('clear-repository').setAttribute('disabled','');$('demo').setAttribute('disabled','');$('cancel').hidden=false;$('results').replaceChildren();$('empty').hidden=true;
  $('status').textContent=demo?'Preparing a synthetic example…':'Connecting and mapping the repository…';$('estimate').hidden=demo;$('estimate').textContent='Estimating time after current files are mapped. Optional Git history takes longer.';$('progress').hidden=false;
  const started=Date.now();
  const polling=demo?undefined:setInterval(()=>{if(pollBusy)return;pollBusy=true;void repositoryProgress(scanId,active.signal).then(p=>{if(!pollingActive||controller!==active||!p.stage)return;notifyApiKeys(p.apiKeyCandidates);$('status').textContent=`${p.stage} · ${p.checked.toLocaleString()} entries checked`;const elapsed=Math.round((Date.now()-started)/1000);$('estimate').textContent=p.estimatedRemainingSeconds?`About ${duration(p.estimatedRemainingSeconds)} remaining · ${duration(elapsed)} elapsed · estimate adjusts as new content is found`:`${duration(elapsed)} elapsed · estimating remaining time…`;}).catch(()=>{}).finally(()=>{pollBusy=false;});},1500);
  try{
   const response=await repositoryRequest({url:$<HTMLInputElement>('repo-url').value,demo,includeHistory:$<HTMLInputElement>('include-history')?.checked===true},active.signal,scanId);const data=await response.json();
   if(!response.ok){if(data.code==='PRO_REQUIRED')window.promptShieldAuth?.requestAccess('Sign in to your Pro account to check repositories.');throw new Error(data.error||'Unable to start this check.');}
-  render(data);$('status').textContent=data.demo?'Example complete — synthetic data':data.partial?'Review ready · some content could not be checked':'Review ready · inventory checked';$('estimate').textContent=`Completed in ${duration(data.durationMs/1000)}. Review distinct findings below.`;$('results').scrollIntoView({block:'start',behavior:'auto'});
+  $('repository-loading').hidden=true;render(data);$('status').textContent=data.demo?'Example complete — synthetic data':data.partial?'Review ready · some content could not be checked':'Review ready · inventory checked';$('estimate').textContent=`Completed in ${duration(data.durationMs/1000)}. Review distinct findings below.`;$('results').scrollIntoView({block:'start',behavior:'auto'});
  }catch(e){resetApiNotice();$('status').textContent=active.signal.aborted?'Scan cancelled. No report saved.':e instanceof Error?e.message:'Unable to scan.';$('empty').hidden=false;$('estimate').hidden=true;}
- finally{$('clear-repository').removeAttribute('disabled');pollingActive=false;clearInterval(polling);$('scan').removeAttribute('disabled');$('demo').removeAttribute('disabled');$('cancel').hidden=true;$('progress').hidden=true;}
+ finally{$('clear-repository').removeAttribute('disabled');pollingActive=false;clearInterval(polling);setScanBusy(false);$('demo').removeAttribute('disabled');$('cancel').hidden=true;$('progress').hidden=true;}
 }
 function render(r:RepoReport){
  const {summary:s,groups}=aggregateRepositoryReport(r);const root=$('results');
@@ -74,7 +84,7 @@ function render(r:RepoReport){
  const control=(parent:HTMLElement,section?:string)=>{const b=text('button','Show all','reveal-button') as HTMLButtonElement;b.type='button';b.onclick=()=>{const rows=reveals.filter(x=>!section||x.section===section);const show=!rows.every(x=>x.shown);for(const key of section?[section]:expandSections.keys())sectionReveal.set(key,show);rows.forEach(x=>x.set(show));if(show)for(const [key,expand] of expandSections)if(!section||section===key)expand();update();};controls.push({button:b,section});parent.append(b);};
  if(groups.length){control(summary);summary.append(text('p','Show all reveals every loaded finding, including additional pages and informational references. Section controls affect that section only.','muted'));}
  const row=(g:FindingGroup,section:string)=>{const card=text('article','','finding');const head=text('div','','finding-head');head.append(text('span',g.disposition==='reference'?'INFORMATIONAL':g.severity.toUpperCase()+' PRIORITY','badge '+(g.severity==='critical'||g.severity==='high'?'danger':'')),text('span',g.historyOnly?'HISTORY ONLY':'CURRENT FILES','muted'));card.append(head,text('h3',g.label),text('code',g.location?`${g.path} · ${g.location}`:`${g.path} : ${g.line}`));
- if(g.credential){const c=g.credential;const context=text('div','','credential-context');const identity=text('dl','','credential-identity');for(const [label,value] of [['Probable service',c.service],['Credential type',c.type]]){const item=text('div','');item.append(text('dt',label),text('dd',value));identity.append(item);}context.append(identity,text('p',c.evidence,'credential-evidence'));const response=text('div','','credential-response');response.append(text('strong',c.response),text('p',c.guidance));if(c.docs&&/^https:\/\//.test(c.docs)){const link=text('a','Official guidance ↗') as HTMLAnchorElement;link.href=c.docs;link.target='_blank';link.rel='noopener noreferrer';response.append(link);}context.append(response);card.append(context);}
+ if(g.credential){const c=g.credential;const context=text('div','','credential-context');const identity=text('dl','','credential-identity');for(const [label,value] of [['Probable service',c.service],['Credential type',c.type],['Detection confidence',g.confidence==='high'?'Strong pattern':g.confidence==='medium'?'Contextual match':'Needs confirmation']]){const item=text('div','');item.append(text('dt',label),text('dd',value));identity.append(item);}context.append(identity,text('p',c.evidence,'credential-evidence'));const response=text('div','','credential-response');response.append(text('strong',c.response),text('p',c.guidance));if(c.docs&&/^https:\/\//.test(c.docs)){const link=text('a','Official guidance ↗') as HTMLAnchorElement;link.href=c.docs;link.target='_blank';link.rel='noopener noreferrer';response.append(link);}context.append(response);card.append(context);}
  const value=text('code','•••• •••• ••••  Value hidden','masked');const bar=text('div','','value-row');const button=text('button','Show','reveal-button') as HTMLButtonElement;button.type='button';const state={shown:false,section,set:(show:boolean)=>{state.shown=show;value.textContent=show?(g.value??'Run a new scan to reveal this value.'):'•••• •••• ••••  Value hidden';button.textContent=show?'Hide':'Show';button.setAttribute('aria-pressed',String(show));button.setAttribute('aria-label',`${show?'Hide':'Show'} ${g.label}`);}};button.onclick=()=>{state.set(!state.shown);update();};reveals.push(state);state.set(sectionReveal.get(section)??false);bar.append(value,button);card.append(bar);const explanation=text('details','','finding-details');explanation.append(text('summary','Detection details'),text('p',g.reason));if(!g.credential)explanation.append(text('p',g.action));card.append(explanation);
  if(g.url&&/^https:\/\/github\.com\//.test(g.url)){const a=text('a','Open current file on GitHub ↗') as HTMLAnchorElement;a.href=g.url;a.target='_blank';a.rel='noopener noreferrer';card.append(a);}
  const locations=text('details','','occurrences');locations.append(text('summary',`${g.occurrenceCount} occurrence${g.occurrenceCount===1?'':'s'} · ${g.currentCount} current / ${g.historyCount} historical`));for(const o of g.occurrences){locations.append(text('code',`${o.path}${o.location?' · '+o.location:' : '+o.line}`));}card.append(locations);return card;};
