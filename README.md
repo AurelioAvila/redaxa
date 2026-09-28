@@ -25,12 +25,12 @@
 [Changelog](CHANGELOG.md) · [Privacy Policy](https://promptshield-beta.vercel.app/privacy.html) ·
 [Terms](https://promptshield-beta.vercel.app/terms.html)
 
-The [v0.4.4 Windows setup EXE](../../releases/tag/v0.4.4) was checked on September 26, 2026. Its SHA-256 is `3696db5f07add74a2e6c01586aeb2d90bff3b86fb84e784708863a2946bc739c`; its Authenticode signature identifies **Aurelio Avila** and includes a trusted timestamp. Its Tauri updater signature was also verified against the released installer. See the [Windows signing inventory and verification guide](https://github.com/AurelioAvila/.github/blob/master/CODE_SIGNING.md) to verify a downloaded file. This evidence applies to that specific setup EXE, not every release asset, future build, the web app or browser extension. Use [latest release](../../releases/latest) for current downloads and release notes; changes on the default branch may not yet be included in an installer.
+The [v0.4.5 Windows setup EXE](../../releases/tag/v0.4.5) was checked on September 26, 2026. Its SHA-256 is `002ab86f6159869aa7acd11e9725c66dc967a63df19339a456b83eb0cf4f0ae0`; its Authenticode signature identifies **Aurelio Avila** and includes a trusted timestamp. Both released installers were downloaded again and their publisher and Tauri updater signatures verified, including compatibility with the updater public key in 0.4.4. See the [Windows signing inventory and verification guide](https://github.com/AurelioAvila/.github/blob/master/CODE_SIGNING.md) to verify a downloaded file. This evidence applies to these release artifacts, not future builds, the web app or browser extension. Use [latest release](../../releases/latest) for current downloads and release notes; changes on the default branch may not yet be included in an installer.
 
-**WinGet status (September 26, 2026):** version 0.4.2 is available in the [official catalog](https://github.com/microsoft/winget-pkgs/tree/master/manifests/a/AurelioAvila/Redaxa). The [0.4.4 update](https://github.com/microsoft/winget-pkgs/pull/441593) has been submitted; the older 0.4.3 submission was closed as superseded. Until 0.4.4 is merged and indexed, install the latest signed version from [GitHub Releases](../../releases/latest).
+**WinGet status (September 26, 2026):** version 0.4.4 has been merged and published. The [0.4.5 update](https://github.com/microsoft/winget-pkgs/pull/441820) has been submitted and is awaiting Microsoft's checks and merge. Until it is indexed, use [GitHub Releases](../../releases/latest) for the latest signed installer. Run `winget source update` to refresh your local catalog.
 
 > The browser extension (source in [`browser-extension/`](browser-extension))
-> is available on the [Chrome Web Store](https://chromewebstore.google.com/detail/redaxa/clkobbjoaegkgnmkibjghlboeoplpmok). Extension source **0.4.3** adds manual text checks without an account (5 per 24 hours, shared by network), redacted output and copying inside the popup. Automatic checks require an active trial or subscription; Windows repository checks require Pro or Business. This source update is prepared locally and is not yet the store version. Desktop and extension versions are independent.
+> is available on the [Chrome Web Store](https://chromewebstore.google.com/detail/redaxa/clkobbjoaegkgnmkibjghlboeoplpmok). Extension **0.4.3** adds manual text checks without an account (5 per 24 hours, shared by network), redacted output, copying and clearer credential context inside the popup. Automatic checks require an active trial or subscription; Windows repository checks require Pro or Business. Version 0.4.3 was submitted on September 26, 2026 and is awaiting Google's review, with automatic publication after approval; the console still lists 0.4.0 as published. Desktop and extension versions are independent.
 
 ---
 
@@ -43,6 +43,8 @@ hit enter, using patterns and category-specific checks: Luhn for card-number
 candidates, mod-97 for IBANs and reserved-range filtering for SSNs. These
 checks reduce some false positives; they do not prove that a match is
 genuine or that every sensitive value will be found.
+
+For a worked example, see [how to redact sensitive data before ChatGPT](https://promptshield-beta.vercel.app/redact-sensitive-data-before-chatgpt.html).
 
 ---
 
