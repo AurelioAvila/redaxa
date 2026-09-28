@@ -10,9 +10,8 @@ export type RepositoryAssessment = {
 const isHistorical=(path:string)=>/\[(?:history |historical submodule |commit message |tag message )/.test(path);
 const rank:Record<string,number>={critical:4,high:3,medium:2,low:1,info:0};
 
-export function apiKeyCandidates(groups:FindingGroup[]):FindingGroup[] {
-  return groups.filter(g=>g.disposition==='review'&&g.kind==='secret');
-}
+export const isApiKeyCandidate=(g:RepoFinding):boolean=>g.disposition==='review'&&g.kind==='secret'&&g.confidence!=='low';
+export function apiKeyCandidates(groups:FindingGroup[]):FindingGroup[] { return groups.filter(isApiKeyCandidate); }
 
 /** Merge by scanner-issued kind/value identity, never by the redaction marker.
  * Missing identities deliberately remain separate unless an explicit value exists.
@@ -59,7 +58,7 @@ export function reportToText(report:RepoReport):string {
   ];
   for(const g of groups){
     if(g.credential)lines.push(`Probable service: ${g.credential.service}`,`Credential type: ${g.credential.type}`,`Evidence: ${g.credential.evidence}`,`Recommended action: ${g.credential.response}`,g.credential.guidance);
-    lines.push(`${g.disposition==='reference'?'INFORMATIONAL':g.severity.toUpperCase()+' PRIORITY'} — ${g.label} — ${g.historyOnly?'history only':'current snapshot'}`,`Value: [REDACTED]`,`Occurrences: ${g.occurrenceCount} (${g.currentCount} current, ${g.historyCount} historical)`,g.reason,g.action);
+    lines.push(`${g.disposition==='reference'?'INFORMATIONAL':g.severity.toUpperCase()+' PRIORITY'} — ${g.label} — ${g.historyOnly?'history only':'current snapshot'}`,`Detection confidence: ${g.confidence??'not specified'} (not a validity check)`,`Value: [REDACTED]`,`Occurrences: ${g.occurrenceCount} (${g.currentCount} current, ${g.historyCount} historical)`,g.reason,g.action);
     for(const o of g.occurrences)lines.push(`  ${o.path}${o.location?' — '+o.location:':'+o.line}${o.historical?' [historical]':''}`);
     lines.push('');
   }

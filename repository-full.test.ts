@@ -15,6 +15,10 @@ console.log('Extended scan helpers passed: binary ASCII/UTF-16 extraction, secre
 
 const example=inspectFile('.env.example','EMAIL=you@example.com',true)[0];
 const secret=inspectFile('settings.env','TOKEN='+key,true).find(f=>f.kind==='secret')!;
+const weak=inspectFile('README.md','Bearer opaqueUnattributedCredential12345',true)[0];
+const privateKey={...secret,kind:'privateKey',fingerprint:'private-key-fixture'};
+assert.equal(retainFinding([privateKey],weak,1),false,'A weak generic token cannot evict a critical private key');
+const weakOnly=[weak];assert.equal(retainFinding(weakOnly,privateKey,1),true);
 const retained=[example,example];assert.equal(retainFinding(retained,secret,2),true);
 assert.ok(retained.includes(secret));assert.equal(retained.length,2);
 assert.equal(retainFinding([secret,secret],example,2),false);

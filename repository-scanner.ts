@@ -54,7 +54,8 @@ function classify(f:Finding,path:string,text:string,offset:number):{disposition:
   if(f.kind==='secret' && /^eyJ/.test(credentialValue(f.value))) {
     try {
       const claims=jwtClaims(f.value);if(!claims)throw new Error('Invalid JWT structure');
-      const {payload}=claims;
+      const {payload,header}=claims;
+      if(String(header.alg).toLowerCase()==='none')return {...reference('The header declares alg=none; this is not evidence of a signed access token. This file check does not test whether an application improperly accepts unsigned tokens.'),label:'JWT · unsigned example or data'};
       const prefix=text.slice(Math.max(0,offset-2048),offset).match(/https?:\/\/[^\s<>"']*$/)?.[0];
       let unsubscribeLink=false;try{unsubscribeLink=!!prefix&&(/(?:^|\/)unsubscribe(?:[/.]|$)/i.test(new URL(prefix+f.value).pathname)||/(?:\[\s*unsubscribe\s*\]\s*\(|\bunsubscribe\s*[:\-]?\s*[(<]?)\s*$/i.test(text.slice(Math.max(0,offset-2048),offset-prefix.length)));}catch{}
       if(payload.role==='anon'&&supabaseIssuer(payload.iss))return {...reference('Claims match a public Supabase anonymous client token. Signature and database policies are not verified by this exposure check.'),label:'JWT · public Supabase client token'};
@@ -86,6 +87,14 @@ function classify(f:Finding,path:string,text:string,offset:number):{disposition:
     }
     if(f.kind==='secret'&&/^AIza/.test(credentialValue(f.value)))return {disposition:'review',severity:'medium',confidence:'medium',reason:'Google API key pattern. Some browser keys are intentionally public; verify application/API restrictions and billing scope before deciding whether rotation is needed.'};
     if(f.kind==='secret'&&/^(?:AKIA|ASIA)/.test(credentialValue(f.value)))return {disposition:'review',severity:'medium',confidence:'high',reason:'AWS access key identifier only. Check whether its paired secret and any session token are exposed before treating this as usable account access.'};
+    if(f.kind==='secret') {
+      const token=credentialValue(f.value);
+      const providerSpecific=/^(?:sk-(?:proj-|ant-)|[sr]k_(?:live|test)_|sb_secret_|github_pat_|gh[pousr]_|xox[baprs]-|xapp-)/.test(token);
+      if(!providerSpecific){
+        const assigned=/\b(?:OPENAI_API_KEY|API_KEY|ACCESS_TOKEN|AUTH_TOKEN)["']?\s*[:=]\s*["']?$/i.test(before);
+        return {disposition:'review',severity:assigned?'high':'medium',confidence:assigned?'medium':'low',label:'Unattributed token candidate',reason:assigned?'A literal token appears beside an explicit credential assignment, but its format does not establish a provider. Review the owner and intended use; validity is unverified.':'Only a generic token prefix or Bearer label matched. It could be an example or ordinary identifier. Kept for context, without a high-confidence API alert; this is not proof of a working secret.'};
+      }
+    }
     return {disposition:'review',confidence:'high',reason:exampleFile?'Credential-shaped value in an example/test file. It still needs review: example files can contain genuine secrets.':'Credential pattern matched. Validity is not tested; review and rotate if genuine.'};
   }
   if(f.kind==='email'&&/\.(?:mp4|mov|webm|mp3|wav|png|jpe?g|webp|ico)(?:$|\s|!)/i.test(path)) {

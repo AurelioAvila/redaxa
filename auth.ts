@@ -398,6 +398,7 @@ function installDialog(): {
 }
 
 function installStylesheet(): void {
+  if (document.querySelector('link[href="auth.css"],link[href="/auth.css"]')) return;
   const stylesheet = document.createElement("link");
   stylesheet.rel = "stylesheet";
   stylesheet.href = "auth.css";
@@ -405,7 +406,7 @@ function installStylesheet(): void {
 }
 
 async function loadConfig(): Promise<AuthConfig> {
-  const response = await authFetch(`${apiBase}/api/auth-config`, { cache: "no-store" });
+  const response = await authFetch(`${apiBase}/api/auth-config`, { cache: "no-store", signal: AbortSignal.timeout(10_000) });
   if (!response.ok) return { configured: false };
   return response.json() as Promise<AuthConfig>;
 }
@@ -422,7 +423,7 @@ async function loadSession(): Promise<string | null> {
     } catch { return (await readDesktopSession())?.email ?? null; }
   }
   try {
-    const response = await authFetch(`${apiBase}/api/auth/session`, { cache: "no-store" });
+    const response = await authFetch(`${apiBase}/api/auth/session`, { cache: "no-store", signal: AbortSignal.timeout(15_000) });
     if (!response.ok) return null;
     const payload = await response.json() as { email?: string | null };
     return payload.email ?? null;
@@ -447,6 +448,7 @@ export type AccountState = { active: boolean; status: string | null; currentPeri
 function publishAccountState(state: AccountState | null): void {
   latestAccount = state;
   document.dispatchEvent(new CustomEvent("redaxa:account", { detail: state }));
+  document.documentElement.removeAttribute("data-plan-loading");
 }
 
 async function refreshEntitlement(): Promise<void> {
@@ -458,7 +460,7 @@ async function refreshEntitlement(): Promise<void> {
       if (!token) { accountActive = false; publishAccountState(null); return; }
       headers.Authorization = `Bearer ${token}`;
     }
-    const response = await authFetch(`${apiBase}/api/account`, { headers, cache: "no-store" });
+    const response = await authFetch(`${apiBase}/api/account`, { headers, cache: "no-store", signal: AbortSignal.timeout(15_000) });
     if (!response.ok) { accountActive = false; publishAccountState(null); return; }
     const payload = await response.json() as { active?: boolean; status?: string | null; currentPeriodEnd?: string | null; plan?: string | null; repositoryAccess?: boolean; settings?: SyncedSettings | null };
     accountActive = Boolean(payload.active);
@@ -481,9 +483,7 @@ async function boot(): Promise<void> {
   const controls = accountControls();
   const dialog = installDialog();
 
-  config = await loadConfig().catch(() => ({ configured: false }));
-  currentEmail = await loadSession();
-  await refreshEntitlement();
+  const configReady = loadConfig().catch(() => ({ configured: false }));
   window.addEventListener("focus", () => { void refreshEntitlement(); });
   // Set only while the recovery link's own screen is open, and cleared the
   // moment it is used. Its presence is what tells the one submit handler
@@ -515,8 +515,12 @@ async function boot(): Promise<void> {
     controls.email.textContent = email ?? "";
     void loadProfilePhoto(email);
     if (!email) { controls.closeMenu(); publishAccountState(null); }
+    document.documentElement.removeAttribute("data-account-loading");
   };
+  currentEmail = await loadSession();
   renderAccount(currentEmail);
+  await refreshEntitlement();
+  config = await configReady;
 
   // Team invite links (?invite=TOKEN) point at a teammate who may not have an
   // account yet -- the token is parked in localStorage so it survives the
