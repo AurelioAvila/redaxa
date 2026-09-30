@@ -5,19 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Call the Redaxa scan API from your own scripts and pipelines to flag personal data, credentials and secrets in text. Authentication, limits and examples." />
     <title>Scan API for Prompt Redaction | Redaxa</title>
-    <link rel="canonical" href="https://promptshield-beta.vercel.app/api-docs.html" />
+    <link rel="canonical" href="https://redaxa.getcertsprint.com/api-docs.html" />
     <meta property="og:type" content="article" />
     <meta property="og:site_name" content="Redaxa" />
     <meta property="og:title" content="Scan API for Prompt Redaction | Redaxa" />
     <meta property="og:description" content="Call the Redaxa scan API from your own scripts and pipelines to flag personal data, credentials and secrets in text." />
-    <meta property="og:url" content="https://promptshield-beta.vercel.app/api-docs.html" />
-    <meta property="og:image" content="https://promptshield-beta.vercel.app/og-image.png" />
+    <meta property="og:url" content="https://redaxa.getcertsprint.com/api-docs.html" />
+    <meta property="og:image" content="https://redaxa.getcertsprint.com/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Scan API for Prompt Redaction | Redaxa" />
     <meta name="twitter:description" content="Call the Redaxa scan API from your own scripts and pipelines to flag personal data, credentials and secrets in text." />
-    <meta name="twitter:image" content="https://promptshield-beta.vercel.app/og-image.png" />
+    <meta name="twitter:image" content="https://redaxa.getcertsprint.com/og-image.png" />
     <link rel="icon" type="image/svg+xml" href="/outputs/redaxa-mark.svg" />
     <style>
       :root { --ink:#0c1322; --paper:#eff4fc; --muted:#a5b7d4; --line:#2c405e; --acid:#8cbbff; }
@@ -49,7 +49,7 @@
       <p>Up to 10 active keys per account; revoke any key from the same panel, effective immediately.</p>
 
       <h2>Scan a prompt</h2>
-      <pre><code>curl -s https://promptshield-beta.vercel.app/api/scan \
+      <pre><code>curl -s https://redaxa.getcertsprint.com/api/scan \
   -H "Authorization: Bearer psk_live_..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -84,7 +84,7 @@
       </ul>
 
       <h2>Read your activity</h2>
-      <pre><code>curl -s https://promptshield-beta.vercel.app/api/scan \
+      <pre><code>curl -s https://redaxa.getcertsprint.com/api/scan \
   -H "Authorization: Bearer psk_live_..."</code></pre>
       <p>Returns your last 50 scan events — metadata only (surface, detection kinds, decision). Organization owners and admins can add <code>?scope=org</code> for the whole team's events. There is no endpoint that returns prompt content, because none is ever stored.</p>
 
