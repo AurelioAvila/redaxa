@@ -123,7 +123,7 @@ export function subscriptionHtml(input: SubscriptionEmailInput): string {
   const dateLabel = trialing ? "First charge" : "Renews on";
 
   return `<!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -133,8 +133,8 @@ export function subscriptionHtml(input: SubscriptionEmailInput): string {
 <!-- The line an inbox shows next to the subject. Without it, clients scrape
      the first words of the body, which here is the eyebrow "Trial Started"
      repeated - the reader learns nothing they did not already see. -->
-<div style="display:none; max-height:0; overflow:hidden; opacity:0;">${escapeHtml(intro)}</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#050506" style="background:#050506; padding:48px 16px;">
+<div lang="en" dir="ltr" style="display:none; max-height:0; overflow:hidden; opacity:0;">${escapeHtml(intro)}</div>
+<table lang="en" dir="ltr" role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#050506" style="background:#050506; padding:48px 16px;">
   <tr>
     <td align="center">
       <table role="presentation" width="560" cellpadding="0" cellspacing="0" bgcolor="#0a0a0c" style="max-width:560px; width:100%; background:#0a0a0c; border:1px solid #2a2d33; border-radius:20px; overflow:hidden;">
@@ -298,7 +298,7 @@ async function send(to: string, subject: string, html: string, text: string, ide
       // promise in the copy that the transport quietly breaks is worse than
       // not making it: the customer writes, hears nothing, and concludes
       // there is nobody there.
-      body: JSON.stringify({ from, to, subject, html, text, reply_to: OWNER_INBOX }),
+      body: JSON.stringify({ from, to, subject, html, text, reply_to: "redaxa@getcertsprint.com" }),
     });
     if (!response.ok) {
       console.error("redaxa mail failed", response.status);
@@ -360,15 +360,15 @@ export function welcomeHtml(firstName: string | null | undefined, appUrl: string
   const name = escapeHtml(firstName || "there");
   const intro = "Redaxa helps you review prompts for sensitive details before sharing them with AI. Web and Windows checks are processed by Redaxa's scanner without storing the prompt text or forwarding it to an AI provider.";
   return `<!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Redaxa</title>
 </head>
 <body style="margin:0; padding:0; background:#050506; font-family:'Segoe UI', Arial, sans-serif;">
-<div style="display:none; max-height:0; overflow:hidden; opacity:0;">${escapeHtml(intro)}</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#050506" style="background:#050506; padding:48px 16px;">
+<div lang="en" dir="ltr" style="display:none; max-height:0; overflow:hidden; opacity:0;">${escapeHtml(intro)}</div>
+<table lang="en" dir="ltr" role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#050506" style="background:#050506; padding:48px 16px;">
   <tr>
     <td align="center">
       <table role="presentation" width="560" cellpadding="0" cellspacing="0" bgcolor="#0a0a0c" style="max-width:560px; width:100%; background:#0a0a0c; border:1px solid #2a2d33; border-radius:20px; overflow:hidden;">
@@ -459,15 +459,15 @@ export function passwordChangedHtml(firstName: string | null | undefined, when: 
   const name = escapeHtml(firstName || "there");
   const intro = `The password on your Redaxa account was changed on ${escapeHtml(when)}.`;
   return `<!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Redaxa</title>
 </head>
 <body style="margin:0; padding:0; background:#050506; font-family:'Segoe UI', Arial, sans-serif;">
-<div style="display:none; max-height:0; overflow:hidden; opacity:0;">${intro}</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#050506" style="background:#050506; padding:48px 16px;">
+<div lang="en" dir="ltr" style="display:none; max-height:0; overflow:hidden; opacity:0;">${intro}</div>
+<table lang="en" dir="ltr" role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#050506" style="background:#050506; padding:48px 16px;">
   <tr>
     <td align="center">
       <table role="presentation" width="560" cellpadding="0" cellspacing="0" bgcolor="#0a0a0c" style="max-width:560px; width:100%; background:#0a0a0c; border:1px solid #2a2d33; border-radius:20px; overflow:hidden;">
