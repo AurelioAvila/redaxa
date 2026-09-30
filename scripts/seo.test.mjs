@@ -12,12 +12,14 @@ for (const [, url, modified] of entries) {
   assert.equal(parsed.origin, origin);
   assert.equal(parsed.protocol, 'https:');
   const html = read(parsed.pathname === '/' ? 'index.html' : parsed.pathname.slice(1));
-  assert.equal([...html.matchAll(/rel="canonical"\s+href="([^"]+)"/g)].length, 1);
-  assert.ok(html.includes(`href="${url}"`), `${url}: canonical mismatch`);
+  const canonicals = [...html.matchAll(/rel="canonical"\s+href="([^"]+)"/g)];
+  assert.equal(canonicals.length, 1);
+  assert.equal(canonicals[0][1], url, `${url}: canonical mismatch`);
   assert.ok(html.includes(`property="og:url" content="${url}"`), `${url}: Open Graph mismatch`);
   assert.doesNotMatch(html, /name="robots"[^>]*noindex/);
   assert.match(modified, /^\d{4}-\d{2}-\d{2}$/);
   assert.ok(Number.isFinite(Date.parse(modified)) && modified <= new Date().toISOString().slice(0, 10));
+  assert.equal(new Date(modified).toISOString().slice(0, 10), modified);
 }
 for (const file of ['dashboard.html', 'github.html']) {
   assert.match(read(file), /name="robots"[^>]*noindex/);
