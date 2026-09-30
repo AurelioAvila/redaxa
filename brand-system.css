@@ -19,8 +19,8 @@
   --ink:var(--rx-text); --mut:var(--rx-muted); --dim:var(--theme-muted);
   --acid:var(--rx-action); --acid-hover:color-mix(in srgb,var(--theme-accent) 80%,white); --acid-ink:var(--rx-action-ink);
   --ok:var(--rx-mint); --r-lg:var(--rx-radius);
-  background:radial-gradient(ellipse at 75% 0,color-mix(in srgb,var(--theme-accent) 8%,transparent),transparent 48%),var(--rx-bg);
-  background-size:auto; font-family:var(--rx-font-ui);
+  background:radial-gradient(ellipse at 75% 0,color-mix(in srgb,var(--theme-accent) 8%,transparent),transparent 48%),linear-gradient(color-mix(in srgb,var(--theme-line) 24%,transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in srgb,var(--theme-line) 24%,transparent) 1px,transparent 1px),var(--rx-bg);
+  background-size:auto,48px 48px,48px 48px,auto; font-family:"Redaxa Inter",var(--rx-font-ui);
 }
 .redaxa-landing a {text-underline-offset:4px}
 .redaxa-landing button {min-height:36px}
@@ -34,7 +34,8 @@
 .rx-inline-link {color:var(--rx-violet);text-decoration:underline}
 
 /* Public product story */
-.redaxa-landing .frame {background:transparent;border-color:var(--theme-line);max-width:1320px}
+.redaxa-landing .frame {background:var(--theme-bg);border-color:var(--theme-line);max-width:1560px}
+@media(min-width:1440px){.redaxa-landing .frame{width:calc(100% - 96px)}}
 .redaxa-landing .nav {background:color-mix(in srgb,var(--theme-bg) 95%,transparent);border-color:var(--theme-line);height:76px}
 .redaxa-landing .brand {font-size:23px;gap:12px}
 .redaxa-landing .mark {width:34px;height:34px}
@@ -45,7 +46,12 @@
 .redaxa-landing .hero-meta {font-size:11px;line-height:1.8;max-width:510px;color:var(--theme-muted)}
 .redaxa-landing .hero-meta b {color:var(--theme-text)}
 .redaxa-landing .shield-card {padding:27px;border-radius:20px;background:linear-gradient(135deg,var(--theme-surface),var(--theme-inset));border-color:var(--theme-strong);box-shadow:0 24px 75px #0004;transform:none}
-.redaxa-landing .sc-raw,.redaxa-landing .scanner textarea {background:var(--theme-bg);border-color:var(--theme-line)}
+.redaxa-landing .sc-raw {background:var(--theme-bg);border-color:var(--theme-strong);color:var(--theme-text);font-size:14px}
+.redaxa-landing .sc-safe code,.redaxa-landing .safe-output pre {background:var(--theme-bg);color:var(--theme-text);border-color:var(--theme-strong);font-size:13px}
+.redaxa-landing .scanner textarea {background:var(--theme-bg);border-color:var(--theme-muted);color:var(--theme-text);caret-color:var(--theme-accent);font-size:16px;line-height:1.7}
+.redaxa-landing .scanner textarea::placeholder,.redaxa-workspace .editor::placeholder {color:var(--theme-muted);opacity:1}
+.redaxa-landing .scanner textarea:focus,.redaxa-workspace .editor:focus {border-color:var(--theme-accent);outline:2px solid var(--theme-accent);outline-offset:3px}
+.redaxa-landing .scan-area label {color:var(--theme-text);font-size:14px}
 .redaxa-landing .protect {background:var(--theme-inset)}
 .redaxa-landing .protect-item h2 {font-weight:650}
 .redaxa-landing .section h2 {letter-spacing:-.02em;font-weight:600}
@@ -291,6 +297,7 @@
  .redaxa-landing .nav{padding-inline:20px}.redaxa-landing .brand{font-size:20px}
  .redaxa-landing .hero-meta{font-size:11px}
 }
+@media(max-width:700px){.redaxa-landing .nav{height:auto;min-height:76px;flex-wrap:wrap;padding-block:14px;gap:12px}.redaxa-landing .nav-right{flex:1 1 240px;min-width:0;flex-wrap:wrap;justify-content:flex-end}.redaxa-landing .nav-right a{white-space:nowrap}.redaxa-landing .scanner-head{flex-wrap:wrap}}
 @media(prefers-reduced-motion:reduce){.redaxa-workspace *,.redaxa-landing *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 
 /* Operating workspace: graphite desk, compact rail and restrained theme accents. */
@@ -322,7 +329,7 @@
 .redaxa-workspace .composer{padding:24px;border:1px solid var(--theme-line);border-radius:12px;background:var(--theme-surface);box-shadow:0 6px 18px #00000014}
 .redaxa-workspace .composer h2{font-size:22px;font-weight:650;letter-spacing:-.025em}
 .redaxa-workspace .composer-sub{font-size:12px;margin-top:4px}
-.redaxa-workspace .editor{background:var(--theme-inset);border:1px solid var(--theme-line);border-radius:6px;font:400 14px/1.7 var(--rx-font-ui);padding:16px;height:180px}
+.redaxa-workspace .editor{background:var(--theme-bg);border:1px solid var(--theme-muted);border-radius:6px;color:var(--theme-text);caret-color:var(--theme-accent);font:400 16px/1.7 var(--rx-font-ui);padding:16px;height:180px}
 .redaxa-workspace .editor::placeholder{color:var(--theme-muted)}
 .redaxa-workspace .primary,.redaxa-workspace .small-btn{border-radius:6px;font-size:12px;font-weight:600}
 .redaxa-workspace .results{position:static;max-height:none;overflow:visible;background:var(--theme-inset);border:0;border-radius:12px}
@@ -363,9 +370,10 @@
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-menu-link span{display:none}
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-account-menu-head{padding:8px 7px 13px;gap:10px}
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-account-plan{font-size:11px}
-:is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-avatar-btn{padding:2px;border:1px solid var(--theme-strong);background:transparent}
+:is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-avatar-btn{width:44px;height:44px;padding:3px;display:grid;place-items:center;flex-shrink:0;border:1px solid var(--theme-strong);background:var(--theme-inset)}
+:is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-avatar-btn .ps-avatar{width:36px;height:36px;border-radius:50%;line-height:1}
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-avatar{overflow:hidden;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
-.ps-avatar img{width:100%;height:100%;object-fit:cover}
+.ps-avatar img{display:block;width:100%;height:100%;aspect-ratio:1;object-fit:cover;object-position:center;border-radius:inherit}
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-account-sheet{border:0;background:var(--theme-surface);font-family:var(--rx-font-ui)}
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-account-sheet h2{font-weight:520}
 .ps-profile-editor{display:flex;align-items:flex-start;gap:16px;padding:6px 0 22px}
