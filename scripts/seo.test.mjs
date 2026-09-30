@@ -6,6 +6,7 @@ const entries = [...read('sitemap.xml').matchAll(/<url>\s*<loc>([^<]+)<\/loc><la
 assert.equal(entries.length, 5);
 assert.equal(new Set(entries.map(entry => entry[1])).size, entries.length);
 const origin = new URL(entries[0][1]).origin;
+assert.equal(origin, 'https://redaxa.getcertsprint.com', 'Public metadata must use the verified branded domain.');
 assert.ok(read('robots.txt').includes(`Sitemap: ${origin}/sitemap.xml`));
 for (const [, url, modified] of entries) {
   const parsed = new URL(url);

@@ -595,3 +595,11 @@ export function parseJson(body: unknown): Json {
 }
 
 export const appUrl = (): string => process.env.APP_URL?.replace(/\/$/, "") ?? "https://promptshield-beta.vercel.app";
+
+// Keep browser billing on its verified site without trusting arbitrary return URLs.
+// Desktop and extension clients retain the configured production fallback.
+export function billingAppUrl(request: { headers?: Record<string, string | string[] | undefined> }): string {
+  const origin = request.headers?.origin;
+  return typeof origin === "string" && ["https://redaxa.getcertsprint.com", "https://promptshield-beta.vercel.app"].includes(origin)
+    ? origin : appUrl();
+}
