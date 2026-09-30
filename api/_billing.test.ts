@@ -10,6 +10,15 @@ process.env.STRIPE_SECRET_KEY = "sk_test_dummy";
 
 const billing = await import("./_billing.js");
 
+// Only exact verified browser origins may influence billing return destinations.
+for (const origin of ["https://redaxa.getcertsprint.com", "https://promptshield-beta.vercel.app"]) {
+  assert.equal(billing.billingAppUrl({ headers: { origin } }), origin);
+}
+for (const origin of [undefined, "https://evil.example", "https://redaxa.getcertsprint.com.evil.example", "https://redaxa.getcertsprint.com@evil.example", "https://redaxa.getcertsprint.com/path", "http://redaxa.getcertsprint.com", "https://tauri.localhost", ["https://redaxa.getcertsprint.com"]]) {
+  assert.equal(billing.billingAppUrl({ headers: { origin } }), billing.appUrl());
+}
+assert.equal(billing.billingAppUrl({}), billing.appUrl());
+
 type Headers = Record<string, string | string[]>;
 function mockResponse(): { setHeader(name: string, value: string | string[]): void; headers: Headers } {
   const headers: Headers = {};

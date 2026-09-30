@@ -7,4 +7,4 @@ Allow: /
 # and Google can still list a blocked URL from inbound links alone. Letting
 # the crawler fetch the page is what actually keeps it out of the index.
 
-Sitemap: https://promptshield-beta.vercel.app/sitemap.xml
+Sitemap: https://redaxa.getcertsprint.com/sitemap.xml
