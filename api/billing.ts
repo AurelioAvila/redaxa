@@ -1,4 +1,4 @@
-import { accountFor, appUrl, corsHeaders, parseJson, releaseCheckout, requireUser, reserveCheckout, saveCustomer, stripe } from "./_billing.js";
+import { accountFor, billingAppUrl, corsHeaders, parseJson, releaseCheckout, requireUser, reserveCheckout, saveCustomer, stripe } from "./_billing.js";
 import { clientIp, rateLimited } from "./_rateLimit.js";
 
 type RequestLike = { method?: string; body?: unknown; query?: Record<string, string | string[] | undefined>; headers?: Record<string, string | string[] | undefined> };
@@ -30,7 +30,7 @@ export default async function handler(request: RequestLike, response: ResponseLi
       const user = await requireUser(request, response);
       const account = await accountFor(user.id);
       if (!account?.stripe_customer_id) { response.status(400).json({ error: "No subscription is attached to this account yet." }); return; }
-      const session = await stripe.billingPortal.sessions.create({ customer: account.stripe_customer_id, return_url: `${appUrl()}/?billing=managed` });
+      const session = await stripe.billingPortal.sessions.create({ customer: account.stripe_customer_id, return_url: `${billingAppUrl(request)}/?billing=managed` });
       response.status(200).json({ url: session.url });
     } catch (error) {
       const message = error instanceof Error ? error.message : "PORTAL_ERROR";
@@ -73,8 +73,8 @@ export default async function handler(request: RequestLike, response: ResponseLi
           metadata: { redaxa_user_id: user.id, plan, interval, seats: String(seats) }
         },
         metadata: { redaxa_user_id: user.id, plan, interval, seats: String(seats) },
-        success_url: `${appUrl()}/?checkout=success`,
-        cancel_url: `${appUrl()}/?checkout=cancelled`
+        success_url: `${billingAppUrl(request)}/?checkout=success`,
+        cancel_url: `${billingAppUrl(request)}/?checkout=cancelled`
       }, { idempotencyKey: `ps-checkout-${user.id}-${Date.now()}` });
       response.status(200).json({ url: session.url });
     } catch (error) {

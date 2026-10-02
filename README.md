@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://promptshield-beta.vercel.app"><img src="https://img.shields.io/badge/TRY_IT_NOW-No_install%2C_no_SmartScreen-2E7D32?style=for-the-badge" alt="Try the web app, no install required"></a>
+  <a href="https://redaxa.getcertsprint.com"><img src="https://img.shields.io/badge/TRY_IT_NOW-No_install%2C_no_SmartScreen-2E7D32?style=for-the-badge" alt="Try the web app, no install required"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Proprietary-3DA639?style=for-the-badge" alt="Proprietary License"></a>
   <a href="../../releases"><img src="https://img.shields.io/github/v/release/AurelioAvila/redaxa?display_name=tag&style=for-the-badge&color=7C3AED" alt="Latest release"></a>
   <a href="https://github.com/microsoft/winget-pkgs/tree/master/manifests/a/AurelioAvila/Redaxa"><img src="https://img.shields.io/badge/WinGet-available-0078D4?style=for-the-badge" alt="WinGet catalog entry"></a>
@@ -18,16 +18,16 @@
 
 <p align="center"><sub>Want safer AI workflows? ⭐ Star Redaxa to follow new protections and help others find it.</sub></p>
 
-<p align="center"><sub><strong>Redaxa was previously known as PromptShield.</strong> The web app still uses the promptshield-beta.vercel.app address; existing links and releases remain valid.</sub></p>
+<p align="center"><sub><strong>Redaxa was previously known as PromptShield.</strong> The official web app is redaxa.getcertsprint.com; existing Vercel links and released clients remain supported.</sub></p>
 
-**Fastest way to try it — [web app](https://promptshield-beta.vercel.app), nothing to install** ·
+**Fastest way to try it — [web app](https://redaxa.getcertsprint.com), nothing to install** ·
 [⬇ Latest Windows desktop app](../../releases/latest) ·
-[Changelog](CHANGELOG.md) · [Privacy Policy](https://promptshield-beta.vercel.app/privacy.html) ·
-[Terms](https://promptshield-beta.vercel.app/terms.html)
+[Changelog](CHANGELOG.md) · [Privacy Policy](https://redaxa.getcertsprint.com/privacy.html) ·
+[Terms](https://redaxa.getcertsprint.com/terms.html)
 
 The [v0.4.5 Windows setup EXE](../../releases/tag/v0.4.5) was checked on September 26, 2026. Its SHA-256 is `002ab86f6159869aa7acd11e9725c66dc967a63df19339a456b83eb0cf4f0ae0`; its Authenticode signature identifies **Aurelio Avila** and includes a trusted timestamp. Both released installers were downloaded again and their publisher and Tauri updater signatures verified, including compatibility with the updater public key in 0.4.4. See the [Windows signing inventory and verification guide](https://github.com/AurelioAvila/.github/blob/master/CODE_SIGNING.md) to verify a downloaded file. This evidence applies to these release artifacts, not future builds, the web app or browser extension. Use [latest release](../../releases/latest) for current downloads and release notes; changes on the default branch may not yet be included in an installer.
 
-**WinGet status (September 28, 2026):** version 0.4.5 is available in the [official catalog](https://github.com/microsoft/winget-pkgs/tree/master/manifests/a/AurelioAvila/Redaxa). Download the latest signed version from [GitHub Releases](../../releases/latest).
+**WinGet status (September 30, 2026):** version 0.4.6 is available in the [official catalog](https://github.com/microsoft/winget-pkgs/tree/master/manifests/a/AurelioAvila/Redaxa), matching the latest stable GitHub release checked on this date. Download current official builds from [GitHub Releases](../../releases/latest); catalogs can lag behind future releases.
 
 > The browser extension (source in [`browser-extension/`](browser-extension))
 > is available on the [Chrome Web Store](https://chromewebstore.google.com/detail/redaxa/clkobbjoaegkgnmkibjghlboeoplpmok). Extension **0.4.3** adds manual text checks without an account (5 per 24 hours, shared by network), redacted output, copying and clearer credential context inside the popup. Automatic checks require an active trial or subscription; Windows repository checks require Pro or Business. Version 0.4.3 was submitted on September 26, 2026 and is awaiting Google's review, with automatic publication after approval; the console still lists 0.4.0 as published. Desktop and extension versions are independent.
@@ -44,7 +44,7 @@ candidates, mod-97 for IBANs and reserved-range filtering for SSNs. These
 checks reduce some false positives; they do not prove that a match is
 genuine or that every sensitive value will be found.
 
-For a worked example, see [how to redact sensitive data before ChatGPT](https://promptshield-beta.vercel.app/redact-sensitive-data-before-chatgpt.html).
+For a worked example, see [how to redact sensitive data before ChatGPT](https://redaxa.getcertsprint.com/redact-sensitive-data-before-chatgpt.html).
 
 ---
 
@@ -67,7 +67,7 @@ sensitive values outside the built-in rules.
 
 ### Review a GitHub repository on Windows
 
-Pro and Business users can check a public GitHub repository for possible exposed credentials in the Windows app. The focused check reads current files; an optional extended check includes accessible Git history, dependencies and supported archives. Redaxa prioritizes likely API keys and tokens, shows coverage and exclusions, and exports a redacted report. The repository check runs locally, unlike prompt scanning through Redaxa's backend. Findings need human review: Redaxa does not test whether a key works, revoke it, or perform a complete code vulnerability audit. [See the repository workflow](https://promptshield-beta.vercel.app/#repository) and [v0.4.1 release notes](RELEASE-NOTES-0.4.1.md).
+Pro and Business users can check a public GitHub repository for possible exposed credentials in the Windows app. The focused check reads current files; an optional extended check includes accessible Git history, dependencies and supported archives. Redaxa prioritizes likely API keys and tokens, shows coverage and exclusions, and exports a redacted report. The repository check runs locally, unlike prompt scanning through Redaxa's backend. Findings need human review: Redaxa does not test whether a key works, revoke it, or perform a complete code vulnerability audit. [See the repository workflow](https://redaxa.getcertsprint.com/#repository) and [v0.4.1 release notes](RELEASE-NOTES-0.4.1.md).
 
 ## For teams: the control layer
 
@@ -87,7 +87,7 @@ On the Business plan, a workspace is a real organization:
 
 ## Where it runs
 
-- **Web app** — [promptshield-beta.vercel.app](https://promptshield-beta.vercel.app), no install
+- **Web app** — [redaxa.getcertsprint.com](https://redaxa.getcertsprint.com), no install
 - **Windows desktop app** — this repo's installer, signs in once and stays signed in (session held in the OS credential store, not a file on disk)
 - **[Browser extension](https://chromewebstore.google.com/detail/redaxa/clkobbjoaegkgnmkibjghlboeoplpmok)** — a "Check" button injected into ChatGPT, Claude, Gemini, Copilot and Perplexity that scans whatever's in the composer before you send it
 
@@ -102,7 +102,7 @@ or classification service as part of scanning (`api/scan.ts` is regex/Luhn/
 mod-97 logic, no outbound calls), and the request body is used only to
 compute the response — never logged, stored, or forwarded anywhere; see
 [`api/scan.ts`](api/scan.ts) and the full
-[privacy policy](https://promptshield-beta.vercel.app/privacy.html). No
+[privacy policy](https://redaxa.getcertsprint.com/privacy.html). No
 analytics, no ad trackers, no selling data. The desktop app never handles
 your password directly for long — auth tokens live in Windows Credential
 Manager, not in a plain file.
@@ -159,3 +159,8 @@ custom term rather than relying on the built-in credential patterns.
 ## License
 
 Proprietary — all rights reserved. Source is visible for transparency; see [LICENSE](LICENSE) for terms. Not open for reuse, modification, or redistribution.
+
+## Support
+
+For support or billing questions, email [redaxa@getcertsprint.com](mailto:redaxa@getcertsprint.com). Include the app version and steps to reproduce the problem. Never send passwords, access tokens, private keys or payment card details, and remove sensitive information from screenshots and logs.
+
