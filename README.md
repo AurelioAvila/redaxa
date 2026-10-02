@@ -115,9 +115,17 @@ npm test
 npm start
 ```
 
+The team security tests create and remove a disposable local PostgreSQL
+cluster; they never connect to an existing database. Install PostgreSQL and
+make `pg_config` available on Unix, or use PostgreSQL 17's default Windows
+installation. Set `POSTGRES_BIN` to its `bin` directory for other locations.
+Run the tests as an ordinary OS user, not Unix root.
+
 Open `http://127.0.0.1:4173/dashboard.html`. Account creation and billing
 require the Vercel deployment (`api/`) with Supabase and Stripe configured
 — see `.env.example`.
+Apply `supabase/migrations/20261002_team_lifecycle.sql` before deploying the
+updated team API. These transactional RPCs are restricted to the service role.
 
 To build the Windows desktop app:
 
