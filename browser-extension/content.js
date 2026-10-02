@@ -220,8 +220,8 @@ function renderFindings(body, result, composer, onHandled) {
   });
 }
 
-async function runScan(text) {
-  const result = await send({ type: "SCAN", text, options: { includePersonalData: true, includeCredentials: true, includeFinancialData: true } });
+async function runScan(text, requireAccount = false) {
+  const result = await send({ type: "SCAN", text, requireAccount, options: { includePersonalData: true, includeCredentials: true, includeFinancialData: true } });
   return { ...result, checkedText: text };
 }
 
@@ -248,18 +248,25 @@ function sameCheckedPrompt(composer, checkedText) {
 // scripts run, and it intercepts both the Enter keydown AND the Send button
 // click/mousedown/form-submit, not just one path.
 // ---------------------------------------------------------------------------
-let statusCache = { signedIn: false, active: false };
+let statusCache = { unavailable: true };
 let statusCheckedAt = 0;
 let bypassArm = false;
+let statusRefresh = null;
+let gatePending = false;
 
-async function refreshStatus() {
-  try {
-    statusCache = await send({ type: "STATUS" });
-  } catch {
-    statusCache = { signedIn: false, active: false };
-  }
-  statusCheckedAt = Date.now();
-  return statusCache;
+function refreshStatus() {
+  if (statusRefresh) return statusRefresh;
+  statusRefresh = send({ type: "STATUS" }).then(status => {
+    if (typeof status?.signedIn !== "boolean" || (status.signedIn && typeof status.active !== "boolean")) {
+      throw new Error("Incomplete account status.");
+    }
+    return status;
+  }).catch(() => ({ ...statusCache, active: false, unavailable: true })).then(status => {
+    statusCache = status;
+    statusCheckedAt = Date.now();
+    return status;
+  }).finally(() => { statusRefresh = null; });
+  return statusRefresh;
 }
 
 async function currentStatus() {
@@ -302,6 +309,8 @@ function resendVia(kind, target) {
 }
 
 async function gate(composer, resend) {
+  if (gatePending) return;
+  gatePending = true;
   const text = composerText(composer).trim();
   const sendChecked = () => { if (sameCheckedPrompt(composer, text)) { closeModal(); resend(); } };
   showModal(`
@@ -310,21 +319,25 @@ async function gate(composer, resend) {
   `);
   let result;
   try {
-    result = await runScan(text);
+    const status = await currentStatus();
+    if (status.unavailable) throw new Error("Redaxa could not verify your account. Retry when the service is available.");
+    if (!status.signedIn || !status.active) { sendChecked(); return; }
+    result = await runScan(text, true);
   } catch (error) {
     showModal(`
       <div class="ps-int-head">Redaxa<button type="button" class="ps-int-x" id="ps-int-close">×</button></div>
       <div class="ps-int-body">
         <p class="ps-empty">${escapeHtml(error.message || "Check failed.")}</p>
-        <button type="button" class="ps-int-secondary" id="ps-int-send-anyway">Send anyway</button>
+        <p class="ps-empty">Your prompt has not been sent. Close this notice and retry the check.</p>
       </div>
     `);
     modalEl.querySelector("#ps-int-close")?.addEventListener("click", closeModal);
-    modalEl.querySelector("#ps-int-send-anyway")?.addEventListener("click", sendChecked);
     return;
+  } finally {
+    gatePending = false;
   }
 
-  if (!result.findings.length) {
+  if (!result.findings.length && result.decision?.action !== "block") {
     sendChecked();
     return;
   }
@@ -361,7 +374,7 @@ function withinComposer(node, composer) {
 document.addEventListener("keydown", (event) => {
   if (bypassArm) { bypassArm = false; return; }
   if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
-  if (!statusCache.signedIn || !statusCache.active) return;
+  if (statusCache.signedIn === false || (statusCache.active === false && !statusCache.unavailable)) return;
   const composer = findComposer();
   if (!withinComposer(event.target, composer)) return;
   const text = composerText(composer).trim();
@@ -373,7 +386,7 @@ document.addEventListener("keydown", (event) => {
 
 document.addEventListener("click", (event) => {
   if (bypassArm) { bypassArm = false; return; }
-  if (!statusCache.signedIn || !statusCache.active) return;
+  if (statusCache.signedIn === false || (statusCache.active === false && !statusCache.unavailable)) return;
   const button = event.target.closest?.("button");
   if (!button) return;
   const sendButton = findSendButton();
