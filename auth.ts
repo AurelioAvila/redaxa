@@ -494,6 +494,10 @@ async function boot(): Promise<void> {
   const setMessage = (message: string, error = false): void => { dialog.message.textContent = message; dialog.message.classList.toggle("error", error); };
   const setMode = (nextMode: typeof mode): void => {
     mode = nextMode; setMessage("");
+    recoveryToken = null;
+    dialog.switcher.hidden = false;
+    dialog.email.closest("label")?.removeAttribute("hidden");
+    dialog.email.required = true;
     const signup = mode === "signup"; const recovery = mode === "recovery";
     dialog.title.textContent = signup ? "Create your account" : recovery ? "Reset your password" : "Welcome back";
     dialog.description.textContent = signup ? "Use a password with at least 12 characters. We will send a verification email." : recovery ? "We will email you a secure link to choose a new password." : "Sign in to continue with your private workspace.";
@@ -522,56 +526,80 @@ async function boot(): Promise<void> {
   await refreshEntitlement();
   config = await configReady;
 
-  // Team invite links (?invite=TOKEN) point at a teammate who may not have an
-  // account yet -- the token is parked in localStorage so it survives the
-  // signup -> email confirmation -> redirect round trip, then consumed the
-  // moment we know who's signed in. Defined before the confirmation-hash
-  // handling below so that flow can also trigger it on first sign-in.
+  // Persist an invitation through signup, but joining always requires reviewing
+  // the server-verified inviter/workspace and clicking Accept in this dialog.
   const pendingInviteKey = "redaxa.pending-invite.v1";
-  const acceptPendingInvite = async (): Promise<void> => {
+  const inviteDialog = document.createElement("dialog");
+  inviteDialog.className = "ps-account-sheet";
+  inviteDialog.setAttribute("aria-labelledby", "ps-invite-title");
+  inviteDialog.innerHTML = '<header><h2 id="ps-invite-title">Review team invitation</h2><button type="button" data-invite-cancel aria-label="Close invitation">×</button></header><p data-invite-details></p><p>Joining applies this workspace’s protected terms and policies to your checks. Its owner and admins can see your future scan activity metadata, including times, application, counts and categories. Prompt text is not stored.</p><p data-invite-message role="status"></p><div class="ps-account-actions"><button type="button" data-invite-accept disabled>Accept invitation</button><button type="button" data-invite-cancel>Decline</button></div>';
+  document.body.append(inviteDialog);
+  const inviteAccept = inviteDialog.querySelector<HTMLButtonElement>("[data-invite-accept]")!;
+  const inviteDetails = inviteDialog.querySelector<HTMLElement>("[data-invite-details]")!;
+  const inviteMessage = inviteDialog.querySelector<HTMLElement>("[data-invite-message]")!;
+  let verifiedInvite: { token: string; email: string } | null = null;
+  let inviteBusy = false;
+  const dismissInvite = (): void => {
+    if (inviteBusy) return;
+    verifiedInvite = null;
+    localStorage.removeItem(pendingInviteKey);
+    inviteDialog.close();
+  };
+  inviteDialog.querySelectorAll("[data-invite-cancel]").forEach(button => button.addEventListener("click", dismissInvite));
+  inviteDialog.addEventListener("cancel", event => { event.preventDefault(); dismissInvite(); });
+  const reviewPendingInvite = async (): Promise<void> => {
     if (desktop) return;
     const token = localStorage.getItem(pendingInviteKey);
     if (!token || !currentEmail) return;
-    localStorage.removeItem(pendingInviteKey);
+    verifiedInvite = null;
+    inviteAccept.disabled = true;
+    inviteDetails.textContent = "";
+    inviteMessage.textContent = "Checking this invitation…";
+    if (!inviteDialog.open) inviteDialog.showModal();
+    const email = currentEmail;
     try {
-      await apiRequest("/api/team?action=accept", { token });
-      await refreshEntitlement();
-      setMode("signin");
-      setMessage("You've joined the team.");
-      show();
-      window.setTimeout(close, 2500);
+      if (!/^[a-f0-9]{32}$/i.test(token)) throw new Error("That invitation link is invalid.");
+      const preview = await apiRequest(`/api/team?action=preview&token=${encodeURIComponent(token)}`, undefined, "GET") as { inviter?: { email?: string }; organization?: { id?: string; name?: string } };
+      if (currentEmail !== email || localStorage.getItem(pendingInviteKey) !== token || !inviteDialog.open) return;
+      if (!preview.inviter?.email || !preview.organization?.id || !preview.organization.name) throw new Error("We could not verify the inviter and workspace. Try the link again.");
+      inviteDetails.textContent = `${preview.inviter.email} invited you to ${preview.organization.name}. You will join as ${email}.`;
+      inviteMessage.textContent = "Choose whether to join this workspace.";
+      verifiedInvite = { token, email };
+      inviteAccept.disabled = false;
     } catch (error) {
-      setMode("signin");
-      setMessage(error instanceof Error ? error.message : "We could not accept that invite.", true);
-      show();
+      inviteMessage.textContent = error instanceof Error ? error.message : "We could not verify that invitation.";
     }
   };
+  inviteAccept.addEventListener("click", async () => {
+    const reviewed = verifiedInvite;
+    if (inviteBusy || !reviewed || currentEmail !== reviewed.email || localStorage.getItem(pendingInviteKey) !== reviewed.token) return;
+    inviteBusy = true;
+    inviteAccept.disabled = true;
+    try {
+      await apiRequest("/api/team?action=accept", { token: reviewed.token });
+      localStorage.removeItem(pendingInviteKey);
+      verifiedInvite = null;
+      await refreshEntitlement();
+      inviteMessage.textContent = "You have joined the workspace.";
+    } catch (error) {
+      inviteMessage.textContent = error instanceof Error ? error.message : "We could not accept that invitation.";
+      inviteAccept.disabled = false;
+    } finally { inviteBusy = false; }
+  });
 
-  // Supabase's email-confirmation and password-reset links redirect back here
-  // with the session tokens (or an error) in the URL fragment -- nothing was
-  // reading it, so users landed on the homepage with no feedback and had to
-  // sign in manually even though confirmation had already succeeded.
+  // Install the form handlers before handling entry links, including recovery.
+  const handleEntryLinks = async (): Promise<void> => {
+  // Token fragments cannot establish a browser identity. A recovery token is
+  // used only after the user explicitly submits a new password.
   if (!desktop && location.hash.includes("access_token")) {
     const hashParams = new URLSearchParams(location.hash.slice(1));
     history.replaceState(null, "", location.pathname + location.search);
     const hashAccessToken = hashParams.get("access_token");
-    const hashRefreshToken = hashParams.get("refresh_token");
 
-    // A recovery link and a confirmation link both come back with tokens in
-    // the fragment, and both were handled identically: exchanged for a
-    // session and greeted with "Email confirmed — you're signed in."
-    //
-    // For a confirmation that is right. For a recovery it meant the reset
-    // never happened. Someone who had forgotten their password asked for a
-    // link, followed it, was told something unrelated had succeeded, and
-    // still had the old password — with no form anywhere that could set a
-    // new one. The whole flow led nowhere.
+    // Confirmation links require a fresh credential sign-in. Recovery links
+    // show the password form without adopting the token as a session.
     if (hashParams.get("type") === "recovery" && hashAccessToken) {
-      // Deliberately does not exchange the recovery token for a normal
-      // session first. That token authorises exactly one thing, and holding
-      // a full session open on a page whose whole premise is "someone may
-      // have lost control of this account" widens what a stolen link is
-      // worth.
+      // Keep the recovery bearer solely for the explicit password submission.
       setMode("recovery");
       dialog.title.textContent = "Choose a new password";
       dialog.description.textContent = "Use a password with at least 12 characters.";
@@ -589,28 +617,10 @@ async function boot(): Promise<void> {
       dialog.switcher.hidden = true;
       recoveryToken = hashAccessToken;
       show();
-      return;
-    }
-
-    if (hashAccessToken && hashRefreshToken) {
-      try {
-        const payload = await apiRequest("/api/auth/callback", {
-          access_token: hashAccessToken, refresh_token: hashRefreshToken, expires_in: Number(hashParams.get("expires_in")) || 3600
-        }) as { email?: string };
-        if (payload.email) {
-          currentEmail = payload.email;
-          renderAccount(payload.email);
-          await refreshEntitlement();
-          if (localStorage.getItem(pendingInviteKey)) {
-            await acceptPendingInvite();
-          } else {
-            setMode("signin");
-            setMessage("Email confirmed — you're signed in.");
-            show();
-            window.setTimeout(close, 2500);
-          }
-        }
-      } catch { /* falls through with no session; user can sign in normally */ }
+    } else {
+      setMode("signin");
+      setMessage("Verification link received. Sign in with your own email and password to continue.");
+      show();
     }
   } else if (!desktop && location.hash.includes("error")) {
     const hashParams = new URLSearchParams(location.hash.slice(1));
@@ -626,10 +636,12 @@ async function boot(): Promise<void> {
     const inviteToken = new URLSearchParams(location.search).get("invite");
     if (inviteToken) {
       localStorage.setItem(pendingInviteKey, inviteToken);
-      history.replaceState(null, "", location.pathname + location.hash);
-      if (currentEmail) await acceptPendingInvite();
-      else { setMode("signup"); setMessage("Create your account to join the team."); show(); }
+      const url = new URL(location.href);
+      url.searchParams.delete("invite");
+      history.replaceState(null, "", url.pathname + url.search + url.hash);
+      if (!currentEmail && !recoveryToken) { setMode("signup"); setMessage("Create an account or sign in to review this team invitation."); show(); }
     }
+    if (currentEmail && !recoveryToken && localStorage.getItem(pendingInviteKey)) { close(); await reviewPendingInvite(); }
 
     // Lets external entry points (the browser extension popup, which has no
     // room for its own signup/recovery forms) deep-link straight into the
@@ -639,9 +651,10 @@ async function boot(): Promise<void> {
       const url = new URL(location.href);
       url.searchParams.delete("auth");
       history.replaceState(null, "", url.pathname + url.search + url.hash);
-      if (!currentEmail) { setMode(authParam); show(); }
+      if (!currentEmail && !recoveryToken) { setMode(authParam); show(); }
     }
   }
+  };
 
   window.promptShieldAuth = {
     hasAccess: () => Boolean(currentEmail) && accountActive,
@@ -859,7 +872,7 @@ async function boot(): Promise<void> {
           await saveDesktopSession({ email, access_token: payload.access_token, refresh_token: payload.refresh_token, expires_at: Date.now() + (payload.expires_in ?? 3600) * 1000 });
         }
         renderAccount(email); await refreshEntitlement();
-        if (localStorage.getItem(pendingInviteKey)) { await acceptPendingInvite(); }
+        if (localStorage.getItem(pendingInviteKey)) { close(); await reviewPendingInvite(); }
         else { setMessage("Signed in successfully."); window.setTimeout(close, 700); }
       } else if (recoveryToken) {
         // The second half of a recovery: the link has been followed and a new
@@ -888,6 +901,7 @@ async function boot(): Promise<void> {
     }
     finally { dialog.submit.disabled = false; }
   });
+  await handleEntryLinks();
 }
 
 if (typeof document !== "undefined") void boot();
