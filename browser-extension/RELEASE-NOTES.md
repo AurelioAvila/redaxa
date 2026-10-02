@@ -1,4 +1,12 @@
-# Extension 0.4.3
+# Extension 0.4.4
+
+An authenticated composer now holds the send action while account status is unresolved or temporarily unavailable. A failed scan keeps the prompt unsent instead of offering an unchecked policy bypass. Repeated actions share the pending check, and automatic checks cannot fall back to anonymous quota after session expiry.
+
+Confirmed signed-out and inactive accounts retain ordinary sending. Manual guest checks keep their existing disclosure, explicit action and server quota. No new permissions, telemetry, dependencies or client-side paid access were added. Prompt analysis still uses the existing Redaxa backend; this is not a local-only prompt scanner.
+
+Run `node browser-extension/interception.test.mjs` alongside the existing findings, repository, popup and session-refresh checks. The regression fails against the prior content script before its first account response. Chrome Web Store approval remains separate from a GitHub download release; do not claim the installed Store version was automatically updated.
+
+## Previous extension 0.4.3
 
 Desktop release 0.4.5 includes the matching shared scanner update. Extension 0.4.3 replaced the 0.4.2 submission on September 26, 2026 and is awaiting Chrome Web Store review, with automatic publication enabled after approval. The console still lists 0.4.0 as published. Approval and publication are external steps.
 

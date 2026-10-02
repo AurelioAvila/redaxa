@@ -53,6 +53,9 @@ context.fetch = async (_url, request) => {
 const scan = await handle({ type: 'SCAN', text: 'Synthetic text' }, popup);
 assert.equal(scan.redactedText, 'Synthetic text');
 assert.equal(requestHeaders.Authorization, undefined, 'Guest scan uses normal anonymous endpoint');
+const beforeAutomatic = calls;
+await assert.rejects(handle({ type: 'SCAN', text: 'Synthetic text', requireAccount: true }, popup), /Sign in again/);
+assert.equal(calls, beforeAutomatic, 'Expired automatic access cannot fall back to guest quota');
 const scanCalls = calls;
 for (const text of ['', ' ', null, 'x'.repeat(20001)]) await assert.rejects(handle({ type: 'SCAN', text }, popup), /characters/);
 assert.equal(calls, scanCalls, 'Invalid input never consumes quota');
