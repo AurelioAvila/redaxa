@@ -1,4 +1,4 @@
-import { acceptTeamInvite, accountFor, addOrganizationMember, addProtectedTerm, appUrl, clearOrgPolicy, orgPoliciesFor, setOrgPolicy, corsHeaders, createTeamInvite, ensureOrganization, hasActiveEntitlement, inviteByToken, organizationById, organizationMembers, organizationMembershipFor, protectedTermsFor, removeProtectedTerm, renameOrganization, requireUser, revokeTeamInvite, supabaseUserById, teamInvitesFor } from "./_billing.js";
+import { acceptTeamInvite, accountFor, addProtectedTerm, appUrl, clearOrgPolicy, orgPoliciesFor, setOrgPolicy, corsHeaders, createTeamInvite, ensureOrganization, hasActiveEntitlement, inviteByToken, organizationById, organizationForOwner, organizationMembers, organizationMembershipFor, protectedTermsFor, removeProtectedTerm, renameOrganization, requireUser, revokeTeamInvite, supabaseUserById, teamInvitesFor } from "./_billing.js";
 import { clientIp, rateLimited } from "./_rateLimit.js";
 
 type RequestLike = { method?: string; body?: unknown; query?: Record<string, string | string[] | undefined>; headers?: Record<string, string | string[] | undefined> };
@@ -14,6 +14,29 @@ export default async function handler(request: RequestLike, response: ResponseLi
   if (request.method === "OPTIONS") { response.status(204).end(); return; }
 
   const action = Array.isArray(request.query?.action) ? request.query?.action[0] : request.query?.action;
+
+  if (request.method === "GET" && action === "preview") {
+    response.setHeader("Cache-Control", "no-store");
+    try {
+      const user = await requireUser(request, response);
+      const raw = request.query?.token;
+      const token = Array.isArray(raw) ? raw[0] : raw;
+      if (!token || !/^[a-f0-9]{32}$/.test(token)) { response.status(400).json({ error: "Invalid invite link." }); return; }
+      const invite = await inviteByToken(token);
+      if (!invite || invite.status !== "pending") { response.status(410).json({ error: "That invite link is no longer valid." }); return; }
+      if (invite.owner_user_id === user.id) { response.status(400).json({ error: "You can't accept your own invite." }); return; }
+      const account = await accountFor(invite.owner_user_id);
+      if (!hasActiveEntitlement(account) || account?.plan !== "business") { response.status(403).json({ error: "This team no longer has an active Business plan." }); return; }
+      const [inviter, organization] = await Promise.all([supabaseUserById(invite.owner_user_id), organizationForOwner(invite.owner_user_id)]);
+      if (!inviter?.email) { response.status(410).json({ error: "That invite link is no longer valid." }); return; }
+      if (!organization) { response.status(409).json({ error: "Ask the inviter to create a fresh invite link." }); return; }
+      response.status(200).json({ inviter: { email: inviter.email }, organization: { id: organization.id, name: organization.name } });
+    } catch (error) {
+      const unauthenticated = error instanceof Error && error.message === "UNAUTHORIZED";
+      response.status(unauthenticated ? 401 : 500).json({ error: unauthenticated ? "UNAUTHORIZED" : "We could not load that invite." });
+    }
+    return;
+  }
 
   if (request.method === "GET" && (!action || action === "list")) {
     response.setHeader("Cache-Control", "no-store");
@@ -124,51 +147,36 @@ export default async function handler(request: RequestLike, response: ResponseLi
 
     if (action === "accept") {
       const token = typeof body.token === "string" ? body.token.trim() : "";
-      if (!token) { response.status(400).json({ error: "Missing invite link." }); return; }
-      const pending = await inviteByToken(token);
-      if (!pending || pending.status !== "pending") { response.status(410).json({ error: "That invite link is no longer valid." }); return; }
-      if (pending.owner_user_id === user.id) { response.status(400).json({ error: "You can't accept your own invite." }); return; }
+      if (!/^[a-f0-9]{32}$/.test(token)) { response.status(400).json({ error: "Invalid invite link." }); return; }
       const invite = await acceptTeamInvite(token, user.id);
       if (!invite) { response.status(410).json({ error: "That invite link is no longer valid." }); return; }
-      // Joining a team now also means joining the owner's organization, so
-      // shared protected terms and org-level audit apply from the first scan.
-      try {
-        const org = await ensureOrganization(pending.owner_user_id);
-        if (org) await addOrganizationMember(org.id, user.id, "member");
-      } catch {
-        // Org linkage is best-effort here; the next `?action=org` read repairs it.
-      }
       response.status(200).json({ ok: true });
       return;
     }
 
     if (action === "revoke") {
       const inviteId = typeof body.inviteId === "string" ? body.inviteId : "";
-      if (!inviteId) { response.status(400).json({ error: "Missing invite id." }); return; }
-      await revokeTeamInvite(user.id, inviteId);
+      if (!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(inviteId)) { response.status(400).json({ error: "Invalid invite id." }); return; }
+      if (!await revokeTeamInvite(user.id, inviteId)) { response.status(404).json({ error: "That invitation or teammate was not found." }); return; }
       response.status(200).json({ ok: true });
       return;
     }
 
-    // Default POST action: create an invite.
-    const account = await accountFor(user.id);
-    if (!hasActiveEntitlement(account) || account?.plan !== "business") {
-      response.status(403).json({ error: "Team invites are available on the Business plan." });
-      return;
-    }
-    const existing = await teamInvitesFor(user.id);
-    const seatsAvailable = account.seat_count - 1 - existing.length;
-    if (seatsAvailable <= 0) {
-      response.status(409).json({ error: "No seats available. Remove a teammate or add seats to invite more." });
-      return;
-    }
+    if (action && action !== "create") { response.status(400).json({ error: "Unknown team action." }); return; }
+    // The database checks entitlement and reserves the seat under one lock.
     const invite = await createTeamInvite(user.id);
     response.status(200).json({ token: invite.token, url: `${appUrl()}/?invite=${invite.token}` });
   } catch (error) {
     const message = error instanceof Error ? error.message : "TEAM_ERROR";
-    const alreadyOnATeam = message.includes("duplicate key") || message === "TEAM_STORAGE_ERROR";
-    response.status(message === "UNAUTHORIZED" ? 401 : action === "accept" ? 409 : 500).json({
-      error: message === "UNAUTHORIZED" ? "UNAUTHORIZED" : action === "accept" && alreadyOnATeam ? "You're already part of a team. Leave it before joining another." : "We could not complete that request."
-    });
+    const errors: Record<string, [number, string]> = {
+      UNAUTHORIZED: [401, "UNAUTHORIZED"],
+      TEAM_PLAN_REQUIRED: [403, "Team invites require an active Business plan."],
+      TEAM_FULL: [409, "No seats available. Remove a teammate or add seats to invite more."],
+      TEAM_SELF: [400, "You can't accept your own invite."],
+      TEAM_INVALID: [400, "Invalid invite link."],
+      TEAM_MEMBERSHIP_CONFLICT: [409, "You're already part of a workspace. Leave it before joining another."]
+    };
+    const [status, detail] = errors[message] ?? [500, "We could not complete that request."];
+    response.status(status).json({ error: detail });
   }
 }

@@ -145,7 +145,7 @@ const rules: Rule[] = [
     validate: value => !apiCredentialReference(value),
     pattern: /(?<![A-Za-z0-9_-])(?:sk-[A-Za-z0-9_-]{16,}|[spr]k_(?:live|test)_[A-Za-z0-9]{10,}|sb_(?:secret|publishable)_[A-Za-z0-9_-]{20,}|github_pat_[A-Za-z0-9_]{82}|gh[pousr]_[A-Za-z0-9_]{20,}|AIza[\w-]{20,}|(?:AKIA|ASIA)[0-9A-Z]{16}|(?:xox[baprs]|xapp)-[A-Za-z0-9-]{10,}|eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}|[Bb][Ee][Aa][Rr][Ee][Rr][ \t]+[A-Za-z0-9._-]{15,}[A-Za-z0-9_-])(?![A-Za-z0-9_-])/g
   },
-  { kind: "privateKey", category: "credentials", severity: "critical",  label: "Private key", replacement: "[PRIVATE KEY]", pattern: /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----/g },
+  { kind: "privateKey", category: "credentials", severity: "critical",  label: "Private key", replacement: "[PRIVATE KEY]", pattern: /-----(BEGIN|END) ([A-Z ]{0,64}PRIVATE KEY)-----/g },
   { kind: "card", category: "financial", severity: "high",  label: "Card number", replacement: "[CARD]", pattern: /\b(?:\d[ -]*?){13,16}\b/g, validate: luhnValid },
   { kind: "crypto", category: "financial", severity: "high",  label: "Crypto wallet address", replacement: "[WALLET ADDRESS]", pattern: /\b(?:0x[a-fA-F0-9]{40}|bc1[ac-hj-np-z02-9]{25,59}|[13][a-km-zA-HJ-NP-Z1-9]{25,34})\b/g },
   { kind: "iban", category: "financial", severity: "high",  label: "IBAN", replacement: "[IBAN]", pattern: /\b[A-Z]{2}\d{2}(?:[ ]?[A-Z0-9]){11,30}\b/g, validate: ibanValid },
@@ -180,7 +180,25 @@ export function inspectPrompt(text: string, options: ScanOptions = { includePers
       (rule.kind === "email" || rule.kind === "phone" || rule.kind === "ip" || rule.kind === "fiscalCode" || rule.kind === "ssn" || rule.kind === "name" || rule.kind === "address") ? options.includePersonalData :
       (rule.kind === "card" || rule.kind === "iban" || rule.kind === "crypto") ? options.includeFinancialData : options.includeCredentials;
     if (!enabled) continue;
-    if (rule.validate) {
+    if (rule.kind === "privateKey") {
+      // Walk delimiters once. An unterminated BEGIN must not rescan the entire
+      // suffix for every later BEGIN in an untrusted repository file.
+      let start: number | undefined;
+      let keyType: string | undefined;
+      let copied = 0;
+      const parts: string[] = [];
+      for (const marker of redactedText.matchAll(rule.pattern)) {
+        if (marker[1] === "BEGIN") { start = marker.index; keyType = marker[2]; continue; }
+        if (start === undefined || marker[2] !== keyType) continue;
+        const end = marker.index + marker[0].length;
+        const value = redactedText.slice(start, end);
+        findings.push({ kind: rule.kind, category: rule.category, severity: rule.severity, label: rule.label, value, replacement: rule.replacement });
+        parts.push(redactedText.slice(copied, start), rule.replacement);
+        copied = end;
+        start = undefined;
+      }
+      if (copied) { parts.push(redactedText.slice(copied)); redactedText = parts.join(""); }
+    } else if (rule.validate) {
       const validate = rule.validate;
       redactedText = redactedText.replace(rule.pattern, (...args: unknown[]) => {
         const value = args[0] as string;
