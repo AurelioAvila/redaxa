@@ -85,6 +85,8 @@ assert.equal(formatChargedAmount(null, "eur", "month"), null);
   const html = welcomeHtml("Giulia", "https://redaxa.example");
   const text = welcomeText("Giulia", "https://redaxa.example");
   assert.ok(html.startsWith("<!doctype html>"));
+  assert.ok(html.includes('<html lang="en" dir="ltr">'));
+  assert.ok(html.includes('<table lang="en" dir="ltr" role="presentation"'));
   assert.ok(html.includes("Your account is confirmed, Giulia."));
   assert.ok(html.includes("display:none"), "an inbox preview line, or clients invent one");
   assert.ok(text.includes("Install the browser extension"));
@@ -144,7 +146,7 @@ assert.equal(formatChargedAmount(null, "eur", "month"), null);
     // The subscription email tells the reader to reply. Sent from a noreply@
     // address, that promise is only true if a Reply-To carries it somewhere.
     assert.ok(payload.reply_to, "every message must be replyable");
-    assert.ok(payload.reply_to.includes("@"));
+    assert.equal(payload.reply_to, "redaxa@getcertsprint.com");
     assert.ok(payload.text, "every message carries a text part");
     assert.ok(payload.html);
     assert.equal((sent[0] as { headers: Record<string, string> }).headers["Idempotency-Key"], "redaxa-welcome/user-123");
