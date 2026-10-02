@@ -39,7 +39,7 @@ try {
   await sql(`create role anon; create role authenticated; create role service_role;
     create schema auth; create table auth.users(id uuid primary key);
     create function auth.uid() returns uuid language sql as 'select null::uuid';`);
-  for (const file of ['20260811_billing.sql','20260812_team.sql','20260821_scan_events.sql','20260821_organizations.sql','20261002_team_lifecycle.sql']) {
+  for (const file of ['20260811_billing.sql','20260812_team.sql','20260821_scan_events.sql','20260821_organizations.sql','20261002074537_team_lifecycle.sql']) {
     await sql(await readFile(join(root, 'supabase/migrations', file), 'utf8'));
   }
   const owner='00000000-0000-0000-0000-000000000001', member='00000000-0000-0000-0000-000000000002', other='00000000-0000-0000-0000-000000000003', owner2='00000000-0000-0000-0000-000000000004';
@@ -111,3 +111,4 @@ try {
   assert.ok(dirname(resolve(folder))===parent && basename(folder).startsWith('redaxa-team-test-'));
   await rm(folder,{recursive:true,force:true,maxRetries:3});
 }
+
