@@ -67,9 +67,10 @@ async function accessToken() {
   return payload.access_token;
 }
 
-async function apiRequest(path, body, method = "POST", { timeoutMs = 15_000, retries = 1 } = {}) {
+async function apiRequest(path, body, method = "POST", { timeoutMs = 15_000, retries = 1, requireAccount = false } = {}) {
   const headers = { "Content-Type": "application/json" };
   const token = await accessToken();
+  if (requireAccount && !token) throw new Error("Sign in again before checking this prompt.");
   if (token) headers.Authorization = `Bearer ${token}`;
   // A hung request would leave the user staring at "Checking…" forever, and a
   // single transient network blip shouldn't read as "Redaxa is broken":
@@ -160,7 +161,7 @@ async function handleMessage(message, sender) {
         host.includes("gemini") ? "gemini" :
         host.includes("copilot") ? "copilot" :
         host.includes("perplexity") ? "perplexity" : "extension";
-      const result = await apiRequest("/api/scan", { text: message.text, application, options: message.options ?? {} });
+      const result = await apiRequest("/api/scan", { text: message.text, application, options: message.options ?? {} }, "POST", { requireAccount: message.requireAccount === true });
       if (!Array.isArray(result.findings) || typeof result.redactedText !== "string") {
         throw new Error("The check returned an incomplete result. Please try again.");
       }

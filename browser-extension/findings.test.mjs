@@ -5,7 +5,7 @@ import vm from 'node:vm';
 let scanResult;
 const sandbox=vm.createContext({
   document:{body:null,addEventListener(){}},window:{setInterval(){}},
-  chrome:{runtime:{sendMessage(message,callback){callback({ok:true,result:message.type==='SCAN'?scanResult:{signedIn:false,active:false}});}}}
+  chrome:{runtime:{sendMessage(message,callback){callback({ok:true,result:message.type==='SCAN'?scanResult:{signedIn:true,active:true}});}}}
 });
 vm.runInContext(fs.readFileSync(new URL('content.js',import.meta.url),'utf8'),sandbox);
 const warning=vm.runInContext('apiWarning',sandbox);
@@ -37,7 +37,12 @@ await gate({value:'synthetic prompt'},()=>sent++);
 assert.match(currentModal.innerHTML,/API key or token found/);
 assert.ok(!currentModal.innerHTML.includes('ps-int-send-anyway'),'New alert must not weaken Business block policy');
 assert.equal(sent,0);
+scanResult={findings:[],redactedText:'synthetic prompt',decision:{action:'block'}};
+await gate({value:'synthetic prompt'},()=>sent++);
+assert.equal(sent,0,'A block decision wins even when the findings list is empty');
+assert.ok(!currentModal.innerHTML.includes('ps-int-send-anyway'));
 scanResult={...scanResult,decision:{action:'warn'}};
+scanResult.findings=findings;
 await gate({value:'synthetic prompt'},()=>sent++);
 assert.ok(currentModal.innerHTML.includes('ps-int-send-anyway'));
 assert.equal(sent,0,'Warn still requires an explicit choice');
@@ -55,6 +60,7 @@ sandbox.chrome.runtime.sendMessage=(message,callback)=>{
   if(message.type==='SCAN')finishScan=()=>callback({ok:true,result:{findings:[],redactedText:'checked prompt'}});
 };
 const pending=gate(composer,()=>sent++);
+await Promise.resolve();
 composer.value='edited while checking';
 finishScan();
 await pending;
