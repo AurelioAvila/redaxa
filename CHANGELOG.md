@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.4.7 — 2026-10-02
+
+- Removing an accepted teammate removes their organization access. Team invitation creation and acceptance enforce paid seat limits atomically.
+- Joining a team requires explicit acceptance after previewing the invitation. Account fragments cannot silently replace the signed-in identity.
+- Private-key parsing remains bounded on large malformed inputs.
+- Includes the recent website, canonical-link and branded-email improvements. Windows installers retain the existing updater key and endpoint and have verified publisher signatures and trusted timestamps.
+
+For intervening releases, see the [GitHub release notes](https://github.com/AurelioAvila/redaxa/releases).
+
 ## v0.3.2 — 2026-09-03
 
 The key rotation 0.3.1 announced but did not ship, plus the account email
