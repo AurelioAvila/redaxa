@@ -32,6 +32,8 @@ The [v0.4.5 Windows setup EXE](../../releases/tag/v0.4.5) was checked on Septemb
 > The browser extension (source in [`browser-extension/`](browser-extension))
 > is available on the [Chrome Web Store](https://chromewebstore.google.com/detail/redaxa/clkobbjoaegkgnmkibjghlboeoplpmok). Extension **0.4.3** adds manual text checks without an account (5 per 24 hours, shared by network), redacted output, copying and clearer credential context inside the popup. Automatic checks require an active trial or subscription; Windows repository checks require Pro or Business. Version 0.4.3 was submitted on September 26, 2026 and is awaiting Google's review, with automatic publication after approval; the console still lists 0.4.0 as published. Desktop and extension versions are independent.
 
+Extension **0.4.4** holds supported composer sends while account status is unresolved and keeps prompts unsent when a check fails. It also prevents automatic checks from falling back to anonymous quota after session expiry and respects a Business block even when no findings are listed. Permissions and paid access requirements are unchanged. See the [extension release notes](browser-extension/RELEASE-NOTES.md); a signed GitHub package and Chrome Web Store approval are separate distribution steps.
+
 ---
 
 ## Why
