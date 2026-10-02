@@ -29,7 +29,8 @@ try {
   startupAttempted = true;
   try {
     // pg_ctl supplies the restricted Windows token required by PostgreSQL.
-    await exec(binary('pg_ctl'), ['-D',data,'-l',join(folder,'server.log'),'-o',`-h 127.0.0.1 -p ${port}`,'-w','start'], {windowsHide:true,timeout:30_000});
+    const sockets = process.platform === 'win32' ? '' : ` -k ${folder}`;
+    await exec(binary('pg_ctl'), ['-D',data,'-l',join(folder,'server.log'),'-o',`-h 127.0.0.1 -p ${port}${sockets}`,'-w','start'], {windowsHide:true,timeout:30_000});
   } catch (error) {
     console.error((await readFile(join(folder,'server.log'),'utf8').catch(()=>'' )).slice(-3000));
     throw error;
