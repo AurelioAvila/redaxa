@@ -16,6 +16,16 @@ export default async function handler(request: RequestLike, response: ResponseLi
   for (const [name, value] of Object.entries(cors)) response.setHeader(name, value);
   if (request.method === "OPTIONS") { response.status(204).end(); return; }
   if (request.method !== "POST") { response.setHeader("Allow", "POST"); response.status(405).end(); return; }
+  const contentType = request.headers?.["content-type"];
+  const origin = request.headers?.origin;
+  if (typeof contentType !== "string" || contentType.split(";", 1)[0].trim().toLowerCase() !== "application/json") {
+    response.status(415).json({ error: "Send a JSON sign-in request." }); return;
+  }
+  // Browser requests carry Origin; native/script clients may omit it. JSON
+  // disallows simple cross-site form submissions even without an Origin.
+  if (origin !== undefined && (typeof origin !== "string" || origin !== cors["Access-Control-Allow-Origin"])) {
+    response.status(403).json({ error: "Sign-in request origin is not allowed." }); return;
+  }
   try {
     const body = (request.body ?? {}) as { email?: unknown; password?: unknown; remember?: unknown };
     const email = typeof body.email === "string" ? body.email.trim() : "";

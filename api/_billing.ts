@@ -374,7 +374,8 @@ export async function effectiveEntitlement(userId: string): Promise<{ active: bo
 
 export async function supabaseUserById(userId: string): Promise<{ email?: string } | null> {
   const response = await supabaseService(`/auth/v1/admin/users/${encodeURIComponent(userId)}`, { method: "GET" });
-  if (!response.ok) return null;
+  if (response.status === 404) return null;
+  if (!response.ok) throw new Error("AUTH_STORAGE_ERROR");
   return response.json() as Promise<{ email?: string }>;
 }
 
@@ -393,21 +394,27 @@ export async function teamInvitesFor(ownerUserId: string): Promise<TeamInvite[]>
 
 export async function createTeamInvite(ownerUserId: string): Promise<TeamInvite> {
   const token = crypto.randomUUID().replace(/-/g, "");
-  const response = await supabaseService("/rest/v1/team_invites", {
-    method: "POST",
-    headers: { Prefer: "return=representation" },
-    body: JSON.stringify({ owner_user_id: ownerUserId, token })
-  });
-  if (!response.ok) throw new Error("TEAM_STORAGE_ERROR");
-  const rows = await response.json() as TeamInvite[];
-  return rows[0];
+  const invite = await teamRpc<TeamInvite>("create_team_invite", { p_owner_user_id: ownerUserId, p_token: token });
+  if (!invite || typeof invite.id !== "string" || !invite.id || invite.token !== token || invite.owner_user_id !== ownerUserId || invite.status !== "pending") throw new Error("TEAM_STORAGE_ERROR");
+  return invite;
 }
 
-export async function revokeTeamInvite(ownerUserId: string, inviteId: string): Promise<void> {
-  const response = await supabaseService(`/rest/v1/team_invites?id=eq.${encodeURIComponent(inviteId)}&owner_user_id=eq.${encodeURIComponent(ownerUserId)}&status=eq.pending`, {
-    method: "PATCH", body: JSON.stringify({ status: "revoked" })
+async function teamRpc<T>(name: string, body: Record<string, string>): Promise<T> {
+  const response = await supabaseService(`/rest/v1/rpc/${name}`, {
+    method: "POST", body: JSON.stringify(body)
   });
-  if (!response.ok) throw new Error("TEAM_STORAGE_ERROR");
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({})) as { message?: string };
+    const known = ["TEAM_PLAN_REQUIRED", "TEAM_FULL", "TEAM_SELF", "TEAM_INVALID", "TEAM_MEMBERSHIP_CONFLICT"];
+    throw new Error(known.includes(payload.message ?? "") ? payload.message : "TEAM_STORAGE_ERROR");
+  }
+  return response.json() as Promise<T>;
+}
+
+export async function revokeTeamInvite(ownerUserId: string, inviteId: string): Promise<boolean> {
+  const revoked = await teamRpc<unknown>("revoke_team_invite", { p_owner_user_id: ownerUserId, p_invite_id: inviteId });
+  if (typeof revoked !== "boolean") throw new Error("TEAM_STORAGE_ERROR");
+  return revoked;
 }
 
 export async function inviteByToken(token: string): Promise<TeamInvite | null> {
@@ -417,20 +424,12 @@ export async function inviteByToken(token: string): Promise<TeamInvite | null> {
   return rows[0] ?? null;
 }
 
-// Atomic: the WHERE clause only matches a still-pending invite, so two
-// concurrent accept attempts on the same token can't both succeed. Callers
-// must reject owner_user_id === memberUserId themselves first -- this alone
-// would let an owner "accept" their own invite since the WHERE clause has no
-// opinion about who the member is.
+// Entitlement, invitation and organization membership change in one transaction.
 export async function acceptTeamInvite(token: string, memberUserId: string): Promise<TeamInvite | null> {
-  const response = await supabaseService(`/rest/v1/team_invites?token=eq.${encodeURIComponent(token)}&status=eq.pending`, {
-    method: "PATCH",
-    headers: { Prefer: "return=representation" },
-    body: JSON.stringify({ member_user_id: memberUserId, status: "accepted", accepted_at: new Date().toISOString() })
-  });
-  if (!response.ok) throw new Error("TEAM_STORAGE_ERROR");
-  const rows = await response.json() as TeamInvite[];
-  return rows[0] ?? null;
+  const invite = await teamRpc<TeamInvite | null>("accept_team_invite", { p_token: token, p_member_user_id: memberUserId });
+  if (invite === null || typeof invite === "object" && !Array.isArray(invite) && invite.id == null && invite.token == null && invite.status == null && invite.member_user_id == null) return null;
+  if (!invite || typeof invite.id !== "string" || !invite.id || invite.token !== token || invite.member_user_id !== memberUserId || invite.status !== "accepted") throw new Error("TEAM_STORAGE_ERROR");
+  return invite;
 }
 
 // ---------------------------------------------------------------------------
@@ -457,6 +456,13 @@ export async function organizationById(orgId: string): Promise<Organization | nu
   return rows[0] ?? null;
 }
 
+export async function organizationForOwner(ownerUserId: string): Promise<Organization | null> {
+  const response = await supabaseService(`/rest/v1/organizations?owner_user_id=eq.${encodeURIComponent(ownerUserId)}&select=*`, { method: "GET" });
+  if (!response.ok) throw new Error("ORG_STORAGE_ERROR");
+  const rows = await response.json() as Organization[];
+  return rows[0] ?? null;
+}
+
 export async function organizationMembers(orgId: string): Promise<Array<{ user_id: string; role: OrganizationRole; joined_at: string }>> {
   const response = await supabaseService(`/rest/v1/organization_members?organization_id=eq.${encodeURIComponent(orgId)}&select=user_id,role,joined_at&order=joined_at.asc`, { method: "GET" });
   if (!response.ok) throw new Error("ORG_STORAGE_ERROR");
@@ -471,10 +477,7 @@ export async function ensureOrganization(ownerUserId: string): Promise<Organizat
     headers: { Prefer: "resolution=ignore-duplicates" },
     body: JSON.stringify({ owner_user_id: ownerUserId })
   });
-  const orgResponse = await supabaseService(`/rest/v1/organizations?owner_user_id=eq.${encodeURIComponent(ownerUserId)}&select=*`, { method: "GET" });
-  if (!orgResponse.ok) throw new Error("ORG_STORAGE_ERROR");
-  const orgs = await orgResponse.json() as Organization[];
-  const org = orgs[0] ?? null;
+  const org = await organizationForOwner(ownerUserId);
   if (!org) return null;
   await supabaseService("/rest/v1/organization_members", {
     method: "POST",
@@ -482,14 +485,6 @@ export async function ensureOrganization(ownerUserId: string): Promise<Organizat
     body: JSON.stringify({ organization_id: org.id, user_id: ownerUserId, role: "owner" })
   });
   return org;
-}
-
-export async function addOrganizationMember(orgId: string, userId: string, role: OrganizationRole): Promise<void> {
-  await supabaseService("/rest/v1/organization_members", {
-    method: "POST",
-    headers: { Prefer: "resolution=ignore-duplicates" },
-    body: JSON.stringify({ organization_id: orgId, user_id: userId, role })
-  });
 }
 
 export async function removeOrganizationMember(orgId: string, userId: string): Promise<void> {

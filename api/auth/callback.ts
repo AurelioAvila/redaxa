@@ -1,39 +1,16 @@
-import { corsHeaders, refreshSession, setSessionCookies, supabaseAuthUser } from "../_billing.js";
-import { welcomeOnce } from "../_welcome.js";
+import { corsHeaders } from "../_billing.js";
 
 type RequestLike = { method?: string; body?: unknown; headers?: Record<string, string | string[] | undefined> };
 type ResponseLike = { setHeader(name: string, value: string | string[]): void; status(code: number): ResponseLike; json(value: unknown): void; end(): void };
 
-// Supabase's email-confirmation and password-reset links redirect back with the
-// session tokens in the URL fragment (#access_token=...), which never reaches
-// the server on its own -- the client reads them and posts them here so the
-// web dashboard can turn them into the same httpOnly cookies a normal sign-in
-// sets. The desktop app never hits this: its confirmation links open in the
-// system browser, not the app window.
+// Legacy fragment adoption is retired: a valid token does not prove that this
+// browser initiated sign-in. Confirmation links finish verification upstream;
+// users sign in here with their own credentials. Recovery has its explicit form.
 export default async function handler(request: RequestLike, response: ResponseLike): Promise<void> {
   const cors = corsHeaders(request);
   for (const [name, value] of Object.entries(cors)) response.setHeader(name, value);
   if (request.method === "OPTIONS") { response.status(204).end(); return; }
   if (request.method !== "POST") { response.setHeader("Allow", "POST"); response.status(405).end(); return; }
-  try {
-    const body = (request.body ?? {}) as { access_token?: unknown; refresh_token?: unknown; expires_in?: unknown };
-    const accessToken = typeof body.access_token === "string" ? body.access_token : "";
-    const refreshToken = typeof body.refresh_token === "string" ? body.refresh_token : "";
-    if (!accessToken || !refreshToken) { response.status(400).json({ error: "Missing session tokens." }); return; }
-    const user = await supabaseAuthUser(accessToken);
-    if (!user) { response.status(401).json({ error: "UNAUTHORIZED" }); return; }
-    // access_token and refresh_token arrive as two independent client-supplied
-    // values -- confirm the refresh_token actually belongs to this same user
-    // before trusting it, rather than pairing two unrelated tokens into cookies.
-    const refreshed = await refreshSession(refreshToken);
-    if (!refreshed || !refreshed.user?.email || refreshed.user.email !== user.email) {
-      response.status(401).json({ error: "UNAUTHORIZED" });
-      return;
-    }
-    setSessionCookies(response, refreshed.access_token, refreshed.refresh_token, refreshed.expires_in ?? 3600);
-    await welcomeOnce(user);
-    response.status(200).json({ email: user.email });
-  } catch {
-    response.status(500).json({ error: "We could not complete sign-in." });
-  }
+  response.setHeader("Cache-Control", "no-store");
+  response.status(410).json({ error: "This sign-in link cannot create a session. Sign in with your email and password." });
 }
