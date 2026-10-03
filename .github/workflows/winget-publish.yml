@@ -28,6 +28,10 @@ permissions:
 
 jobs:
   publish:
+    # Browser-extension releases (extension-v*) ship a zip for the Chrome
+    # Web Store, not a Windows installer, so there is nothing for winget to
+    # list; letting them through failed the run on an empty --urls.
+    if: ${{ !startsWith(inputs.tag || github.event.release.tag_name, 'extension-') }}
     runs-on: ubuntu-latest
     steps:
       # Same shape as the Discord announcement workflow: a missing secret
