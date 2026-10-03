@@ -89,7 +89,7 @@ function classify(f:Finding,path:string,text:string,offset:number):{disposition:
     if(f.kind==='secret'&&/^(?:AKIA|ASIA)/.test(credentialValue(f.value)))return {disposition:'review',severity:'medium',confidence:'high',reason:'AWS access key identifier only. Check whether its paired secret and any session token are exposed before treating this as usable account access.'};
     if(f.kind==='secret') {
       const token=credentialValue(f.value);
-      const providerSpecific=/^(?:sk-(?:proj-|ant-)|[sr]k_(?:live|test)_|sb_secret_|github_pat_|gh[pousr]_|xox[baprs]-|xapp-)/.test(token);
+      const providerSpecific=/^(?:sk-(?:proj-|ant-)|[sr]k_(?:live|test)_|sb_secret_|github_pat_|gh[pousr]_|xox[baprs]-|xapp-|npm_|pypi-|glpat-|hf_)/.test(token);
       if(!providerSpecific){
         const assigned=/\b(?:OPENAI_API_KEY|API_KEY|ACCESS_TOKEN|AUTH_TOKEN)["']?\s*[:=]\s*["']?$/i.test(before);
         return {disposition:'review',severity:assigned?'high':'medium',confidence:assigned?'medium':'low',label:'Unattributed token candidate',reason:assigned?'A literal token appears beside an explicit credential assignment, but its format does not establish a provider. Review the owner and intended use; validity is unverified.':'Only a generic token prefix or Bearer label matched. It could be an example or ordinary identifier. Kept for context, without a high-confidence API alert; this is not proof of a working secret.'};

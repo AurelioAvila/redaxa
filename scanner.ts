@@ -121,7 +121,7 @@ export function apiCredentialReference(value: string): string | undefined {
     if(claims.payload.role==='anon'&&supabaseIssuer(claims.payload.iss))return 'Claims match a public Supabase anon token. Signature and database policies are not verified.';
   }
   if (/^pk_(?:live|test)_/.test(value)) return 'Publishable-key prefix: a public client identifier, not a secret API key.';
-  const payload = value.replace(/^(?:sk-(?:proj-|ant-api\d+-)?|[spr]k_(?:live|test)_|sb_(?:secret|publishable)_|github_pat_|gh[pousr]_|AIza|AKIA|ASIA|xox[baprs]-|xapp-)/, '');
+  const payload = value.replace(/^(?:sk-(?:proj-|ant-api\d+-)?|[spr]k_(?:live|test)_|sb_(?:secret|publishable)_|github_pat_|gh[pousr]_|AIza|AKIA|ASIA|xox[baprs]-|xapp-|npm_|pypi-AgEIcHlwaS5vcmc|glpat-|hf_)/, '');
   if (/^(?:x{8,}|your[_-](?:api[_-])?(?:key|token|secret)(?:[_-]here)?|replace[_-]?me|placeholder)$/i.test(payload.replace(/(?<=x)_(?=x)/gi, ''))) return 'Explicit credential placeholder. Example filenames alone do not dismiss credentials.';
   return undefined;
 }
@@ -143,7 +143,7 @@ const rules: Rule[] = [
   {
     kind: "secret", category: "credentials", severity: "critical", label: "API key or token", replacement: "[SECRET]",
     validate: value => !apiCredentialReference(value),
-    pattern: /(?<![A-Za-z0-9_-])(?:sk-[A-Za-z0-9_-]{16,}|[spr]k_(?:live|test)_[A-Za-z0-9]{10,}|sb_(?:secret|publishable)_[A-Za-z0-9_-]{20,}|github_pat_[A-Za-z0-9_]{82}|gh[pousr]_[A-Za-z0-9_]{20,}|AIza[\w-]{20,}|(?:AKIA|ASIA)[0-9A-Z]{16}|(?:xox[baprs]|xapp)-[A-Za-z0-9-]{10,}|eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}|[Bb][Ee][Aa][Rr][Ee][Rr][ \t]+[A-Za-z0-9._-]{15,}[A-Za-z0-9_-])(?![A-Za-z0-9_-])/g
+    pattern: /(?<![A-Za-z0-9_-])(?:sk-[A-Za-z0-9_-]{16,}|[spr]k_(?:live|test)_[A-Za-z0-9]{10,}|sb_(?:secret|publishable)_[A-Za-z0-9_-]{20,}|github_pat_[A-Za-z0-9_]{82}|gh[pousr]_[A-Za-z0-9_]{20,}|AIza[\w-]{20,}|(?:AKIA|ASIA)[0-9A-Z]{16}|(?:xox[baprs]|xapp)-[A-Za-z0-9-]{10,}|npm_[A-Za-z0-9]{36}|pypi-AgEIcHlwaS5vcmc[A-Za-z0-9_-]{50,}|glpat-[A-Za-z0-9_-]{20,}|hf_[A-Za-z0-9]{34}|eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}|[Bb][Ee][Aa][Rr][Ee][Rr][ \t]+[A-Za-z0-9._-]{15,}[A-Za-z0-9_-])(?![A-Za-z0-9_-])/g
   },
   { kind: "privateKey", category: "credentials", severity: "critical",  label: "Private key", replacement: "[PRIVATE KEY]", pattern: /-----(BEGIN|END) ([A-Z ]{0,64}PRIVATE KEY)-----/g },
   { kind: "card", category: "financial", severity: "high",  label: "Card number", replacement: "[CARD]", pattern: /\b(?:\d[ -]*?){13,16}\b/g, validate: luhnValid },

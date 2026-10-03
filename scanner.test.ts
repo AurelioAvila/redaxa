@@ -17,6 +17,13 @@ for(const value of [pat.slice(0,-1),pat+'A']) assert.equal(inspectPrompt(value).
 for(const value of ['ghp_'+'x'.repeat(36),'sk-proj-'+'x'.repeat(40),'pk_live_1234567890abcdefghijkl']) {
   assert.equal(inspectPrompt(value).findings.filter(f=>f.category==='credentials').length,0,'Known placeholder/public key is not a prompt credential alert');
 }
+for(const value of ['npm_'+'aB3dE5gH7jK9mN1pQ3sT5vW7yZ9bC1dF3hJ5','pypi-AgEIcHlwaS5vcmc'+'Q2xhc3NpY1Rva2VuVmFsdWVGb3JUZXN0aW5nUHVycG9zZXNPbmx5MTIz','glpat-'+'aB3dE5gH7jK9mN1pQ3sT','hf_'+'aB3dE5gH7jK9mN1pQ3sT5vW7yZ9bC1dF3h']) {
+  const result=inspectPrompt(value);
+  assert.equal(result.findings[0]?.kind,'secret',`registry/platform token: ${value.slice(0,6)}`);
+  assert.equal(result.redactedText,'[SECRET]');
+}
+for(const value of ['npm_'+'x'.repeat(36),'hf_'+'x'.repeat(34),'glpat-'+'x'.repeat(20)]) assert.equal(inspectPrompt(value).findings.filter(f=>f.kind==='secret').length,0,'Token placeholder is not a credential alert');
+assert.equal(inspectPrompt('npm_'+'aB3dE5gH7jK9mN1pQ3sT5vW7yZ9bC1dF3h').findings.filter(f=>f.kind==='secret').length,0,'Short npm_ string is not a token');
 assert.equal(inspectPrompt('secret = '+pat).findings.filter(f=>f.category==='credentials').length,1,'No second finding for generated redaction marker');
 
 const fullScan = inspectPrompt("Contact maria@example.com, call +39 333 123 4567, server 192.168.1.20, password=demo-secret-123.");
