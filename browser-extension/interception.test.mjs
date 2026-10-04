@@ -13,7 +13,7 @@ const context = vm.createContext({
       return { addEventListener(_type, handler) { controls.set(selector, handler); } };
     } }; } },
   window: { setInterval() {}, setTimeout() {} },
-  chrome: { runtime: { sendMessage(message, callback) {
+  chrome: { runtime: { id: 'test-extension', sendMessage(message, callback) {
     if (message.type === 'SCAN') scans++;
     callbacks.push({ message, callback });
   } } }
@@ -55,4 +55,10 @@ for (const status of [{ signedIn: false }, { signedIn: true, active: false }]) {
   assert.equal(event('click'), false);
 }
 assert.equal(scans, 1);
+const active = vm.runInContext('refreshStatus()', context);
+callbacks.shift().callback({ ok: true, result: { signedIn: true, active: true } });
+await active;
+delete context.chrome.runtime.id;
+assert.equal(event('keydown'), false, 'A script orphaned by an extension update no longer holds sends');
+assert.equal(event('click'), false);
 console.log('Interception: initial status, duplicate actions, account/scan outages and guest/inactive access passed.');

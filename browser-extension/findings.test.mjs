@@ -5,7 +5,7 @@ import vm from 'node:vm';
 let scanResult;
 const sandbox=vm.createContext({
   document:{body:null,addEventListener(){}},window:{setInterval(){}},
-  chrome:{runtime:{sendMessage(message,callback){callback({ok:true,result:message.type==='SCAN'?scanResult:{signedIn:true,active:true}});}}}
+  chrome:{runtime:{id:'test-extension',sendMessage(message,callback){callback({ok:true,result:message.type==='SCAN'?scanResult:{signedIn:true,active:true}});}}}
 });
 vm.runInContext(fs.readFileSync(new URL('content.js',import.meta.url),'utf8'),sandbox);
 const warning=vm.runInContext('apiWarning',sandbox);

@@ -1,4 +1,8 @@
-# Extension 0.4.4
+# Extension 0.4.5
+
+After the extension updates, tabs that were already open keep sending normally instead of holding every message until they are reloaded; a reload restores checking. Account status is refreshed when a tab comes back into view and before a send, instead of every 30 seconds from every open tab. No new permissions, telemetry or dependencies.
+
+## Previous extension 0.4.4
 
 An authenticated composer now holds the send action while account status is unresolved or temporarily unavailable. A failed scan keeps the prompt unsent instead of offering an unchecked policy bypass. Repeated actions share the pending check, and automatic checks cannot fall back to anonymous quota after session expiry.
 

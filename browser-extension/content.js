@@ -367,12 +367,20 @@ async function gate(composer, resend) {
   modalEl.querySelector("#ps-int-send-anyway")?.addEventListener("click", sendChecked);
 }
 
+// After the extension updates, scripts already running in open tabs lose
+// their link to it for good. They can no longer check anything, so they step
+// aside rather than hold every send until the tab is reloaded.
+function orphaned() {
+  return !globalThis.chrome?.runtime?.id;
+}
+
 function withinComposer(node, composer) {
   return Boolean(composer) && (node === composer || composer.contains(node));
 }
 
 document.addEventListener("keydown", (event) => {
   if (bypassArm) { bypassArm = false; return; }
+  if (orphaned()) return;
   if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
   if (statusCache.signedIn === false || (statusCache.active === false && !statusCache.unavailable)) return;
   const composer = findComposer();
@@ -386,6 +394,7 @@ document.addEventListener("keydown", (event) => {
 
 document.addEventListener("click", (event) => {
   if (bypassArm) { bypassArm = false; return; }
+  if (orphaned()) return;
   if (statusCache.signedIn === false || (statusCache.active === false && !statusCache.unavailable)) return;
   const button = event.target.closest?.("button");
   if (!button) return;
@@ -399,8 +408,10 @@ document.addEventListener("click", (event) => {
   gate(composer, () => resendVia("click", sendButton));
 }, true);
 
+// Refreshed when the tab comes back into view and before a send that finds
+// the status older than 30 seconds, rather than polled from every open tab.
 void refreshStatus();
-window.setInterval(refreshStatus, 30_000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) void refreshStatus(); });
 
 function boot() {
   if (!document.getElementById("redaxa-check-btn")) buildUI();
