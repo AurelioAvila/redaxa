@@ -21,6 +21,8 @@ pwsh scripts/Publish-ChromeWebStore.ps1
 param(
     [Parameter(ParameterSetName = 'Credential', Mandatory)][switch]$SaveCredential,
     [Parameter(ParameterSetName = 'Publish')][string]$ItemId = 'clkobbjoaegkgnmkibjghlboeoplpmok',
+    # Only report the item's current store status.
+    [Parameter(ParameterSetName = 'Publish')][switch]$Status,
     # Upload the package as a draft without submitting it for review.
     [Parameter(ParameterSetName = 'Publish')][switch]$NoPublish,
     # Build the package without contacting the store.
@@ -77,6 +79,7 @@ $token = (Invoke-RestMethod -Method Post -Uri $key.token_uri -Body @{
     }).access_token
 $headers = @{ Authorization = "Bearer $token" }
 $item = "publishers/$($cred.publisherId)/items/$ItemId"
+if ($Status) { Invoke-RestMethod -Uri "$api/v2/${item}:fetchStatus" -Headers $headers | ConvertTo-Json -Depth 10; return }
 
 # 3. Upload; large packages finish asynchronously.
 $upload = Invoke-RestMethod -Method Post -Uri "$api/upload/v2/${item}:upload" -Headers $headers -ContentType 'application/zip' -InFile $zip
