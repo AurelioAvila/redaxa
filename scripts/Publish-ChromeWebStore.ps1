@@ -23,6 +23,8 @@ param(
     [Parameter(ParameterSetName = 'Publish')][string]$ItemId = 'clkobbjoaegkgnmkibjghlboeoplpmok',
     # Only report the item's current store status.
     [Parameter(ParameterSetName = 'Publish')][switch]$Status,
+    # Withdraw a submission still waiting for review before uploading this one.
+    [Parameter(ParameterSetName = 'Publish')][switch]$ReplacePending,
     # Upload the package as a draft without submitting it for review.
     [Parameter(ParameterSetName = 'Publish')][switch]$NoPublish,
     # Build the package without contacting the store.
@@ -80,6 +82,15 @@ $token = (Invoke-RestMethod -Method Post -Uri $key.token_uri -Body @{
 $headers = @{ Authorization = "Bearer $token" }
 $item = "publishers/$($cred.publisherId)/items/$ItemId"
 if ($Status) { Invoke-RestMethod -Uri "$api/v2/${item}:fetchStatus" -Headers $headers | ConvertTo-Json -Depth 10; return }
+
+if ($ReplacePending) {
+    $current = Invoke-RestMethod -Uri "$api/v2/${item}:fetchStatus" -Headers $headers
+    $pending = $current.PSObject.Properties['submittedItemRevisionStatus']
+    if ($pending -and $pending.Value.state -eq 'PENDING_REVIEW') {
+        Invoke-RestMethod -Method Post -Uri "$api/v2/${item}:cancelSubmission" -Headers $headers -ContentType 'application/json' -Body '{}' | Out-Null
+        Write-Host 'Withdrew the submission that was waiting for review.'
+    }
+}
 
 # 3. Upload; large packages finish asynchronously.
 $upload = Invoke-RestMethod -Method Post -Uri "$api/upload/v2/${item}:upload" -Headers $headers -ContentType 'application/zip' -InFile $zip
