@@ -8,7 +8,7 @@ if(dirname(output)!==resolve(root)||basename(output)!=='public')throw new Error(
 rmSync(output, { recursive: true, force: true });
 mkdirSync(output, { recursive: true });
 
-for (const file of ["index.html", "dashboard.html", "github.html", "repository.css", "brand-system.css", "themes.css", "theme-boot.js", "privacy.html", "terms.html", "api-docs.html", "redact-sensitive-data-before-chatgpt.html", "auth.css", "manifest.webmanifest", "service-worker.js", "robots.txt", "sitemap.xml"]) {
+for (const file of ["index.html", "dashboard.html", "github.html", "repository.css", "brand-system.css", "themes.css", "theme-boot.js", "cf-beacon.js", "privacy.html", "terms.html", "api-docs.html", "redact-sensitive-data-before-chatgpt.html", "auth.css", "manifest.webmanifest", "service-worker.js", "robots.txt", "sitemap.xml"]) {
   cpSync(resolve(root, file), resolve(output, file));
 }
 
