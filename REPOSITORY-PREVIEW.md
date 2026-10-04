@@ -1,6 +1,6 @@
 # Repository check — development preview
 
-Isolated branch: `codex/redaxa-github-scan-20260920`, based on current main `11ff647`.
+Isolated branch for the GitHub repository scan preview.
 
 Local desktop launch (PowerShell):
 
