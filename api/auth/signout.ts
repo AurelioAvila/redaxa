@@ -24,7 +24,9 @@ export default async function handler(request: RequestLike, response: ResponseLi
   if (accessToken) {
     try {
       const url = required("SUPABASE_URL").replace(/\/$/, "");
-      await fetch(`${url}/auth/v1/logout`, {
+      // Local scope: signing out of one surface (extension, desktop, web)
+      // must not end the sessions of the others. Supabase defaults to global.
+      await fetch(`${url}/auth/v1/logout?scope=local`, {
         method: "POST",
         headers: { apikey: required("SUPABASE_PUBLISHABLE_KEY"), Authorization: `Bearer ${accessToken}` }
       });

@@ -28,8 +28,9 @@ export async function syncSubscription(subscription: Stripe.Subscription, fallba
     // subscription event out to every endpoint listening for that type. An
     // event we cannot link is another product's, not a lost Redaxa sale, so
     // skip it and return 200: throwing made Stripe retry it forever. Logged
-    // in case a genuine orphan ever turns up here.
-    console.error("Skipping subscription not linked to a Redaxa account:", subscription.id, JSON.stringify(subscription.metadata));
+    // in case a genuine orphan ever turns up here — by id only, since the
+    // metadata of another product's subscription may hold its user details.
+    console.error("Skipping subscription not linked to a Redaxa account:", subscription.id);
     return null;
   }
   const item = subscription.items.data[0];
@@ -136,9 +137,15 @@ export default async function handler(request: WebhookRequest, response: Respons
       const userId = subscription.metadata.redaxa_user_id || await userForCustomer(String(subscription.customer));
       if (userId) await patchAccount(userId, { subscription_status: "canceled", cancel_at_period_end: false, current_period_end: null, checkout_lock_at: null });
     } else if (event.type === "invoice.payment_failed") {
+      // Stripe's current subscription state decides, not the event: a failed
+      // invoice processed after the payment recovered must not lock out a
+      // paying account, and an invoice for another product changes nothing.
       const invoice = event.data.object as Stripe.Invoice;
-      const userId = await userForCustomer(String(invoice.customer));
-      if (userId) await patchAccount(userId, { subscription_status: "past_due" });
+      const parent = (invoice as unknown as { parent?: { subscription_details?: { subscription?: string } } }).parent;
+      const legacy = (invoice as unknown as { subscription?: string | { id: string } | null }).subscription;
+      const subscriptionId = parent?.subscription_details?.subscription
+        ?? (typeof legacy === "string" ? legacy : legacy?.id);
+      if (subscriptionId) await syncSubscription(await stripe.subscriptions.retrieve(subscriptionId));
     }
     await completeStripeEvent(event.id);
     response.status(200).json({ received: true });
