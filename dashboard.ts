@@ -39,7 +39,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     readyToInspect: "Ready to inspect", willCheckFor: "We will check for common personal data and secrets.",
     noChecksYet: "No checks yet", lastEightWillAppear: "Your last eight check summaries will appear here.", nothingFlagged: "Nothing flagged in this check.",
     itemsReviewed: "{n} item reviewed|{n} items reviewed",
-    createAccountTrial: "Create an account to choose a plan and inspect prompts.", startTrialToInspect: "Choose a plan to inspect prompts.",
+    createAccountTrial: "Create an account to choose a plan and inspect prompts.", startTrialToInspect: "You have used today's 5 free checks. Choose a plan to keep going; eligible new subscribers get a 7-day trial.",
     usageLabel: "Checks this week", freeTrialBadge: "More clarity with Pro", freeTrialDesc: "Prompt checks, protected terms, and local repository reviews on Windows.", seePlans: "Compare plans →",
     zeroRetentionDesc: "Prompts are checked, never stored or logged.", createAccountBtn: "Create account", protectionActive: "Review before sharing",
     onboardCheckTitle: "Run your first check", onboardCheckDesc: "Paste a prompt and inspect it once.",
@@ -79,7 +79,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     readyToInspect: "Pronto per il controllo", willCheckFor: "Controlleremo i dati personali e i segreti più comuni.",
     noChecksYet: "Nessun controllo ancora", lastEightWillAppear: "Qui compariranno i riepiloghi degli ultimi otto controlli.", nothingFlagged: "Nulla segnalato in questo controllo.",
     itemsReviewed: "{n} elemento esaminato|{n} elementi esaminati",
-    createAccountTrial: "Crea un account per scegliere un piano e controllare i prompt.", startTrialToInspect: "Scegli un piano per controllare i prompt.",
+    createAccountTrial: "Crea un account per scegliere un piano e controllare i prompt.", startTrialToInspect: "Hai usato i 5 controlli gratuiti di oggi. Scegli un piano per continuare; i nuovi abbonati idonei hanno 7 giorni di prova.",
     usageLabel: "Controlli questa settimana", freeTrialBadge: "Più chiarezza con Pro", freeTrialDesc: "Controlli dei prompt, termini protetti e analisi locali dei repository su Windows.", seePlans: "Confronta i piani →",
     zeroRetentionDesc: "I prompt vengono controllati, mai salvati né registrati.", createAccountBtn: "Crea account", protectionActive: "Rivedi prima di condividere",
     onboardCheckTitle: "Esegui il tuo primo controllo", onboardCheckDesc: "Incolla un prompt e controllalo una volta.",
@@ -119,7 +119,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     readyToInspect: "Listo para revisar", willCheckFor: "Comprobaremos los datos personales y secretos más comunes.",
     noChecksYet: "Aún no hay revisiones", lastEightWillAppear: "Aquí aparecerán los resúmenes de tus últimas ocho revisiones.", nothingFlagged: "Nada señalado en esta revisión.",
     itemsReviewed: "{n} elemento revisado|{n} elementos revisados",
-    createAccountTrial: "Crea una cuenta para elegir un plan y revisar prompts.", startTrialToInspect: "Elige un plan para revisar prompts.",
+    createAccountTrial: "Crea una cuenta para elegir un plan y revisar prompts.", startTrialToInspect: "Has usado las 5 revisiones gratuitas de hoy. Elige un plan para continuar; los nuevos suscriptores que cumplan los requisitos tienen 7 días de prueba.",
     usageLabel: "Revisiones esta semana", freeTrialBadge: "Qué desbloquea un plan", freeTrialDesc: "Revisiones ilimitadas, términos protegidos propios y hasta 3 puestos de equipo.", seePlans: "Comparar planes →",
     zeroRetentionDesc: "Los prompts se revisan, nunca se guardan ni se registran.", createAccountBtn: "Crear cuenta", protectionActive: "Revisa antes de compartir",
     onboardCheckTitle: "Haz tu primera revisión", onboardCheckDesc: "Pega un prompt y revísalo una vez.",
@@ -159,7 +159,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     readyToInspect: "Prêt à vérifier", willCheckFor: "Nous vérifierons les données personnelles et secrets courants.",
     noChecksYet: "Aucune vérification pour l’instant", lastEightWillAppear: "Le résumé de vos huit dernières vérifications apparaîtra ici.", nothingFlagged: "Rien signalé dans cette vérification.",
     itemsReviewed: "{n} élément examiné|{n} éléments examinés",
-    createAccountTrial: "Créez un compte pour choisir une offre et vérifier des prompts.", startTrialToInspect: "Choisissez une offre pour vérifier des prompts.",
+    createAccountTrial: "Créez un compte pour choisir une offre et vérifier des prompts.", startTrialToInspect: "Vous avez utilisé les 5 vérifications gratuites du jour. Choisissez une offre pour continuer ; les nouveaux abonnés éligibles bénéficient de 7 jours d’essai.",
     usageLabel: "Vérifications cette semaine", freeTrialBadge: "Ce qu’une offre débloque", freeTrialDesc: "Vérifications illimitées, termes protégés personnalisés et jusqu’à 3 postes d’équipe.", seePlans: "Comparer les offres →",
     zeroRetentionDesc: "Les prompts sont vérifiés, jamais stockés ni enregistrés.", createAccountBtn: "Créer un compte", protectionActive: "Review before sharing",
     onboardCheckTitle: "Effectuez votre première vérification", onboardCheckDesc: "Collez un prompt et vérifiez-le une fois.",
@@ -199,7 +199,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     readyToInspect: "Bereit zur Prüfung", willCheckFor: "Wir prüfen auf gängige persönliche Daten und Geheimnisse.",
     noChecksYet: "Noch keine Prüfungen", lastEightWillAppear: "Hier erscheinen die Zusammenfassungen Ihrer letzten acht Prüfungen.", nothingFlagged: "In dieser Prüfung wurde nichts markiert.",
     itemsReviewed: "{n} geprüftes Element|{n} geprüfte Elemente",
-    createAccountTrial: "Erstellen Sie ein Konto, um einen Tarif zu wählen und Prompts zu prüfen.", startTrialToInspect: "Wählen Sie einen Tarif, um Prompts zu prüfen.",
+    createAccountTrial: "Erstellen Sie ein Konto, um einen Tarif zu wählen und Prompts zu prüfen.", startTrialToInspect: "Sie haben die 5 kostenlosen Prüfungen für heute genutzt. Wählen Sie einen Tarif, um weiterzumachen; berechtigte Neukunden erhalten 7 Tage Testzeitraum.",
     usageLabel: "Prüfungen diese Woche", freeTrialBadge: "Was ein Tarif freischaltet", freeTrialDesc: "Unbegrenzte Prüfungen, eigene geschützte Begriffe und bis zu 3 Teamplätze.", seePlans: "Tarife vergleichen →",
     zeroRetentionDesc: "Prompts werden geprüft, nie gespeichert oder protokolliert.", createAccountBtn: "Konto erstellen", protectionActive: "Vor dem Teilen prüfen",
     onboardCheckTitle: "Erste Prüfung durchführen", onboardCheckDesc: "Fügen Sie einen Prompt ein und prüfen Sie ihn einmal.",
@@ -953,9 +953,9 @@ export function mountDashboard(): void {
   });
 
   // The sidebar reports the real plan/trial state rather than a checks-used
-  // quota: there is no free monthly allowance in the billing code (api/scan.ts
-  // returns 402 without an active trial or subscription), so a "N / 10 free
-  // checks" meter would promise a tier that does not exist.
+  // meter: the only free allowance is the server's 5 checks a day
+  // (api/scan.ts), so a "N / 10 free checks" meter would promise a tier that
+  // does not exist.
   const trialLengthDays = 7;
   let accountState: AccountState | null = null;
   const renderPlanStatus = (): void => {
@@ -1387,7 +1387,8 @@ export function mountDashboard(): void {
   const scan = async (): Promise<void> => {
     if (scanInFlight) return;
     if (!prompt.value.trim()) { prompt.focus(); return; }
-    if (!window.promptShieldAuth?.hasAccess()) {
+    // Accounts without a plan still get the free daily checks; the server counts them.
+    if (!window.promptShieldAuth?.hasAccount()) {
       window.promptShieldAuth?.requestAccess(words().createAccountTrial);
       return;
     }
@@ -1578,6 +1579,7 @@ declare global {
   interface Window {
     promptShieldAuth?: {
       hasAccess(): boolean;
+      hasAccount(): boolean;
       requestAccess(message?: string): void;
       scanPrompt(text: string, options?: ScanRequestOptions): Promise<{ findings: Finding[]; redactedText: string; decision?: ScanDecision }>;
       request(path: string, body?: Record<string, unknown>, method?: "GET" | "POST"): Promise<Record<string, unknown>>;

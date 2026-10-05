@@ -37,7 +37,7 @@ async function render() {
   formBox.hidden = currentStatus.signedIn;
   document.getElementById("account-summary").textContent = currentStatus.signedIn ? "Your account & workspace" : "Already have an account? Sign in";
   document.getElementById("pro-benefits").hidden = Boolean(currentStatus.active);
-  document.getElementById("check-access").textContent = currentStatus.unavailable ? "Account verification unavailable. Retry in a moment." : currentStatus.signedIn ? (currentStatus.active ? "Included in your plan. Service rate limits apply." : "Your account needs an active plan. Compare the options below.") : "5 free checks per 24 hours, shared by network. No account needed.";
+  document.getElementById("check-access").textContent = currentStatus.unavailable ? "Account verification unavailable. Retry in a moment." : currentStatus.signedIn ? (currentStatus.active ? "Included in your plan. Service rate limits apply." : "5 free checks a day with your account. Pro adds automatic checks and removes the daily limit.") : "5 free checks per 24 hours, shared by network. No account needed.";
   if (currentStatus.signedIn) {
     statusEmail.textContent = currentStatus.email;
     document.getElementById("status-pill-text").textContent = currentStatus.unavailable ? "Could not verify your plan" : currentStatus.active ? "Prompt protection active" : "Plan required";
@@ -154,7 +154,7 @@ document.getElementById("quick-check").addEventListener("submit", async (event) 
   } catch (error) {
     if (revision !== checkedRevision) return;
     const needsPlan = error.httpStatus === 402 || error.message === "TRIAL_REQUIRED";
-    checkMessage.textContent = needsPlan ? (currentStatus.signedIn ? "An active plan is required for this account. Compare Pro plans below." : "The free check limit for this network has been reached. Sign in with an active plan, compare Pro, or try again after the daily window resets.") : error.message || "Could not check this text. Please retry.";
+    checkMessage.textContent = needsPlan ? (currentStatus.signedIn ? "You have used today's 5 free checks. Compare Pro plans below; eligible new subscribers get a 7-day trial." : "The free check limit for this network has been reached. Sign in with an active plan, compare Pro, or try again after the daily window resets.") : error.message || "Could not check this text. Please retry.";
     if (needsPlan) document.getElementById("pro-benefits").hidden = false;
   } finally {
     checking = false;

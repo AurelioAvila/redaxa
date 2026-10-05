@@ -151,8 +151,13 @@ function buildUI() {
     body.innerHTML = `<p class="ps-loading">Checking…</p>`;
     try {
       const status = await send({ type: "STATUS" });
-      if (!status.signedIn) {
-        body.innerHTML = `<p class="ps-empty">Try a real check without an account. Up to 5 checks per 24 hours, shared by network. Your prompt is sent to Redaxa for checking, not stored or sent to an AI provider.</p><button type="button" class="ps-use-redacted" id="redaxa-guest-check">Check this prompt</button>`;
+      // Accounts without a plan get the same manual free checks as visitors;
+      // the server counts them per account.
+      if (!status.signedIn || !status.active) {
+        const intro = status.signedIn
+          ? "Your account includes 5 free checks a day. Pro adds automatic checks before you send, with no daily limit."
+          : "Try a real check without an account. Up to 5 checks per 24 hours, shared by network.";
+        body.innerHTML = `<p class="ps-empty">${intro} Your prompt is sent to Redaxa for checking, not stored or sent to an AI provider.</p><button type="button" class="ps-use-redacted" id="redaxa-guest-check">Check this prompt</button>`;
         body.querySelector("#redaxa-guest-check").addEventListener("click", async () => {
           const latestComposer = findComposer();
           const latestText = composerText(latestComposer).trim();
@@ -162,14 +167,12 @@ function buildUI() {
             renderFindings(body, result, latestComposer, () => panel.classList.remove("open"));
           } catch (error) {
             body.innerHTML = error.httpStatus === 402 || error.message === "TRIAL_REQUIRED"
-              ? `<p class="ps-empty">The free check limit for this network has been reached. Sign in with an active plan from the extension icon, <a href="https://promptshield-beta.vercel.app/dashboard.html?source=extension#plans" target="_blank" rel="noopener">compare Pro plans</a>, or try again after the daily window resets.</p>`
+              ? (status.signedIn
+                ? `<p class="ps-empty">You have used today's 5 free checks. <a href="https://redaxa.getcertsprint.com/dashboard.html?source=extension#plans" target="_blank" rel="noopener">Choose a plan</a> to keep going; eligible new subscribers get a 7-day trial.</p>`
+                : `<p class="ps-empty">The free check limit for this network has been reached. Sign in from the extension icon, <a href="https://redaxa.getcertsprint.com/dashboard.html?source=extension#plans" target="_blank" rel="noopener">compare Pro plans</a>, or try again after the daily window resets.</p>`)
               : `<p class="ps-empty">${escapeHtml(error.message || "Check failed.")}</p>`;
           }
         });
-        return;
-      }
-      if (!status.active) {
-        body.innerHTML = `<p class="ps-empty">Your Redaxa trial/subscription isn't active. Open the extension icon or <a href="https://promptshield-beta.vercel.app/#pricing" target="_blank" rel="noopener">see plans</a>.</p>`;
         return;
       }
       const result = await runScan(text);
