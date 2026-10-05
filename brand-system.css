@@ -40,7 +40,6 @@
 .redaxa-landing .nav {background:color-mix(in srgb,var(--theme-bg) 95%,transparent);border-color:var(--theme-line);height:76px}
 .redaxa-landing .brand {font-size:23px;gap:12px}
 .redaxa-landing .mark {width:34px;height:34px}
-.redaxa-landing .mark img,.redaxa-landing .footer-brand img {filter:grayscale(1) brightness(1.7)}
 .redaxa-landing .hero {gap:54px;padding-top:88px;padding-bottom:84px;background:radial-gradient(ellipse at 80% 25%,color-mix(in srgb,var(--theme-accent) 5%,transparent),transparent 65%)}
 .redaxa-landing .hero h1 {font-size:clamp(45px,5.4vw,76px);line-height:1.04;letter-spacing:-.025em;font-weight:600}
 .redaxa-landing .hero .sub {font-size:16px;max-width:510px}
@@ -100,7 +99,7 @@
 .redaxa-workspace .app{display:block;min-height:100vh}
 .redaxa-workspace .side{position:sticky;top:0;z-index:25;display:flex;flex-direction:row;align-items:center;gap:24px;height:auto;min-height:64px;padding:9px 24px;border:0;border-bottom:1px solid var(--theme-line);background:var(--theme-bg);color:var(--theme-text)}
 .redaxa-workspace .brand{padding:0;gap:9px;font-size:21px;font-weight:650;letter-spacing:-.025em;flex:0 0 auto}
-.redaxa-workspace .brand img{width:29px;height:29px;display:block;filter:grayscale(1) brightness(1.7)}
+.redaxa-workspace .brand img{width:29px;height:29px;display:block}
 .redaxa-workspace .rx-brand-name{display:block}
 .redaxa-workspace .rx-brand-name small,.redaxa-workspace .nav-label,.redaxa-workspace .side-foot{display:none}
 .redaxa-workspace .nav{display:flex;flex-direction:row;align-items:center;gap:3px;margin-left:auto}
