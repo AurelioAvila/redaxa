@@ -18,7 +18,6 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus
 ::selection { background: #b6cfff; color: #16243b; }
 input { caret-color: var(--accent); }
 .brand { display: flex; align-items: center; gap: 10px; padding: 17px 20px; background: #141a22; color: #edf1f7; }
-.brand img { filter: grayscale(1) brightness(1.7); }
 .brand strong { font-size: 20px; letter-spacing: -.025em; font-weight: 650; }
 .edition { margin-left: auto; font-size: 11px; color: #abb8cb; }
 .tabs { display: flex; border-bottom: 1px solid var(--line); padding: 0 20px; gap: 24px; }
