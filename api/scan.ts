@@ -156,7 +156,13 @@ export default async function handler(request: RequestLike, response: ResponseLi
 
     if (user) {
       const entitlement = await effectiveEntitlement(user.id);
-      if (!entitlement.active) { response.status(402).json({ error: "TRIAL_REQUIRED" }); return; }
+      // An account without a plan keeps the same daily allowance a visitor
+      // gets, counted per account. Signing up used to remove the free checks
+      // entirely, which punished exactly the people most likely to buy.
+      if (!entitlement.active && (
+        rateLimited(`scan:free:${user.id}`, anonymousDailyScans, 86_400_000) ||
+        await rateLimitedShared(supabaseService, `scan:free:${user.id}`, anonymousDailyScans, 86_400)
+      )) { response.status(402).json({ error: "TRIAL_REQUIRED" }); return; }
       if (
         rateLimited(`scan:user:${user.id}`, 120, 60_000) ||
         rateLimited(`scan:ip:${ip}`, 240, 60_000) ||

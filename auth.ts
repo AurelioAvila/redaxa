@@ -38,6 +38,7 @@ declare global {
   interface Window {
     promptShieldAuth?: {
       hasAccess(): boolean;
+      hasAccount(): boolean;
       requestAccess(message?: string): void;
       scanPrompt(text: string, options?: ScanRequestOptions): Promise<{ findings: Finding[]; redactedText: string; decision?: ScanDecision }>;
       request(path: string, body?: Record<string, unknown>, method?: "GET" | "POST"): Promise<Record<string, unknown>>;
@@ -658,6 +659,7 @@ async function boot(): Promise<void> {
 
   window.promptShieldAuth = {
     hasAccess: () => Boolean(currentEmail) && accountActive,
+    hasAccount: () => Boolean(currentEmail),
     requestAccess: (message) => {
       if (!currentEmail) {
         setMode("signup");

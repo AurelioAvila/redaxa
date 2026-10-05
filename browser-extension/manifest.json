@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Redaxa",
   "short_name": "Redaxa",
-  "version": "0.4.5",
+  "version": "0.4.6",
   "description": "Check text for credentials and personal data, copy a redacted version, and review prompts before sharing with AI.",
   "permissions": [
     "storage",
