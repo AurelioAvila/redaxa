@@ -202,7 +202,7 @@ function allowedOrigins(): Set<string> {
   // an exact match, which read as "have to click Log in, then it just
   // works" -- the app looked logged out until something (focus, a click)
   // happened to hit a code path that didn't need the cross-origin fetch.
-  return new Set([appUrl(), "tauri://localhost", "https://tauri.localhost", "http://tauri.localhost"]);
+  return new Set([appUrl(), ...WEB_ORIGINS, "tauri://localhost", "https://tauri.localhost", "http://tauri.localhost"]);
 }
 
 // The browser extension's background service worker runs at a
@@ -589,12 +589,14 @@ export function parseJson(body: unknown): Json {
   return body as Json;
 }
 
-export const appUrl = (): string => process.env.APP_URL?.replace(/\/$/, "") ?? "https://promptshield-beta.vercel.app";
+// Both hosts serve this deployment; customers are always sent to the Redaxa one.
+const WEB_ORIGINS = ["https://redaxa.getcertsprint.com", "https://promptshield-beta.vercel.app"];
+export const appUrl = (): string => process.env.APP_URL?.replace(/\/$/, "") ?? WEB_ORIGINS[0];
 
 // Keep browser billing on its verified site without trusting arbitrary return URLs.
 // Desktop and extension clients retain the configured production fallback.
 export function billingAppUrl(request: { headers?: Record<string, string | string[] | undefined> }): string {
   const origin = request.headers?.origin;
-  return typeof origin === "string" && ["https://redaxa.getcertsprint.com", "https://promptshield-beta.vercel.app"].includes(origin)
+  return typeof origin === "string" && WEB_ORIGINS.includes(origin)
     ? origin : appUrl();
 }

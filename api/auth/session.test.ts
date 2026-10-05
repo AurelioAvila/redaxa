@@ -29,7 +29,7 @@ function invoke(method: string, origin?: string) {
   return { headers, statusCode, body };
 }
 
-const appOrigin = "https://promptshield-beta.vercel.app";
+const appOrigin = "https://redaxa.getcertsprint.com";
 
 // `configured` just reflects whether SUPABASE_URL/SUPABASE_PUBLISHABLE_KEY
 // are set - both dummied in above so the module can import at all - so this
