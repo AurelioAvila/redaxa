@@ -203,13 +203,13 @@ function accountControls(): { trigger: HTMLAnchorElement; login: HTMLAnchorEleme
   // The marketing page had no visible way into the product itself: the only
   // entry points were "Create account"/"Log in" and the avatar menu. Give
   // everyone a first-class Dashboard link in the same slot — signed-out
-  // visitors are asked to sign in by the dashboard itself. Omitted only on
-  // the dashboard, where it would link to the current page.
+  // visitors are asked to sign in by the dashboard itself. Omitted inside the
+  // workspace (dashboard and repository check), which has its own sidebar.
   const dashboard = document.createElement("a");
   dashboard.className = "small-btn";
   dashboard.href = "/dashboard.html";
   dashboard.textContent = "Dashboard";
-  if (!location.pathname.includes("dashboard")) buttonRow.append(dashboard);
+  if (!/dashboard|github/.test(location.pathname)) buttonRow.append(dashboard);
   // A full email address plus a permanent "Sign out" button spent the most
   // prominent slot in the header on the two things a signed-in user needs
   // least often. Collapsed into an initials avatar that opens a menu; the
