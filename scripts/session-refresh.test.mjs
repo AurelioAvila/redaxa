@@ -6,7 +6,8 @@ import ts from 'typescript';
 const desktop = ts.createSourceFile('auth.ts', fs.readFileSync(new URL('../auth.ts', import.meta.url), 'utf8'), ts.ScriptTarget.Latest);
 const tokenFunction = desktop.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === 'desktopAccessToken');
 const desktopCode = ts.transpileModule(tokenFunction.getText(desktop), {compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
-const extensionCode = fs.readFileSync(new URL('../browser-extension/background.js', import.meta.url), 'utf8');
+// The worker is an ES module; its engine imports are not needed for session handling.
+const extensionCode = fs.readFileSync(new URL('../browser-extension/background.js', import.meta.url), 'utf8').replace(/^import .*$/gm, '');
 
 for (const surface of ['desktop', 'extension']) {
   for (const test of [

@@ -78,5 +78,7 @@ assert.equal(el('redacted-text').value, '');
 status = { signedIn: true, active: true, email: 'fixture@example.test', repositoryAccess: true };
 await vm.runInContext('render()', context);
 assert.equal(el('pro-benefits').hidden, true, 'Paying customers do not get an upgrade wall');
-assert.match(el('check-access').textContent, /Included/);
+assert.match(el('check-access').textContent, /workspace/);
+assert.match(el('check-privacy').textContent, /workspace/);
+assert.ok(nodes.has('auto-check'), 'the automatic-check switch is in the popup');
 console.log('Popup: guest check, duplicate/stale guards, credential priority, copy, quota, clear and plan CTA passed.');

@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "Redaxa",
+  "name": "Redaxa – Redact PII & API Keys for ChatGPT, Claude, Gemini",
   "short_name": "Redaxa",
-  "version": "0.4.6",
-  "description": "Check text for credentials and personal data, copy a redacted version, and review prompts before sharing with AI.",
+  "version": "0.4.7",
+  "description": "Catch API keys, passwords and personal data before a prompt reaches ChatGPT, Claude or Gemini. Checked on your device, free.",
   "permissions": [
     "storage",
     "clipboardWrite"
@@ -17,7 +17,8 @@
     "128": "icons/128.png"
   },
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   },
   "action": {
     "default_popup": "popup.html",

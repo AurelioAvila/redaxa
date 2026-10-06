@@ -3,8 +3,13 @@
 // Supabase access/refresh token pair itself, sent as `Authorization: Bearer`
 // on every call. Stored in chrome.storage.local (extension-private, not
 // reachable by the pages it's injected into).
-importScripts("config.js");
+import "./config.js";
+import { inspectPrompt } from "./engine/scanner.js";
+import { defaultPersonalPolicy, evaluatePolicy } from "./engine/policy.js";
+// Account and plan services. Unchanged host: the extension already holds this
+// permission, and switching it would ask every user to approve a new site.
 const API_BASE = "https://promptshield-beta.vercel.app";
+const REDAXA_WORKSPACE_URL = globalThis.REDAXA_WORKSPACE_URL;
 const SESSION_KEY = "redaxa_session";
 
 function repositoryEntitlement(account) {
@@ -99,6 +104,17 @@ async function apiRequest(path, body, method = "POST", { timeoutMs = 15_000, ret
   }
 }
 
+// Only the category switches are accepted from callers; anything else falls
+// back to the engine defaults.
+function scanOptions(options) {
+  const flag = (value) => value !== false;
+  return {
+    includePersonalData: flag(options?.includePersonalData),
+    includeCredentials: flag(options?.includeCredentials),
+    includeFinancialData: flag(options?.includeFinancialData)
+  };
+}
+
 async function handleMessage(message, sender) {
   if (["SIGN_IN", "SIGN_OUT", "OPEN_REPOSITORY"].includes(message.type)
     && sender?.url !== chrome.runtime.getURL("popup.html")) {
@@ -135,11 +151,10 @@ async function handleMessage(message, sender) {
       }
     }
     case "OPEN_REPOSITORY": {
-      // Navigation and credentials remain popup-only. Content scripts only need STATUS/SCAN.
+      // Navigation remains popup-only. The web check of public repositories is
+      // free; the page itself applies the daily allowance and plan limits.
       if (sender?.url !== chrome.runtime.getURL("popup.html")) throw new Error("Open Repository check from the Redaxa popup.");
       const repository = repositoryURL(message.repository);
-      const account = await apiRequest("/api/account", undefined, "GET");
-      if (!repositoryEntitlement(account)) throw new Error("Repository checks require an active Pro or Business plan.");
       const url = new URL("/github.html", REDAXA_WORKSPACE_URL);
       url.searchParams.set("repo", repository);
       url.searchParams.set("source", "extension");
@@ -161,14 +176,21 @@ async function handleMessage(message, sender) {
         host.includes("gemini") ? "gemini" :
         host.includes("copilot") ? "copilot" :
         host.includes("perplexity") ? "perplexity" : "extension";
-      const result = await apiRequest("/api/scan", { text: message.text, application, options: message.options ?? {} }, "POST", { requireAccount: message.requireAccount === true });
+      // Free use is checked on this device: the text never leaves the browser.
+      // An active plan uses the account service, where workspace protected
+      // terms, team policies and the activity record live.
+      if (message.requireAccount !== true) {
+        const local = inspectPrompt(message.text, scanOptions(message.options));
+        return { findings: local.findings, redactedText: local.redactedText, decision: evaluatePolicy(local.findings, defaultPersonalPolicy), engine: "local" };
+      }
+      const result = await apiRequest("/api/scan", { text: message.text, application, options: message.options ?? {} }, "POST", { requireAccount: true });
       if (!Array.isArray(result.findings) || typeof result.redactedText !== "string") {
         throw new Error("The check returned an incomplete result. Please try again.");
       }
       // The decision (which policy rule fired, why, and whether the send is
       // blocked) must survive this hop — the content script's modal depends
       // on it. Dropping it here silently degraded block to warn.
-      return { findings: result.findings ?? [], redactedText: result.redactedText ?? "", decision: result.decision ?? null };
+      return { findings: result.findings ?? [], redactedText: result.redactedText ?? "", decision: result.decision ?? null, engine: "account" };
     }
     default:
       throw new Error(`Unknown message type: ${message.type}`);

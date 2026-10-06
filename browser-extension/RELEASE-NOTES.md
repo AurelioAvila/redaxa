@@ -1,4 +1,10 @@
-# Extension 0.4.6
+# Extension 0.4.7
+
+Prompts are now checked inside your browser. For free use nothing is sent anywhere: the same detection engine the Redaxa service runs is bundled with the extension, so checks are instant, unlimited and work without an account. Automatic checks before sending are now on for everyone on ChatGPT, Claude, Gemini, Copilot and Perplexity, with a switch in the popup to turn them off. Accounts with an active plan keep using the Redaxa service, where workspace protected terms, team policies and the activity record live; a Business block still holds the message when the account cannot be verified.
+
+The Repository tab opens the free web check of public GitHub repositories (exposed keys and vulnerable dependencies). Workspace links point to redaxa.getcertsprint.com. No new permissions; the background worker is now an ES module.
+
+## Previous extension 0.4.6
 
 Signed-in accounts without a plan now get 5 free manual checks a day, counted per account, instead of being sent straight to the plans page. Visitors keep their 5 checks per 24 hours per network. Automatic checks before sending still need Pro or Business. Plan links now open redaxa.getcertsprint.com. This release also includes the 0.4.5 changes, which it replaces in review. No new permissions, telemetry or dependencies.
 

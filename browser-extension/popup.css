@@ -86,3 +86,5 @@ textarea::placeholder { color: var(--muted); }
   .edition { font-size: 10px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto; } }
+.toggle { display: flex; gap: 8px; align-items: flex-start; margin: 10px 0 0; font-size: 12.5px; line-height: 1.45; cursor: pointer; }
+.toggle input { margin-top: 2px; accent-color: currentColor; }

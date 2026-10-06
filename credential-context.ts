@@ -1,12 +1,18 @@
 export type CredentialContext={service:string;type:string;evidence:string;response:string;guidance:string;docs?:string};
 export const credentialValue=(value:string)=>value.replace(/^Bearer[ \t]+/i,'');
+// atob is available in browsers, extension workers and Node, so the same
+// engine runs on the server and inside the extension.
+function base64url(part:string):Uint8Array {
+ const b64=part.replace(/-/g,'+').replace(/_/g,'/')+'='.repeat((4-part.length%4)%4);
+ return Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
+}
 export function jwtClaims(value:string):{header:Record<string,unknown>;payload:Record<string,unknown>}|undefined {
  const token=credentialValue(value);
  if(token.length>16000||!/^[-\w]+\.[-\w]+\.[-\w]+$/.test(token))return undefined;
  try {
   const parts=token.split('.');
   if(parts.some(part=>part.length%4===1))return undefined;
-  const [header,payload]=parts.slice(0,2).map(part=>JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(Buffer.from(part,'base64url'))));
+  const [header,payload]=parts.slice(0,2).map(part=>JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(base64url(part))));
   if(!header||Array.isArray(header)||typeof header.alg!=='string'||!header.alg.trim()||!payload||typeof payload!=='object'||Array.isArray(payload))return undefined;
   return {header,payload};
  }catch{return undefined;}
