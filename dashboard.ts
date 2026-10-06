@@ -1,6 +1,7 @@
 import type { Finding, ScanOptions } from "./scanner.js";
 import type { AccountState } from "./auth.js";
 import { enableAppShell } from "./pwa.js";
+import { track } from "./growth.js";
 import { enableDesktopCompanion } from "./desktop.js";
 
 type HistoryEntry = { id: string; createdAt: string; findings: number; preview: string; byKind: Record<string, number> };
@@ -1414,6 +1415,7 @@ export function mountDashboard(): void {
     scanButton.textContent = words().checking;
     try {
       const scanned = await window.promptShieldAuth!.scanPrompt(sourceText, preferences);
+      track("scan_success");
       const result = storeResult(sourceText, scanned.findings, scanned.redactedText, preferences);
       lastResult = { findings: result.findings, redactedText: result.redactedText, sourceText, decision: scanned.decision };
       showResults();
@@ -1424,6 +1426,7 @@ export function mountDashboard(): void {
     } catch (error) {
       const message = error instanceof Error ? error.message : "";
       if (message === "TRIAL_REQUIRED") {
+        track("trial_gate");
         window.promptShieldAuth?.requestAccess(words().startTrialToInspect);
       } else {
         showResults();
