@@ -118,7 +118,7 @@
       .frame { max-width: 1216px; margin: 0 auto; border-inline: 1px solid var(--line); background: var(--bg); min-height: 100vh; }
       .pad { padding-inline: 56px; }
       .rule { border: 0; border-top: 1px solid var(--line); margin: 0; }
-      .label { font-size: 11px; font-weight: 650; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); }
+      .label { font-size: 12.5px; font-weight: 650; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); }
 
       /* ============ Nav ============ */
       .nav {
@@ -152,7 +152,7 @@
 
       /* ============ Hero ============ */
       .hero { display: grid; grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr); gap: 64px; align-items: center; padding: 88px 56px 80px; }
-      .eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 6px 11px; border: 1px solid var(--line-2); border-radius: 999px; background: var(--s1); color: var(--acid); font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+      .eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 6px 11px; border: 1px solid var(--line-2); border-radius: 999px; background: var(--s1); color: var(--acid); font-size: 12.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
       .pulse { width: 6px; height: 6px; background: var(--acid); border-radius: 50%; box-shadow: 0 0 0 4px color-mix(in srgb,var(--acid) 8%,transparent); }
       .hero h1 { margin: 22px 0 0; font-size: clamp(46px, 5.6vw, 84px); line-height: 0.94; letter-spacing: -0.045em; font-weight: 700; }
       .hero h1 em { color: var(--acid); font-style: normal; }
@@ -174,9 +174,9 @@
       }
       @keyframes card-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
       .sc-head { display: flex; align-items: center; gap: 10px; }
-      .sc-title { font-size: 11px; font-weight: 750; letter-spacing: 0.14em; color: var(--mut); }
-      .sc-live { font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em; color: var(--dim); border: 1px solid var(--line-2); border-radius: 999px; padding: 3px 8px; }
-      .sc-status { margin-left: auto; position: relative; font-size: 11px; font-weight: 750; letter-spacing: 0.08em; height: 16px; min-width: 96px; text-align: right; }
+      .sc-title { font-size: 12.5px; font-weight: 750; letter-spacing: 0.14em; color: var(--mut); }
+      .sc-live { font-size: 12px; font-weight: 700; letter-spacing: 0.1em; color: var(--dim); border: 1px solid var(--line-2); border-radius: 999px; padding: 3px 8px; }
+      .sc-status { margin-left: auto; position: relative; font-size: 12.5px; font-weight: 750; letter-spacing: 0.08em; height: 16px; min-width: 96px; text-align: right; }
       .sc-status .scanning, .sc-status .protected { position: absolute; inset: 0; white-space: nowrap; text-align: right; }
       .sc-status .scanning { color: var(--warn); animation: swap-out 200ms var(--ease) 1500ms both; }
       .sc-status .protected { color: var(--acid); opacity: 0; animation: swap-in 260ms var(--ease) 1500ms both; }
@@ -197,14 +197,14 @@
       .sc-detect { border-top: 1px solid var(--line); padding-top: 12px; }
       .sc-count { font-weight: 650; color: var(--ink); font-size: 13px; }
       .sc-badges { display: inline-flex; gap: 6px; margin-left: 10px; vertical-align: 1px; }
-      .sc-badge { font-size: 10px; font-weight: 750; letter-spacing: 0.09em; color: #ffb09c; background: #ff5c3314; border: 1px solid #ff5c332e; border-radius: 5px; padding: 2px 7px; animation: fade-up 280ms var(--ease) both; }
+      .sc-badge { font-size: 12px; font-weight: 750; letter-spacing: 0.09em; color: #ffb09c; background: #ff5c3314; border: 1px solid #ff5c332e; border-radius: 5px; padding: 2px 7px; animation: fade-up 280ms var(--ease) both; }
       .sc-badge:nth-child(1) { animation-delay: 1250ms; }
       .sc-badge:nth-child(2) { animation-delay: 1360ms; }
       @keyframes fade-up { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
       .sc-safe { margin-top: 14px; animation: fade-up 320ms var(--ease) 1500ms both; }
       .sc-safe code { display: block; font: 12px/1.7 var(--mono); color: #cfe3a8; background: #0a0c09; border: 1px solid #232a1c; border-radius: var(--r-m); padding: 12px 14px; }
       .sc-safe code b { color: var(--acid); font-weight: 650; }
-      .sc-foot { display: flex; align-items: center; gap: 7px; margin-top: 16px; color: var(--dim); font-size: 11px; font-weight: 650; letter-spacing: 0.1em; text-transform: uppercase; }
+      .sc-foot { display: flex; align-items: center; gap: 7px; margin-top: 16px; color: var(--dim); font-size: 12.5px; font-weight: 650; letter-spacing: 0.1em; text-transform: uppercase; }
       .sc-foot .pulse { box-shadow: none; }
 
       /* ============ Protect strip ============ */
@@ -212,24 +212,24 @@
       .protect-item { padding: 30px 28px 34px; border-right: 1px solid var(--line); }
       .protect-item:last-child { border-right: 0; }
       .protect-item svg { width: 20px; height: 20px; color: var(--acid); }
-      .protect-item h2 { margin: 14px 0 5px; font-size: 15px; font-weight: 650; letter-spacing: -0.015em; }
+      .protect-item h3 { margin: 14px 0 5px; font-size: 15px; font-weight: 650; letter-spacing: -0.015em; }
       .protect-item p { margin: 0; color: var(--mut); font-size: 13px; line-height: 1.55; }
 
       /* ============ Section scaffolding ============ */
       .section { padding: 88px 56px; }
-      .section-kicker { color: var(--acid); font-size: 11px; font-weight: 750; letter-spacing: 0.13em; text-transform: uppercase; }
+      .section-kicker { color: var(--acid); font-size: 12.5px; font-weight: 750; letter-spacing: 0.13em; text-transform: uppercase; }
       .section h2 { margin: 14px 0 10px; font-size: clamp(30px, 3.6vw, 48px); letter-spacing: -0.04em; line-height: 1.04; font-weight: 700; }
       .section .lede { margin: 0; color: var(--mut); font-size: 16px; max-width: 560px; line-height: 1.6; }
 
       /* ============ Live scanner (functional) ============ */
       .scanner { margin: 0 56px 88px; border: 1px solid var(--line-2); border-radius: var(--r-l); overflow: hidden; background: var(--s1); box-shadow: 0 26px 70px #00000059; }
       .scanner-head { padding: 18px 24px; display: flex; align-items: center; justify-content: space-between; gap: 14px; border-bottom: 1px solid var(--line); background: var(--s2); }
-      .scanner-head h2 { margin: 0; font-size: 15px; letter-spacing: -0.02em; font-weight: 650; }
-      .local { color: var(--dim); font-size: 12px; }
+      .scanner-head h3 { margin: 0; font-size: 15px; letter-spacing: -0.02em; font-weight: 650; }
+      .local { color: var(--dim); font-size: 13px; }
       .local span { color: var(--acid); }
       .scanner-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; min-height: 400px; }
       .scan-area { padding: 24px; border-right: 1px solid var(--line); display: flex; flex-direction: column; }
-      .scan-area label { color: var(--mut); font-size: 12px; margin-bottom: 10px; font-weight: 600; }
+      .scan-area label { color: var(--mut); font-size: 13px; margin-bottom: 10px; font-weight: 600; }
       .scan-area textarea { flex: 1; min-height: 210px; resize: vertical; border: 1px solid var(--line-2); border-radius: var(--r-m); background: #0a0c10; color: var(--ink); padding: 16px; outline: none; line-height: 1.6; transition: border-color 160ms var(--ease), box-shadow 160ms var(--ease); }
       .scan-area textarea:focus { border-color: var(--acid); box-shadow: 0 0 0 3px color-mix(in srgb,var(--acid) 7%,transparent); }
       .actions { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; gap: 10px; }
@@ -245,20 +245,20 @@
       .finding { border-top: 1px solid var(--line); padding: 12px 0; display: flex; align-items: flex-start; gap: 10px; }
       .severity { width: 7px; height: 7px; margin-top: 6px; background: var(--danger); border-radius: 2px; flex-shrink: 0; }
       .finding b { display: block; font-size: 13px; }
-      .finding span { display: block; color: var(--mut); font-size: 12px; margin-top: 3px; word-break: break-word; }
+      .finding span { display: block; color: var(--mut); font-size: 13px; margin-top: 3px; word-break: break-word; }
       .safe-output { display: none; margin-top: 16px; border-top: 1px solid var(--line); padding-top: 16px; }
       .safe-output pre { margin: 8px 0 0; padding: 13px; white-space: pre-wrap; font: 12px/1.6 var(--mono); color: #d4d9e2; background: #0a0c10; border: 1px solid var(--line); border-radius: var(--r-m); max-height: 130px; overflow: auto; }
-      .copy { margin-top: 10px; color: var(--ink); background: var(--s2); border: 1px solid var(--line-2); border-radius: var(--r-s); padding: 9px 12px; font-size: 12px; font-weight: 600; transition: border-color 160ms var(--ease); }
+      .copy { margin-top: 10px; color: var(--ink); background: var(--s2); border: 1px solid var(--line-2); border-radius: var(--r-s); padding: 9px 12px; font-size: 13px; font-weight: 600; transition: border-color 160ms var(--ease); }
       .copy:hover { border-color: #39404e; }
 
       /* ============ How it works ============ */
       .flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin-top: 46px; position: relative; }
       .flow::before { content: ""; position: absolute; left: 24px; right: 24px; top: 15px; height: 1px; background: var(--line-2); }
       .step { position: relative; padding: 0 24px; }
-      .step-num { position: relative; z-index: 1; display: grid; place-items: center; width: 30px; height: 30px; border: 1px solid var(--line-2); border-radius: 9px; background: var(--s2); color: var(--acid); font-size: 12px; font-weight: 750; font-family: var(--mono); }
+      .step-num { position: relative; z-index: 1; display: grid; place-items: center; width: 30px; height: 30px; border: 1px solid var(--line-2); border-radius: 9px; background: var(--s2); color: var(--acid); font-size: 13px; font-weight: 750; font-family: var(--mono); }
       .step h3 { margin: 16px 0 6px; font-size: 15.5px; font-weight: 650; letter-spacing: -0.015em; }
       .step p { margin: 0; color: var(--mut); font-size: 13px; line-height: 1.55; }
-      .step .mini { margin-top: 10px; font: 11.5px/1.5 var(--mono); color: #b9c0cc; }
+      .step .mini { margin-top: 10px; font: 12.5px/1.5 var(--mono); color: #b9c0cc; }
       .step .mini mark { background: #ff5c331f; color: #ffb09c; border-radius: 3px; padding: 0 3px; box-shadow: inset 0 -1px 0 var(--danger); }
       .step .mini b { color: var(--acid); font-weight: 650; }
 
@@ -279,7 +279,7 @@
       .plans { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 24px; align-items: stretch; }
       .plan { border: 1px solid var(--line-2); border-radius: var(--r-l); padding: 26px; background: var(--s1); display: flex; flex-direction: column; transition: transform 200ms var(--ease), border-color 200ms var(--ease), box-shadow 200ms var(--ease); }
       .plan:hover { transform: translateY(-3px); border-color: #39404e; }
-      .plan .tag { color: var(--dim); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.12em; font-weight: 750; }
+      .plan .tag { color: var(--dim); font-size: 12px; text-transform: uppercase; letter-spacing: 0.12em; font-weight: 750; }
       .plan h3 { margin: 16px 0 4px; font-size: 21px; letter-spacing: -0.03em; }
       .plan .price { font-size: 34px; letter-spacing: -0.05em; font-weight: 700; }
       .plan .price small { color: var(--dim); font-size: 13px; letter-spacing: 0; font-weight: 500; }
@@ -300,7 +300,7 @@
       .suite-line em { font-style: normal; color: var(--acid); }
       .suite-go { flex-shrink: 0; display: inline-flex; align-items: center; gap: 7px; color: var(--acid); border: 1px solid var(--line-2); border-radius: 9px; padding: 9px 14px; font-size: 13px; font-weight: 650; transition: border-color 160ms var(--ease), background 160ms var(--ease); }
       .suite-go:hover { border-color: var(--acid); background: var(--s2); }
-      footer { border-top: 1px solid var(--line); padding: 30px 56px 42px; display: flex; justify-content: space-between; align-items: center; gap: 18px; color: var(--dim); font-size: 12.5px; flex-wrap: wrap; }
+      footer { border-top: 1px solid var(--line); padding: 30px 56px 42px; display: flex; justify-content: space-between; align-items: center; gap: 18px; color: var(--dim); font-size: 13px; flex-wrap: wrap; }
       .footer-brand { display: flex; align-items: center; gap: 8px; color: var(--ink); font-weight: 700; letter-spacing: -0.03em; font-size: 14px; }
       .footer-brand img { width: 20px; height: 20px; border-radius: 5px; }
       .footer-tag { color: var(--dim); font-weight: 400; margin-left: 4px; }
@@ -409,22 +409,22 @@
       <section class="protect" aria-label="What Redaxa protects">
         <div class="protect-item">
           <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8.2" r="3.4" stroke="currentColor" stroke-width="1.7"/><path d="M4.8 19.6c1.3-3.5 4.1-5.3 7.2-5.3s5.9 1.8 7.2 5.3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-          <h2>Personal data</h2>
+          <h3>Personal data</h3>
           <p>Names, emails, phone numbers and addresses that identify you or your clients.</p>
         </div>
         <div class="protect-item">
           <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4.5" y="10" width="15" height="9.5" rx="2.5" stroke="currentColor" stroke-width="1.7"/><path d="M8 10V7.8a4 4 0 0 1 8 0V10" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="14.7" r="1.5" fill="currentColor"/></svg>
-          <h2>Credentials</h2>
+          <h3>Credentials</h3>
           <p>Passwords, API keys and tokens to remove before sharing with an AI provider.</p>
         </div>
         <div class="protect-item">
           <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="6" width="17" height="12.5" rx="2.5" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 10.5h17" stroke="currentColor" stroke-width="1.7"/><path d="M7 15.5h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-          <h2>Financial information</h2>
+          <h3>Financial information</h3>
           <p>IBANs and card numbers pasted in without a second thought.</p>
         </div>
         <div class="protect-item">
           <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9.5 15.5 4.75 12l4.75-3.5M14.5 8.5 19.25 12l-4.75 3.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <h2>Secrets</h2>
+          <h3>Secrets</h3>
           <p>Connection strings, private keys and recognizable secret patterns that need a closer look.</p>
         </div>
       </section>
@@ -449,7 +449,7 @@
         <p class="lede">Try a fictional example, or check your own prompt. Visitors get up to 5 free checks per day, shared across their network. No account or card required for these checks; scans run on Redaxa’s servers.</p>
       </section>
       <section class="scanner" id="scanner" aria-labelledby="scanner-title">
-        <div class="scanner-head"><h2 id="scanner-title">Private prompt check</h2><div class="local"><span>●</span> Encrypted in transit — never stored</div></div>
+        <div class="scanner-head"><h3 id="scanner-title">Private prompt check</h3><div class="local"><span>●</span> Encrypted in transit — never stored</div></div>
         <div class="scanner-grid">
           <div class="scan-area"><label for="prompt">Paste a prompt to inspect</label><textarea id="prompt" placeholder="Example: Draft a reply to my client…"></textarea><div class="actions"><button class="sample" id="sample" type="button">See a free example</button><button class="primary" id="scan" type="button">Scan prompt →</button></div></div>
           <aside class="results" aria-live="polite"><h3 id="result-title">Ready when you are</h3><p class="results-copy" id="result-copy">We look for common personal details and credentials, then discard your prompt immediately.</p><div id="findings" class="empty">Choose “See a free example” for an immediate before-and-after. The example is illustrative, not a live scan.</div><div class="safe-output" id="safe-output"><h3>Safer version</h3><pre id="redacted"></pre><button class="copy" id="copy" type="button">Copy safer prompt</button></div></aside>
