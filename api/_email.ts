@@ -166,17 +166,17 @@ export function subscriptionHtml(input: SubscriptionEmailInput): string {
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
               <tr>
                 <td style="padding:10px 0; color:#e5e7eb; font-size:15px; line-height:1.5;">
-                  <span style="color:${ACCENT}; font-weight:700;">&rarr;</span>&nbsp; Redaction on every prompt, before it leaves your browser
+                  <span style="color:${ACCENT}; font-weight:700;">&rarr;</span>&nbsp; Prompt checks on the web, in the Windows app and in the Chrome extension
                 </td>
               </tr>
               <tr>
                 <td style="padding:10px 0; color:#e5e7eb; font-size:15px; line-height:1.5;">
-                  <span style="color:${ACCENT}; font-weight:700;">&rarr;</span>&nbsp; Your own rules, applied across every supported assistant
+                  <span style="color:${ACCENT}; font-weight:700;">&rarr;</span>&nbsp; Local reviews of repositories for exposed secrets, in the Windows app
                 </td>
               </tr>
               <tr>
                 <td style="padding:10px 0; color:#e5e7eb; font-size:15px; line-height:1.5;">
-                  <span style="color:${ACCENT}; font-weight:700;">&rarr;</span>&nbsp; ${plan === "business" ? "Shared policies and an audit trail for your whole team" : "An audit trail of what was redacted, kept on your machine"}
+                  <span style="color:${ACCENT}; font-weight:700;">&rarr;</span>&nbsp; ${plan === "business" ? "Shared policies and an activity log for up to three seats" : "Every finding explained, with a redacted version ready to paste"}
                 </td>
               </tr>
             </table>
@@ -324,11 +324,11 @@ export function subscriptionText(input: SubscriptionEmailInput): string {
       : "Thanks for subscribing to Redaxa. Your account is active and everything is unlocked - no extra setup needed.",
     "",
     "What you've unlocked:",
-    "- Redaction on every prompt, before it leaves your browser",
-    "- Your own rules, applied across every supported assistant",
+    "- Prompt checks on the web, in the Windows app and in the Chrome extension",
+    "- Local reviews of repositories for exposed secrets, in the Windows app",
     plan === "business"
-      ? "- Shared policies and an audit trail for your whole team"
-      : "- An audit trail of what was redacted, kept on your machine",
+      ? "- Shared policies and an activity log for up to three seats"
+      : "- Every finding explained, with a redacted version ready to paste",
     "",
     `Plan: ${planLabel(plan, interval)}`,
   ];
