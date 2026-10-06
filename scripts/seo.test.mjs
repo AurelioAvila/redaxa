@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 
 const read = file => readFileSync(new URL('../' + file, import.meta.url), 'utf8');
 const entries = [...read('sitemap.xml').matchAll(/<url>\s*<loc>([^<]+)<\/loc><lastmod>([^<]+)<\/lastmod>/g)];
-assert.equal(entries.length, 5);
+assert.equal(entries.length, 6);
 assert.equal(new Set(entries.map(entry => entry[1])).size, entries.length);
 const origin = new URL(entries[0][1]).origin;
 assert.equal(origin, 'https://redaxa.getcertsprint.com', 'Public metadata must use the verified branded domain.');
@@ -22,8 +22,9 @@ for (const [, url, modified] of entries) {
   assert.ok(Number.isFinite(Date.parse(modified)) && modified <= new Date().toISOString().slice(0, 10));
   assert.equal(new Date(modified).toISOString().slice(0, 10), modified);
 }
-for (const file of ['dashboard.html', 'github.html']) {
+// The repository check is a public, indexed free tool; the personal workspace is not.
+for (const file of ['dashboard.html']) {
   assert.match(read(file), /name="robots"[^>]*noindex/);
   assert.ok(!entries.some(entry => entry[1].endsWith('/' + file)));
 }
-console.log('SEO checks passed: five canonical sitemap URLs; private workspaces remain noindex.');
+console.log('SEO checks passed: six canonical sitemap URLs; the personal workspace remains noindex.');
