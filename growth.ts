@@ -4,8 +4,11 @@ export function track(event: string): void {
   sent.add(event);
   void fetch('https://redexa.getcertsprint.com/growth-event', { method: 'POST', body: event, credentials: 'omit', referrerPolicy: 'no-referrer', keepalive: true }).then(r => { if (!r.ok) sent.delete(event); }).catch(() => { sent.delete(event); });
 }
-track('visit');
-document.addEventListener('click', e => {
-  const link = (e.target as Element)?.closest('a');
-  if (link?.href.startsWith('https://chromewebstore.google.com/detail/redaxa/')) track('extension_click');
-});
+// Module-level wiring only runs in a page; tests import track() without a DOM.
+if (typeof document !== 'undefined') {
+  if (location.pathname === '/' || location.pathname.endsWith('/index.html')) track('visit');
+  document.addEventListener('click', e => {
+    const link = (e.target as Element)?.closest('a');
+    if (link?.href.startsWith('https://chromewebstore.google.com/detail/redaxa/')) track('extension_click');
+  });
+}

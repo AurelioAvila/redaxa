@@ -17,8 +17,8 @@ function mountLanding(): void {
   billingButtons.forEach(button => button.addEventListener('click', () => {
     const yearly = button.dataset.billing === 'yearly';
     billingButtons.forEach(option => option.setAttribute('aria-pressed', String(option === button)));
-    required('#pro-plan-price').innerHTML = yearly ? '€79.90 <small>/ year</small>' : '€7.99 <small>/ month</small>';
-    required('#business-plan-price').innerHTML = yearly ? '€149.90 <small>/ user / year</small>' : '€14.99 <small>/ user / month</small>';
+    required('#pro-plan-price').innerHTML = yearly ? '€79.90 <small>/ year</small><small class="price-equiv">€6.66 a month, billed yearly</small>' : '€7.99 <small>/ month</small>';
+    required('#business-plan-price').innerHTML = yearly ? '€149.90 <small>/ user / year</small><small class="price-equiv">€12.49 a month, billed yearly</small>' : '€14.99 <small>/ user / month</small>';
     required('#pro-plan-tag').textContent = yearly ? 'Recommended · Pro yearly' : 'Your everyday privacy toolkit';
     document.querySelectorAll<HTMLElement>('[data-plan]').forEach(cta => { cta.dataset.interval = yearly ? 'yearly' : 'monthly'; });
   }));

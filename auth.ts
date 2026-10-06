@@ -1,6 +1,7 @@
 import { isTauri, openInSystemBrowser, usesDesktopPreviewTransport } from "./desktop.js";
 import { restoreTheme } from "./themes.js";
 import { installDesktopTitlebar } from "./desktop.js";
+import { track } from "./growth.js";
 import type { Finding } from "./scanner.js";
 
 type AuthConfig = { configured: boolean };
@@ -685,6 +686,9 @@ async function boot(): Promise<void> {
   controls.login.addEventListener("click", (event) => { event.preventDefault(); if (!config?.configured) { setMessage("Account setup is being completed. Please try again shortly.", true); } setMode("signin"); show(); });
 
   const beginCheckout = async (button: HTMLElement): Promise<void> => {
+    // Intent is recorded before the account step so a drop at signup shows.
+    // Business is stored under the worker's top-tier event name.
+    track(button.dataset.plan === "business" ? "checkout_start_studio" : "checkout_start_pro");
     if (!currentEmail) {
       setMode("signup");
       setMessage("Create an account first to choose a plan.");

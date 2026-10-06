@@ -299,6 +299,8 @@
 }
 @media(max-width:1023px){.redaxa-landing .navlinks{display:none}}
 @media(max-width:700px){.redaxa-landing .nav{height:auto;min-height:76px;flex-wrap:wrap;padding-block:14px;gap:12px}.redaxa-landing .nav .brand{margin-right:auto}.redaxa-landing .nav-right{display:contents}.redaxa-landing .nav .ps-auth-buttons{order:1;flex-basis:100%;flex-wrap:wrap;justify-content:flex-end}.redaxa-landing .nav-right a{white-space:nowrap}.redaxa-landing .scanner-head{flex-wrap:wrap}.redaxa-landing main [id]{scroll-margin-top:180px}}
+@media(max-width:700px){.redaxa-landing .nav{flex-wrap:nowrap;min-height:64px}.redaxa-landing .nav .ps-auth-buttons{order:0;flex-basis:auto;flex-wrap:nowrap}.redaxa-landing .nav .ps-auth-buttons>a[href="#account"]:not(.ghost),.redaxa-landing .nav .nav-cta{display:none}.redaxa-landing main [id]{scroll-margin-top:84px}}
+.price-equiv{display:block;margin-top:6px;font-size:13px;letter-spacing:0;font-weight:500;opacity:.85}
 @media(prefers-reduced-motion:reduce){.redaxa-workspace *,.redaxa-landing *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 
 /* Operating workspace: graphite desk, compact rail and restrained theme accents. */
