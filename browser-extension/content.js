@@ -118,8 +118,8 @@ function escapeHtml(value) {
 }
 
 // ---------------------------------------------------------------------------
-// Manual guest checks use the existing server quota, after an explicit click.
-// Automatic interception below still requires an active account.
+// Checks run on this device for free use (see background.js); an active plan
+// uses the account service for workspace terms and team policies.
 // ---------------------------------------------------------------------------
 function buildUI() {
   const button = document.createElement("button");
@@ -150,32 +150,8 @@ function buildUI() {
     }
     body.innerHTML = `<p class="ps-loading">Checking…</p>`;
     try {
-      const status = await send({ type: "STATUS" });
-      // Accounts without a plan get the same manual free checks as visitors;
-      // the server counts them per account.
-      if (!status.signedIn || !status.active) {
-        const intro = status.signedIn
-          ? "Your account includes 5 free checks a day. Pro adds automatic checks before you send, with no daily limit."
-          : "Try a real check without an account. Up to 5 checks per 24 hours, shared by network.";
-        body.innerHTML = `<p class="ps-empty">${intro} Your prompt is sent to Redaxa for checking, not stored or sent to an AI provider.</p><button type="button" class="ps-use-redacted" id="redaxa-guest-check">Check this prompt</button>`;
-        body.querySelector("#redaxa-guest-check").addEventListener("click", async () => {
-          const latestComposer = findComposer();
-          const latestText = composerText(latestComposer).trim();
-          body.innerHTML = `<p class="ps-loading">Checking…</p>`;
-          try {
-            const result = await runScan(latestText);
-            renderFindings(body, result, latestComposer, () => panel.classList.remove("open"));
-          } catch (error) {
-            body.innerHTML = error.httpStatus === 402 || error.message === "TRIAL_REQUIRED"
-              ? (status.signedIn
-                ? `<p class="ps-empty">You have used today's 5 free checks. <a href="https://redaxa.getcertsprint.com/dashboard.html?source=extension#plans" target="_blank" rel="noopener">Choose a plan</a> to keep going; eligible new subscribers get a 7-day trial.</p>`
-                : `<p class="ps-empty">The free check limit for this network has been reached. Sign in from the extension icon, <a href="https://redaxa.getcertsprint.com/dashboard.html?source=extension#plans" target="_blank" rel="noopener">compare Pro plans</a>, or try again after the daily window resets.</p>`)
-              : `<p class="ps-empty">${escapeHtml(error.message || "Check failed.")}</p>`;
-          }
-        });
-        return;
-      }
-      const result = await runScan(text);
+      const status = await send({ type: "STATUS" }).catch(() => ({ signedIn: false }));
+      const result = await runScan(text, status.signedIn === true && status.active === true);
       renderFindings(body, result, composer, () => panel.classList.remove("open"));
     } catch (error) {
       body.innerHTML = `<p class="ps-empty">${escapeHtml(error.message || "Check failed.")}</p>`;
@@ -203,9 +179,13 @@ function apiWarning(findings) {
   return `<div class="ps-api-warning" role="alert"><strong>API key or token found · ${count} potential ${count === 1 ? 'match' : 'matches'}</strong><p>Review these first. Validity has not been tested. Replace with the safer version before sharing.</p></div>`;
 }
 
+function whereChecked(result) {
+  return result.engine === "local" ? `<p class="ps-where">Checked on this device. Nothing was sent.</p>` : "";
+}
+
 function renderFindings(body, result, composer, onHandled) {
   if (!result.findings.length) {
-    body.innerHTML = `<p class="ps-empty">Nothing obvious found. This is a helpful signal, not a guarantee.</p>`;
+    body.innerHTML = `<p class="ps-empty">Nothing obvious found. This is a helpful signal, not a guarantee.</p>${whereChecked(result)}`;
     return;
   }
   const list = findingPriority(result.findings).map((f) => `<div class="ps-finding"><b>${escapeHtml(f.credential ? f.credential.service+' · '+f.credential.type : f.label)}</b>${f.credential?`<details><summary>${escapeHtml(f.credential.response)}</summary><p>${escapeHtml(f.credential.evidence+' '+f.credential.guidance)}</p></details>`:''}</div>`).join("");
@@ -215,6 +195,7 @@ function renderFindings(body, result, composer, onHandled) {
     ${decisionReason(result)}
     ${list}
     <button type="button" class="ps-use-redacted" id="redaxa-use-redacted">Replace with safer version</button>
+    ${whereChecked(result)}
   `;
   body.querySelector("#redaxa-use-redacted")?.addEventListener("click", () => {
     if (!sameCheckedPrompt(composer, result.checkedText)) return;
@@ -237,7 +218,7 @@ function sameCheckedPrompt(composer, checkedText) {
 
 // ---------------------------------------------------------------------------
 // Send interception. A manual "Check" button alone is easy to forget, so for
-// signed-in, active subscribers this also intercepts the actual send action
+// everyone (unless switched off in the popup) this also intercepts the actual send action
 // (Enter key and the Send button) at the document capture phase -- the
 // earliest point in the DOM event chain, ahead of the site's own React/Vue
 // handlers -- and puts up a blocking modal before anything leaves the
@@ -252,6 +233,13 @@ function sameCheckedPrompt(composer, checkedText) {
 // click/mousedown/form-submit, not just one path.
 // ---------------------------------------------------------------------------
 let statusCache = { unavailable: true };
+// "Check automatically before sending", on unless switched off in the popup.
+let autoCheck = true;
+const AUTO_CHECK_KEY = "redaxa_auto_check";
+chrome.storage?.local?.get(AUTO_CHECK_KEY).then(stored => { autoCheck = stored?.[AUTO_CHECK_KEY] !== false; }).catch(() => undefined);
+chrome.storage?.onChanged?.addListener((changes, area) => {
+  if (area === "local" && AUTO_CHECK_KEY in changes) autoCheck = changes[AUTO_CHECK_KEY].newValue !== false;
+});
 let statusCheckedAt = 0;
 let bypassArm = false;
 let statusRefresh = null;
@@ -323,9 +311,10 @@ async function gate(composer, resend) {
   let result;
   try {
     const status = await currentStatus();
+    // A signed-in account whose plan cannot be confirmed may carry team
+    // policies that block sending, so it waits rather than guessing.
     if (status.unavailable) throw new Error("Redaxa could not verify your account. Retry when the service is available.");
-    if (!status.signedIn || !status.active) { sendChecked(); return; }
-    result = await runScan(text, true);
+    result = await runScan(text, status.signedIn === true && status.active === true);
   } catch (error) {
     showModal(`
       <div class="ps-int-head">Redaxa<button type="button" class="ps-int-x" id="ps-int-close">×</button></div>
@@ -385,7 +374,7 @@ document.addEventListener("keydown", (event) => {
   if (bypassArm) { bypassArm = false; return; }
   if (orphaned()) return;
   if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
-  if (statusCache.signedIn === false || (statusCache.active === false && !statusCache.unavailable)) return;
+  if (!autoCheck) return;
   const composer = findComposer();
   if (!withinComposer(event.target, composer)) return;
   const text = composerText(composer).trim();
@@ -398,7 +387,7 @@ document.addEventListener("keydown", (event) => {
 document.addEventListener("click", (event) => {
   if (bypassArm) { bypassArm = false; return; }
   if (orphaned()) return;
-  if (statusCache.signedIn === false || (statusCache.active === false && !statusCache.unavailable)) return;
+  if (!autoCheck) return;
   const button = event.target.closest?.("button");
   if (!button) return;
   const sendButton = findSendButton();

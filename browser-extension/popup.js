@@ -37,17 +37,16 @@ async function render() {
   formBox.hidden = currentStatus.signedIn;
   document.getElementById("account-summary").textContent = currentStatus.signedIn ? "Your account & workspace" : "Already have an account? Sign in";
   document.getElementById("pro-benefits").hidden = Boolean(currentStatus.active);
-  document.getElementById("check-access").textContent = currentStatus.unavailable ? "Account verification unavailable. Retry in a moment." : currentStatus.signedIn ? (currentStatus.active ? "Included in your plan. Service rate limits apply." : "5 free checks a day with your account. Pro adds automatic checks and removes the daily limit.") : "5 free checks per 24 hours, shared by network. No account needed.";
+  const accountChecks = currentStatus.signedIn === true && currentStatus.active === true && !currentStatus.unavailable;
+  document.getElementById("check-access").textContent = accountChecks ? "Includes your workspace's protected terms and team policies." : "Free and unlimited. No account needed.";
+  document.getElementById("check-privacy").textContent = accountChecks ? "Checked by your Redaxa workspace. Text is not stored or sent to an AI provider." : "Checked on this device. Your text is not sent anywhere.";
   if (currentStatus.signedIn) {
     statusEmail.textContent = currentStatus.email;
     document.getElementById("status-pill-text").textContent = currentStatus.unavailable ? "Could not verify your plan" : currentStatus.active ? "Prompt protection active" : "Plan required";
     document.querySelector("#status-pill i").style.background = currentStatus.active ? "#a8d9bd" : "#ffb8ac";
     document.getElementById("status-plan").textContent = currentStatus.repositoryAccess ? (currentStatus.plan === "business" ? "Business · Pro features included" : "Pro workspace") : "Manage your plan in the workspace";
   }
-  document.getElementById("repository-access").textContent = currentStatus.repositoryAccess ? "Included in your plan. Requires the latest Redaxa Windows app; access is verified again before scanning." : "Local Windows repository checks are included with Pro and Business.";
-  const action = document.getElementById("open-repository");
-  action.firstChild.textContent = currentStatus.repositoryAccess ? "Open repository check " : currentStatus.signedIn ? "Explore Pro " : "Sign in to continue ";
-  document.getElementById("repository-url").required = Boolean(currentStatus.repositoryAccess);
+  document.getElementById("repository-access").textContent = currentStatus.repositoryAccess ? "60 web checks a day with your plan. History and private repositories run in the Windows app." : "3 free checks a day on the web. Values always stay hidden.";
   if (currentStatus.unavailable) msg.textContent = "Account verification is unavailable. Please try again; no access has been unlocked.";
 }
 formBox.addEventListener("submit", async (event) => {
@@ -62,11 +61,9 @@ formBox.addEventListener("submit", async (event) => {
 });
 document.getElementById("repository-form").addEventListener("submit", async (event) => {
   event.preventDefault(); msg.textContent = "";
-  if (!currentStatus.signedIn) { setPanel(false); document.getElementById("account-details").open = true; document.getElementById("email").focus(); return; }
-  if (!currentStatus.repositoryAccess) { openWorkspace(`${DASHBOARD_URL}#plans`); return; }
   const button = document.getElementById("open-repository"); button.disabled = true;
   try {
-    // Fresh entitlement verification in the background on every open; UI state is not authorization.
+    // The page applies the daily allowance and plan limits.
     await send({ type: "OPEN_REPOSITORY", repository: document.getElementById("repository-url").value.trim() });
   } catch (error) { msg.textContent = error.message || "Could not open the repository check."; }
   finally { button.disabled = false; }
@@ -126,9 +123,9 @@ document.getElementById("quick-check").addEventListener("submit", async (event) 
   checking = true;
   checkButton.disabled = true;
   checkButton.textContent = "Checking…";
-  checkMessage.textContent = "Checking with Redaxa…";
+  checkMessage.textContent = "Checking…";
   try {
-    const result = await send({ type: "SCAN", text, options: { includePersonalData: true, includeCredentials: true, includeFinancialData: true } });
+    const result = await send({ type: "SCAN", text, requireAccount: currentStatus.signedIn === true && currentStatus.active === true && !currentStatus.unavailable, options: { includePersonalData: true, includeCredentials: true, includeFinancialData: true } });
     if (revision !== checkedRevision || checkText.value !== text) return;
     if (!Array.isArray(result.findings) || typeof result.redactedText !== "string") throw new Error("Incomplete result. Please check again.");
     const credentials = result.findings.filter(f => f.category === "credentials" || f.kind === "secret" || f.kind === "privateKey");
@@ -169,5 +166,11 @@ document.getElementById("copy-result").addEventListener("click", async () => {
 });
 document.getElementById("compare-plans").addEventListener("click", () => openWorkspace(`${DASHBOARD_URL}?source=extension#plans`));
 document.getElementById("preview-note").hidden = installed;
+// "Check automatically before sending": read by the content script on AI sites.
+const autoCheck = document.getElementById("auto-check");
+if (installed && chrome.storage?.local) {
+  chrome.storage.local.get("redaxa_auto_check").then(stored => { autoCheck.checked = stored?.redaxa_auto_check !== false; }).catch(() => undefined);
+  autoCheck.addEventListener("change", () => { void chrome.storage.local.set({ redaxa_auto_check: autoCheck.checked }); });
+}
 void render();
 
