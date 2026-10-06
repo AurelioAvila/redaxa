@@ -19,31 +19,31 @@ const defaultPreferences: Preferences = { language: "en", theme: "graphite", sca
 const languageNames: Record<Language, string> = { en: "English", it: "Italiano", es: "Español", fr: "Français", de: "Deutsch" };
 const copyByLanguage: Record<Language, Record<string, string>> = {
   en: {
-    textMode: "Text for AI", textModeNote: "Remove private details before sending", repoMode: "GitHub repository", repoModeNote: "Exposed keys and vulnerable dependencies · free", stepInput: "Add your text", stepReview: "Review what was found", stepCopy: "Copy a safer version", previewHeadline: "See what stays private.", previewExplain: "An example of the text you could share after redaction.", compareAction: "Show redacted version", sampleLead: "Start with a sample",
+    textMode: "Prompt check", textModeNote: "Remove private details before you send", repoMode: "GitHub repository", repoModeNote: "Exposed keys and vulnerable dependencies · free", stepInput: "Add your text", stepReview: "Review what was found", stepCopy: "Copy the safer version", previewHeadline: "See what stays private.", previewExplain: "An example of what you could share after the check.", compareAction: "Show safer version", sampleLead: "Start with a sample",
     workspace: "Workspace", privateCheck: "Check a prompt", recent: "Recent checks", account: "Account", plans: "Plans & pricing", preferences: "Preferences",
-    eyebrow: "Personal workspace", title: "Review before you share.", subtitle: "Find sensitive details in text for AI, or exposed credentials in a GitHub repository.",
-    scan: "Inspect prompt →", clear: "Clear", history: "Recent local checks", clearHistory: "Clear history",
+    eyebrow: "Personal workspace", title: "Review before you share.", subtitle: "Find sensitive details in a prompt, or exposed keys and vulnerable dependencies in a GitHub repository.",
+    scan: "Check prompt →", clear: "Clear", history: "Recent checks", clearHistory: "Clear history",
     placeholder: "Paste the text you want to check…",
     composerTitle: "What are you about to share?", composerSub: "Paste your message, email or code. Nothing is sent to an AI provider.", promptLabel: "Prompt to check",
     tryLabel: "Try an example", sampleBrief: "Client brief", sampleApiKey: "API key", sampleEmail: "Email draft", samplePersonal: "Personal details",
-    metaLabel: "Private scan — your prompt is never stored or logged.", howPrivacyWorks: "How privacy works", interfaceLanguage: "Interface language",
-    scanModeStandard: "Standard — balanced checks", scanModeStrict: "Strict — careful review mode",
+    metaLabel: "Private check — your text is never stored or logged.", howPrivacyWorks: "How privacy works", interfaceLanguage: "Interface language",
+    scanModeStandard: "Standard — balanced", scanModeStrict: "Strict — flags likely matches too",
     resultsTitle: "Results", previewItems: "3 sensitive items in this prompt",
-    redactBeforeSharing: "Redact before sharing", previewFoot: "Paste your own prompt to run a real check.", detectsLabel: "Also detects",
+    redactBeforeSharing: "Redact before sharing", previewFoot: "Paste your own text to run a real check.", detectsLabel: "Also detects",
     riskHigh: "High risk", riskMedium: "Review before sharing", riskNone: "No risks found",
     actionHigh: "{n} sensitive item found. Replace it, or copy the redacted version below.|{n} sensitive items found. Replace them, or copy the redacted version below.",
     actionMedium: "{n} item to review before sharing this prompt.|{n} items to review before sharing this prompt.",
     actionNone: "Nothing obvious found. This is a helpful signal, not a guarantee.",
     checking: "Checking…", promptTooLong: "Prompt is too long", keepUnder: "Keep it under {max} characters for a check.",
     checkFailed: "Check failed", couldNotRunCheck: "We could not run that check. Please try again.",
-    sensitiveValueHidden: "Value hidden", saferVersion: "Safer version", copySafer: "Copy redacted prompt", copied: "Copied",
-    readyToInspect: "Ready to inspect", willCheckFor: "We will check for common personal data and secrets.",
-    noChecksYet: "No checks yet", lastEightWillAppear: "Your last eight check summaries will appear here.", nothingFlagged: "Nothing flagged in this check.",
+    sensitiveValueHidden: "Value hidden", saferVersion: "Safer version", copySafer: "Copy safer version", copied: "Copied",
+    readyToInspect: "Ready to check", willCheckFor: "Results appear here: personal data, credentials and financial details.",
+    noChecksYet: "No checks yet", lastEightWillAppear: "Summaries of your last eight checks appear here. They stay in this browser.", nothingFlagged: "Nothing flagged in this check.",
     itemsReviewed: "{n} item reviewed|{n} items reviewed",
-    createAccountTrial: "Create an account to choose a plan and inspect prompts.", startTrialToInspect: "You have used today's 5 free checks. Choose a plan to keep going; eligible new subscribers get a 7-day trial.",
-    usageLabel: "Checks this week", freeTrialBadge: "More clarity with Pro", freeTrialDesc: "Prompt checks, protected terms, and local repository reviews on Windows.", seePlans: "Compare plans →",
+    createAccountTrial: "Create an account to choose a plan and keep checking.", startTrialToInspect: "Today's 5 free checks are used up. Choose a plan to keep going; new subscribers get a 7-day trial.",
+    usageLabel: "Checks this week", freeTrialBadge: "Go further with Pro", freeTrialDesc: "Prompt checks, protected terms, and local repository reviews on Windows.", seePlans: "Compare plans →",
     zeroRetentionDesc: "Prompts are checked, never stored or logged.", createAccountBtn: "Create account", protectionActive: "Review before sharing",
-    onboardCheckTitle: "Run your first check", onboardCheckDesc: "Paste a prompt and inspect it once.",
+    onboardCheckTitle: "Run your first check", onboardCheckDesc: "Paste a prompt and check it once.",
     onboardTermsTitle: "Add a custom term", onboardTermsDesc: "Protect a client or project name in Preferences.",
     onboardThemeTitle: "Pick a theme", onboardThemeDesc: "Make the workspace yours in Preferences.",
     activityTitle: "Your activity", activityEmpty: "Your privacy activity will appear here after your first check.", last7: "Last 7 days", byType: "By detection type",
@@ -56,7 +56,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     manageTag: "Already subscribed?", manageTitle: "Manage billing", manageDesc: "Update your payment method, download invoices, or cancel renewal whenever you need to.", manageBtn: "Manage subscription",
     teamTitle: "Team", teamSeatsUsed: "{used} of {total} seats used.", inviteCreate: "Create invite link", copyLink: "Copy link", noInvites: "No invites yet.", teammateJoined: "Teammate joined", invitePending: "Invite pending", revoke: "Revoke", removeTeammate: "Remove", couldNotRemoveTeammate: "We could not remove this teammate or invite.", couldNotCreateInvite: "We could not create an invite.",
     orgTitle: "Organization", orgIntro: "Shared protection for your whole workspace. Protected terms apply to every member's checks, on every device.", orgMembersLabel: "Members", orgTermsLabel: "Protected terms", orgTermsHint: "Project codenames, client names — flagged in every member's prompts.", orgTermAdd: "Add", orgTermPlaceholder: "e.g. Project Falcon", orgRoleOwner: "Owner", orgRoleAdmin: "Admin", orgRoleMember: "Member", orgYou: "you", orgRenameSave: "Save name", orgNoTerms: "No protected terms yet.", orgRemove: "Remove", acctActivity: "Across your account — all devices", orgActivity: "Organization activity", orgChecks: "Team checks", orgFlagged: "Flagged", orgBlocked: "Blocked", orgTopCat: "Top category", orgByMember: "By member", orgExport: "Export CSV (metadata only)", auditFrom: "From", auditTo: "To", auditRange: "Range", auditShowing: "Showing the most recent {shown} of {total} in this range. The export covers the whole range.", auditComplete: "{total} event(s) in this range.", orgPoliciesLabel: "Policies", orgPoliciesHint: "What happens when a category is found in a member's prompt. Block prevents sending from the extension until fixed.", polDefault: "Default", polWarn: "Warn", polRedact: "Redact", polBlock: "Block", catPersonal: "Personal data", catCredentials: "Credentials", catFinancial: "Financial data", catCustom: "Protected terms", sevAny: "any severity",
-    previewBadge: "Preview", previewLabel: "example result — not your prompt", planNone: "Free checks", planNoneNote: "5 checks a day without a card. Choose a plan for unlimited checks; eligible new subscribers get a 7-day trial.", planTrial: "Free trial", planTrialNote: "Your trial covers unlimited checks. Add a plan to keep them running.", planActive: "Active plan", planActiveNote: "Unlimited checks and custom protected terms are on.", planDayOf: "Day {day} of {total}", planEndsToday: "Ends today", planDaysLeft: "{n} day left|{n} days left", foundInPrompt: "Found in your prompt"
+    previewBadge: "Preview", previewLabel: "example result — not your prompt", planNone: "Free checks", planNoneNote: "5 checks a day, no card needed. Pro removes the limit; new subscribers get a 7-day trial.", planTrial: "Free trial", planTrialNote: "Unlimited checks during the trial. Choose a plan to keep them after it ends.", planActive: "Active plan", planActiveNote: "Unlimited checks and your protected terms are on.", planDayOf: "Day {day} of {total}", planEndsToday: "Ends today", planDaysLeft: "{n} day left|{n} days left", foundInPrompt: "Found in your prompt"
   },
   it: {
     textMode: "Testo per AI", textModeNote: "Rimuovi i dettagli privati prima di inviare", repoMode: "Repository GitHub", repoModeNote: "Chiavi esposte e dipendenze vulnerabili · gratis", stepInput: "Aggiungi il testo", stepReview: "Rivedi i risultati", stepCopy: "Copia una versione più sicura", previewHeadline: "Scopri cosa resta privato.", previewExplain: "Un esempio del testo da condividere dopo la rimozione dei dati.", compareAction: "Mostra versione oscurata", sampleLead: "Inizia con un esempio",
@@ -220,7 +220,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
   }
 };
 const settingsByLanguage: Record<Language, string[]> = {
-  en: ["Personal preferences", "These settings stay in this browser. They do not create an online account or upload prompt content.", "Interface language", "Inspection mode", "Detect personal data (email, phone, IP, fiscal code)", "Detect API keys and credentials", "Detect cards and IBANs", "Keep local check summaries", "Show the detected value on screen", "Clear the prompt after copying its safer version", "Close", "Save preferences", "Custom protected terms"],
+  en: ["Preferences", "Saved in this browser only. Nothing here creates an account or uploads your text.", "Interface language", "Check mode", "Detect personal data (email, phone, IP, fiscal code)", "Detect API keys and credentials", "Detect cards and IBANs", "Keep local check summaries", "Show the detected value on screen", "Clear the prompt after copying its safer version", "Close", "Save preferences", "Custom protected terms"],
   it: ["Impostazioni personali", "Queste impostazioni restano in questo browser. Non creano un account online e non caricano il contenuto dei prompt.", "Lingua dell'interfaccia", "Modalità di controllo", "Rileva dati personali (email, telefono, IP, codice fiscale)", "Rileva API key e credenziali", "Rileva carte e IBAN", "Mantieni i riepiloghi locali", "Mostra il valore rilevato sullo schermo", "Svuota il prompt dopo aver copiato la versione sicura", "Chiudi", "Salva impostazioni", "Termini personali protetti"],
   es: ["Preferencias personales", "Estos ajustes permanecen en este navegador. No crean una cuenta ni suben el contenido de los prompts.", "Idioma de la interfaz", "Modo de revisión", "Detectar datos personales (correo, teléfono, IP, código fiscal)", "Detectar claves API y credenciales", "Detectar tarjetas e IBAN", "Guardar resúmenes locales", "Mostrar el valor detectado", "Limpiar el prompt después de copiar la versión segura", "Cerrar", "Guardar preferencias", "Términos protegidos personalizados"],
   fr: ["Préférences personnelles", "Ces réglages restent dans ce navigateur. Ils ne créent pas de compte et n’envoient pas le contenu des prompts.", "Langue de l’interface", "Mode de vérification", "Détecter les données personnelles (e-mail, téléphone, IP, code fiscal)", "Détecter les clés API et identifiants", "Détecter les cartes et IBAN", "Conserver les résumés locaux", "Afficher la valeur détectée", "Effacer le prompt après la copie", "Fermer", "Enregistrer", "Termes protégés personnalisés"],
@@ -445,11 +445,11 @@ export function mountDashboard(): void {
   preferenceDialog.className = "drawer-backdrop";
   preferenceDialog.innerHTML = `
     <section class="drawer" role="dialog" aria-modal="true" aria-labelledby="preferences-title">
-      <h2 id="preferences-title">Personal preferences</h2>
-      <p>These settings stay in this browser. They do not create an online account or upload prompt content.</p>
+      <h2 id="preferences-title">Preferences</h2>
+      <p>Saved in this browser only. Nothing here creates an account or uploads your text.</p>
       <label class="pref-row">Interface language<select id="language"><option value="en">English</option><option value="it">Italiano</option><option value="es">Español</option><option value="fr">Français</option><option value="de">Deutsch</option></select></label>
       <div class="pref-row theme-pref-row">Theme<div class="theme-row" id="theme-row"></div></div>
-      <label class="pref-row">Inspection mode<select id="scan-mode"><option value="standard">Standard</option><option value="strict">Strict</option></select></label>
+      <label class="pref-row">Check mode<select id="scan-mode"><option value="standard">Standard</option><option value="strict">Strict</option></select></label>
       <label class="switch"><input id="detect-personal" type="checkbox" checked> Detect personal data</label>
       <label class="switch"><input id="detect-credentials" type="checkbox" checked> Detect API keys and credentials</label>
       <label class="switch"><input id="detect-financial" type="checkbox" checked> Detect cards and IBANs</label>
@@ -524,7 +524,7 @@ export function mountDashboard(): void {
     <section class="drawer plans-drawer" role="dialog" aria-modal="true" aria-labelledby="plans-title">
       <h2 id="plans-title" tabindex="-1">${words().plansTitle}</h2>
       <p class="plans-intro">${words().plansIntro}</p>
-      <div class="billing-switch" role="group" aria-label="Billing period"><button type="button" data-billing="monthly" aria-pressed="false">Monthly</button><button type="button" data-billing="yearly" aria-pressed="true">Yearly · save 2 months</button></div>
+      <div class="billing-switch" role="group" aria-label="Billing period"><button type="button" data-billing="monthly" aria-pressed="false">Monthly</button><button type="button" data-billing="yearly" aria-pressed="true">Yearly · 2 months free</button></div>
       <div class="plan-grid">
         <article class="plan-card featured">
           <div class="plan-tag">${words().personalTag}</div>

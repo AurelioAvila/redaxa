@@ -82,7 +82,7 @@ export const defaultPersonalPolicy = [
         enabled: true,
         match: { categories: ["financial"] },
         action: "redact",
-        reason: "Card numbers, IBANs and wallet addresses are directly abusable if leaked."
+        reason: "Card numbers, IBANs and wallet addresses can be misused directly if they leak."
     },
     {
         id: "default-personal",
@@ -90,7 +90,7 @@ export const defaultPersonalPolicy = [
         enabled: true,
         match: { categories: ["personal"] },
         action: "warn",
-        reason: "Personal identifiers were found — review before sharing."
+        reason: "Personal details were found. Review them before you share."
     },
     {
         id: "default-custom-terms",

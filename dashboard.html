@@ -499,11 +499,11 @@ body.corner-blocked #inspect-clipboard{display:none}
       <div class="usage" id="plan-status">
         <div class="usage-head"><span id="plan-status-label" data-i18n="planNone">Free checks</span><b id="plan-status-value"></b></div>
         <div class="usage-track" id="plan-track" hidden><div class="usage-fill" id="plan-fill"></div></div>
-        <p class="usage-note" id="plan-status-note" data-i18n="planNoneNote">5 checks a day without a card. Choose a plan for unlimited checks; eligible new subscribers get a 7-day trial.</p>
+        <p class="usage-note" id="plan-status-note" data-i18n="planNoneNote">5 checks a day, no card needed. Pro removes the limit; new subscribers get a 7-day trial.</p>
       </div>
       <div class="side-fill" id="side-fill">
-        <b data-i18n="freeTrialBadge">More clarity with Pro</b>
-        <span data-i18n="freeTrialDesc">Prompt checks, protected terms, and local repository reviews on Windows.</span>
+        <b data-i18n="freeTrialBadge">Go further with Pro</b>
+        <span data-i18n="freeTrialDesc">Protected terms for your clients, team policies and deep repository reviews on Windows.</span>
         <a href="#" id="side-fill-cta" data-i18n="seePlans">Compare plans →</a>
       </div>
     </div>
@@ -513,7 +513,7 @@ body.corner-blocked #inspect-clipboard{display:none}
     <section class="top">
       <div>
         <h1 data-i18n="title">Prompt check</h1>
-        <p data-i18n="subtitle">Review sensitive details before sharing with AI.</p>
+        <p data-i18n="subtitle">Review sensitive details before you share them with an AI.</p>
       </div>
       <div class="top-right">
         <a class="small-btn" href="#account" data-i18n="createAccountBtn">Create account</a>
@@ -524,20 +524,20 @@ body.corner-blocked #inspect-clipboard{display:none}
 
 
     <nav class="task-switch" aria-label="Check type">
-      <a href="#prompt-workspace" aria-current="page"><span data-i18n="textMode">Text for AI</span><small data-i18n="textModeNote">Remove private details before sending</small></a>
+      <a href="#prompt-workspace" aria-current="page"><span data-i18n="textMode">Prompt check</span><small data-i18n="textModeNote">Remove private details before you send</small></a>
       <a href="/github.html"><span data-i18n="repoMode">GitHub repository</span><small data-i18n="repoModeNote">Exposed keys and vulnerable dependencies · free</small></a>
     </nav>
-    <ol class="review-journey" aria-label="Review workflow"><li><b>1</b><span data-i18n="stepInput">Add your text</span></li><li><b>2</b><span data-i18n="stepReview">Review what was found</span></li><li><b>3</b><span data-i18n="stepCopy">Copy a safer version</span></li></ol>
+    <ol class="review-journey" aria-label="Review workflow"><li><b>1</b><span data-i18n="stepInput">Add your text</span></li><li><b>2</b><span data-i18n="stepReview">Review what was found</span></li><li><b>3</b><span data-i18n="stepCopy">Copy the safer version</span></li></ol>
     <section class="workspace" id="prompt-workspace">
       <article class="card composer">
         <h2 id="composer-title" data-i18n="composerTitle">Prompt to review</h2>
-        <p class="composer-sub" data-i18n="composerSub">Paste your text below, then inspect it for sensitive data.</p>
+        <p class="composer-sub" data-i18n="composerSub">Paste your text below, then check it for sensitive data.</p>
         <label class="sr-only" for="prompt" data-i18n="promptLabel">Prompt to check</label>
         <textarea class="editor" id="prompt" data-i18n-placeholder="placeholder" placeholder="e.g. Draft a reply to Marco Rossi (m.rossi@acme.com) about the ACME invoice — my direct line is +39 02 5555 0180"></textarea>
         <div class="prompt-meta">
           <span class="meta-privacy">
             <span class="dot" aria-hidden="true"></span>
-            <span id="meta-label" data-i18n="metaLabel">Private scan — your prompt is never stored or logged.</span>
+            <span id="meta-label" data-i18n="metaLabel">Private check — your text is never stored or logged.</span>
             <a href="https://redaxa.getcertsprint.com/privacy.html" target="_blank" rel="noopener" data-i18n="howPrivacyWorks">How privacy works</a>
           </span>
           <span id="character-count"><strong>0</strong> / 10,000</span>
@@ -556,7 +556,7 @@ body.corner-blocked #inspect-clipboard{display:none}
         <div class="actions">
           <span class="kbd-hint" aria-hidden="true"><span class="kbd" id="kbd-key">Ctrl</span> + <span class="kbd">Enter</span></span>
           <button class="ghost-btn" type="button" id="clear-prompt" data-i18n="clear">Clear</button>
-          <button class="primary" type="button" id="scan" disabled data-i18n="scan">Inspect prompt →</button>
+          <button class="primary" type="button" id="scan" disabled data-i18n="scan">Check prompt →</button>
         </div>
       </article>
 
@@ -569,8 +569,8 @@ body.corner-blocked #inspect-clipboard{display:none}
           <div class="risk-banner" id="risk-banner" hidden>
             <span class="risk-mark" id="risk-count" aria-hidden="true">&#8212;</span>
             <div>
-              <b id="risk-title">Ready to inspect</b>
-              <span id="risk-copy">We will check for common personal data and secrets.</span>
+              <b id="risk-title">Ready to check</b>
+              <span id="risk-copy">Results appear here: personal data, credentials and financial details.</span>
             </div>
           </div>
         </div>
@@ -580,8 +580,8 @@ body.corner-blocked #inspect-clipboard{display:none}
           <div class="review-ready">
             <span class="review-kicker" data-i18n="previewBadge">Preview</span>
             <h3 data-i18n="previewHeadline">See what stays private.</h3>
-            <p data-i18n="previewExplain">An example of the text you could share after redaction.</p>
-            <label class="compare-toggle"><input id="compare-redaction" type="checkbox"><span data-i18n="compareAction">Show redacted version</span><i aria-hidden="true"></i></label>
+            <p data-i18n="previewExplain">An example of what you could share after the check.</p>
+            <label class="compare-toggle"><input id="compare-redaction" type="checkbox"><span data-i18n="compareAction">Show safer version</span><i aria-hidden="true"></i></label>
             <div class="preview-scenarios" role="group" aria-label="Preview scenario"><button type="button" data-preview="personal" aria-pressed="true">Personal data</button><button type="button" data-preview="credential" aria-pressed="false">Credentials</button></div>
             <div class="compare-paper"><span class="compare-original">Hi <mark>Marco Rossi</mark>, send the invoice to <mark>m.rossi@acme.com</mark>.</span><span class="compare-redacted">Hi <em>[NAME]</em>, send the invoice to <em>[EMAIL]</em>.</span></div>
             <button type="button" class="sample-chip preview-use" data-sample="email" id="preview-use">Try this type of check →</button>
@@ -601,7 +601,7 @@ body.corner-blocked #inspect-clipboard{display:none}
         </div>
 
         <div class="results-foot" id="results-foot" hidden>
-          <button class="copy" type="button" id="copy" data-i18n="copySafer">Copy redacted prompt</button>
+          <button class="copy" type="button" id="copy" data-i18n="copySafer">Copy safer version</button>
         </div>
       </aside>
     </section>
@@ -612,7 +612,7 @@ body.corner-blocked #inspect-clipboard{display:none}
       <ul id="onboarding-list">
         <li data-task="check">
           <i class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg></i>
-          <div><b data-i18n="onboardCheckTitle">Run your first check</b><span data-i18n="onboardCheckDesc">Paste a prompt and inspect it once.</span></div>
+          <div><b data-i18n="onboardCheckTitle">Run your first check</b><span data-i18n="onboardCheckDesc">Paste a prompt and check it once.</span></div>
         </li>
         <li data-task="terms">
           <i class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg></i>
@@ -658,7 +658,7 @@ body.corner-blocked #inspect-clipboard{display:none}
         <div class="card-head">
           <span class="card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></span>
           <div class="history-title">
-            <h2 data-i18n="history">Recent local checks</h2>
+            <h2 data-i18n="history">Recent checks</h2>
             <button class="secondary" type="button" id="clear-history" data-i18n="clearHistory">Clear history</button>
           </div>
         </div>
