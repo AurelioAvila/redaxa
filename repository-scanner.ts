@@ -24,6 +24,12 @@ export function parseRepository(input:string):{owner:string;repo:string} {
   return {owner:m[1],repo};
 }
 
+// Public value from Supabase's self-hosting guide; used only to recognise demo keys.
+const SUPABASE_DEMO_SECRET='super-secret-jwt-token-with-at-least-32-characters-long';
+function supabaseDemoSigned(token:string):boolean {
+  const [h,p,sig]=token.split('.');if(!h||!p||!sig)return false;
+  return createHmac('sha256',SUPABASE_DEMO_SECRET).update(h+'.'+p).digest('base64url')===sig;
+}
 function classify(f:Finding,path:string,text:string,offset:number):{disposition:'review'|'reference';reason:string;severity?:string;confidence?:'high'|'medium'|'low';label?:string} {
   const exampleFile=/(?:^|[/. _-])(?:example|sample|template|fixture|test)(?:s|[/. _-]|$)/i.test(path);
   const lineStart=text.lastIndexOf('\n',offset)+1;
@@ -31,6 +37,7 @@ function classify(f:Finding,path:string,text:string,offset:number):{disposition:
   const line=text.slice(lineStart,lineEnd<0?text.length:lineEnd);
   const before=text.slice(Math.max(lineStart,offset-100),offset);
   const reference=(reason:string)=>({disposition:'reference' as const,reason,confidence:'high' as const});
+  if(f.kind==='email' && /^(?:example|examples|foo|bar|john\.?doe|jane\.?doe|your[._-]?(?:email|name))@/i.test(f.value))return reference('Generic placeholder mailbox name used in documentation, not a personal address.');
   if(f.kind==='email' && /@(?:[a-z0-9-]+\.)*(?:example\.(?:com|org|net)|invalid|test|localhost)$/i.test(f.value))return {disposition:'reference',reason:'Reserved example/test domain: demonstrative address, not evidence of exposed personal data.'};
   if(f.kind==='email' && f.value.toLowerCase()==='onboarding@resend.dev')return {disposition:'reference',reason:'Public provider onboarding address; not an API credential or private customer address.'};
   if(f.kind==='email' && /@(?:users\.)?noreply\.github\.com$/i.test(f.value))return reference('GitHub no-reply attribution address, designed for public commit attribution.');
@@ -58,6 +65,10 @@ function classify(f:Finding,path:string,text:string,offset:number):{disposition:
       if(String(header.alg).toLowerCase()==='none')return {...reference('The header declares alg=none; this is not evidence of a signed access token. This file check does not test whether an application improperly accepts unsigned tokens.'),label:'JWT · unsigned example or data'};
       const prefix=text.slice(Math.max(0,offset-2048),offset).match(/https?:\/\/[^\s<>"']*$/)?.[0];
       let unsubscribeLink=false;try{unsubscribeLink=!!prefix&&(/(?:^|\/)unsubscribe(?:[/.]|$)/i.test(new URL(prefix+f.value).pathname)||/(?:\[\s*unsubscribe\s*\]\s*\(|\bunsubscribe\s*[:\-]?\s*[(<]?)\s*$/i.test(text.slice(Math.max(0,offset-2048),offset-prefix.length)));}catch{}
+      // Supabase's published local-development keys: signed with the public demo
+      // secret from the self-hosting guide, so the signature is checked, not just
+      // the claim. They grant nothing unless a deployment kept the default secret.
+      if(payload.iss==='supabase-demo'&&supabaseDemoSigned(credentialValue(f.value)))return {disposition:'review',severity:'low',confidence:'high',label:'JWT · public Supabase demo key',reason:'Published Supabase local-development key, signed with the documented demo secret. It is only a risk if a deployed project still uses the default JWT secret; check that before treating it as an exposure.'};
       if(payload.role==='anon'&&supabaseIssuer(payload.iss))return {...reference('Claims match a public Supabase anonymous client token. Signature and database policies are not verified by this exposure check.'),label:'JWT · public Supabase client token'};
       if(typeof payload.role==='string'&&['service_role','admin','owner','root'].includes(payload.role))return {disposition:'review',severity:'critical',confidence:'medium',label:'JWT · privileged-role claim',reason:'The decoded payload declares a privileged role. Review access and rotate if genuine. Claims, signature and validity have not been verified.'};
       if(!payload?.role&&(unsubscribeLink||[payload?.act,payload?.action,payload?.purpose].includes('unsubscribe')))return {disposition:'review',severity:'medium',confidence:'medium',label:'JWT · unsubscribe-link token',reason:'The explicit link label, URL path or decoded payload identifies an unsubscribe action. This appears to authorize an email preference link, not general API access. Its signature and actual permissions have not been verified; review whether the link was intended to be public.'};
@@ -68,6 +79,14 @@ function classify(f:Finding,path:string,text:string,offset:number):{disposition:
     const value=f.value.replace(/^(?:password|passwd|pwd|secret)\s*[:=]\s*/i,'').replace(/^["']|["']$/g,'');
     if(/^(?:(?:sk-|ghp_|sk_test_)?(?:your[_-](?:api[_-])?(?:key|token|secret)(?:[_-]here)?|replace[_-]?me|change[_-]?me|placeholder|x{8,}))$/i.test(value))return {disposition:'reference',reason:'Explicit placeholder value. The example filename alone is never used to dismiss a credential.'};
     if(f.kind==='credential') {
+      // Lockfiles list package names such as "passwd: 1.0.0"; a password-shaped
+      // key there is a dependency, not a credential. Real token formats still match.
+      if(/(?:^|\/)(?:package-lock\.json|npm-shrinkwrap\.json|pnpm-lock\.yaml|yarn\.lock|Cargo\.lock|poetry\.lock|Pipfile\.lock|composer\.lock|Gemfile\.lock|go\.sum|bun\.lock)$/.test(path))return reference('Package name or version in a dependency lockfile, not a password.');
+      // Bracketed or dictionary-word values (<SECRET>, 'secret', 'some-password')
+      // are documentation, not credentials anyone could use.
+      if(/^(?:<[^<>]{1,40}>|\{\{[^{}]{1,40}\}\}|secret|password|passwd|pass|pwd|some[-_ ]?password|my[-_ ]?password|mypassword|test|qwerty|letmein)$/i.test(value))return reference('Placeholder or dictionary-word value used in documentation, not a usable credential.');
+      // Inside a documentation comment of a source file (JSDoc @example, //, #).
+      if(/\.(?:[cm]?[jt]sx?|py|rs|go|java|kt|rb|php|cs|swift)$/i.test(path)&&/^\s*(?:\*|\/\/|#(?!!))/.test(line))return {disposition:'review',severity:'low',confidence:'low',reason:'Password-like value inside a code comment or documentation example. Usually illustrative; confirm it is not a real credential.'};
       const match=/^(?:password|passwd|pwd|secret)(\s*[:=]\s*|\s+)(.*)$/i.exec(f.value);
       const token=match?.[2]??value;
       const unquoted=token.replace(/^["'`]/,'').replace(/["'`)}\]]+$/,'');
@@ -101,6 +120,9 @@ function classify(f:Finding,path:string,text:string,offset:number):{disposition:
     if(!/\b(?:email|e-mail|recipient|customer|user|account)\b/i.test(line.replace(/_/g,' ')))return {disposition:'reference',confidence:'low',reason:'Address-shaped string in media bytes without email context; random bytes can resemble addresses. Retained for manual inspection, not counted as an exposure.'};
     return {disposition:'review',severity:'low',confidence:'low',reason:'Email-shaped string in media metadata with email context. Inspect the source; binary extraction does not confirm personal data.'};
   }
+  // Personal data in example, test, fixture or seed files is usually invented
+  // sample data: still listed, but it no longer outranks real exposures.
+  if(f.category==='personal'&&(exampleFile||/(?:^|[/. _-])(?:placeholder|seed|mock|fake|dummy)(?:s|[/. _-]|$)/i.test(path)))return {disposition:'review',severity:'low',confidence:'low',reason:'Personal-data pattern in an example, test or sample-data file. Often invented sample data; confirm it is not a real person before sharing.'};
   return {disposition:'review',reason:'Potential sensitive data. Context and authorization must be reviewed; this is not a confirmed vulnerability.'};
 }
 

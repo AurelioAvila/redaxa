@@ -47,3 +47,15 @@ const corrupt=(async(url:string|URL|Request)=>String(url).startsWith('https://co
 const interrupted=await scanRepository('https://github.com/a/b',undefined,corrupt);
 assert.ok(interrupted.partial);assert.equal(interrupted.scanned,0);assert.equal(interrupted.skipped,interrupted.total);
 console.log('Passed: example precision, secrets in example files, repeated lines, masking/reveal, 76 text files across all folders, UTF-16, binary/symlink/submodule/missing-file accounting, fixed hosts and corrupt archive.');
+// Precision: published demo keys, lockfile names, documentation placeholders.
+const supabaseDemo='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU';
+const demo=inspectFile('.env.local','SUPABASE_SERVICE_ROLE_KEY='+supabaseDemo).find(f=>f.kind==='secret');
+assert.equal(demo?.label,'JWT · public Supabase demo key');assert.equal(demo?.severity,'low');
+const forged=supabaseDemo.slice(0,-4)+'AAAA';
+assert.equal(inspectFile('.env','KEY='+forged).find(f=>f.kind==='secret')?.severity,'critical','a demo issuer claim without the demo signature stays privileged');
+assert.ok(inspectFile('pnpm-lock.yaml','  passwd: 1.0.0\n').every(f=>f.disposition==='reference'));
+assert.ok(inspectFile('src/types.ts',"const o = { secret: '<SECRET>' }").filter(f=>f.category==='credentials').every(f=>f.disposition==='reference'));
+assert.equal(inspectFile('src/client.ts',"   * password: 'hunter2-x9Q'").find(f=>f.category==='credentials')?.severity,'low');
+assert.ok(inspectFile('src/api.ts',"// email: 'example@email.com'").filter(f=>f.kind==='email').every(f=>f.disposition==='reference'));
+assert.equal(inspectFile('tests/fixtures/users.ts',"email: 'maria.bianchi@gmail.com'").find(f=>f.kind==='email')?.severity,'low');
+console.log('Passed precision: Supabase demo keys (signature-checked), lockfile names, documentation placeholders and sample data.');
