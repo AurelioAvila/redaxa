@@ -1,4 +1,5 @@
 import type { RepoReport } from './repository-scanner.js';
+import type { DependencyReport, DependencyAdvisory } from './repository-deps.js';
 import { aggregateRepositoryReport, reportToText, apiKeyCandidates, type FindingGroup } from './repository-report.js';
 import { repositoryRequest, repositoryProgress, nativeRepositoryEngine, type AccountState } from './auth.js';
 import { repositoryExample } from './repository-example.js';
@@ -8,7 +9,7 @@ const text = (tag:string,value:string,cls='') => {const el=document.createElemen
 let controller:AbortController|undefined;
 let reviewMode=false, configured=false;
 const hostedRepository=!nativeRepositoryEngine()&&!/^http:\/\/127\.0\.0\.1:\d+$/.test(location.origin);
-const bootConfig=(nativeRepositoryEngine()?Promise.resolve({available:true,designReview:false}):hostedRepository?Promise.resolve({available:false,designReview:false}):fetch('/api/repository-config').then(r=>r.json())).then(c=>{configured=c.available===true;reviewMode=c.designReview===true;if(nativeRepositoryEngine())$('preview-notice').textContent='Scans run on this computer. Subscription checks use Redaxa account services; no repository files are sent to an AI provider.';if(hostedRepository){$('scan').textContent='Open in Windows app →';$('status').textContent='Full repository checks run locally in the Redaxa Windows app.';$('preview-notice').textContent='Requires the latest Redaxa Windows app and an active Pro or Business plan. The extension opens this workspace; repository files are checked on your computer.';}if(reviewMode){$('preview-notice').textContent='Design review on this computer · live scans enabled for evaluation. Customer access requires Pro.';$('pro-access').classList.add('review-mode');}else if(!configured&&!hostedRepository){$('status').textContent='Repository checks are being prepared for release. Explore the example in the development app.';}}).catch(()=>{});
+const bootConfig=(nativeRepositoryEngine()?Promise.resolve({available:true,designReview:false}):hostedRepository?Promise.resolve({available:false,designReview:false}):fetch('/api/repository-config').then(r=>r.json())).then(c=>{configured=c.available===true;reviewMode=c.designReview===true;if(nativeRepositoryEngine())$('preview-notice').textContent='Scans run on this computer. Subscription checks use Redaxa account services; no repository files are sent to an AI provider.';if(hostedRepository){const note=document.querySelector('.side-note p');if(note)note.textContent='Public files read from GitHub. Values always stay hidden.';$('scan').textContent='Check repository';$('status').textContent='Paste a public GitHub link. 3 free checks a day: exposed keys, personal data and vulnerable dependencies.';$('preview-notice').textContent='Web checks read the public default branch; values always stay hidden. Git history, archives, private repositories and revealed values run on your PC in the Windows app with Pro or Business.';}if(reviewMode){$('preview-notice').textContent='Design review on this computer · live scans enabled for evaluation. Customer access requires Pro.';$('pro-access').classList.add('review-mode');}else if(!configured&&!hostedRepository){$('status').textContent='Repository checks are being prepared for release. Explore the example in the development app.';}}).catch(()=>{});
 const initialRepo=new URLSearchParams(location.search).get('repo');
 if(initialRepo&&initialRepo.length<=250)$<HTMLInputElement>('repo-url').value=initialRepo;
 document.addEventListener('redaxa:account',event=>{const a=(event as CustomEvent<AccountState|null>).detail;if(a?.active&&['personal','pro','business'].includes(a.plan??'')){$('pro-access').classList.add('unlocked');$('pro-access').querySelector('h2')!.textContent='Your Pro workspace is ready.';}});
@@ -35,8 +36,8 @@ function setScanBusy(busy:boolean){
  const button=$<HTMLButtonElement>('scan');
  button.disabled=busy;
  button.setAttribute('aria-busy',String(busy));
- button.textContent=busy?(hostedRepository?'Opening…':'Scanning…'):(hostedRepository?'Open in Windows app →':'Check repository');
- $('repository-loading').hidden=!busy||hostedRepository;
+ button.textContent=busy?(hostedRepository?'Checking…':'Scanning…'):'Check repository';
+ $('repository-loading').hidden=!busy;
  $('results').setAttribute('aria-busy',String(busy));
 }
 async function scan(demo=false){
@@ -47,11 +48,20 @@ async function scan(demo=false){
   if(demo){$('empty').hidden=true;$('results').replaceChildren();render(repositoryExample());$('status').textContent='Illustrative example — no live scan';$('results').scrollIntoView({block:'start'});return;}
   const repository=$<HTMLInputElement>('repo-url').value.trim();
   if(!/^https:\/\/github\.com\/[A-Za-z0-9_-]+\/[A-Za-z0-9_.-]+\/?$/.test(repository)){$('status').textContent='Use the public repository home URL on https://github.com.';return;}
-  setScanBusy(true);
-  try{const res=await fetch('/api/account',{cache:'no-store'});const account=await res.json();const entitled=res.ok&&account.active===true&&(typeof account.repositoryAccess==='boolean'?account.repositoryAccess:['personal','pro','business'].includes(account.plan)&&['active','trialing'].includes(account.status));
-   if(!entitled){window.promptShieldAuth?.requestAccess('Sign in with Pro or Business to review repositories.');$('status').textContent='Sign in with an active Pro or Business plan to continue.';return;}
-   location.href='redaxa://repository?repo='+encodeURIComponent(repository);$('status').textContent='Opening Redaxa. If nothing happens, install the latest Windows app, then try again.';
-  }catch{$('status').textContent='Could not verify your subscription. Please try again.';}finally{setScanBusy(false);}return;
+  setScanBusy(true);$('results').replaceChildren();$('empty').hidden=true;
+  $('status').textContent='Reading the public archive, checking files and looking up dependencies…';
+  try{
+   const data=await window.promptShieldAuth!.request('/api/scan',{repository}) as unknown as RepoReport;
+   render(data);
+   $('status').textContent=data.partial?'Review ready · some content could not be checked':'Review ready';
+   $('results').scrollIntoView({block:'start',behavior:'auto'});
+  }catch(e){
+   const message=e instanceof Error?e.message:'';
+   if(message==='REPOSITORY_LIMIT'){window.promptShieldAuth?.requestAccess("You've used today's free repository checks. Choose a plan for 60 checks a day and full local reviews; eligible new subscribers get a 7-day trial.");$('status').textContent="Today's free repository checks are used up.";}
+   else $('status').textContent=message||'The repository could not be checked right now. Please try again.';
+   $('empty').hidden=false;
+  }finally{setScanBusy(false);}
+  return;
  }
  controller?.abort();const active=new AbortController();controller=active;const scanId=crypto.randomUUID();let pollingActive=true,pollBusy=false;
  setScanBusy(true);$('clear-repository').setAttribute('disabled','');$('demo').setAttribute('disabled','');$('cancel').hidden=false;$('results').replaceChildren();$('empty').hidden=true;
@@ -85,13 +95,44 @@ function render(r:RepoReport){
  if(groups.length){control(summary);summary.append(text('p','Show all reveals every loaded finding, including additional pages and informational references. Section controls affect that section only.','muted'));}
  const row=(g:FindingGroup,section:string)=>{const card=text('article','','finding');const head=text('div','','finding-head');head.append(text('span',g.disposition==='reference'?'INFORMATIONAL':g.severity.toUpperCase()+' PRIORITY','badge '+(g.severity==='critical'||g.severity==='high'?'danger':'')),text('span',g.historyOnly?'HISTORY ONLY':'CURRENT FILES','muted'));card.append(head,text('h3',g.label),text('code',g.location?`${g.path} · ${g.location}`:`${g.path} : ${g.line}`));
  if(g.credential){const c=g.credential;const context=text('div','','credential-context');const identity=text('dl','','credential-identity');for(const [label,value] of [['Probable service',c.service],['Credential type',c.type],['Detection confidence',g.confidence==='high'?'Strong pattern':g.confidence==='medium'?'Contextual match':'Needs confirmation']]){const item=text('div','');item.append(text('dt',label),text('dd',value));identity.append(item);}context.append(identity,text('p',c.evidence,'credential-evidence'));const response=text('div','','credential-response');response.append(text('strong',c.response),text('p',c.guidance));if(c.docs&&/^https:\/\//.test(c.docs)){const link=text('a','Official guidance ↗') as HTMLAnchorElement;link.href=c.docs;link.target='_blank';link.rel='noopener noreferrer';response.append(link);}context.append(response);card.append(context);}
- const value=text('code','•••• •••• ••••  Value hidden','masked');const bar=text('div','','value-row');const button=text('button','Show','reveal-button') as HTMLButtonElement;button.type='button';const state={shown:false,section,set:(show:boolean)=>{state.shown=show;value.textContent=show?(g.value??'Run a new scan to reveal this value.'):'•••• •••• ••••  Value hidden';button.textContent=show?'Hide':'Show';button.setAttribute('aria-pressed',String(show));button.setAttribute('aria-label',`${show?'Hide':'Show'} ${g.label}`);}};button.onclick=()=>{state.set(!state.shown);update();};reveals.push(state);state.set(sectionReveal.get(section)??false);bar.append(value,button);card.append(bar);const explanation=text('details','','finding-details');explanation.append(text('summary','Detection details'),text('p',g.reason));if(!g.credential)explanation.append(text('p',g.action));card.append(explanation);
+ const value=text('code','•••• •••• ••••  Value hidden','masked');const bar=text('div','','value-row');const button=text('button','Show','reveal-button') as HTMLButtonElement;button.type='button';const state={shown:false,section,set:(show:boolean)=>{state.shown=show;value.textContent=show?(g.value??(hostedRepository?'Values stay hidden on the web. Open this repository in the Windows app (Pro) to reveal them.':'Run a new scan to reveal this value.')):'•••• •••• ••••  Value hidden';button.textContent=show?'Hide':'Show';button.setAttribute('aria-pressed',String(show));button.setAttribute('aria-label',`${show?'Hide':'Show'} ${g.label}`);}};button.onclick=()=>{state.set(!state.shown);update();};reveals.push(state);state.set(sectionReveal.get(section)??false);bar.append(value,button);card.append(bar);const explanation=text('details','','finding-details');explanation.append(text('summary','Detection details'),text('p',g.reason));if(!g.credential)explanation.append(text('p',g.action));card.append(explanation);
  if(g.url&&/^https:\/\/github\.com\//.test(g.url)){const a=text('a','Open current file on GitHub ↗') as HTMLAnchorElement;a.href=g.url;a.target='_blank';a.rel='noopener noreferrer';card.append(a);}
  const locations=text('details','','occurrences');locations.append(text('summary',`${g.occurrenceCount} occurrence${g.occurrenceCount===1?'':'s'} · ${g.currentCount} current / ${g.historyCount} historical`));for(const o of g.occurrences){locations.append(text('code',`${o.path}${o.location?' · '+o.location:' : '+o.line}`));}card.append(locations);return card;};
  const sections:[string,string,FindingGroup[]][]=[['api','Critical & high priority — review first',groups.filter(g=>g.disposition==='review'&&['critical','high'].includes(g.severity))],['context','Needs context',groups.filter(g=>g.disposition==='review'&&!['critical','high'].includes(g.severity))],['reference','Examples & informational references',groups.filter(g=>g.disposition==='reference')]];
  for(const [key,label,items] of sections){if(!items.length)continue;const section=text(key==='reference'?'details':'section','','finding-section '+(key==='reference'?'reference-group':''));if(!root.querySelector('#api-findings')&&items.some(g=>g.kind==='secret'&&g.disposition==='review')){section.id='api-findings';section.tabIndex=-1;}if(key==='reference')section.append(text('summary',`${label} (${items.length})`));const heading=text('div','','finding-head section-heading');heading.append(text('h3',`${label} · ${items.length}`));control(heading,key);section.append(heading);const listing=text('div','');section.append(listing);let count=0;const more=text('button','Show more findings','reveal-button') as HTMLButtonElement;const append=(all=false)=>{const end=all?items.length:Math.min(count+12,items.length);for(const g of items.slice(count,end))listing.append(row(g,key));count=end;more.hidden=count>=items.length;more.textContent=`Show more findings (${Math.max(0,items.length-count)} remaining)`;update();};append();more.onclick=()=>append();expandSections.set(key,()=>{if(key==='reference')(section as HTMLDetailsElement).open=true;append(true);});section.append(more);root.append(section);}
+ if(r.dependencies)root.append(dependencySection(r.dependencies));
  const coverage=text('details','','coverage-list');coverage.append(text('summary',`Coverage & limitations · ${r.total.toLocaleString()} entries`));coverage.append(text('p',r.inventoryComplete?'Accessible inventory reconciled.':'Inventory incomplete: totals may be a lower bound.'));r.warnings.forEach(w=>coverage.append(text('p',w)));const entries=[...r.coverage].sort((a,b)=>Number(a.status==='scanned')-Number(b.status==='scanned'));let covered=0;const moreCoverage=text('button','Show more files','reveal-button') as HTMLButtonElement;moreCoverage.type='button';const appendCoverage=()=>{const end=Math.min(covered+100,entries.length);for(const f of entries.slice(covered,end)){const el=text('div','','coverage-row');el.append(text('code',f.path),text('span',`${f.status==='scanned'?'Checked':'Not scanned'} — ${f.reason}`));coverage.append(el);}covered=end;moreCoverage.hidden=covered>=entries.length;moreCoverage.textContent=`Show more files (${entries.length-covered} remaining)`;coverage.append(moreCoverage);};appendCoverage();moreCoverage.onclick=appendCoverage;root.append(coverage);
 }
 $('repo-form').addEventListener('submit',e=>{e.preventDefault();void scan();});$('demo').addEventListener('click',()=>void scan(true));$('cancel').addEventListener('click',()=>controller?.abort());
 
 $('clear-repository')?.addEventListener('click',()=>{if($('scan').hasAttribute('disabled'))return;resetApiNotice();$('results').replaceChildren();$('empty').hidden=false;$('estimate').hidden=true;$('status').textContent='Paste a repository link to get started.';$<HTMLInputElement>('repo-url').value='';history.replaceState(null,'',location.pathname);$('repo-url').focus();});
+
+// Known vulnerabilities in pinned dependencies (OSV.dev), one card per package.
+function dependencySection(d:DependencyReport):HTMLElement{
+ const section=text('section','','finding-section dependency-section');section.id='dependency-findings';
+ const real=d.advisories.filter(a=>!a.informational);const notices=d.advisories.filter(a=>a.informational);
+ section.append(text('h2',real.length?`Vulnerable dependencies · ${new Set(real.map(a=>a.ecosystem+a.name+a.version)).size} ${new Set(real.map(a=>a.ecosystem+a.name+a.version)).size===1?'package':'packages'}`:'Dependencies · no known vulnerabilities'));
+ section.append(text('p',`${d.checked.toLocaleString()} pinned dependencies checked in ${d.files.join(', ')} against the public OSV.dev database. Only package names and versions are looked up.${d.complete?'':' Some results could not be loaded, so the list may be incomplete.'}`,'muted'));
+ if(d.note)section.append(text('p',d.note,'muted'));
+ if(real.length){const tiles=text('div','','triage-grid');const packages=(sev:string)=>new Set(real.filter(a=>a.severity===sev).map(a=>a.ecosystem+a.name+a.version)).size;
+  for(const [label,sev] of [['Critical','critical'],['High','high'],['Medium','medium'],['Low or not rated','low']] as const){const tile=text('div','','triage-tile '+sev);tile.append(text('strong',String(sev==='low'?packages('low')+packages('unknown'):packages(sev))),text('span',label));tiles.append(tile);}
+  section.append(tiles);
+  const runtime=new Set(real.filter(a=>!a.dev).map(a=>a.ecosystem+a.name+a.version)).size;
+  section.append(text('p',`${runtime} in runtime dependencies · ${new Set(real.map(a=>a.ecosystem+a.name+a.version)).size-runtime} only in development tooling. Start with critical and high runtime packages.`,'recap-line'));}
+ const byPackage=new Map<string,DependencyAdvisory[]>();for(const a of real){const key=`${a.ecosystem}\0${a.name}\0${a.version}`;byPackage.set(key,[...(byPackage.get(key)??[]),a]);}
+ const rank:Record<string,number>={critical:0,high:1,medium:2,low:3,unknown:4};
+ const more=text('details','','occurrences');let shown=0;
+ for(const items of [...byPackage.values()].sort((a,b)=>(Number(!!a[0].dev)-Number(!!b[0].dev))||rank[a[0].severity]-rank[b[0].severity])){
+  const top=items.sort((a,b)=>rank[a.severity]-rank[b.severity])[0];
+  const fixes=[...new Set(items.map(a=>a.fixed).filter(Boolean))] as string[];
+  const card=text('article','','finding');const head=text('div','','finding-head');
+  head.append(text('span',top.severity==='unknown'?'SEVERITY NOT RATED':top.severity.toUpperCase(),'badge '+(top.severity==='critical'||top.severity==='high'?'danger':'')),text('span',`${top.ecosystem}${top.dev?' · DEV':''}`,'muted'));
+  card.append(head,text('h3',`${top.name} ${top.version}`),text('p',fixes.length?`Update to ${fixes.sort((a,b)=>b.localeCompare(a,undefined,{numeric:true}))[0]} or later. ${items.length} ${items.length===1?'advisory':'advisories'}.`:`${items.length} ${items.length===1?'advisory':'advisories'}; no fixed version is listed yet.`),text('code',top.file));
+  const list=text('details','','occurrences');list.append(text('summary','Advisories'));
+  for(const a of items){const row=text('p','');const link=text('a',a.id) as HTMLAnchorElement;link.href=a.url;link.target='_blank';link.rel='noopener noreferrer';row.append(link,document.createTextNode(` · ${a.severity} · ${a.summary}`));list.append(row);}
+  card.append(list);(shown++<12?section:more).append(card);
+ }
+ if(shown>12){more.prepend(text('summary',`Show all ${shown} vulnerable packages`));section.append(more);}
+ if(notices.length){const n=text('details','','finding-section reference-group');n.append(text('summary',`Maintenance notices (${notices.length})`));for(const a of notices)n.append(text('p',`${a.name} ${a.version} · ${a.informational} · ${a.id}`,'muted'));section.append(n);}
+ return section;
+}

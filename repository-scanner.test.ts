@@ -59,3 +59,22 @@ assert.equal(inspectFile('src/client.ts',"   * password: 'hunter2-x9Q'").find(f=
 assert.ok(inspectFile('src/api.ts',"// email: 'example@email.com'").filter(f=>f.kind==='email').every(f=>f.disposition==='reference'));
 assert.equal(inspectFile('tests/fixtures/users.ts',"email: 'maria.bianchi@gmail.com'").find(f=>f.kind==='email')?.severity,'low');
 console.log('Passed precision: Supabase demo keys (signature-checked), lockfile names, documentation placeholders and sample data.');
+// Archive-only mode (web): no GitHub API call, commit read from the archive root, lockfiles audited.
+const headSha='c'.repeat(40);
+const headTar=pack();const headChunks:Buffer[]=[];const headCollect=(async()=>{for await(const chunk of headTar)headChunks.push(chunk);})();
+headTar.entry({name:`b-${headSha}/config.env`},'TOKEN='+secret);
+headTar.entry({name:`b-${headSha}/package-lock.json`},JSON.stringify({lockfileVersion:3,packages:{'':{},'node_modules/minimist':{version:'1.2.0'}}}));
+headTar.finalize();await headCollect;const headArchive=gzipSync(Buffer.concat(headChunks));
+const archiveUrls:string[]=[];
+const archiveFetcher=(async(url:string|URL|Request)=>{const u=String(url);archiveUrls.push(u);
+  if(u==='https://codeload.github.com/a/b/tar.gz/HEAD')return new Response(headArchive);
+  if(u==='https://api.osv.dev/v1/querybatch')return Response.json({results:[{vulns:[]}]});
+  return new Response('unexpected',{status:500});}) as typeof fetch;
+const archiveOnly=await scanRepository('https://github.com/a/b',undefined,archiveFetcher,false,{archiveOnly:true});
+assert.ok(!archiveUrls.some(u=>u.startsWith('https://api.github.com/')),'archive-only never calls the GitHub API');
+assert.equal(archiveOnly.commit,headSha);
+assert.ok(archiveOnly.findings.some(f=>f.url?.includes(`/blob/${headSha}/config.env`)));
+assert.equal(archiveOnly.dependencies?.checked,1);
+const missing=(async()=>new Response('',{status:404})) as typeof fetch;
+await assert.rejects(scanRepository('https://github.com/a/private',undefined,missing,false,{archiveOnly:true}),/Only public GitHub repositories/);
+console.log('Archive-only scan: no API calls, commit from archive root, lockfile audit and private/missing repositories passed.');

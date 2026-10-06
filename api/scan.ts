@@ -1,5 +1,6 @@
 import { corsHeaders, effectiveEntitlement, organizationMembershipFor, orgScanContextFor, protectedTermsFor, requireUser, supabaseService, supabaseUserById, type BillingUser } from "./_billing.js";
 import { clientIp, rateLimited, rateLimitedShared } from "./_rateLimit.js";
+import { handleRepositoryCheck } from "./_repository.js";
 import { auditBoundary, auditCsv, defaultAuditRows, maxAuditRows, type AuditEvent } from "./_audit.js";
 import { inspectPrompt, type ScanOptions } from "../scanner.js";
 import { buildOrganizationPolicy, defaultPersonalPolicy, evaluatePolicy, type PolicyRule } from "../policy.js";
@@ -153,6 +154,15 @@ export default async function handler(request: RequestLike, response: ResponseLi
     }
 
     const ip = clientIp(request.headers);
+
+    // Repository check from the web (public GitHub link). Folded into this
+    // function for the same 12-function cap; it has its own daily allowance.
+    const repository = (request.body as { repository?: unknown } | undefined)?.repository;
+    if (repository !== undefined) {
+      const paid = user ? (await effectiveEntitlement(user.id)).active : false;
+      await handleRepositoryCheck(repository, { userId: user?.id ?? null, paid, ip }, supabaseService, response);
+      return;
+    }
 
     if (user) {
       const entitlement = await effectiveEntitlement(user.id);
