@@ -600,8 +600,8 @@ export function mountDashboard(): void {
     plansDialog.querySelectorAll<HTMLElement>("[data-billing]").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.billing === billingInterval)));
     plansDialog.querySelectorAll<HTMLElement>("[data-plan]").forEach(button => { button.hidden = button.dataset.interval !== billingInterval; button.textContent = words().startTrial; });
     const cards = plansDialog.querySelectorAll<HTMLElement>(".plan-card");
-    cards[0].querySelector(".plan-price")!.innerHTML = billingInterval === "yearly" ? '€79.90 <small>/ year</small>' : '€7.99 <small>/ month</small>';
-    cards[1].querySelector(".plan-price")!.innerHTML = billingInterval === "yearly" ? '€149.90 <small>/ user / year</small>' : '€14.99 <small>/ user / month</small>';
+    cards[0].querySelector(".plan-price")!.innerHTML = billingInterval === "yearly" ? '€79.90 <small>/ year</small><small class="price-equiv">€6.66 a month, billed yearly</small>' : '€7.99 <small>/ month</small>';
+    cards[1].querySelector(".plan-price")!.innerHTML = billingInterval === "yearly" ? '€149.90 <small>/ user / year</small><small class="price-equiv">€12.49 a month, billed yearly</small>' : '€14.99 <small>/ user / month</small>';
     cards[0].querySelector(".plan-tag")!.textContent = billingInterval === "yearly" ? "Recommended · Pro yearly" : words().personalTag;
   };
   plansDialog.querySelectorAll<HTMLElement>("[data-billing]").forEach(button => button.addEventListener("click", () => { billingInterval = button.dataset.billing === "monthly" ? "monthly" : "yearly"; renderBilling(); }));
