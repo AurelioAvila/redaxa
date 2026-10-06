@@ -253,7 +253,7 @@
 
       /* ============ How it works ============ */
       .flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin-top: 46px; position: relative; }
-      .flow::before { content: ""; position: absolute; left: 24px; right: 24px; top: 15px; height: 1px; background: var(--line-2); }
+      .flow::before { content: ""; position: absolute; left: 39px; right: calc(25% - 15px); top: 15px; height: 1px; background: var(--line-2); }
       .step { position: relative; padding: 0 24px; }
       .step-num { position: relative; z-index: 1; display: grid; place-items: center; width: 30px; height: 30px; border: 1px solid var(--line-2); border-radius: 9px; background: var(--s2); color: var(--acid); font-size: 13px; font-weight: 750; font-family: var(--mono); }
       .step h3 { margin: 16px 0 6px; font-size: 15.5px; font-weight: 650; letter-spacing: -0.015em; }
