@@ -4,11 +4,12 @@ import { Readable, Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { createGunzip } from 'node:zlib';
 import { createHmac, randomBytes } from 'node:crypto';
+import {auditDependencies,parseLockfile,LOCKFILE,type Dependency,type DependencyReport} from './repository-deps.js';
 import {credentialContext,credentialValue,jwtClaims,supabaseIssuer,type CredentialContext} from './credential-context.js';
 
 export type RepoFinding = { path:string; line:number; label:string; severity:string; category:string; masked:string; value?:string; action:string; url?:string; disposition:'review'|'reference'; reason:string; location?:string; kind?:string; fingerprint?:string; confidence?:'high'|'medium'|'low'; credential?:CredentialContext };
 export type FileCoverage = {path:string; status:'scanned'|'skipped'; reason:string};
-export type RepoReport = { repository:string; commit:string; scanned:number; total:number; skipped:number; partial:boolean; findings:RepoFinding[]; warnings:string[]; durationMs:number; demo:boolean; coverage:FileCoverage[]; inventoryComplete:boolean; folders:number; findingsTruncated:boolean; deep?:{refs:number;historyVersions:number;binaryFiles:number;lfsObjects:number;submodules:number;archiveEntries:number} };
+export type RepoReport = { repository:string; commit:string; scanned:number; total:number; skipped:number; partial:boolean; findings:RepoFinding[]; warnings:string[]; durationMs:number; demo:boolean; coverage:FileCoverage[]; inventoryComplete:boolean; folders:number; findingsTruncated:boolean; dependencies?:DependencyReport; deep?:{refs:number;historyVersions:number;binaryFiles:number;lfsObjects:number;submodules:number;archiveEntries:number} };
 const MAX_FILE = 10 * 1024 * 1024;
 const MAX_ARCHIVE = 512 * 1024 * 1024;
 const MAX_FINDINGS = 5000;
@@ -161,12 +162,15 @@ function decode(bytes:Buffer):string|null {
   }catch{return null;}
 }
 
-export async function scanRepository(input:string,signal?:AbortSignal,fetcher:typeof fetch=fetch,allowReveal=false):Promise<RepoReport> {
-  const {owner,repo}=parseRepository(input);const started=Date.now();const abort=AbortSignal.any([AbortSignal.timeout(180_000),...(signal?[signal]:[])]);
+/** archiveOnly: read the public archive of the default branch without the GitHub API
+ *  (no rate limit, no token). The file inventory is then not cross-checked. */
+export async function scanRepository(input:string,signal?:AbortSignal,fetcher:typeof fetch=fetch,allowReveal=false,options:{archiveOnly?:boolean;timeoutMs?:number}={}):Promise<RepoReport> {
+  const {owner,repo}=parseRepository(input);const started=Date.now();const abort=AbortSignal.any([AbortSignal.timeout(options.timeoutMs??180_000),...(signal?[signal]:[])]);
   const base=`https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`;
   const get=async(suffix:string,max=1_000_000)=>boundedJSON(await fetcher(base+suffix,{signal:abort,redirect:'error',headers:{Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28','User-Agent':'Redaxa-development-secret-scan'}}),max);
   let commit:any,manifest:any;
-  try {
+  if(options.archiveOnly){commit={sha:'HEAD'};manifest={tree:[],truncated:true};}
+  else try {
     const metadata=await get('');if(metadata.private!==false||typeof metadata.default_branch!=='string')throw new Error('Only public repositories are supported in this preview.');
     commit=await get('/commits/'+encodeURIComponent(metadata.default_branch));if(!/^[a-f0-9]{40}$/.test(commit.sha)||!/^[a-f0-9]{40}$/.test(commit.commit?.tree?.sha))throw new Error('Invalid repository snapshot.');
     manifest=await get('/git/trees/'+commit.commit.tree.sha+'?recursive=1',8_000_000);
@@ -179,10 +183,14 @@ export async function scanRepository(input:string,signal?:AbortSignal,fetcher:ty
   const expected=new Map<string,string>();const folders=new Set<string>();
   for(const e of manifest.tree)if(typeof e.path==='string'){if(e.type==='tree')folders.add(e.path);else expected.set(e.path,e.type==='commit'?'External submodule content is not part of this repository snapshot.':'File not received in archive (possibly export-ignored or interrupted).');}
   const archive=await fetcher(`https://codeload.github.com/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/tar.gz/${commit.sha}`,{redirect:'error',signal:abort});
+  if(options.archiveOnly&&archive.status===404)throw new Error('Repository unavailable. Only public GitHub repositories can be checked.');
   if(!archive.ok||!archive.body)throw new Error('The repository archive could not be downloaded.');
-  const parser=extract();const seen=new Set<string>();
+  // Archive entries are rooted at <repo>-<commit sha>; HEAD resolves to the default branch.
+  let snapshot=commit.sha as string;
+  const parser=extract();const seen=new Set<string>();const dependencies:Dependency[]=[];
   const reading=(async()=>{
     for await(const entry of parser){
+      if(snapshot==='HEAD'){const sha=entry.header.name.split('/')[0].match(/-([0-9a-f]{40})$/)?.[1];if(sha){snapshot=sha;report.commit=sha;}}
       const path=entry.header.name.split('/').slice(1).join('/').replace(/\/$/,'');
       if(entry.header.type==='directory'){if(path)folders.add(path);entry.resume();continue;}
       if(!path||seen.has(path)){entry.resume();continue;}seen.add(path);
@@ -193,8 +201,9 @@ export async function scanRepository(input:string,signal?:AbortSignal,fetcher:ty
       if(!reason){const source=decode(Buffer.concat(chunks));if(source===null)reason='Binary or unsupported text encoding.';
         else if(source.startsWith('version https://git-lfs.github.com/spec/'))reason='Git LFS pointer: external object is not in this snapshot.';
         else {
+          if(LOCKFILE.test(path))dependencies.push(...parseLockfile(path,source));
           const found=inspectFile(path,source,allowReveal);report.scanned++;
-          for(const f of found){if(report.findings.length>=MAX_FINDINGS){report.findingsTruncated=true;break;}f.url=`https://github.com/${owner}/${repo}/blob/${commit.sha}/${path.split('/').map(encodeURIComponent).join('/')}#L${f.line}`;report.findings.push(f);}
+          for(const f of found){if(report.findings.length>=MAX_FINDINGS){report.findingsTruncated=true;break;}f.url=`https://github.com/${owner}/${repo}/blob/${snapshot}/${path.split('/').map(encodeURIComponent).join('/')}#L${f.line}`;report.findings.push(f);}
         }
       }
       report.coverage.push({path,status:reason?'skipped':'scanned',reason:reason||'Entire text file checked.'});
@@ -205,9 +214,11 @@ export async function scanRepository(input:string,signal?:AbortSignal,fetcher:ty
   if(results.some(r=>r.status==='rejected')){report.partial=true;report.warnings.push('Archive download/read interrupted or safety/time limit reached. Missing files are listed below.');}
   const covered=new Set(report.coverage.map(f=>f.path));
   for(const [path,reason] of expected)if(!covered.has(path))report.coverage.push({path,status:'skipped',reason});
+  // Known vulnerabilities in pinned dependencies (OSV.dev); only names and versions are sent.
+  if(dependencies.length)report.dependencies=await auditDependencies(dependencies,fetcher,abort);
   report.total=report.coverage.length;report.skipped=report.total-report.scanned;report.folders=folders.size;
   report.partial ||= report.skipped>0||!report.inventoryComplete||report.findingsTruncated;
-  if(!report.inventoryComplete)report.warnings.push('GitHub truncated the manifest: archive entries were checked, but full inventory reconciliation could not be verified.');
+  if(!report.inventoryComplete)report.warnings.push(options.archiveOnly?'Every file in the public archive was checked; the archive was not cross-checked against the GitHub file list.':'GitHub truncated the manifest: archive entries were checked, but full inventory reconciliation could not be verified.');
   if(report.findingsTruncated)report.warnings.push('All readable files were checked, but only the first 5,000 matches are displayed.');
   report.warnings.push('All folders in this default-branch snapshot are traversed, including dotfolders, examples, vendor/build output and lockfiles. Git history, other branches, external submodules/LFS objects and general code/dependency vulnerabilities are outside this check. Keys are never tested against providers.');
   report.durationMs=Date.now()-started;return report;
