@@ -787,3 +787,26 @@ html.rx-native .repository-page .download-app{display:none}
 .redaxa-workspace .composer .editor{flex:1 1 180px}
 .redaxa-workspace .bars-label{text-transform:none;letter-spacing:0;font-size:12.5px;font-weight:500;color:var(--theme-muted)}
 @media(max-width:900px){.redaxa-workspace .nav-item,.repository-page .sidebar .nav{font-size:13px;padding:8px 9px;white-space:nowrap}}
+
+/* Rail and numbers: the same icons on both pages, one straight active bar,
+   brand mark and labels on the rail's own columns, values on one baseline. */
+.redaxa-workspace .nav-item,.repository-page .sidebar .nav{border:0;border-radius:0 var(--rx-r) var(--rx-r) 0}
+.repository-page .sidebar .nav svg{stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.repository-page .sidebar .nav.active svg{stroke-width:1.8}
+.redaxa-workspace .side-foot,.repository-page .side-note{padding:18px 12px 0}
+.repository-page .side-note{color:var(--theme-text);font-weight:600}
+.repository-page .side-note .dot{display:none}
+.repository-page .side-note p{margin-top:6px;color:var(--theme-muted);font-weight:400}
+.redaxa-workspace .results .card-head{align-items:center}
+.redaxa-workspace .results .card-icon{margin-top:-2px}
+.redaxa-workspace .risk-banner{align-items:flex-start;padding:12px}
+.redaxa-workspace .risk-mark{margin-top:1px}
+.redaxa-workspace .metric b{font-size:18px;line-height:1.2;margin-top:8px}
+.redaxa-workspace .metric.is-text b{font-size:18px;font-weight:600}
+.repository-page #scan{min-width:0;justify-content:center;gap:8px}
+.repository-page #scan span{margin-left:0}
+.repository-page .status-row{align-items:center}
+.repository-page .pro-banner{align-items:center}
+.repository-page #status{margin-top:0}
+.repository-page .status-row{padding-top:12px}
+.repository-page .side-note{padding-right:4px}

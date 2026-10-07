@@ -32,8 +32,8 @@ html[data-theme="carbon"]{--theme-bg:#171e21;--theme-surface:#202b2e;--theme-ins
 .redaxa-workspace .theme-swatch.active{border-color:var(--theme-accent);box-shadow:none;outline:none;background:var(--theme-hover)}
 .redaxa-workspace .theme-swatch:focus-visible{outline:2px solid var(--theme-accent);outline-offset:2px}
 .rx-titlebar{position:fixed;inset:0 0 auto 0;height:34px;display:flex;align-items:center;justify-content:space-between;background:var(--rx-desk,var(--theme-bg));color:var(--theme-muted);z-index:1000;user-select:none}
-.rx-window-title{display:flex;align-items:center;flex:0 0 var(--rx-rail-width,188px);height:100%;padding-left:16px;border-right:1px solid var(--theme-line);background:var(--theme-bg);color:var(--theme-text);font:600 12.5px var(--rx-font-ui,sans-serif);letter-spacing:0}
-.rx-window-title img{width:17px;height:17px;margin-right:9px}
+.rx-window-title{display:flex;align-items:center;flex:0 0 var(--rx-rail-width,188px);height:100%;padding-left:28px;border-right:1px solid var(--theme-line);background:var(--theme-bg);color:var(--theme-text);font:600 12.5px var(--rx-font-ui,sans-serif);letter-spacing:0}
+.rx-window-title img{width:17px;height:17px;margin-right:10px}
 .rx-window-controls{display:flex;height:100%}
 .rx-titlebar button{min-height:0;width:46px;height:34px;padding:0;border:0;border-radius:0;background:transparent;color:var(--theme-text);display:grid;place-items:center;cursor:default}
 .rx-titlebar button:hover{background:var(--theme-hover)}
