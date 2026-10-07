@@ -16,6 +16,12 @@
   <a href="https://github.com/microsoft/winget-pkgs/tree/master/manifests/a/AurelioAvila/Redaxa"><img src="https://img.shields.io/winget/v/AurelioAvila.Redaxa?label=WinGet&style=for-the-badge&color=0078D4" alt="WinGet catalog entry"></a>
 </p>
 
+<p align="center">
+  <a href="https://www.softpedia.com/get/Security/PromptShield.shtml"><img src="https://img.shields.io/badge/Softpedia-5%2F5%20%7C%2022%20votes-0078D4?style=for-the-badge" alt="Softpedia user rating: 5 out of 5 from 22 votes"></a>
+  <a href="https://www.softpedia.com/get/Security/PromptShield.shtml"><img src="https://img.shields.io/badge/Softpedia_review-4%2F5-0078D4?style=for-the-badge" alt="Softpedia editorial review: 4 out of 5"></a>
+  <a href="https://www.majorgeeks.com/files/details/redaxa.html"><img src="https://img.shields.io/badge/MajorGeeks-5%2F5%20%7C%2017%20votes-C48B28?style=for-the-badge" alt="MajorGeeks user rating: 5 out of 5 from 17 votes"></a>
+</p>
+
 <p align="center"><sub>Want safer AI workflows? ⭐ Star Redaxa to follow new protections and help others find it.</sub></p>
 
 <p align="center"><sub><strong>Redaxa was previously known as PromptShield.</strong> The official web app is redaxa.getcertsprint.com; existing Vercel links and released clients remain supported.</sub></p>
@@ -27,12 +33,10 @@
 
 The [v0.4.9 Windows setup EXE](../../releases/tag/v0.4.9) was verified on October 7, 2026. Its SHA-256 is `347c50b59c5534db2a685c0b4f3001f7b3607045d83b0c65482aa7520bc728a2`. Both public installers and their extracted Windows payloads have verified **Aurelio Avila** publisher signatures and trusted timestamps. Their Tauri updater signatures were checked against the public key shipped in 0.4.4; the updater key and endpoint are unchanged. See the [Windows signing verification guide](https://github.com/AurelioAvila/.github/blob/master/CODE_SIGNING.md). This evidence applies to those release artifacts; it is not a guarantee about future builds, the web app or extension. Use [latest release](../../releases/latest) for current downloads and notes.
 
-**WinGet status (October 2, 2026):** Microsoft approved and merged version 0.4.7 in [PR #445584](https://github.com/microsoft/winget-pkgs/pull/445584). The installer URL and hash were verified against the signed public release. The package is recorded in the [official manifests](https://github.com/microsoft/winget-pkgs/tree/master/manifests/a/AurelioAvila/Redaxa); the downloadable WinGet catalog and local clients may take time to receive the update. Refresh the source with `winget source update --name winget`, then check `winget show --id AurelioAvila.Redaxa --exact --source winget`. If it still shows an earlier version, use [GitHub Releases](../../releases/latest) for the current signed build.
+**WinGet status (October 7, 2026):** Microsoft approved and merged version 0.4.8 in [PR #446979](https://github.com/microsoft/winget-pkgs/pull/446979) on October 5; version 0.4.9 is submitted in [PR #448362](https://github.com/microsoft/winget-pkgs/pull/448362) and waits for a moderator. Each installer URL and hash is verified against the signed public release before submission. The package is recorded in the [official manifests](https://github.com/microsoft/winget-pkgs/tree/master/manifests/a/AurelioAvila/Redaxa); the downloadable WinGet catalog and local clients may take time to receive the update. Refresh the source with `winget source update --name winget`, then check `winget show --id AurelioAvila.Redaxa --exact --source winget`. If it still shows an earlier version, use [GitHub Releases](../../releases/latest) for the current signed build.
 
 > The browser extension (source in [`browser-extension/`](browser-extension))
-> is available on the [Chrome Web Store](https://chromewebstore.google.com/detail/redaxa/clkobbjoaegkgnmkibjghlboeoplpmok). Extension **0.4.3** adds manual text checks without an account (5 per 24 hours, shared by network), redacted output, copying and clearer credential context inside the popup. Automatic checks require an active trial or subscription; Windows repository checks require Pro or Business. Version 0.4.3 was submitted on September 26, 2026 and is awaiting Google's review, with automatic publication after approval; the console still lists 0.4.0 as published. Desktop and extension versions are independent.
-
-Extension **0.4.4** holds supported composer sends while account status is unresolved and keeps prompts unsent when a check fails. It also prevents automatic checks from falling back to anonymous quota after session expiry and respects a Business block even when no findings are listed. Permissions and paid access requirements are unchanged. See the [extension release notes](browser-extension/RELEASE-NOTES.md); a signed GitHub package and Chrome Web Store approval are separate distribution steps.
+> is available on the [Chrome Web Store](https://chromewebstore.google.com/detail/redaxa/clkobbjoaegkgnmkibjghlboeoplpmok). The store publishes **0.4.3**: manual text checks without an account (5 per 24 hours, shared by network), redacted output, copying and credential context inside the popup. Automatic checks require an active trial or subscription; Windows repository checks require Pro or Business. Version **0.4.7** was submitted on October 6, 2026 and is in Google's review queue; it publishes automatically after approval. Desktop and extension versions are independent. See the [extension release notes](browser-extension/RELEASE-NOTES.md).
 
 ---
 
@@ -92,6 +96,17 @@ On the Business plan, a workspace is a real organization:
 - **Web app** — [redaxa.getcertsprint.com](https://redaxa.getcertsprint.com), no install
 - **Windows desktop app** — this repo's installer, signs in once and stays signed in (session held in the OS credential store, not a file on disk)
 - **[Browser extension](https://chromewebstore.google.com/detail/redaxa/clkobbjoaegkgnmkibjghlboeoplpmok)** — a "Check" button injected into ChatGPT, Claude, Gemini, Copilot and Perplexity that scans whatever's in the composer before you send it
+
+## Reviews and distribution
+
+Ratings and reviews checked October 7, 2026. Feedback stays at its original source:
+
+- [Softpedia](https://www.softpedia.com/get/Security/PromptShield.shtml): user rating **5.0/5 from 22 votes**; editorial review **4.0/5**, tested by Softpedia staff. The listing keeps the PromptShield address from before the rename and currently shows 0.4.8.
+- [MajorGeeks](https://www.majorgeeks.com/files/details/redaxa.html): user rating **5/5 from 17 votes**; lists 0.4.9.
+- [WinGet](https://github.com/microsoft/winget-pkgs/tree/master/manifests/a/AurelioAvila/Redaxa): `winget install --id AurelioAvila.Redaxa --exact`.
+- [Chrome Web Store](https://chromewebstore.google.com/detail/redaxa/clkobbjoaegkgnmkibjghlboeoplpmok): the browser extension.
+
+Third-party listings may describe an older release and apply their own licence labels; this repository's [LICENSE](LICENSE) and [release notes](../../releases) are the authoritative sources.
 
 ## Privacy
 
