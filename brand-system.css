@@ -483,7 +483,7 @@
 
 /* Customer workspace: petrol, copper and a guided review workbench. */
 :is(.redaxa-workspace,.repository-page){--rx-rail-width:194px;--rx-desk:var(--theme-bg);font-size:14px;line-height:1.65}
-.redaxa-workspace .side,.repository-page .sidebar{padding:32px 16px 24px;gap:40px;border:0;background:var(--theme-bg)}
+.redaxa-workspace .side,.repository-page .sidebar{padding:32px 16px 24px;gap:40px;border:0;border-right:1px solid var(--theme-line);background:var(--theme-bg)}
 .redaxa-workspace .brand,.repository-page .brand{font-size:23px;font-weight:600;gap:10px;letter-spacing:-.025em;padding:0 8px}
 .redaxa-workspace .brand img,.repository-page .brand img{width:29px;height:29px}
 .redaxa-workspace .nav,.repository-page .sidebar nav{gap:7px}
@@ -491,7 +491,7 @@
 .redaxa-workspace .nav-item.active,.repository-page .sidebar .nav.active{background:var(--theme-hover);color:var(--theme-text);border:0;box-shadow:inset 3px 0 var(--theme-accent);font-weight:600}
 .redaxa-workspace .nav-item i.ico,.repository-page .nav svg{display:block;width:17px;height:17px;flex-basis:17px;color:inherit}
 .redaxa-workspace .side-foot,.repository-page .side-note{font-size:12.5px;line-height:1.7;margin-top:auto;padding:20px 8px 0;border-color:var(--theme-line)}
-.redaxa-workspace main,.repository-page main{max-width:1440px;width:100%;margin:0 auto;padding:32px 36px 48px;min-height:100dvh;border:0;border-left:1px solid var(--theme-line);border-radius:0;background:var(--theme-inset)}
+.redaxa-workspace main,.repository-page main{max-width:1440px;width:100%;margin:0 auto;padding:32px 36px 48px;min-height:100dvh;border:0;border-radius:0;background:var(--theme-inset)}
 .redaxa-workspace .top{padding:3px 0 20px;gap:24px;align-items:flex-start}
 .redaxa-workspace .top h1,.repository-page .hero h1{font-size:clamp(27px,2.4vw,31px);font-weight:600;line-height:1.2;letter-spacing:-.018em;max-width:none}
 .redaxa-workspace .top p,.repository-page .hero p{font-size:14px;line-height:1.7;max-width:61ch;margin-top:13px;color:var(--theme-muted)}
@@ -666,7 +666,7 @@ html.rx-native :is(.side,.sidebar){top:34px;height:calc(100dvh - 34px)}
 /* Phones: the workspace rail becomes a compact header with a scrollable tab
    strip instead of five wrapped buttons stacked above the content. */
 @media(max-width:540px){
-  .redaxa-workspace .side,.repository-page .sidebar{position:sticky;top:0;z-index:25;padding:10px 16px 0;gap:8px;background:var(--theme-bg)}
+  .redaxa-workspace .side,.repository-page .sidebar{position:sticky;top:0;z-index:25;padding:10px 16px 0;gap:8px;border-right:0;background:var(--theme-bg)}
   .redaxa-workspace .brand,.repository-page .brand{font-size:19px;padding:0 0 2px}
   .redaxa-workspace .brand img,.repository-page .brand img{width:24px;height:24px}
   .redaxa-workspace .rx-brand-name small{display:none}
