@@ -46,9 +46,13 @@ export function installDesktopTitlebar(): void {
     catch { bar.querySelector(".rx-window-title")!.textContent = "Window action unavailable · use Alt+Space"; }
   };
   bar.querySelectorAll<HTMLButtonElement>("[data-window-action]").forEach(button => button.addEventListener("click", () => void action(button.dataset.windowAction!)));
-  const drag = bar.querySelector<HTMLElement>(".rx-window-title")!;
-  drag.addEventListener("mousedown", event => { if(event.button===0 && event.detail===1) void action("start_dragging"); });
-  drag.addEventListener("dblclick", () => void action("toggle_maximize"));
+  // The whole bar moves the window, not just the title: the empty stretch
+  // between title and controls is where people grab it. The logo must not
+  // start an HTML image drag, which would swallow the window drag.
+  bar.querySelector("img")!.draggable = false;
+  const onControl = (event: Event): boolean => (event.target as Element).closest(".rx-window-controls") !== null;
+  bar.addEventListener("mousedown", event => { if(event.button===0 && event.detail===1 && !onControl(event)) void action("start_dragging"); });
+  bar.addEventListener("dblclick", event => { if(!onControl(event)) void action("toggle_maximize"); });
   window.addEventListener("resize", () => void refreshMaximized());
   void refreshMaximized();
 }
