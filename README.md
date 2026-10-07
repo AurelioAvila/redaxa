@@ -18,7 +18,6 @@
 
 <p align="center">
   <a href="https://www.softpedia.com/get/Security/PromptShield.shtml"><img src="https://img.shields.io/badge/Softpedia-5%2F5%20%7C%2022%20votes-0078D4?style=for-the-badge" alt="Softpedia user rating: 5 out of 5 from 22 votes"></a>
-  <a href="https://www.softpedia.com/get/Security/PromptShield.shtml"><img src="https://img.shields.io/badge/Softpedia_review-4%2F5-0078D4?style=for-the-badge" alt="Softpedia editorial review: 4 out of 5"></a>
   <a href="https://www.majorgeeks.com/files/details/redaxa.html"><img src="https://img.shields.io/badge/MajorGeeks-5%2F5%20%7C%2017%20votes-C48B28?style=for-the-badge" alt="MajorGeeks user rating: 5 out of 5 from 17 votes"></a>
 </p>
 
