@@ -209,7 +209,9 @@ function accountControls(): { trigger: HTMLAnchorElement; login: HTMLAnchorEleme
   dashboard.className = "small-btn";
   dashboard.href = "/dashboard.html";
   dashboard.textContent = "Dashboard";
-  if (!/dashboard|github/.test(location.pathname)) buttonRow.append(dashboard);
+  // The desktop app serves the workspace as index.html, so test the page
+  // itself rather than its path.
+  if (!document.body.matches(".redaxa-workspace,.repository-page")) buttonRow.append(dashboard);
   // A full email address plus a permanent "Sign out" button spent the most
   // prominent slot in the header on the two things a signed-in user needs
   // least often. Collapsed into an initials avatar that opens a menu; the
