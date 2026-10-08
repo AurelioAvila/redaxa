@@ -72,7 +72,7 @@ sensitive values outside the built-in rules.
 
 ### Review a GitHub repository on Windows
 
-Pro and Business users can check a public GitHub repository for possible exposed credentials in the Windows app. The focused check reads current files; an optional extended check includes accessible Git history, dependencies and supported archives. Redaxa prioritizes likely API keys and tokens, shows coverage and exclusions, and exports a redacted report. The repository check runs locally, unlike prompt scanning through Redaxa's backend. Findings need human review: Redaxa does not test whether a key works, revoke it, or perform a complete code vulnerability audit. [See the repository workflow](https://redaxa.getcertsprint.com/#repository) and [v0.4.1 release notes](RELEASE-NOTES-0.4.1.md).
+Pro and Business users can check a public GitHub repository for possible exposed credentials in the Windows app. The focused check reads current files; an optional extended check includes accessible Git history, dependencies and supported archives. Redaxa prioritizes likely API keys and tokens, shows coverage and exclusions, and exports a redacted report. The repository check runs locally, unlike prompt scanning through Redaxa's backend. Findings need human review: Redaxa does not test whether a key works, revoke it, or perform a complete code vulnerability audit. [See the repository workflow](https://redaxa.getcertsprint.com/#repository) and [v0.4.1 release notes](release-notes/RELEASE-NOTES-0.4.1.md).
 
 ## For teams: the control layer
 
