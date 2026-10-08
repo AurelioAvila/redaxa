@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="brand/github-preview-ocean.png" width="88%" alt="Redaxa — current Ocean desktop app showing Repository check">
+  <img src="brand/redaxa-0.4.9-prompt.png" width="88%" alt="Redaxa 0.4.9 desktop app in its default Petrol and Copper theme, checking a prompt before it is shared">
 </p>
 
 <h1 align="center">Redaxa — Sensitive Data Checks for AI Prompts and Repositories</h1>
