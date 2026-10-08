@@ -43,8 +43,8 @@
 .redaxa-landing .hero {gap:54px;padding-top:88px;padding-bottom:84px;background:radial-gradient(ellipse at 80% 25%,color-mix(in srgb,var(--theme-accent) 5%,transparent),transparent 65%)}
 .redaxa-landing .hero h1 {font-size:clamp(45px,5.4vw,76px);line-height:1.04;letter-spacing:-.025em;font-weight:600}
 .redaxa-landing .hero .sub {font-size:16px;max-width:510px}
-.redaxa-landing .hero-meta {font-size:12.5px;line-height:1.8;max-width:510px;color:var(--theme-muted)}
-.redaxa-landing .hero-meta b {color:var(--theme-text)}
+.redaxa-landing .hero-meta {font-size:13px;line-height:1.7;max-width:480px;color:var(--theme-muted)}
+.redaxa-landing .hero-meta a {color:var(--theme-text)}
 .redaxa-landing .shield-card {padding:27px;border-radius:20px;background:linear-gradient(135deg,var(--theme-surface),var(--theme-inset));border-color:var(--theme-strong);box-shadow:0 24px 75px #0004;transform:none}
 .redaxa-landing .sc-raw {background:var(--theme-bg);border-color:var(--theme-strong);color:var(--theme-text);font-size:14px}
 .redaxa-landing .sc-safe code,.redaxa-landing .safe-output pre {background:var(--theme-bg);color:var(--theme-text);border-color:var(--theme-strong);font-size:13px}
@@ -498,6 +498,8 @@
 .redaxa-workspace .top-right{padding-top:4px;gap:8px}
 :is(.redaxa-workspace,.repository-page) .small-btn{min-height:36px;padding:8px 12px;font-size:13px;border-radius:6px}
 .task-switch{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--theme-strong);margin:0 0 22px;gap:26px}
+/* The sidebar already offers both checks; the switch only earns its space when the sidebar is hidden. */
+@media(min-width:901px){.redaxa-workspace .task-switch,.repository-page .task-switch{display:none}}
 .task-switch a{position:relative;display:grid;gap:3px;padding:14px 0 18px;text-decoration:none!important;color:var(--theme-muted);transition:color .18s ease}
 .task-switch a>span{font-size:16px;font-weight:600;letter-spacing:-.015em}
 .task-switch small{font-size:13px;font-weight:400;line-height:1.5}
@@ -599,7 +601,7 @@
 .review-explainer h2{font-size:27px;font-weight:500;line-height:1.2;letter-spacing:-.035em;margin:0 0 23px}
 .review-explainer ol{padding:0;margin:0;list-style:none}
 .review-explainer li{display:flex;gap:13px;padding:17px 0;border-top:1px solid var(--theme-line)}
-.review-explainer li>b{font:400 13px/1.8 Consolas,monospace;color:var(--theme-accent)}
+.review-explainer li>b{font:600 13px/1.8 var(--rx-font-ui);font-variant-numeric:tabular-nums;color:var(--theme-accent)}
 .review-explainer strong{font-size:13px;font-weight:550}
 .review-explainer p{font-size:13px;line-height:1.75;color:var(--theme-muted);margin:6px 0 0}
 .repository-page .pro-banner{padding:22px 0;gap:20px;border-bottom:1px solid var(--theme-line)}
