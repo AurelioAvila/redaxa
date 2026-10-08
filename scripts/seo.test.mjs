@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 
 const read = file => readFileSync(new URL('../' + file, import.meta.url), 'utf8');
 const entries = [...read('sitemap.xml').matchAll(/<url>\s*<loc>([^<]+)<\/loc><lastmod>([^<]+)<\/lastmod>/g)];
-assert.equal(entries.length, 6);
+assert.equal(entries.length, 9);
 assert.equal(new Set(entries.map(entry => entry[1])).size, entries.length);
 const origin = new URL(entries[0][1]).origin;
 assert.equal(origin, 'https://redaxa.getcertsprint.com', 'Public metadata must use the verified branded domain.');
@@ -27,4 +27,4 @@ for (const file of ['dashboard.html']) {
   assert.match(read(file), /name="robots"[^>]*noindex/);
   assert.ok(!entries.some(entry => entry[1].endsWith('/' + file)));
 }
-console.log('SEO checks passed: six canonical sitemap URLs; the personal workspace remains noindex.');
+console.log('SEO checks passed: nine canonical sitemap URLs; the personal workspace remains noindex.');
