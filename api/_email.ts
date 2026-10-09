@@ -355,9 +355,11 @@ export function subscriptionText(input: SubscriptionEmailInput): string {
   return lines.join("\n");
 }
 
-/** Tells the customer their subscription started. Never throws. */
-export async function sendSubscriptionEmail(input: SubscriptionEmailInput): Promise<boolean> {
-  return send(input.to, subscriptionSubject(input.trialing), subscriptionHtml(input), subscriptionText(input));
+/** Tells the customer their subscription started. Never throws. The key,
+ *  derived from the subscription, makes a duplicate webhook delivery that
+ *  runs in parallel harmless: Resend sends one message per key. */
+export async function sendSubscriptionEmail(input: SubscriptionEmailInput, idempotencyKey?: string): Promise<boolean> {
+  return send(input.to, subscriptionSubject(input.trialing), subscriptionHtml(input), subscriptionText(input), idempotencyKey);
 }
 
 /**
@@ -563,6 +565,7 @@ export async function notifyOwnerOfSale(
   plan: string | null,
   interval: string | null,
   trialing: boolean,
+  idempotencyKey?: string,
 ): Promise<boolean> {
   const label = planLabel(plan, interval);
   return send(
@@ -573,5 +576,6 @@ export async function notifyOwnerOfSale(
         <strong>Account:</strong> ${escapeHtml(customerEmail || "(unknown address)")}</p>
      <p>Stripe has the details; this is only the heads-up.</p>`,
     `Someone just started a Redaxa ${trialing ? "trial" : "subscription"}.\n\nPlan: ${label}\nAccount: ${customerEmail || "(unknown address)"}\n\nStripe has the details; this is only the heads-up.`,
+    idempotencyKey,
   );
 }

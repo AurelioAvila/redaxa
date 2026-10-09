@@ -86,7 +86,7 @@
       <h2>Read your activity</h2>
       <pre><code>curl -s https://redaxa.getcertsprint.com/api/scan \
   -H "Authorization: Bearer psk_live_..."</code></pre>
-      <p>Returns your last 50 scan events — metadata only (surface, detection kinds, decision). Organization owners and admins can add <code>?scope=org</code> for the whole team's events. There is no endpoint that returns prompt content, because none is ever stored.</p>
+      <p>Returns your most recent 200 scan events — metadata only (surface, detection kinds, decision). Organization owners and admins can add <code>?scope=org</code> for the whole team's events. There is no endpoint that returns prompt content, because none is ever stored.</p>
 
       <h2>Honesty note</h2>
       <p>Before automating a check, read the <a href="/redact-sensitive-data-before-chatgpt.html">practical guide to reducing and reviewing prompt content</a>. A clean scan does not establish that material is safe or authorized to share.</p>

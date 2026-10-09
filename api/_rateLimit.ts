@@ -1,3 +1,5 @@
+import { createHmac } from "node:crypto";
+
 // Best-effort abuse guard for auth/checkout endpoints. This is in-memory per serverless
 // instance: on Vercel it does NOT coordinate across concurrently warm instances, so it
 // stops casual scripted abuse but is not a substitute for a shared store (Upstash/Vercel
@@ -20,6 +22,14 @@ export function rateLimited(key: string, limit: number, windowMs: number): boole
   return bucket.count > limit;
 }
 
+// Counters are stored in the database, so the identifier part of a key (an IP
+// address or account id) is replaced by a keyed hash; only the two-word
+// prefix stays readable. IPv6 addresses contain colons, hence the fixed split.
+export function storedRateLimitKey(key: string): string {
+  const prefix = key.split(":").slice(0, 2).join(":");
+  return `${prefix}:${createHmac("sha256", process.env.SUPABASE_SERVICE_ROLE_KEY ?? "").update(key).digest("base64url")}`;
+}
+
 // Cross-instance authority: an atomic Postgres counter (rate_limit_hit RPC).
 // The in-memory check above stays as the cheap first line; this one closes
 // the "every warm instance has its own counter" hole. Deliberately fail-open:
@@ -34,7 +44,7 @@ export async function rateLimitedShared(
   try {
     const response = await supabaseService("/rest/v1/rpc/rate_limit_hit", {
       method: "POST",
-      body: JSON.stringify({ p_key: key, p_limit: limit, p_window_seconds: windowSeconds })
+      body: JSON.stringify({ p_key: storedRateLimitKey(key), p_limit: limit, p_window_seconds: windowSeconds })
     });
     if (!response.ok) return false;
     return await response.json() === true;

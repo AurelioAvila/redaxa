@@ -164,4 +164,41 @@ await withMockFetch(
   async () => { await assert.rejects(() => billing.requireUser({ headers: { cookie: "ps_at=expired-token" } }), /UNAUTHORIZED/); }
 );
 
+// requireUser: a Scan API key is refused everywhere except where the caller
+// opts in, and is never looked up (or sent to Supabase) when refused.
+await withMockFetch(
+  async (url) => { throw new Error(`No fetch expected, got: ${url}`); },
+  async () => { await assert.rejects(() => billing.requireUser({ headers: { authorization: "Bearer psk_live_0123456789abcdef" } }), /UNAUTHORIZED/); }
+);
+await withMockFetch(
+  async (url) => {
+    if (url.includes("/rest/v1/api_keys?key_hash=")) return new Response(JSON.stringify([{ id: "key-1", user_id: "user-3" }]), { status: 200 });
+    if (url.includes("/rest/v1/api_keys?id=")) return new Response("", { status: 204 });
+    if (url.includes("/auth/v1/admin/users/user-3")) return new Response(JSON.stringify({ email: "ci@example.com" }), { status: 200 });
+    throw new Error(`Unexpected request in test: ${url}`);
+  },
+  async () => {
+    const user = await billing.requireUser({ headers: { authorization: "Bearer psk_live_0123456789abcdef" } }, undefined, true);
+    assert.equal(user.id, "user-3");
+  }
+);
+
+// requireUser: a cookie session is refused when the request comes from
+// another origin, even a sibling subdomain on the same site.
+await withMockFetch(
+  async (url) => { throw new Error(`No fetch expected, got: ${url}`); },
+  async () => {
+    for (const origin of ["https://other.getcertsprint.com", "null"]) {
+      await assert.rejects(() => billing.requireUser({ headers: { cookie: "ps_at=valid-token", origin } }), /UNAUTHORIZED/);
+    }
+  }
+);
+await withMockFetch(
+  async () => new Response(JSON.stringify({ id: "user-1", email: "person@example.com" }), { status: 200 }),
+  async () => {
+    const user = await billing.requireUser({ headers: { cookie: "ps_at=valid-token", origin: "https://redaxa.getcertsprint.com" } });
+    assert.equal(user.id, "user-1");
+  }
+);
+
 console.log("Redaxa billing tests passed.");

@@ -33,8 +33,11 @@ function supabaseDemoSigned(token:string):boolean {
 }
 function classify(f:Finding,path:string,text:string,offset:number):{disposition:'review'|'reference';reason:string;severity?:string;confidence?:'high'|'medium'|'low';label?:string} {
   const exampleFile=/(?:^|[/. _-])(?:example|sample|template|fixture|test)(?:s|[/. _-]|$)/i.test(path);
-  const lineStart=text.lastIndexOf('\n',offset)+1;
-  const lineEnd=text.indexOf('\n',offset);
+  // Context is bounded to 1,000 characters either side: on a minified one-line
+  // file, reading the whole line for every match made the check quadratic.
+  const head=text.slice(Math.max(0,offset-1000),offset),tail=text.slice(offset,offset+1000);
+  const lineStart=offset-head.length+head.lastIndexOf('\n')+1;
+  const lineEnd=tail.includes('\n')?offset+tail.indexOf('\n'):offset+tail.length;
   const line=text.slice(lineStart,lineEnd<0?text.length:lineEnd);
   const before=text.slice(Math.max(lineStart,offset-100),offset);
   const reference=(reason:string)=>({disposition:'reference' as const,reason,confidence:'high' as const});
@@ -127,23 +130,35 @@ function classify(f:Finding,path:string,text:string,offset:number):{disposition:
   return {disposition:'review',reason:'Potential sensitive data. Context and authorization must be reviewed; this is not a confirmed vulnerability.'};
 }
 
-export function inspectFile(path:string,text:string,allowReveal=false,credentialsOnly=false):RepoFinding[] {
+export function inspectFile(path:string,text:string,allowReveal=false,credentialsOnly=false,limit=Infinity):RepoFinding[] {
   const {findings}=inspectPrompt(text,credentialsOnly?{includePersonalData:false,includeFinancialData:false,includeCredentials:true}:undefined,true);const offsets=new Map<string,number>();
-  return findings.flatMap(f=>{
-    const key=f.kind+'\0'+f.value;const offset=text.indexOf(f.value,offsets.get(key)??0);
+  // Line numbers by binary search over newline positions. Splitting the text
+  // up to every match made files with many matches quadratic.
+  const newlines:number[]=[];for(let i=text.indexOf('\n');i>=0;i=text.indexOf('\n',i+1))newlines.push(i);
+  const lineOf=(offset:number)=>{let lo=0,hi=newlines.length;while(lo<hi){const mid=(lo+hi)>>1;if(newlines[mid]<offset)lo=mid+1;else hi=mid;}return lo+1;};
+  // A capped caller classifies credentials before personal-data noise, so a
+  // file full of addresses cannot push a key out of the report.
+  const ordered=Number.isFinite(limit)?[...findings.filter(f=>f.category==='credentials'),...findings.filter(f=>f.category!=='credentials')]:findings;
+  const out:RepoFinding[]=[];
+  for(const f of ordered){
+    if(out.length>=limit)break;
+    // One rule's matches arrive in text order: resume after the previous match
+    // of the same kind rather than searching from the start each time.
+    const offset=text.indexOf(f.value,offsets.get(f.kind)??0);
     // inspectPrompt progressively redacts text. A later generic rule can match
     // its generated markers; those strings never appeared in the source file.
-    if(offset<0)return [];
-    offsets.set(key,offset+f.value.length);
+    if(offset<0)continue;
+    offsets.set(f.kind,offset+f.value.length);
     const c=classify(f,path,text,offset);
-    if(credentialsOnly&&(c.disposition==='reference'||c.label==='JWT · unsubscribe-link token'))return [];
+    if(credentialsOnly&&(c.disposition==='reference'||c.label==='JWT · unsubscribe-link token'))continue;
     const assignment=text.slice(Math.max(0,offset-100),offset).match(/\b(OPENAI_API_KEY)["']?\s*[:=]\s*["']?$/)?.[1]??'';
     const credential=f.category==='credentials'?credentialContext(f.kind,f.value,c.label??f.label,c.disposition==='reference',assignment):undefined;
     const identity=f.kind==='credential'?f.value.replace(/^(?:password|passwd|pwd|secret)\s*[:=]\s*/i,'').replace(/^["']|["']$/g,''):f.kind==='email'?f.value.toLowerCase():f.kind==='secret'?credentialValue(f.value):f.value;
     const fingerprint=createHmac('sha256',fingerprintKey).update(f.kind+'\0'+identity).digest('hex');
-    return [{path,line:text.slice(0,offset).split('\n').length,label:f.label,category:f.category,masked:'[REDACTED]',kind:f.kind,fingerprint,...(credential?{credential}:{}),...(allowReveal?{value:f.value}:{}),...c,severity:c.disposition==='reference'?'info':c.severity??f.severity,
-      action:credential?.guidance??(c.disposition==='reference'?'Informational or recognized reference. Kept for transparency; excluded from the review count.':'Check whether this data is intentional and authorized for public sharing. Remove or anonymize it if needed.')}];
-  });
+    out.push({path,line:lineOf(offset),label:f.label,category:f.category,masked:'[REDACTED]',kind:f.kind,fingerprint,...(credential?{credential}:{}),...(allowReveal?{value:f.value}:{}),...c,severity:c.disposition==='reference'?'info':c.severity??f.severity,
+      action:credential?.guidance??(c.disposition==='reference'?'Informational or recognized reference. Kept for transparency; excluded from the review count.':'Check whether this data is intentional and authorized for public sharing. Remove or anonymize it if needed.')});
+  }
+  return out;
 }
 
 async function boundedJSON(response:Response,max:number):Promise<any> {
@@ -202,7 +217,7 @@ export async function scanRepository(input:string,signal?:AbortSignal,fetcher:ty
         else if(source.startsWith('version https://git-lfs.github.com/spec/'))reason='Git LFS pointer: external object is not in this snapshot.';
         else {
           if(LOCKFILE.test(path))dependencies.push(...parseLockfile(path,source));
-          const found=inspectFile(path,source,allowReveal);report.scanned++;
+          const found=inspectFile(path,source,allowReveal,false,MAX_FINDINGS-report.findings.length+1);report.scanned++;
           for(const f of found){if(report.findings.length>=MAX_FINDINGS){report.findingsTruncated=true;break;}f.url=`https://github.com/${owner}/${repo}/blob/${snapshot}/${path.split('/').map(encodeURIComponent).join('/')}#L${f.line}`;report.findings.push(f);}
         }
       }

@@ -77,4 +77,17 @@ assert.ok(archiveOnly.findings.some(f=>f.url?.includes(`/blob/${headSha}/config.
 assert.equal(archiveOnly.dependencies?.checked,1);
 const missing=(async()=>new Response('',{status:404})) as typeof fetch;
 await assert.rejects(scanRepository('https://github.com/a/private',undefined,missing,false,{archiveOnly:true}),/Only public GitHub repositories/);
+// Files with many matches: line numbers come from a newline index, and a capped
+// caller keeps credentials ahead of personal data. Both used to be quadratic.
+{
+  const started=performance.now();
+  const emails=inspectFile('data/users.csv','a@b.cc\n'.repeat(60_000));
+  assert.equal(emails.length,60_000);assert.equal(emails.at(-1)?.line,60_000);
+  assert.ok(performance.now()-started<20_000,'line numbers must not rescan the file for every match');
+  const key='ghp_'+'k'.repeat(36);
+  const capped=inspectFile('data/mixed.env','a@b.cc\n'.repeat(20_000)+'TOKEN='+key+'\n',false,false,5);
+  assert.equal(capped.length,5);assert.equal(capped[0].kind,'secret');assert.equal(capped[0].line,20_001);
+  const minified=inspectFile('dist/app.min.js','x="a@b.cc";'.repeat(40_000));
+  assert.equal(minified.length,40_000);assert.ok(minified.every(f=>f.line===1));
+}
 console.log('Archive-only scan: no API calls, commit from archive root, lockfile audit and private/missing repositories passed.');

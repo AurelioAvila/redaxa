@@ -49,9 +49,12 @@ export type AuditEvent = {
   user_id: string;
 };
 
-/** RFC 4180: quote everything, double the quotes inside. */
+/** RFC 4180: quote everything, double the quotes inside. A cell that a
+ *  spreadsheet would run as a formula (a member's address can start with "=")
+ *  is prefixed with an apostrophe so it opens as text. */
 export function csvCell(value: string): string {
-  return `"${value.replace(/"/g, '""')}"`;
+  const text = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+  return `"${text.replace(/"/g, '""')}"`;
 }
 
 /**

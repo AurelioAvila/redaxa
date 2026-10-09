@@ -47,7 +47,7 @@ const limited = await call("https://github.com/o/repo", visitor);
 assert.equal(limited.status, 402); assert.equal(limited.body.error, "REPOSITORY_LIMIT");
 assert.equal((await call("https://github.com/o/repo", { userId: "u1", paid: true, ip: "203.0.113.9" })).status, 200, "a paid account has its own allowance");
 console.log("Web repository check: masked results, no GitHub API, dependency advisories, input errors and daily allowance passed.");
-const busy = (async (_p: string, init?: RequestInit) => new Response(String(JSON.parse(String(init?.body)).p_key === "repo:global"))) as unknown as (p: string) => Promise<Response>;
+const busy = (async (_p: string, init?: RequestInit) => new Response(String(JSON.parse(String(init?.body)).p_key.startsWith("repo:global:")))) as unknown as (p: string) => Promise<Response>;
 let busyStatus = 0; const busyRes = { status(c: number) { busyStatus = c; return busyRes; }, json() {} };
 await handleRepositoryCheck("https://github.com/o/repo", { userId: "u9", paid: true, ip: "198.51.100.99" }, busy, busyRes);
 assert.equal(busyStatus, 503, "the whole-service daily ceiling stops further checks");

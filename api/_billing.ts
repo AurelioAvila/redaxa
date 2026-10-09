@@ -286,20 +286,28 @@ export async function revokeApiKey(userId: string, keyId: string): Promise<void>
 
 export async function requireUser(
   request: { headers?: Record<string, string | string[] | undefined> },
-  response?: { setHeader(name: string, value: string | string[]): void }
+  response?: { setHeader(name: string, value: string | string[]): void },
+  allowApiKey = false
 ): Promise<BillingUser> {
   const bearer = bearerToken(request.headers);
   if (bearer) {
     // Dedicated API keys are distinguishable by prefix and never sent to
     // Supabase auth; Supabase session tokens never hit the key table.
+    // They are scoped to the Scan API: a key leaked from a CI log must not
+    // mint more keys, open billing or change organization policies.
     if (bearer.startsWith(API_KEY_PREFIX)) {
-      const user = await apiKeyUser(bearer);
+      const user = allowApiKey ? await apiKeyUser(bearer) : null;
       if (user) return user;
       throw new Error("UNAUTHORIZED");
     }
     const user = await supabaseAuthUser(bearer);
     if (user) return user;
   }
+  // Cookie sessions only for the product's own pages. SameSite=Lax does not
+  // stop sibling getcertsprint.com subdomains, which count as the same site.
+  const rawOrigin = request.headers?.origin;
+  const origin = Array.isArray(rawOrigin) ? rawOrigin[0] : rawOrigin;
+  if (origin !== undefined && !allowedOrigins().has(origin)) throw new Error("UNAUTHORIZED");
   const cookies = parseCookies(request.headers?.cookie);
   const accessToken = cookies[ACCESS_COOKIE];
   if (accessToken) {
@@ -592,6 +600,17 @@ export function parseJson(body: unknown): Json {
 // Both hosts serve this deployment; customers are always sent to the Redaxa one.
 const WEB_ORIGINS = ["https://redaxa.getcertsprint.com", "https://promptshield-beta.vercel.app"];
 export const appUrl = (): string => process.env.APP_URL?.replace(/\/$/, "") ?? WEB_ORIGINS[0];
+
+/** Where a confirmation or reset email may send its link: Redaxa's own web
+ *  origins only. Anything else is dropped and Supabase uses its site URL, so
+ *  the shared project's redirect allow-list is no longer the only guard. */
+export function authRedirectUrl(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && !url.username && !url.password && [appUrl(), ...WEB_ORIGINS].includes(url.origin) ? url.href : undefined;
+  } catch { return undefined; }
+}
 
 // Keep browser billing on its verified site without trusting arbitrary return URLs.
 // Desktop and extension clients retain the configured production fallback.

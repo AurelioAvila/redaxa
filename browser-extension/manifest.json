@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Redaxa – Redact PII & API Keys for ChatGPT, Claude, Gemini",
   "short_name": "Redaxa",
-  "version": "0.4.7",
+  "version": "0.4.8",
   "description": "Catch API keys, passwords and personal data before a prompt reaches ChatGPT, Claude or Gemini. Checked on your device, free.",
   "permissions": [
     "storage",

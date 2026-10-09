@@ -1,4 +1,4 @@
-import { corsHeaders } from "../_billing.js";
+import { authRedirectUrl, corsHeaders } from "../_billing.js";
 import { clientIp, rateLimited } from "../_rateLimit.js";
 
 type RequestLike = { method?: string; body?: unknown; headers?: Record<string, string | string[] | undefined> };
@@ -18,6 +18,8 @@ export default async function handler(request: RequestLike, response: ResponseLi
   try {
     const body = (request.body ?? {}) as { email?: unknown; password?: unknown; emailRedirectTo?: unknown; firstName?: unknown; lastName?: unknown; dateOfBirth?: unknown; resend?: unknown };
     const email = typeof body.email === "string" ? body.email.trim() : "";
+    // Only links back to Redaxa itself; see authRedirectUrl.
+    const redirect = authRedirectUrl(body.emailRedirectTo);
 
     // Resend: same flow as a fresh signup, but only needs an email -- used
     // when the original confirmation link expired or never arrived. Folded
@@ -37,7 +39,7 @@ export default async function handler(request: RequestLike, response: ResponseLi
         headers: { apikey: publishableKey, "Content-Type": "application/json" },
         body: JSON.stringify({
           type: "signup", email,
-          options: typeof body.emailRedirectTo === "string" ? { email_redirect_to: body.emailRedirectTo } : undefined
+          options: redirect ? { email_redirect_to: redirect } : undefined
         })
       }).catch(() => undefined);
       // Always report success, same reasoning as recover.ts: this endpoint
@@ -63,7 +65,7 @@ export default async function handler(request: RequestLike, response: ResponseLi
         email,
         password,
         data: firstName ? { first_name: firstName.slice(0, 100) } : {},
-        options: typeof body.emailRedirectTo === "string" ? { email_redirect_to: body.emailRedirectTo } : undefined
+        options: redirect ? { email_redirect_to: redirect } : undefined
       })
     });
     const payload = await upstream.json().catch(() => ({})) as { msg?: string; error_description?: string };

@@ -65,7 +65,7 @@ export default async function handler(request: RequestLike, response: ResponseLi
   // only, the visibility the Business plan exists for.
   if (request.method === "GET") {
     try {
-      const user = await requireUser(request, response);
+      const user = await requireUser(request, response, true);
       const scope = queryValue(request, "scope");
       const format = queryValue(request, "format");
       const from = auditBoundary(queryValue(request, "from"), false);
@@ -148,7 +148,7 @@ export default async function handler(request: RequestLike, response: ResponseLi
     // product's protection, not the account wall.
     let user: BillingUser | null = null;
     try {
-      user = await requireUser(request, response);
+      user = await requireUser(request, response, true);
     } catch (error) {
       if ((error instanceof Error ? error.message : "") !== "UNAUTHORIZED") throw error;
     }
@@ -200,7 +200,9 @@ export default async function handler(request: RequestLike, response: ResponseLi
       includePersonalData: body.options?.includePersonalData !== false,
       includeCredentials: body.options?.includeCredentials !== false,
       includeFinancialData: body.options?.includeFinancialData !== false,
-      customTerms: Array.isArray(body.options?.customTerms) ? body.options.customTerms.filter((term): term is string => typeof term === "string").slice(0, 30) : undefined
+      // Same 64-character limit as saved terms: each term becomes a regular
+      // expression, and an unbounded one failed the check with a 500.
+      customTerms: Array.isArray(body.options?.customTerms) ? body.options.customTerms.filter((term): term is string => typeof term === "string").slice(0, 30).map((term) => term.trim().slice(0, 64)) : undefined
     };
     // Organization governance: a member's scans are also checked against the
     // organization's shared protected terms. Best-effort — if the lookup

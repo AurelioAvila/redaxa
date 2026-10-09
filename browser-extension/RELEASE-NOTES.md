@@ -1,4 +1,10 @@
-# Extension 0.4.7
+# Extension 0.4.8
+
+Clicking Send is now checked in every interface language. The send buttons on ChatGPT, Claude, Gemini and Perplexity are recognized by their structure rather than their English label, so a click on Send in an Italian, German or other translated interface no longer skips the automatic check; pressing Enter was already covered. Stopping a ChatGPT reply is not treated as a send.
+
+The bundled detection engine matches Redaxa 0.4.12, so some unusual text patterns no longer slow down a check. No new permissions, telemetry or dependencies.
+
+## Previous extension 0.4.7
 
 Prompts are now checked inside your browser. For free use nothing is sent anywhere: the same detection engine the Redaxa service runs is bundled with the extension, so checks are instant, unlimited and work without an account. Automatic checks before sending are now on for everyone on ChatGPT, Claude, Gemini, Copilot and Perplexity, with a switch in the popup to turn them off. Accounts with an active plan keep using the Redaxa service, where workspace protected terms, team policies and the activity record live; a Business block still holds the message when the account cannot be verified.
 
