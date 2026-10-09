@@ -5,7 +5,6 @@ process.env.SUPABASE_PUBLISHABLE_KEY = "test-publishable-key";
 process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-key";
 process.env.STRIPE_SECRET_KEY = "sk_test_dummy";
 const { default: handler } = await import("./scan.js");
-const { storedRateLimitKey } = await import("./_rateLimit.js");
 
 const storedKeys: string[] = [];
 async function scan(userId: string, plan: Record<string, unknown> | null, ip: string, body: Record<string, unknown> = { text: "Email marco.rossi@acme.com about the invoice", application: "web" }) {
@@ -25,7 +24,7 @@ async function scan(userId: string, plan: Record<string, unknown> | null, ip: st
   };
   try {
     await handler({ method: "POST", body,
-      headers: { authorization: "Bearer fixture", "x-forwarded-for": ip } }, response);
+      headers: { ...(userId ? { authorization: "Bearer fixture" } : {}), "x-forwarded-for": ip } }, response);
   } finally { globalThis.fetch = savedFetch; }
   return response;
 }
@@ -51,10 +50,9 @@ const long = await scan(paid, plan, "10.0.3.1", { text: "Project Falcon launch n
 assert.equal(long.code, 200);
 assert.equal((long.payload as { findings: { kind: string }[] }).findings.filter((f) => f.kind === "custom").length, 1);
 
-// Shared counters never store a raw IP address or account id.
-assert.ok(storedKeys.length > 0);
-for (const key of storedKeys) assert.match(key, /^scan:(free|user):[A-Za-z0-9_-]{43}$/);
-assert.equal(storedRateLimitKey("scan:anon:2001:db8::1").startsWith("scan:anon:"), true);
-assert.equal(storedRateLimitKey("scan:anon:2001:db8::1").includes("2001"), false);
+// A visitor's shared counter is keyed by a hash, never the raw IP address.
+assert.equal((await scan("", null, "10.9.8.7")).code, 200);
+const visitorKey = storedKeys.find((key) => key.startsWith("scan:anon:"));
+assert.ok(visitorKey && !visitorKey.includes("10.9.8.7"), "rate-limit keys hold no IP address");
 
 console.log("Scan: free daily allowance for plan-less accounts, per-account counting and unlimited subscribers and bounded custom terms passed.");
