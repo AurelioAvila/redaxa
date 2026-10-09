@@ -412,8 +412,8 @@ ${HEAD_EXTRA}
             <div style="font-size:13px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:${MUTED}; margin-bottom:16px;">Three minutes to set up</div>
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
               <tr><td style="padding:10px 0; color:#e5e7eb; font-size:15px; line-height:1.5;"><span style="color:${ACCENT}; font-weight:700;">1</span>&nbsp;&nbsp; Install the browser extension or the desktop app</td></tr>
-              <tr><td style="padding:10px 0; color:#e5e7eb; font-size:15px; line-height:1.5;"><span style="color:${ACCENT}; font-weight:700;">2</span>&nbsp;&nbsp; Open ChatGPT, Claude, Gemini or Copilot as you normally would</td></tr>
-              <tr><td style="padding:10px 0; color:#e5e7eb; font-size:15px; line-height:1.5;"><span style="color:${ACCENT}; font-weight:700;">3</span>&nbsp;&nbsp; Paste something with a key or an address in it and watch it get masked</td></tr>
+              <tr><td style="padding:10px 0; color:#e5e7eb; font-size:15px; line-height:1.5;"><span style="color:${ACCENT}; font-weight:700;">2</span>&nbsp;&nbsp; Open ChatGPT, Claude, Gemini or Perplexity as you normally would</td></tr>
+              <tr><td style="padding:10px 0; color:#e5e7eb; font-size:15px; line-height:1.5;"><span style="color:${ACCENT}; font-weight:700;">3</span>&nbsp;&nbsp; Paste something with a key or an address in it and see what Redaxa flags before it sends</td></tr>
             </table>
           </td>
         </tr>
@@ -449,8 +449,8 @@ export function welcomeText(firstName: string | null | undefined, appUrl: string
     "",
     "Three minutes to set up:",
     "1. Install the browser extension or the desktop app",
-    "2. Open ChatGPT, Claude, Gemini or Copilot as you normally would",
-    "3. Paste something with a key or an address in it and watch it get masked",
+    "2. Open ChatGPT, Claude, Gemini or Perplexity as you normally would",
+    "3. Paste something with a key or an address in it and see what Redaxa flags before it sends",
     "",
     `Open Redaxa: ${appUrl}`,
     "",

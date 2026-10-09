@@ -46,7 +46,7 @@ async function render() {
     document.querySelector("#status-pill i").style.background = currentStatus.active ? "#a8d9bd" : "#ffb8ac";
     document.getElementById("status-plan").textContent = currentStatus.repositoryAccess ? (currentStatus.plan === "business" ? "Business · Pro features included" : "Pro workspace") : "Manage your plan in the workspace";
   }
-  document.getElementById("repository-access").textContent = currentStatus.repositoryAccess ? "60 web checks a day with your plan. History and private repositories run in the Windows app." : "3 free checks a day on the web. Values always stay hidden.";
+  document.getElementById("repository-access").textContent = currentStatus.repositoryAccess ? "60 repository checks a day on the web with your plan. Git history and archives run in the Windows app." : "3 free checks a day on the web. Values always stay hidden.";
   if (currentStatus.unavailable) msg.textContent = "Account verification is unavailable. Please try again; no access has been unlocked.";
 }
 formBox.addEventListener("submit", async (event) => {
