@@ -302,7 +302,7 @@ function accountPlanLabel(state: AccountState | null): string {
   return plan + (state.status === "trialing" ? " · Trial" : " · Active");
 }
 
-// "m.rossi@acme.com" -> "MR", "canadesino91@gmail.com" -> "C". Derived from the
+// "m.rossi@acme.com" -> "MR", "jsmith42@example.com" -> "J". Derived from the
 // address because the dashboard never receives the first/last name fields.
 function initialsFor(email: string): string {
   const local = email.split("@")[0] ?? "";
