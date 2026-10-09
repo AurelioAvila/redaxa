@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>Catch what you're about to leak, before it reaches an AI tool.</strong><br>
-  Emails, secrets, cards, IBANs, private keys — flagged and redactable before you paste into ChatGPT, Claude, Gemini, Copilot or Perplexity. Scanned on our backend, not sent to any AI provider — details in <a href="#privacy">Privacy</a> below.
+  Emails, secrets, cards, IBANs, private keys — flagged and redactable before you paste into ChatGPT, Claude, Gemini, Copilot or Perplexity. Free checks in the Chrome extension run in your browser; web and Windows checks run on our backend. Nothing is sent to an AI provider — details in <a href="#privacy">Privacy</a> below.
 </p>
 
 <p align="center">
@@ -35,7 +35,7 @@ The [v0.4.12 Windows setup EXE](../../releases/tag/v0.4.12) was verified on Octo
 **WinGet status (October 9, 2026):** Microsoft merged version 0.4.11 in [PR #448889](https://github.com/microsoft/winget-pkgs/pull/448889) on October 8; version 0.4.12 is submitted in [PR #449579](https://github.com/microsoft/winget-pkgs/pull/449579) and waits for validation. Each installer URL and hash is verified against the signed public release before submission. The package is recorded in the [official manifests](https://github.com/microsoft/winget-pkgs/tree/master/manifests/a/AurelioAvila/Redaxa); the downloadable WinGet catalog and local clients may take time to receive the update. Refresh the source with `winget source update --name winget`, then check `winget show --id AurelioAvila.Redaxa --exact --source winget`. If it still shows an earlier version, use [GitHub Releases](../../releases/latest) for the current signed build.
 
 > The browser extension (source in [`browser-extension/`](browser-extension))
-> is available on the [Chrome Web Store](https://chromewebstore.google.com/detail/redaxa/clkobbjoaegkgnmkibjghlboeoplpmok). The store publishes **0.4.7**: free checks run inside the browser and send nothing, with an automatic check before sending on the supported sites that can be switched off in the popup. Accounts with an active plan use the Redaxa service, where workspace protected terms and team policies apply; Windows repository checks require Pro or Business. Version **0.4.8** was submitted on October 9, 2026 and is in Google's review queue; it publishes automatically after approval. Desktop and extension versions are independent. See the [extension release notes](browser-extension/RELEASE-NOTES.md).
+> is available on the [Chrome Web Store](https://chromewebstore.google.com/detail/redaxa/clkobbjoaegkgnmkibjghlboeoplpmok). The store publishes **0.4.7**: free checks run inside the browser and send nothing, with an automatic check before sending on the supported sites that can be switched off in the popup. Accounts with an active plan use the Redaxa service, where workspace protected terms and team policies apply; Windows repository checks require Pro or Business. Version **0.4.8** was submitted on October 9, 2026 and is in Google's review queue; it publishes automatically after approval. Version **0.4.9** corrects the popup's plan descriptions (repository checks cover public GitHub repositories only, and the 60-a-day allowance applies to repository checks) and is submitted once Google has decided on 0.4.8. Desktop and extension versions are independent. See the [extension release notes](browser-extension/RELEASE-NOTES.md).
 
 ---
 
@@ -94,7 +94,7 @@ On the Business plan, a workspace is a real organization:
 
 - **Web app** — [redaxa.getcertsprint.com](https://redaxa.getcertsprint.com), no install
 - **Windows desktop app** — this repo's installer, signs in once and stays signed in (session held in the OS credential store, not a file on disk)
-- **[Browser extension](https://chromewebstore.google.com/detail/redaxa/clkobbjoaegkgnmkibjghlboeoplpmok)** — a "Check" button injected into ChatGPT, Claude, Gemini, Copilot and Perplexity that scans whatever's in the composer before you send it
+- **[Browser extension](https://chromewebstore.google.com/detail/redaxa/clkobbjoaegkgnmkibjghlboeoplpmok)** — a "Check" button and an automatic check before sending on ChatGPT, Claude, Gemini and Perplexity. Free checks run inside the browser, with no account and no daily limit
 
 ## Reviews and distribution
 
@@ -109,11 +109,12 @@ Third-party listings may describe an older release and apply their own licence l
 
 ## Privacy
 
-**Your prompt text is sent to Redaxa's own backend to be scanned — it
-is not processed entirely on-device.** That's a deliberate tradeoff, not a
-hidden detail: running the same detection logic server-side is what lets
-the web app, desktop app and browser extension all give identical results.
-What that scan does *not* do: your text is never sent to a third-party AI
+**Where your prompt text goes depends on the surface.** Free checks in the
+browser extension run entirely inside the browser with the same detection
+engine, bundled with the extension; the text is not sent anywhere. The web
+app, the desktop app and the extension with an active plan send the text to
+Redaxa's own backend, which is where protected terms, team policies and the
+metadata-only activity record live. What that server-side scan does *not* do: your text is never sent to a third-party AI
 or classification service as part of scanning (`api/scan.ts` is regex/Luhn/
 mod-97 logic, no outbound calls), and the request body is used only to
 compute the response — never logged, stored, or forwarded anywhere; see
@@ -153,9 +154,10 @@ npx tauri build
 
 Redaxa is a protective review layer, not a guarantee that all
 sensitive data will be caught — detection has irreducible false negatives,
-and you're always the one who decides what actually gets sent. Team sharing
-and cloud sync of scan history are not implemented; history stays in the
-browser's local storage only.
+and you're always the one who decides what actually gets sent. The "Recent
+checks" history stays in the browser's local storage. Checks processed on
+the backend also leave a metadata-only activity record (never the text),
+visible to you and, in a Business workspace, to its owners and admins.
 
 Secret/credential detection matches known vendor prefixes (`sk-`, `AIza`,
 `AKIA`, `ghp_`/`gho_`, `xox*-`, JWTs, `Bearer` tokens) — a generic
@@ -166,7 +168,7 @@ custom term rather than relying on the built-in credential patterns.
 ## Architecture notes
 
 - [`scanner.ts`](scanner.ts) — the detection engine shared by every surface
-- [`api/scan.ts`](api/scan.ts) — the endpoint the web app, desktop app and browser extension all call
+- [`api/scan.ts`](api/scan.ts) — the endpoint the web app, the desktop app and the browser extension (with an active plan) call
 - [`api/auth/*.ts`](api/auth) — thin proxies to Supabase Auth; the web app never handles raw tokens (httpOnly cookies), the desktop app and extension hold a Bearer token pair themselves
 - [`api/billing.ts`](api/billing.ts), [`api/stripe-webhook.ts`](api/stripe-webhook.ts) — Stripe subscription lifecycle, backed by `supabase/migrations/` (RLS enabled, no public write policies)
 - [`browser-extension/`](browser-extension) — the MV3 Chrome extension source

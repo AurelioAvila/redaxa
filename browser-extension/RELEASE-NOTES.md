@@ -1,4 +1,8 @@
-# Extension 0.4.8
+# Extension 0.4.9
+
+The popup now describes the paid plans accurately. Repository checks cover public GitHub repositories only, on the web and in the Windows app; the popup no longer mentions private repositories, which the Windows app does not support. The 60-a-day allowance is labelled as repository checks, not prompt checks: prompt checks with a plan have no daily limit. Copilot is no longer listed among the supported sites, because copilot.microsoft.com now redirects to copilot.com, which the extension does not run on. No change to detection, permissions, telemetry or dependencies. This version includes the 0.4.8 changes.
+
+## Previous extension 0.4.8
 
 Clicking Send is now checked in every interface language. The send buttons on ChatGPT, Claude, Gemini and Perplexity are recognized by their structure rather than their English label, so a click on Send in an Italian, German or other translated interface no longer skips the automatic check; pressing Enter was already covered. Stopping a ChatGPT reply is not treated as a send.
 
@@ -43,15 +47,9 @@ Run `node browser-extension/popup.test.mjs`, `node browser-extension/findings.te
 
 One anonymous production API check with fictional email and test card data returned the expected redacted result. Browser preview checks cover example → result → copy, clear, account entry and the plan link. The preview response is simulated and labelled; it does not transmit text. Native Chrome popup installation and live AI-site compatibility were not retested in this change.
 
-## Store copy for the next submission
+## Store listing
 
-Check before you share. Redaxa helps you spot potential credentials, personal details and financial data in text before you send it to an AI tool.
-
-Paste text into the extension, review the findings, and copy a redacted version. Try a fictional example or use up to five real manual checks per 24 hours without an account (limit shared by network).
-
-With an active plan, Redaxa checks supported composers on ChatGPT, Claude, Gemini, Copilot and Perplexity before sending. Pro and Business also include public GitHub repository checks in the Redaxa Windows app, with grouped findings and a prioritized report.
-
-Text you choose to check is sent to Redaxa's service for analysis. It is not stored or forwarded to an AI provider. Detection can miss sensitive data or flag examples; review the result before sharing. Repository checks require the Windows app and do not verify whether a detected credential works.
+The Chrome Web Store description is maintained in the Developer Dashboard. The version entered on October 9, 2026 states that free checks run in the browser with no account and no extension-side limit, that the automatic check before sending is on by default and can be turned off, that plan checks run on Redaxa's server without storing the text, that repository checks cover public GitHub repositories in the Windows app, and that Copilot is not listed. Keep the popup, the site and the privacy policy consistent with it.
 
 ## Measurement
 

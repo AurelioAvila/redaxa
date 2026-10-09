@@ -531,7 +531,7 @@ export function mountDashboard(): void {
           <h3>${words().personalName}</h3>
           <div class="plan-price">€7.99 <small>/ month</small></div>
           <p>${words().personalDesc}</p>
-          <ul class="rx-benefits"><li><strong>Prompt checks &amp; redaction</strong> on web, Windows and Chrome</li><li><strong>Custom protected terms</strong> for client and project names</li><li><strong>Local repository checks on Windows:</strong> files, history and a prioritized recap</li><li><strong>Redacted text reports</strong> for repository reviews</li></ul>
+          <ul class="rx-benefits"><li><strong>Prompt checks with no daily limit</strong> on web, Windows and Chrome</li><li><strong>Custom protected terms</strong> for client and project names</li><li><strong>Repository checks:</strong> 60 a day on the web, plus local reviews on Windows with history and a prioritized recap</li><li><strong>Redacted text reports</strong> for repository reviews</li></ul>
           <div class="plan-actions">
             <button type="button" class="primary" data-plan="personal" data-interval="monthly">${words().startTrial}</button>
             <button type="button" class="primary" data-plan="personal" data-interval="yearly">${words().yearlyPersonal}</button>

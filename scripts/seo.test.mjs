@@ -27,4 +27,8 @@ for (const file of ['dashboard.html']) {
   assert.match(read(file), /name="robots"[^>]*noindex/);
   assert.ok(!entries.some(entry => entry[1].endsWith('/' + file)));
 }
+// The Windows app clones repositories anonymously over HTTPS (repository-full.ts), so public copy must not promise private ones.
+for (const file of ['index.html', 'github.html', 'check-public-github-repo-for-leaked-api-keys.html', 'repository-ui.ts', 'README.md', 'browser-extension/popup.html', 'browser-extension/popup.js']) {
+  assert.doesNotMatch(read(file).replace(/Private repositories are not supported/g, ''), /private repositories/i, `${file}: private repositories are not supported`);
+}
 console.log('SEO checks passed: nine canonical sitemap URLs; the personal workspace remains noindex.');
