@@ -1,41 +1,35 @@
 # Supabase auth email templates
 
-Three of Redaxa's transactional emails are not sent by this codebase. Supabase
-Auth sends them, from *its* default templates — plain grey boxes with a bare
-link and the word "Supabase" nowhere removed. They are the first thing a new
-account ever receives, and on a product sold on handling secrets carefully,
-an unbranded link asking someone to click and authenticate is exactly the
-shape of the email they should have been taught to distrust.
+Supabase Auth sends these emails itself, so the templates live in the
+dashboard (**Authentication > Emails > Templates**). The files here are the
+reviewable copy of what is installed. The Supabase project is shared with
+Frame Witness, so three templates carry a second, Frame Witness-branded branch
+selected by `{{ if eq .RedirectTo "https://framewitness.pages.dev/account.html" }}`.
 
-These are the branded replacements. They use the same frame as the
-subscription and welcome emails in `api/_email.ts`: same palette, same
-preheader, same footer.
+| File | Dashboard template | Subject |
+|---|---|---|
+| `confirm-signup.html` | Confirm sign up (Redaxa + Frame Witness) | Confirm your email for Redaxa / Activate your Frame Witness account |
+| `invite.html` | Invite user | You are invited to join Redaxa |
+| `magic-link.html` | Magic link or OTP (Redaxa link + Frame Witness code) | Your secure Redaxa sign-in link / Your Frame Witness verification code |
+| `change-email.html` | Change email address (Redaxa + Frame Witness) | Confirm your Redaxa email change / Confirm your Frame Witness email change |
+| `reset-password.html` | Reset password | Reset your Redaxa password |
+| `reauthentication.html` | Reauthentication | Your Redaxa verification code |
 
-| File | Supabase template |
-|---|---|
-| `confirm-signup.html` | Confirm signup |
-| `reset-password.html` | Reset password |
-| `change-email.html` | Change email address |
+Each subject is the same Go-template conditional where a Frame Witness branch exists.
 
-## Installing them
+## Design
 
-Dashboard → **Authentication → Emails → Templates**, pick the template, paste
-the file's contents into the body, save. Once each. They are plain HTML with
-Supabase's own `{{ .ConfirmationURL }}` placeholder, so nothing else changes
-about how the flow works.
+Table-based HTML with inline styles, a hidden preheader, a text-built logo mark
+(no remote images in the Redaxa branch), a mobile breakpoint at 480px and a
+dark theme (Redaxa is dark by design; Frame Witness switches with
+`prefers-color-scheme`). The palette matches `api/_email.ts`. Supabase template
+variables (`{{ .ConfirmationURL }}`, `{{ .Token }}`, `{{ .TokenHash }}`,
+`{{ .RedirectTo }}`, `{{ .Email }}`, `{{ .NewEmail }}`) are untouched.
 
-While you are there, two settings decide whether any of this arrives:
+## Installing
 
-- **Sender**: the default is Supabase's shared address, which is rate-limited
-  and shares its reputation with every other project on it. Point SMTP at the
-  same Resend domain the rest of Redaxa sends from.
-- **Site URL / Redirect URLs**: these build the link inside the template. They
-  must name the domain the product actually lives on, or every confirmation
-  lands somewhere that cannot handle it.
+Paste a file into the matching template body and its subject into the Subject
+field, then save. Re-read the template after saving. Also check:
 
-## Why they are files here and not code
-
-Supabase renders them itself, so there is nowhere in this repo they could be
-imported from. Keeping them in the repo at least means the branded versions
-are reviewable, diffable, and not lost the next time the dashboard is
-reconfigured.
+- **Sender**: point SMTP at the verified sending domain, not Supabase's shared address.
+- **Site URL / Redirect URLs**: they build the links in these emails.
