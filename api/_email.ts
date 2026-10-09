@@ -20,7 +20,9 @@ const ACCENT = "#7c5cfc";
 // The old #5b5f66 on the #0a0a0c card was 3.1:1 — under AA for the 13px it is used at,
 // and it carries the footer line about never asking for a password. This is 5.2:1.
 const MUTED = "#7e848c";
-const OWNER_INBOX = process.env.OWNER_INBOX || "canadesino91@gmail.com";
+// Sale notices go to Redaxa's own support alias (forwarded to the owner), never
+// a personal inbox written into a public repository.
+const OWNER_INBOX = process.env.OWNER_INBOX || "redaxa@getcertsprint.com";
 
 /**
  * The sending address. No default, deliberately.
@@ -59,6 +61,25 @@ export type SubscriptionEmailInput = {
   trialing: boolean;
   appUrl: string;
 };
+
+/** "Lead, Name." or just "Lead." — welcomeOnce never has a name, and
+ *  "Your account is confirmed, there." read like a mail-merge slip. */
+function greet(lead: string, firstName: string | null | undefined, html: boolean): string {
+  const name = firstName?.trim();
+  return name ? `${lead}, ${html ? escapeHtml(name) : name}.` : `${lead}.`;
+}
+
+// Same metas as supabase/email-templates: the design is dark on purpose, and
+// clients that would otherwise "fix" it for dark mode are told it already is.
+// The media query only tightens the 40px gutters and 32px headings on phones.
+const HEAD_EXTRA = `<meta name="color-scheme" content="dark light">
+<meta name="supported-color-schemes" content="dark light">
+<style>
+@media only screen and (max-width:620px){
+.rx-pad{padding-left:22px!important;padding-right:22px!important}
+.rx-h1{font-size:26px!important}
+}
+</style>`;
 
 function escapeHtml(value: string): string {
   return value
@@ -113,8 +134,7 @@ function button(href: string, label: string, width: number): string {
 
 export function subscriptionHtml(input: SubscriptionEmailInput): string {
   const { firstName, plan, interval, priceLabel, renewsOn, trialing, appUrl } = input;
-  const name = escapeHtml(firstName || "there");
-  const headline = trialing ? `Your trial is running, ${name}.` : `You're all set, ${name}.`;
+  const headline = greet(trialing ? "Your trial is running" : "You're all set", firstName, true);
   const intro = trialing
     ? "Your seven-day trial of Redaxa has started. Everything below is unlocked for the whole trial, and nothing is charged until it ends."
     : "Thanks for subscribing to Redaxa. Your account is active and everything below is unlocked — no extra setup needed.";
@@ -127,6 +147,7 @@ export function subscriptionHtml(input: SubscriptionEmailInput): string {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+${HEAD_EXTRA}
 <title>Redaxa</title>
 </head>
 <body style="margin:0; padding:0; background:#050506; font-family:'Segoe UI', Arial, sans-serif;">
@@ -140,7 +161,7 @@ export function subscriptionHtml(input: SubscriptionEmailInput): string {
       <table role="presentation" width="560" cellpadding="0" cellspacing="0" bgcolor="#0a0a0c" style="max-width:560px; width:100%; background:#0a0a0c; border:1px solid #2a2d33; border-radius:20px; overflow:hidden;">
 
         <tr>
-          <td style="background:radial-gradient(circle at 20% 0%, ${ACCENT}4d 0%, transparent 60%), #0a0a0c; padding:40px 40px 32px; text-align:center;">
+          <td class="rx-pad" style="background:radial-gradient(circle at 20% 0%, ${ACCENT}4d 0%, transparent 60%), #0a0a0c; padding:40px 40px 32px; text-align:center;">
             <div style="font-size:15px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:${ACCENT};">
               ${trialing ? "Trial Started" : "Subscription Active"}
             </div>
@@ -148,8 +169,8 @@ export function subscriptionHtml(input: SubscriptionEmailInput): string {
         </tr>
 
         <tr>
-          <td style="padding:0 40px; text-align:center;">
-            <h1 style="margin:0; font-size:32px; line-height:1.25; font-weight:800; color:#f3f4f6; letter-spacing:-0.5px;">
+          <td class="rx-pad" style="padding:0 40px; text-align:center;">
+            <h1 class="rx-h1" style="margin:0; font-size:32px; line-height:1.25; font-weight:800; color:#f3f4f6; letter-spacing:-0.5px;">
               ${headline}
             </h1>
             <p style="margin:16px 0 0; font-size:16px; line-height:1.6; color:#9ca3af;">
@@ -158,10 +179,10 @@ export function subscriptionHtml(input: SubscriptionEmailInput): string {
           </td>
         </tr>
 
-        <tr><td style="padding:32px 40px 0;"><div style="height:1px; background:#2a2d33;"></div></td></tr>
+        <tr><td class="rx-pad" style="padding:32px 40px 0;"><div style="height:1px; background:#2a2d33;"></div></td></tr>
 
         <tr>
-          <td style="padding:28px 40px 0;">
+          <td class="rx-pad" style="padding:28px 40px 0;">
             <div style="font-size:13px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:${MUTED}; margin-bottom:16px;">What you've unlocked</div>
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
               <tr>
@@ -184,14 +205,14 @@ export function subscriptionHtml(input: SubscriptionEmailInput): string {
         </tr>
 
         <tr>
-          <td style="padding:32px 40px 8px; text-align:center;">
+          <td class="rx-pad" style="padding:32px 40px 8px; text-align:center;">
             ${button(appUrl, "Open Redaxa", 200)}
           </td>
         </tr>
 
-        <tr><td style="padding:32px 40px 0;"><div style="height:1px; background:#2a2d33;"></div></td></tr>
+        <tr><td class="rx-pad" style="padding:32px 40px 0;"><div style="height:1px; background:#2a2d33;"></div></td></tr>
         <tr>
-          <td style="padding:24px 40px 8px;">
+          <td class="rx-pad" style="padding:24px 40px 8px;">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
               <tr>
                 <td style="font-size:13px; color:${MUTED}; padding:4px 0;">Plan</td>
@@ -218,7 +239,7 @@ export function subscriptionHtml(input: SubscriptionEmailInput): string {
         </tr>
 
         <tr>
-          <td style="padding:32px 40px 40px; text-align:center;">
+          <td class="rx-pad" style="padding:32px 40px 40px; text-align:center;">
             <p style="margin:0; font-size:13px; color:${MUTED}; line-height:1.6;">
               Cancel anytime from your account settings. Questions? Just reply to this email.<br>
               Redaxa &middot; <a href="${escapeHtml(appUrl)}" style="color:${MUTED};">${escapeHtml(hostOf(appUrl))}</a>
@@ -282,10 +303,7 @@ async function send(to: string, subject: string, html: string, text: string, ide
   if (!key || !to) return false;
   const from = sender();
   if (!from) {
-    console.error(
-      "redaxa mail not sent: RESEND_API_KEY is set but REDAXA_MAIL_FROM is not",
-      { to, subject },
-    );
+    console.error("redaxa mail not sent: RESEND_API_KEY is set but REDAXA_MAIL_FROM is not");
     return false;
   }
   try {
@@ -315,9 +333,8 @@ async function send(to: string, subject: string, html: string, text: string, ide
  *  two cannot say different things about what was charged. */
 export function subscriptionText(input: SubscriptionEmailInput): string {
   const { firstName, plan, interval, priceLabel, renewsOn, trialing, appUrl } = input;
-  const name = firstName || "there";
   const lines = [
-    trialing ? `Your trial is running, ${name}.` : `You're all set, ${name}.`,
+    greet(trialing ? "Your trial is running" : "You're all set", firstName, false),
     "",
     trialing
       ? "Your seven-day trial of Redaxa has started. Everything is unlocked for the whole trial, and nothing is charged until it ends."
@@ -357,13 +374,13 @@ export async function sendSubscriptionEmail(input: SubscriptionEmailInput): Prom
  * habit that gets them phished.
  */
 export function welcomeHtml(firstName: string | null | undefined, appUrl: string): string {
-  const name = escapeHtml(firstName || "there");
   const intro = "Redaxa helps you review prompts for sensitive details before sharing them with AI. Web and Windows checks are processed by Redaxa's scanner without storing the prompt text or forwarding it to an AI provider.";
   return `<!doctype html>
 <html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+${HEAD_EXTRA}
 <title>Redaxa</title>
 </head>
 <body style="margin:0; padding:0; background:#050506; font-family:'Segoe UI', Arial, sans-serif;">
@@ -374,22 +391,22 @@ export function welcomeHtml(firstName: string | null | undefined, appUrl: string
       <table role="presentation" width="560" cellpadding="0" cellspacing="0" bgcolor="#0a0a0c" style="max-width:560px; width:100%; background:#0a0a0c; border:1px solid #2a2d33; border-radius:20px; overflow:hidden;">
 
         <tr>
-          <td style="background:radial-gradient(circle at 20% 0%, ${ACCENT}4d 0%, transparent 60%), #0a0a0c; padding:40px 40px 32px; text-align:center;">
+          <td class="rx-pad" style="background:radial-gradient(circle at 20% 0%, ${ACCENT}4d 0%, transparent 60%), #0a0a0c; padding:40px 40px 32px; text-align:center;">
             <div style="font-size:15px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:${ACCENT};">Welcome</div>
           </td>
         </tr>
 
         <tr>
-          <td style="padding:0 40px; text-align:center;">
-            <h1 style="margin:0; font-size:32px; line-height:1.25; font-weight:800; color:#f3f4f6; letter-spacing:-0.5px;">Your account is confirmed, ${name}.</h1>
+          <td class="rx-pad" style="padding:0 40px; text-align:center;">
+            <h1 class="rx-h1" style="margin:0; font-size:32px; line-height:1.25; font-weight:800; color:#f3f4f6; letter-spacing:-0.5px;">${greet("Your account is confirmed", firstName, true)}</h1>
             <p style="margin:16px 0 0; font-size:16px; line-height:1.6; color:#9ca3af;">${escapeHtml(intro)}</p>
           </td>
         </tr>
 
-        <tr><td style="padding:32px 40px 0;"><div style="height:1px; background:#2a2d33;"></div></td></tr>
+        <tr><td class="rx-pad" style="padding:32px 40px 0;"><div style="height:1px; background:#2a2d33;"></div></td></tr>
 
         <tr>
-          <td style="padding:28px 40px 0;">
+          <td class="rx-pad" style="padding:28px 40px 0;">
             <div style="font-size:13px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:${MUTED}; margin-bottom:16px;">Three minutes to set up</div>
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
               <tr><td style="padding:10px 0; color:#e5e7eb; font-size:15px; line-height:1.5;"><span style="color:${ACCENT}; font-weight:700;">1</span>&nbsp;&nbsp; Install the browser extension or the desktop app</td></tr>
@@ -400,13 +417,13 @@ export function welcomeHtml(firstName: string | null | undefined, appUrl: string
         </tr>
 
         <tr>
-          <td style="padding:32px 40px 8px; text-align:center;">
+          <td class="rx-pad" style="padding:32px 40px 8px; text-align:center;">
             ${button(appUrl, "Open Redaxa", 200)}
           </td>
         </tr>
 
         <tr>
-          <td style="padding:32px 40px 40px; text-align:center;">
+          <td class="rx-pad" style="padding:32px 40px 40px; text-align:center;">
             <p style="margin:0; font-size:13px; color:${MUTED}; line-height:1.6;">
               We will never ask you for a password or an API key by email.<br>
               Redaxa &middot; <a href="${escapeHtml(appUrl)}" style="color:${MUTED};">${escapeHtml(hostOf(appUrl))}</a>
@@ -423,9 +440,8 @@ export function welcomeHtml(firstName: string | null | undefined, appUrl: string
 }
 
 export function welcomeText(firstName: string | null | undefined, appUrl: string): string {
-  const name = firstName || "there";
   return [
-    `Your account is confirmed, ${name}.`,
+    greet("Your account is confirmed", firstName, false),
     "",
     "Redaxa helps you review prompts for sensitive details before sharing them with AI. Web and Windows checks are processed by Redaxa's scanner without storing the prompt text or forwarding it to an AI provider.",
     "",
@@ -456,13 +472,13 @@ export function welcomeText(firstName: string | null | undefined, appUrl: string
  * on the one message a worried reader is most likely to click.
  */
 export function passwordChangedHtml(firstName: string | null | undefined, when: string): string {
-  const name = escapeHtml(firstName || "there");
   const intro = `The password on your Redaxa account was changed on ${escapeHtml(when)}.`;
   return `<!doctype html>
 <html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+${HEAD_EXTRA}
 <title>Redaxa</title>
 </head>
 <body style="margin:0; padding:0; background:#050506; font-family:'Segoe UI', Arial, sans-serif;">
@@ -473,22 +489,22 @@ export function passwordChangedHtml(firstName: string | null | undefined, when: 
       <table role="presentation" width="560" cellpadding="0" cellspacing="0" bgcolor="#0a0a0c" style="max-width:560px; width:100%; background:#0a0a0c; border:1px solid #2a2d33; border-radius:20px; overflow:hidden;">
 
         <tr>
-          <td style="background:radial-gradient(circle at 20% 0%, ${ACCENT}4d 0%, transparent 60%), #0a0a0c; padding:40px 40px 32px; text-align:center;">
+          <td class="rx-pad" style="background:radial-gradient(circle at 20% 0%, ${ACCENT}4d 0%, transparent 60%), #0a0a0c; padding:40px 40px 32px; text-align:center;">
             <div style="font-size:15px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:${ACCENT};">Security notice</div>
           </td>
         </tr>
 
         <tr>
-          <td style="padding:0 40px; text-align:center;">
-            <h1 style="margin:0; font-size:32px; line-height:1.25; font-weight:800; color:#f3f4f6; letter-spacing:-0.5px;">Your password was changed, ${name}.</h1>
+          <td class="rx-pad" style="padding:0 40px; text-align:center;">
+            <h1 class="rx-h1" style="margin:0; font-size:32px; line-height:1.25; font-weight:800; color:#f3f4f6; letter-spacing:-0.5px;">${greet("Your password was changed", firstName, true)}</h1>
             <p style="margin:16px 0 0; font-size:16px; line-height:1.6; color:#9ca3af;">${intro}</p>
           </td>
         </tr>
 
-        <tr><td style="padding:32px 40px 0;"><div style="height:1px; background:#2a2d33;"></div></td></tr>
+        <tr><td class="rx-pad" style="padding:32px 40px 0;"><div style="height:1px; background:#2a2d33;"></div></td></tr>
 
         <tr>
-          <td style="padding:28px 40px 0;">
+          <td class="rx-pad" style="padding:28px 40px 0;">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0f0f12; border:1px solid #2a2d33; border-radius:12px;">
               <tr><td style="padding:18px; color:#9ca3af; font-size:15px; line-height:1.6;">If this was you, nothing else is needed.<br>If it was not, reply to this message straight away — somebody else set that password.</td></tr>
             </table>
@@ -496,7 +512,7 @@ export function passwordChangedHtml(firstName: string | null | undefined, when: 
         </tr>
 
         <tr>
-          <td style="padding:32px 40px 40px; text-align:center;">
+          <td class="rx-pad" style="padding:32px 40px 40px; text-align:center;">
             <p style="margin:0; font-size:13px; color:${MUTED}; line-height:1.6;">
               We will never ask you for your password by email.<br>
               This notice is sent every time the password changes and cannot be turned off.
@@ -513,9 +529,8 @@ export function passwordChangedHtml(firstName: string | null | undefined, when: 
 }
 
 export function passwordChangedText(firstName: string | null | undefined, when: string): string {
-  const name = firstName || "there";
   return [
-    `Your password was changed, ${name}.`,
+    greet("Your password was changed", firstName, false),
     "",
     `The password on your Redaxa account was changed on ${when}.`,
     "",

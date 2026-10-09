@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { formatChargedAmount, passwordChangedHtml, passwordChangedText, planLabel, sendWelcomeEmail, subscriptionHtml, subscriptionSubject, subscriptionText, welcomeHtml, welcomeText } from "./_email.js";
+import { formatChargedAmount, notifyOwnerOfSale, passwordChangedHtml, passwordChangedText, planLabel, sendWelcomeEmail, subscriptionHtml, subscriptionSubject, subscriptionText, welcomeHtml, welcomeText } from "./_email.js";
 
 const base = {
   to: "buyer@example.com",
@@ -108,8 +108,11 @@ assert.equal(formatChargedAmount(null, "eur", "month"), null);
 }
 
 {
-  // No name is not an error; it just loses the name.
-  assert.ok(welcomeHtml(null, "https://redaxa.example").includes("confirmed, there."));
+  // No name is not an error; it just loses the name — without a stray "there".
+  assert.ok(welcomeHtml(null, "https://redaxa.example").includes("Your account is confirmed.</h1>"));
+  assert.ok(welcomeText(null, "https://redaxa.example").startsWith("Your account is confirmed.\n"));
+  assert.ok(!welcomeHtml(null, "https://redaxa.example").includes("there."));
+  assert.ok(passwordChangedText(null, "now").startsWith("Your password was changed.\n"));
 }
 
 // The sender has no default. It used to fall back to an address on a domain
@@ -222,6 +225,27 @@ assert.equal(formatChargedAmount(null, "eur", "month"), null);
   const html = passwordChangedHtml('<script>alert("x")</script>', "now");
   assert.ok(!html.includes("<script>"), "the name must be escaped into the markup");
   assert.ok(html.includes("&lt;script&gt;"));
+}
+
+{
+  // Sale notices default to the product's support alias, not a personal inbox.
+  const sent: Array<{ to: string }> = [];
+  const realFetch = globalThis.fetch;
+  const saved = { key: process.env.RESEND_API_KEY, from: process.env.REDAXA_MAIL_FROM };
+  globalThis.fetch = (async (_url: string, init: { body: string }) => {
+    sent.push(JSON.parse(init.body));
+    return new Response("{}", { status: 200 });
+  }) as typeof globalThis.fetch;
+  try {
+    process.env.RESEND_API_KEY = "re_test";
+    process.env.REDAXA_MAIL_FROM = "Redaxa <noreply@example.com>";
+    assert.equal(await notifyOwnerOfSale("buyer@example.com", "personal", "month", false), true);
+    assert.equal(sent[0]?.to, process.env.OWNER_INBOX || "redaxa@getcertsprint.com");
+  } finally {
+    globalThis.fetch = realFetch;
+    if (saved.key === undefined) delete process.env.RESEND_API_KEY; else process.env.RESEND_API_KEY = saved.key;
+    if (saved.from === undefined) delete process.env.REDAXA_MAIL_FROM; else process.env.REDAXA_MAIL_FROM = saved.from;
+  }
 }
 
 console.log("Redaxa email tests passed.");
