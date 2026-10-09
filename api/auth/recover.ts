@@ -1,4 +1,4 @@
-import { corsHeaders, supabaseAuthUser } from "../_billing.js";
+import { authRedirectUrl, corsHeaders, supabaseAuthUser } from "../_billing.js";
 import { clientIp, rateLimited } from "../_rateLimit.js";
 import { sendPasswordChangedEmail } from "../_email.js";
 
@@ -107,7 +107,7 @@ export default async function handler(request: RequestLike, response: ResponseLi
     await fetch(`${url}/auth/v1/recover`, {
       method: "POST",
       headers: { apikey: publishableKey, "Content-Type": "application/json" },
-      body: JSON.stringify({ email, redirect_to: typeof body.redirect_to === "string" ? body.redirect_to : undefined })
+      body: JSON.stringify({ email, redirect_to: authRedirectUrl(body.redirect_to) })
     });
     // Always report success so this endpoint cannot be used to enumerate registered emails.
     response.status(200).json({ ok: true });

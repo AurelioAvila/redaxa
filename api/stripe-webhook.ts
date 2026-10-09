@@ -94,8 +94,8 @@ async function announceSubscription(subscription: Stripe.Subscription): Promise<
       renewsOn,
       trialing,
       appUrl: appUrl(),
-    });
-    await notifyOwnerOfSale(email, subscription.metadata.plan ?? null, interval, trialing);
+    }, `redaxa-subscription/${subscription.id}`);
+    await notifyOwnerOfSale(email, subscription.metadata.plan ?? null, interval, trialing, `redaxa-sale/${subscription.id}`);
   } catch (error) {
     console.error("redaxa subscription announcement failed", String(error).slice(0, 300));
   }

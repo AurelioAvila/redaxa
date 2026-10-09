@@ -230,10 +230,12 @@ assert.equal(formatChargedAmount(null, "eur", "month"), null);
 {
   // Sale notices default to the product's support alias, not a personal inbox.
   const sent: Array<{ to: string }> = [];
+  const keys: Array<string | undefined> = [];
   const realFetch = globalThis.fetch;
   const saved = { key: process.env.RESEND_API_KEY, from: process.env.REDAXA_MAIL_FROM };
-  globalThis.fetch = (async (_url: string, init: { body: string }) => {
+  globalThis.fetch = (async (_url: string, init: { body: string; headers: Record<string, string> }) => {
     sent.push(JSON.parse(init.body));
+    keys.push(init.headers["Idempotency-Key"]);
     return new Response("{}", { status: 200 });
   }) as typeof globalThis.fetch;
   try {
@@ -241,6 +243,9 @@ assert.equal(formatChargedAmount(null, "eur", "month"), null);
     process.env.REDAXA_MAIL_FROM = "Redaxa <noreply@example.com>";
     assert.equal(await notifyOwnerOfSale("buyer@example.com", "personal", "month", false), true);
     assert.equal(sent[0]?.to, process.env.OWNER_INBOX || "redaxa@getcertsprint.com");
+    // A parallel duplicate webhook delivery must not send the notice twice.
+    assert.equal(await notifyOwnerOfSale("buyer@example.com", "personal", "month", false, "redaxa-sale/sub_123"), true);
+    assert.equal(keys[1], "redaxa-sale/sub_123");
   } finally {
     globalThis.fetch = realFetch;
     if (saved.key === undefined) delete process.env.RESEND_API_KEY; else process.env.RESEND_API_KEY = saved.key;

@@ -32,7 +32,7 @@ fn engine_command(runtime: &std::path::Path) -> Command {
     let mut command = Command::new(runtime.join("node.exe"));
     // Tauri canonicalizes Windows resources to \\?\ paths. Node cannot resolve
     // that prefix as its entry-point argument; cwd already selects this directory.
-    command.arg("engine.cjs").current_dir(&runtime).env_clear()
+    command.arg("engine.cjs").current_dir(runtime).env_clear()
         .env("SystemRoot", &system).env("WINDIR", &system)
         .env("PATH", format!("{};{}\\System32", bin.display(), system))
         .env("GIT_EXEC_PATH", &bin)
@@ -48,7 +48,7 @@ fn engine_command(runtime: &std::path::Path) -> Command {
 
 #[tauri::command]
 pub async fn repository_scan(app: tauri::AppHandle, state: tauri::State<'_, RepositoryState>, url: String, access_token: Option<String>, demo: Option<bool>, include_history: Option<bool>) -> Result<Value, String> {
-    if url.len() > 2048 || access_token.as_ref().map_or(false, |v| v.len() > 16384) { return Err("Invalid request".into()); }
+    if url.len() > 2048 || access_token.as_ref().is_some_and(|v| v.len() > 16384) { return Err("Invalid request".into()); }
     let state = state.inner().clone();
     {
         let mut s = state.lock().map_err(|_| "Scanner unavailable")?;

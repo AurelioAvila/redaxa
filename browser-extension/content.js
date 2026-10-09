@@ -5,6 +5,7 @@
 function findComposer() {
   const known = [
     "#prompt-textarea",
+    "textarea#mobile-composer-prompt",
     "div.ProseMirror[contenteditable='true']",
     "textarea[data-testid='chat-input']",
     "rich-textarea .ql-editor[contenteditable='true']",
@@ -23,20 +24,29 @@ function findComposer() {
   return candidates.sort((a, b) => (b.offsetWidth * b.offsetHeight) - (a.offsetWidth * a.offsetHeight))[0];
 }
 
-function findSendButton() {
-  const known = [
-    "button[data-testid='send-button']",
-    "button[data-testid='composer-send-button']",
-    "button[aria-label='Send message']",
-    "button[aria-label='Send prompt']",
-    "button[aria-label='Send']",
-    "button[aria-label='Submit']"
-  ];
-  for (const selector of known) {
-    const el = document.querySelector(selector);
-    if (el && !el.disabled) return el;
-  }
-  return null;
+// Send buttons are recognized by structure first. The visible labels are
+// translated ("Invia messaggio"), so label-only selectors let a click on Send
+// skip the check in every non-English interface. Each selector is tried on its
+// own so one the browser cannot parse never disables the others.
+const sendButtonSelectors = [
+  "button[data-testid='send-button']",
+  "button[data-testid='composer-send-button']",
+  "button[data-composer-submit]", // ChatGPT
+  "button[data-testid='chat-input-send']", // Claude
+  ".send-button button", "button.send-button", // Gemini
+  "button:has(use[*|href='#pplx-icon-arrow-right'])", // Perplexity
+  "button[aria-label='Send message']",
+  "button[aria-label='Send prompt']",
+  "button[aria-label='Send']",
+  "button[aria-label='Submit']"
+];
+
+function isSendButton(button) {
+  // ChatGPT's submit button turns into "Stop generating" while it answers.
+  const stopping = Boolean(button.dataset?.stopLabel) && button.getAttribute?.("aria-label") === button.dataset.stopLabel;
+  return !button.disabled && !stopping && sendButtonSelectors.some((selector) => {
+    try { return button.matches(selector); } catch { return false; }
+  });
 }
 
 function composerText(el) {
@@ -389,15 +399,13 @@ document.addEventListener("click", (event) => {
   if (orphaned()) return;
   if (!autoCheck) return;
   const button = event.target.closest?.("button");
-  if (!button) return;
-  const sendButton = findSendButton();
-  if (!sendButton || button !== sendButton) return;
+  if (!button || !isSendButton(button)) return;
   const composer = findComposer();
   const text = composerText(composer).trim();
   if (!text) return;
   event.preventDefault();
   event.stopImmediatePropagation();
-  gate(composer, () => resendVia("click", sendButton));
+  gate(composer, () => resendVia("click", button));
 }, true);
 
 // Refreshed when the tab comes back into view and before a send that finds

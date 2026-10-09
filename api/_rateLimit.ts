@@ -1,3 +1,5 @@
+import { createHmac } from "node:crypto";
+
 // Best-effort abuse guard for auth/checkout endpoints. This is in-memory per serverless
 // instance: on Vercel it does NOT coordinate across concurrently warm instances, so it
 // stops casual scripted abuse but is not a substitute for a shared store (Upstash/Vercel
@@ -43,10 +45,12 @@ export async function rateLimitedShared(
   }
 }
 
+/** A keyed hash of the caller's IP address, never the address itself: every
+ *  use is a rate-limit key, and the shared counters live in the database. */
 export function clientIp(headers: Record<string, string | string[] | undefined> | undefined): string {
   const forwarded = headers?.["x-forwarded-for"];
   const value = Array.isArray(forwarded) ? forwarded[0] : forwarded;
-  if (value) return value.split(",")[0]?.trim() || "unknown";
   const real = headers?.["x-real-ip"];
-  return (Array.isArray(real) ? real[0] : real) ?? "unknown";
+  const address = (value ? value.split(",")[0]?.trim() : Array.isArray(real) ? real[0] : real) || "unknown";
+  return createHmac("sha256", process.env.SUPABASE_SERVICE_ROLE_KEY ?? "").update(address).digest("base64url");
 }

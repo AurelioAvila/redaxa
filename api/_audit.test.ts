@@ -30,6 +30,10 @@ import { auditBoundary, auditCsv, csvCell } from "./_audit.js";
   assert.equal(csvCell('say "hi"'), '"say ""hi"""');
   assert.equal(csvCell("a,b"), '"a,b"');
   assert.equal(csvCell("line\nbreak"), '"line\nbreak"');
+  // A member address that a spreadsheet would run as a formula opens as text.
+  assert.equal(csvCell('=HYPERLINK("http://x")@example.com'), `"'=HYPERLINK(""http://x"")@example.com"`);
+  assert.equal(csvCell("+1@example.com"), `"'+1@example.com"`);
+  assert.equal(csvCell("2026-10-09T10:00:00.000Z"), '"2026-10-09T10:00:00.000Z"');
 }
 
 const event = {

@@ -40,12 +40,12 @@
     <main class="shell">
       <a class="back" href="/">← Redaxa</a>
       <h1>Privacy policy</h1>
-      <p class="updated">Last updated 4 October 2026</p>
+      <p class="updated">Last updated 9 October 2026</p>
 
-      <p>Redaxa is operated by Aurelio Avila, an individual based in Italy ("we", "us"). This page explains what we collect, why, and how you can control it. If anything here is unclear, email <a href="mailto:aurelio_11@outlook.it">aurelio_11@outlook.it</a>.</p>
+      <p>Redaxa is operated by Aurelio Avila, an individual based in Italy ("we", "us"). This page explains what we collect, why, and how you can control it. If anything here is unclear, email <a href="mailto:redaxa@getcertsprint.com">redaxa@getcertsprint.com</a>.</p>
 
       <h2>The short version</h2>
-      <p>The text you paste into the scanner is used only to compute the result you see. It is never written to a database, a log file, an analytics tool, or a backup. We collect account and billing details needed to run a subscription (email, optional first name and billing status), plus the anonymous website action totals described below. We do not use advertising trackers or sell this data. Older accounts may retain profile details supplied before this change.</p>
+      <p>The text you paste into the scanner is used only to compute the result you see. It is never written to a database, a log file, an analytics tool, or a backup. We collect account and billing details needed to run a subscription (email, optional first name and billing status), a record of each signed-in check that never includes the text, and the anonymous website action totals described below. We do not use advertising trackers or sell this data. Older accounts may retain profile details supplied before this change.</p>
 
       <h2>What we collect</h2>
       <table>
@@ -54,7 +54,9 @@
         <tr><td>Prompt text you scan — which may contain personally identifiable information (names, email addresses, phone numbers, physical addresses), financial and payment information (card numbers, IBANs, crypto wallet addresses), and authentication information (passwords, API keys, tokens, private keys)</td><td>Sent over an encrypted connection to compute the scan result, then discarded — never stored, logged, or used for any other purpose</td></tr>
         <tr><td>Subscription status, Stripe customer ID</td><td>Billing. We never see or store your card number — Stripe collects that directly</td></tr>
         <tr><td>Local scan history (timestamps and counts by category)</td><td>Stored only in your own browser’s local storage to show “Recent checks.” Prompt text and detected values are not retained in this history. Older local text previews are removed when this version reads the history; account activity metadata is described separately below</td></tr>
-        <tr><td>Session tokens</td><td>Keep you signed in (httpOnly cookies on the web app; a locally-stored token on the desktop app)</td></tr>
+        <tr><td>Check activity for signed-in accounts: time, the app or AI site the check came from, detected categories and counts, and the policy outcome</td><td>Shown to you as your activity history and export. In a Business workspace, owners and admins can also see their members' activity. It never includes prompt text or detected values, and is kept while your account exists</td></tr>
+        <tr><td>Daily allowance counters</td><td>Enforce the free daily checks. Counters for visitors are stored under a one-way hash of the network address, never the address itself; each holds only a number and the start of its window</td></tr>
+        <tr><td>Session tokens</td><td>Keep you signed in (httpOnly cookies on the web app, the Windows credential store in the desktop app, and the extension's own storage in the browser extension)</td></tr>
         <tr><td>Team invite tokens</td><td>If you're on a Business plan, link-based invites so you can add teammates. We don't collect a teammate's email before they join</td></tr>
       </table>
 
@@ -68,11 +70,11 @@
       <p>This content is processed only to detect and flag it to you. It is transmitted over an encrypted connection, used solely to compute the scan result shown in your browser, and is never written to a database, a log file, an analytics tool, or a backup — on the web app, the browser extension, or the desktop app.</p>
 
       <h2>Browser extension</h2>
-      <p>The Redaxa browser extension reads the text box of the AI chat site you're on (ChatGPT, Claude, Gemini, Copilot, Perplexity) only when you click "Check", to send it for scanning as described above. It does not read any other page content, does not run on any other site, and does not track your browsing. Your sign-in tokens are stored in the extension's private local storage, inaccessible to the web pages it runs on.</p>
+      <p>The Redaxa browser extension runs only on the AI chat sites it supports (ChatGPT, Claude, Gemini, Copilot and Perplexity). It reads the text in the chat box when you click "Check" and, unless you turn off "Check automatically before sending" in the extension, when you press Enter or the send button. Without an active plan, the check runs entirely in your browser and the text is not sent anywhere. With an active Pro or Business plan, the text is sent to Redaxa so your workspace's protected terms and policies apply, as described above, together with the name of the AI site, which appears in your activity history. The extension does not read any other page content and does not track your browsing. Your sign-in tokens are kept in the extension's own storage, which the websites it runs on cannot read.</p>
 
       <h2>What we don't do</h2>
       <ul>
-        <li>We don't run analytics, ad pixels, or third-party trackers on this site.</li>
+        <li>We don't use ad pixels or third-party trackers. The only measurement is the cookie-free counting described under Website measurement.</li>
         <li>We don't sell or rent your data to anyone.</li>
         <li>We don't use your prompt content to train any model or for any purpose beyond showing you the scan result.</li>
       </ul>
@@ -83,14 +85,16 @@
         <li><strong>Supabase</strong> — authentication and account database (EU region).</li>
         <li><strong>Stripe</strong> — payment processing. Card details are collected and stored by Stripe directly; we never handle them.</li>
         <li><strong>Vercel</strong> — application hosting.</li>
+        <li><strong>Resend</strong> — delivery of account and subscription emails.</li>
       </ul>
+      <p>When you check a public GitHub repository, Redaxa downloads it from GitHub and sends the names and versions of its dependencies to OSV.dev to look up known vulnerabilities. Nothing about you is included in either request.</p>
       <p>We do not share your data with advertisers, data brokers, or any other third party.</p>
 
       <h2>How long we keep it</h2>
-      <p>Account data is kept while your account is active. Prompt text is never stored in the first place — there's nothing to retain or delete. To delete your account and associated billing/account data, email <a href="mailto:aurelio_11@outlook.it">aurelio_11@outlook.it</a>; we'll confirm once it's done.</p>
+      <p>Account data is kept while your account is active. Prompt text is never stored in the first place — there's nothing to retain or delete. To delete your account and associated billing/account data, email <a href="mailto:redaxa@getcertsprint.com">redaxa@getcertsprint.com</a>; we'll confirm once it's done.</p>
 
       <h2>Your rights</h2>
-      <p>Depending on where you live, you may have the right to access, correct, export, or delete your personal data, and to object to or restrict its processing. Contact <a href="mailto:aurelio_11@outlook.it">aurelio_11@outlook.it</a> to exercise any of these. If you're in the EU/EEA, you also have the right to lodge a complaint with your local data protection authority.</p>
+      <p>Depending on where you live, you may have the right to access, correct, export, or delete your personal data, and to object to or restrict its processing. Contact <a href="mailto:redaxa@getcertsprint.com">redaxa@getcertsprint.com</a> to exercise any of these. If you're in the EU/EEA, you also have the right to lodge a complaint with your local data protection authority.</p>
 
       <h2>Age</h2>
       <p>Redaxa is not directed at children. You must be at least 16 years old, or the age of digital consent in your country if higher, to create an account.</p>

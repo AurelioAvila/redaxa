@@ -4,7 +4,7 @@ import vm from 'node:vm';
 
 const listeners = new Map(), controls = new Map(), callbacks = [];
 const composer = { value: 'Synthetic private prompt', contains: node => node === composer, focus() {}, dispatchEvent() {} };
-const button = { disabled: false, click() {} };
+const button = { disabled: false, click() {}, matches: selector => selector.includes('send-button') };
 let modal, scans = 0;
 const context = vm.createContext({
   document: { body: null, addEventListener(type, handler) { listeners.set(type, handler); },
@@ -75,4 +75,17 @@ await active;
 delete context.chrome.runtime.id;
 assert.equal(event('keydown'), false, 'A script orphaned by an extension update no longer holds sends');
 assert.equal(event('click'), false);
-console.log('Interception: initial status, duplicate actions, account/scan outages, free local checks and the off switch passed.');
+context.chrome.runtime.id = 'test-extension';
+// Send buttons are recognized by structure, so a translated label is still held;
+// other buttons and ChatGPT's stop state are left alone.
+const clickOn = target => {
+  let stopped = false;
+  listeners.get('click')({ target: { closest: () => target }, preventDefault() { stopped = true; }, stopImmediatePropagation() { stopped = true; } });
+  return stopped;
+};
+const submit = (label, extra = {}) => ({ disabled: false, click() {}, dataset: { stopLabel: 'Interrompi generazione' }, getAttribute: () => label, matches: selector => selector === 'button[data-composer-submit]', ...extra });
+assert.equal(clickOn({ disabled: false, click() {}, matches: () => false }), false, 'Other buttons are left alone');
+assert.equal(clickOn(submit('Interrompi generazione')), false, 'Stopping a reply is not a send');
+assert.equal(clickOn(submit('Invia messaggio', { matches: () => { throw new SyntaxError('unsupported'); } })), false, 'An unparseable selector never throws');
+assert.equal(clickOn(submit('Invia messaggio')), true, 'A send button with a translated label is still checked');
+console.log('Interception: initial status, duplicate actions, account/scan outages, free local checks, the off switch and translated send buttons passed.');

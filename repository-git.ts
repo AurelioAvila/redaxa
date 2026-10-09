@@ -37,7 +37,7 @@ export async function scanWithGit(owner:string,repo:string,signal:AbortSignal,al
     else if(bytes[0]===254&&bytes[1]===255)source=new TextDecoder('utf-16be',{fatal:true}).decode(bytes);
     else {if(bytes.includes(0))throw new Error('binary');source=new TextDecoder('utf-8',{fatal:true}).decode(bytes);}
     if(source.startsWith('version https://git-lfs.github.com/spec/'))reason='Git LFS pointer: external content not included.';
-    else {report.scanned++;for(const f of inspectFile(file.path,source,allowReveal)){if(report.findings.length>=5000){report.findingsTruncated=true;break;}f.url=`https://github.com/${owner}/${repo}/blob/${report.commit}/${file.path.split('/').map(encodeURIComponent).join('/')}#L${f.line}`;report.findings.push(f);}}
+    else {report.scanned++;for(const f of inspectFile(file.path,source,allowReveal,false,5001-report.findings.length)){if(report.findings.length>=5000){report.findingsTruncated=true;break;}f.url=`https://github.com/${owner}/${repo}/blob/${report.commit}/${file.path.split('/').map(encodeURIComponent).join('/')}#L${f.line}`;report.findings.push(f);}}
    }catch(error){reason=signal.aborted?'Time budget exceeded or scan cancelled.':error instanceof Error&&error.message==='binary'?'Binary content (contains NUL bytes).':error instanceof TypeError?'Unsupported text encoding.':'Git object could not be read.';}
    report.coverage.push({path:file.path,status:reason?'skipped':'scanned',reason:reason||'Entire text file checked.'});
   }

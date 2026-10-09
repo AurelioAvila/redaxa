@@ -195,4 +195,16 @@ const passwordAdvice = inspectPrompt("Meglio usare una password unica e lunga.",
 });
 assert.deepEqual(passwordAdvice.findings, []);
 
+// A long run of apostrophes used to restart the email pattern after every one
+// of them, which took quadratic time (about a second for one 20,000-character
+// prompt). Quoted and apostrophe addresses must still be found.
+{
+  const started = performance.now();
+  assert.equal(inspectPrompt("a'".repeat(100_000)).findings.length, 0);
+  assert.ok(performance.now() - started < 3000, "apostrophe runs must be checked in linear time");
+  for (const value of ["'quoted@company.com'", "x='quoted@company.com'", "it's o'brien@company.com"]) {
+    assert.equal(inspectPrompt(value).findings.filter((f) => f.kind === "email").length, 1, value);
+  }
+}
+
 console.log("Redaxa scanner tests passed.");

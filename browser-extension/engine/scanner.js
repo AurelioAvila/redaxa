@@ -106,7 +106,9 @@ export function apiCredentialReference(value) {
 const rules = [
     // Match complete dot-atom addresses, not fragments of malformed tokens.
     // A lone @, consecutive dots, invalid domain labels and npm versions are not email.
-    { kind: "email", category: "personal", severity: "medium", label: "Email address", replacement: "[EMAIL]", pattern: /(?<![A-Z0-9.%+_@-])[A-Z0-9_%+-][A-Z0-9_%+'-]*(?:\.[A-Z0-9_%+'-]+)*@(?:[A-Z0-9](?:[A-Z0-9-]*[A-Z0-9])?\.)+[A-Z]{2,}(?![A-Z0-9_@-]|\.[A-Z0-9.-])/gi, validate: emailValid },
+    // No new start right after an apostrophe inside a local part: each restart
+    // rescanned the whole run, so a long "a'a'a'..." took quadratic time.
+    { kind: "email", category: "personal", severity: "medium", label: "Email address", replacement: "[EMAIL]", pattern: /(?<![A-Z0-9.%+_@-]|[A-Z0-9.%+_@'-]')[A-Z0-9_%+-][A-Z0-9_%+'-]*(?:\.[A-Z0-9_%+'-]+)*@(?:[A-Z0-9](?:[A-Z0-9-]*[A-Z0-9])?\.)+[A-Z]{2,}(?![A-Z0-9_@-]|\.[A-Z0-9.-])/gi, validate: emailValid },
     { kind: "ssn", category: "personal", severity: "high", label: "Social Security Number", replacement: "[SSN]", pattern: /\b\d{3}-\d{2}-\d{4}\b/g, validate: ssnValid },
     {
         kind: "name", category: "personal", severity: "low", label: "Personal name", replacement: "[NAME]",
@@ -213,9 +215,15 @@ export function inspectPrompt(text, options = { includePersonalData: true, inclu
             return "[CUSTOM TERM]";
         });
     }
+    // One rule's matches arrive in text order, so each search resumes where that
+    // kind's previous match ended instead of rescanning from the start.
+    const cursors = new Map();
     for (const f of findings)
         if (f.category === 'credentials') {
-            const before = text.slice(Math.max(0, text.indexOf(f.value) - 100), text.indexOf(f.value));
+            const at = text.indexOf(f.value, cursors.get(f.kind) ?? 0);
+            if (at >= 0)
+                cursors.set(f.kind, at + f.value.length);
+            const before = at < 0 ? '' : text.slice(Math.max(0, at - 100), at);
             const assignment = before.match(/\b(OPENAI_API_KEY)["']?\s*[:=]\s*["']?$/)?.[1] ?? '';
             f.credential = credentialContext(f.kind, f.value, f.label, !!apiCredentialReference(f.value), assignment);
         }

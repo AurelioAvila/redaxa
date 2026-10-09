@@ -6,12 +6,13 @@ process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-key";
 process.env.STRIPE_SECRET_KEY = "sk_test_dummy";
 const { default: handler } = await import("./scan.js");
 
-async function scan(userId: string, plan: Record<string, unknown> | null, ip: string) {
+const storedKeys: string[] = [];
+async function scan(userId: string, plan: Record<string, unknown> | null, ip: string, body: Record<string, unknown> = { text: "Email marco.rossi@acme.com about the invoice", application: "web" }) {
   const savedFetch = globalThis.fetch;
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     if (url.endsWith("/auth/v1/user")) return Response.json({ id: userId, email: "user@example.test" });
-    if (url.includes("/rpc/rate_limit_hit")) return Response.json(false, { status: 404 }); // shared limiter fails open
+    if (url.includes("/rpc/rate_limit_hit")) { storedKeys.push(JSON.parse(String(init?.body)).p_key); return Response.json(false, { status: 404 }); } // shared limiter fails open
     if (url.includes("/billing_accounts?")) return Response.json(plan ? [plan] : []);
     if (init?.method && init.method !== "GET") return Response.json([]);
     return Response.json([]);
@@ -22,8 +23,8 @@ async function scan(userId: string, plan: Record<string, unknown> | null, ip: st
     json(value: unknown) { this.payload = value; }, end() {}
   };
   try {
-    await handler({ method: "POST", body: { text: "Email marco.rossi@acme.com about the invoice", application: "web" },
-      headers: { authorization: "Bearer fixture", "x-forwarded-for": ip } }, response);
+    await handler({ method: "POST", body,
+      headers: { ...(userId ? { authorization: "Bearer fixture" } : {}), "x-forwarded-for": ip } }, response);
   } finally { globalThis.fetch = savedFetch; }
   return response;
 }
@@ -43,4 +44,15 @@ const paid = "00000000-0000-0000-0000-0000000000a1";
 const plan = { user_id: paid, plan: "pro", subscription_status: "active", current_period_end: new Date(Date.now() + 864e5).toISOString() };
 for (let i = 0; i < 7; i++) assert.equal((await scan(paid, plan, `10.0.2.${i}`)).code, 200, `paid check ${i + 1}`);
 
-console.log("Scan: free daily allowance for plan-less accounts, per-account counting and unlimited subscribers passed.");
+// An oversized custom term is cut to the saved-term limit instead of failing
+// the whole check while compiling it into a regular expression.
+const long = await scan(paid, plan, "10.0.3.1", { text: "Project Falcon launch notes", options: { customTerms: ["Project Falcon" + " ".repeat(40_000) + "x"] } });
+assert.equal(long.code, 200);
+assert.equal((long.payload as { findings: { kind: string }[] }).findings.filter((f) => f.kind === "custom").length, 1);
+
+// A visitor's shared counter is keyed by a hash, never the raw IP address.
+assert.equal((await scan("", null, "10.9.8.7")).code, 200);
+const visitorKey = storedKeys.find((key) => key.startsWith("scan:anon:"));
+assert.ok(visitorKey && !visitorKey.includes("10.9.8.7"), "rate-limit keys hold no IP address");
+
+console.log("Scan: free daily allowance for plan-less accounts, per-account counting and unlimited subscribers and bounded custom terms passed.");
