@@ -76,14 +76,19 @@ for (const [plan, interval, seats] of [["personal", "monthly", 2], ["business", 
 }
 for (const now of [START - 1, END, END + 7 * 86_400_000]) assert.equal(promoCheckout(ON, now, "personal", "monthly", 1), null);
 assert.equal(promoCheckout({}, DURING, "personal", "monthly", 1), null);
-// The checkout deadline stays inside Stripe's 30 minutes–24 hours and the grace after the end.
-for (const now of [START, DURING, END - 3_600_000, END - 1000]) {
+// The checkout deadline never touches Stripe's 30 minutes or 24 hours, and no
+// session outlives the end by more than the grace (plus Stripe's minute).
+for (let now = START; now < END; now += 7 * 60_000) {
   const { expiresAt } = promoCheckout(ON, now, "business", "monthly", 2)!;
   const nowSeconds = Math.floor(now / 1000);
-  assert.ok(expiresAt >= nowSeconds + PROMO_GRACE_SECONDS);
-  assert.ok(expiresAt <= nowSeconds + 24 * 60 * 60);
-  assert.ok(expiresAt <= END / 1000 + PROMO_GRACE_SECONDS + 60);
+  const closes = expiresAt ?? nowSeconds + 24 * 60 * 60;
+  if (expiresAt !== null) {
+    assert.ok(expiresAt >= nowSeconds + PROMO_GRACE_SECONDS + 60, new Date(now).toISOString());
+    assert.ok(expiresAt <= nowSeconds + 23.5 * 60 * 60, new Date(now).toISOString());
+  }
+  assert.ok(closes <= END / 1000 + PROMO_GRACE_SECONDS + 60, new Date(now).toISOString());
 }
+assert.equal(promoCheckout(ON, DURING, "personal", "monthly", 1)!.expiresAt, null, "Stripe's default far from the end");
 
 // The handler: public GET, then the checkout parameters Stripe receives.
 type Captured = Record<string, any>;
@@ -130,12 +135,14 @@ for (const [body, coupon] of [
   [{ plan: "business", interval: "monthly", seats: 3 }, "halloween50-2026-redaxa-business-monthly-3"],
   [{ plan: "business", interval: "yearly", seats: 2 }, "halloween50-2026-redaxa-business-yearly-2"],
 ] as const) {
-  const during = await checkout(body, DURING, ON);
+  const during = await checkout(body, END - 3_600_000, ON);
   assert.deepEqual(during.discounts, [{ coupon }]);
   assert.equal(during.allow_promotion_codes, undefined, "Checkout refuses promotion codes with a discount");
   assert.equal(during.metadata.promo_id, PROMO.id);
   assert.equal(during.subscription_data.metadata.promo_id, PROMO.id);
   assert.equal(during.line_items[0].price.startsWith("price_"), true, "the base price never changes");
+  assert.equal(during.expires_at, Math.floor(END / 1000), "an hour before the end, the session closes at the end");
+  assert.equal((await checkout(body, DURING, ON)).expires_at, undefined, "Stripe's default far from the end");
   for (const [now, environment] of [[START - 1, ON], [END, ON], [DURING, {}], [DURING, { ...ON, PROMO_DISABLED: "1" }]] as const) {
     const outside = await checkout(body, now, environment);
     assert.equal(outside.discounts, undefined);

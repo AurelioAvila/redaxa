@@ -31,6 +31,8 @@ export function parsePromo(value: unknown): Promo | null {
     (o.price as number) < (o.reference as number) && (o.reference as number) <= (o.regular as number) &&
     typeof o.perSeat === "boolean" && o.firstPeriodOnly === true,
   ).map((o) => ({ plan: o.plan, interval: o.interval, regular: o.regular, reference: o.reference, price: o.price, perSeat: o.perSeat }) as PromoOffer);
+  // "Active" with nothing valid to sell is not an offer: never a banner without prices.
+  if (v.status === "active" && offers.length === 0) return null;
   return { serverTime: v.serverTime, id: v.id, status: v.status, startsAt: v.startsAt, endsAt: v.endsAt, offers: v.status === "active" ? offers : [] };
 }
 
@@ -133,6 +135,7 @@ const variant = (offer: PromoOffer): Variant => `${offer.perSeat ? "User" : ""}$
 function bannerElement(): HTMLElement {
   const banner = document.createElement("section");
   banner.className = "hw-offer hw-offer-reserved";
+  banner.style.visibility = "hidden";
   banner.setAttribute("aria-hidden", "true");
   banner.innerHTML = `<div class="hw-offer-inner">`
     + `<span class="hw-offer-decor hw-offer-decor-left" aria-hidden="true">${HALLOWEEN_DECOR_LEFT}</span>`
@@ -167,7 +170,12 @@ function clockBanner(banner: HTMLElement, remaining: number, words: PromoWords):
 export function mountPromo(place: (banner: HTMLElement) => void, words: () => PromoWords, lang: () => string, onChange: (view: PromoView) => void): { relabel(): void } {
   const banner = bannerElement();
   let view: PromoView | null = null;
-  if (Date.now() < PROMO_LAYOUT_UNTIL) {
+  // Room is kept only for someone who last saw the offer running: while it is
+  // off, nobody's pricing jumps on load.
+  const KEY = "redaxa.promo.last-seen";
+  let lastSeen = false;
+  try { lastSeen = localStorage.getItem(KEY) === "active"; } catch { /* storage blocked: no reservation */ }
+  if (lastSeen && Date.now() < PROMO_LAYOUT_UNTIL) {
     fillBanner(banner, null, words(), lang());
     place(banner);
   }
@@ -175,8 +183,10 @@ export function mountPromo(place: (banner: HTMLElement) => void, words: () => Pr
     const changed = view === null || Boolean(view.promo) !== Boolean(next.promo);
     view = next;
     if (changed) {
+      try { localStorage.setItem(KEY, next.promo ? "active" : "off"); } catch { /* best effort */ }
       if (next.promo) {
         fillBanner(banner, next.promo, words(), lang());
+        banner.style.removeProperty("visibility");
         banner.classList.remove("hw-offer-reserved");
         banner.removeAttribute("aria-hidden");
         banner.setAttribute("aria-labelledby", "redaxa-promo-title");
@@ -211,7 +221,7 @@ export const PROMO_WORDS_EN: PromoWords = {
   kicker: "Halloween offer",
   lead: "{percent} off your first month or year.",
   ends: "Ends {date}.",
-  fine: "Struck-through prices are our lowest in the 30 days before the offer. Renewals are at the regular price, and eligible new subscribers still start with the 7-day trial. Prices exclude VAT.",
+  fine: "Struck-through prices are our lowest in the 30 days before the offer. New subscriptions only; renewals are at the regular price, and eligible new subscribers still start with the 7-day trial. Prices exclude VAT.",
   endsIn: "Ends in",
   units: ["Days", "Hours", "Minutes", "Seconds"],
   thenMonth: "First month, then {price} a month",

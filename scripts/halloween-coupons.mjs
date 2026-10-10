@@ -72,7 +72,7 @@ for (const offer of PROMO.offers) {
       const session = stripe("checkout", "sessions", "create", "-d", "mode=subscription",
         "-d", `line_items[0][price]=${priceId}`, "-d", `line_items[0][quantity]=${seats}`, "-d", `discounts[0][coupon]=${id}`,
         "-d", "success_url=https://redaxa.getcertsprint.com/?checkout=success", "-d", "cancel_url=https://redaxa.getcertsprint.com/?checkout=cancelled",
-        "-d", `expires_at=${Math.floor(Date.now() / 1000) + PROMO_GRACE_SECONDS}`, "-d", `metadata[promo_verification]=${PROMO.id}`);
+        "-d", `expires_at=${Math.floor(Date.now() / 1000) + PROMO_GRACE_SECONDS + 60}`, "-d", `metadata[promo_verification]=${PROMO.id}`);
       if (session.error) { fail(`${id} checkout: ${session.error.message}`); continue; }
       stripe("checkout", "sessions", "expire", session.id);
       const discount = session.total_details?.amount_discount;

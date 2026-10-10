@@ -82,7 +82,7 @@ export default async function handler(request: RequestLike, response: ResponseLi
         line_items: [{ price, quantity: seats }],
         // Checkout refuses promotion codes alongside a discount.
         ...(promo
-          ? { discounts: [{ coupon: promo.coupon }], expires_at: promo.expiresAt }
+          ? { discounts: [{ coupon: promo.coupon }], ...(promo.expiresAt ? { expires_at: promo.expiresAt } : {}) }
           : { allow_promotion_codes: interval === "monthly" }),
         subscription_data: {
           trial_period_days: account.has_used_trial ? undefined : 7,

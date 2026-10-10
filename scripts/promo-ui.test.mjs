@@ -9,9 +9,10 @@ assert.equal(parsePromo(active).offers.length, 1);
 for (const bad of [null, {}, "active", { ...active, status: "disabled" }, { ...active, endsAt: "soon" }, { ...active, offers: "x" }, { ...active, id: 7 }]) {
   assert.equal(parsePromo(bad), null, JSON.stringify(bad));
 }
-// A "discount" that is not below the struck price, or not in euro cents, is never drawn.
+// A "discount" that is not below the struck price, or not in euro cents, is never drawn,
+// and an "active" answer left with nothing valid is no offer at all.
 for (const broken of [{ price: 1499 }, { price: 1500 }, { reference: 1600 }, { price: 749.5 }, { currency: "usd" }, { perSeat: "yes" }, { firstPeriodOnly: false }, { regular: -1 }]) {
-  assert.equal(parsePromo({ ...active, offers: [{ ...offer, ...broken }] }).offers.length, 0, JSON.stringify(broken));
+  assert.equal(parsePromo({ ...active, offers: [{ ...offer, ...broken }] }), null, JSON.stringify(broken));
 }
 // A scheduled offer publishes no prices.
 assert.deepEqual(parsePromo({ ...active, status: "scheduled" }).offers, []);

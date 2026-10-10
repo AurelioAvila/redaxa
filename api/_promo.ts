@@ -23,6 +23,11 @@
  * STRIPE_PRICE_* may change during the window. scripts/halloween-coupons.mjs
  * creates and checks them; this file never talks to Stripe.
  *
+ * A once-only coupon on a trial waits for the first paid invoice. Should the
+ * billing portal ever allow switching price or seats, a downgrade during the
+ * trial could leave a coupon larger than that invoice; today the portal
+ * offers no plans to switch to (both live configurations, 10 Oct 2026).
+ *
  * Next promotions: until about 6 December the lowest prices of the previous
  * 30 days are these promo prices, so a Black Friday reduction must strike
  * them, not the list prices.
@@ -41,9 +46,22 @@ export const PROMO = {
   ],
 } as const;
 
-/** Stripe's shortest Checkout lifetime: a checkout opened in the last minutes
- *  stays payable this long, never longer. */
+/** A checkout opened in the last minutes stays payable this long after the
+ *  end (Stripe's shortest Checkout lifetime), never much longer. */
 export const PROMO_GRACE_SECONDS = 30 * 60;
+
+/** The Checkout `expires_at` for a promotional session, or null to keep
+ *  Stripe's default of 24 hours. Stripe accepts 30 minutes to 24 hours after
+ *  creation, measured on its own clock, so neither bound is ever used
+ *  exactly: one extra minute at the short end, and the default whenever the
+ *  end is at least 23.5 hours away (a default session then still closes no
+ *  later than 30 minutes after the end). */
+export function promoExpiresAt(nowMs: number): number | null {
+  const nowSeconds = Math.floor(nowMs / 1000);
+  const endSeconds = Math.floor(Date.parse(PROMO.endsAt) / 1000);
+  if (endSeconds - nowSeconds >= 23.5 * 60 * 60) return null;
+  return Math.max(endSeconds, nowSeconds + PROMO_GRACE_SECONDS + 60);
+}
 export const MAX_SEATS = 3;
 
 type Offer = (typeof PROMO.offers)[number];
@@ -111,12 +129,5 @@ export function promoCheckout(environment: NodeJS.ProcessEnv, nowMs: number, pla
   const offer = PROMO.offers.find((candidate) => candidate.plan === plan && candidate.interval === interval);
   if (!offer || !state.offers.some((o) => o.plan === plan && o.interval === interval)) return null;
   if (!Number.isInteger(seats) || seats < 1 || seats > (plan === "business" ? MAX_SEATS : 1)) return null;
-  const nowSeconds = Math.floor(nowMs / 1000);
-  const endSeconds = Math.floor(Date.parse(PROMO.endsAt) / 1000);
-  return {
-    coupon: couponId(offer, seats),
-    id: PROMO.id,
-    // Checkout allows 30 minutes to 24 hours.
-    expiresAt: Math.min(nowSeconds + 24 * 60 * 60, Math.max(endSeconds, nowSeconds + PROMO_GRACE_SECONDS)),
-  };
+  return { coupon: couponId(offer, seats), id: PROMO.id, expiresAt: promoExpiresAt(nowMs) };
 }
