@@ -113,7 +113,7 @@ createServer(async (request, response) => {
 
   const relativePath = pathname === "/" ? "index.html" : pathname.replace(/^\/+/, "");
   // Development server serves UI assets only, never source, credentials or Git metadata.
-  if (!/^(?:[a-zA-Z0-9_-]+\.(?:html|css|webmanifest)|dist\/(?:themes|auth|dashboard|desktop|pwa|landing|growth|promo|repository-ui|repository-report|repository-example)\.js|browser-extension\/(?:popup\.(?:html|css|js)|config\.js|icons\/48\.png)|outputs\/[a-zA-Z0-9_.-]+\.(?:svg|png|webp|woff2)|(?:service-worker|theme-boot)\.js)$/.test(relativePath)) {
+  if (!/^(?:[a-zA-Z0-9_-]+\.(?:html|css|webmanifest)|dist\/(?:themes|auth|dashboard|desktop|pwa|landing|growth|promo|halloween-decor|repository-ui|repository-report|repository-example)\.js|browser-extension\/(?:popup\.(?:html|css|js)|config\.js|icons\/48\.png)|outputs\/[a-zA-Z0-9_.-]+\.(?:svg|png|webp|woff2)|(?:service-worker|theme-boot)\.js)$/.test(relativePath)) {
     response.writeHead(404, securityHeaders('text/plain'));response.end('Not found');return;
   }
   const filePath = resolve(root, relativePath);

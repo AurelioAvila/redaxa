@@ -1,4 +1,5 @@
 import { isTauri } from "./desktop.js";
+import { HALLOWEEN_DECOR_LEFT, HALLOWEEN_DECOR_RIGHT } from "./halloween-decor.js";
 
 /** A time-limited offer as published by GET /api/billing?action=promo. Display
  *  only: the server decides the discount at checkout, from its own clock. */
@@ -62,21 +63,30 @@ export function euro(centsValue: number, lang = "en"): string {
 
 export type PromoView = { promo: Promo | null; remaining: number; offer(plan: string, interval: string): PromoOffer | null };
 
-/** Reads the offer and calls `render` once a second while one runs, and once
- *  more when it ends or the server withdraws it. Re-read every five minutes
- *  and whenever the window regains focus; any failure means regular prices. */
+/** Until this instant the pricing area keeps room for the banner while the
+ *  server answers, so the plans do not jump when it appears. It only reserves
+ *  space: nothing about the offer is shown without the server. */
+export const PROMO_LAYOUT_UNTIL = Date.parse("2026-11-06T23:00:00.000Z");
+
+/** Reads the offer and calls `render` on the first answer, once a second
+ *  while an offer runs, and once more when it ends or the server withdraws
+ *  it. Re-read every five minutes and whenever the window regains focus; any
+ *  failure means regular prices. */
 export function watchPromo(render: (view: PromoView) => void): void {
   const base = isTauri() ? "https://promptshield-beta.vercel.app" : "";
   const clock = () => ({ perf: performance.now(), wall: Date.now() });
   let received: { promo: Promo; at: ReturnType<typeof clock> } | null = null;
-  let shown = false;
+  let answered = false;
+  // null until the first answer has been rendered, then whether an offer is showing.
+  let shown: boolean | null = null;
   const tick = (): void => {
+    if (!answered) return;
     const promo = received?.promo ?? null;
     const now = clock();
     // Whichever clock advanced more: a paused (sleep) or wrong clock can only shorten the offer.
     const elapsed = received ? Math.max(now.perf - received.at.perf, now.wall - received.at.wall) : 0;
     const active = Boolean(promo && promo.status === "active" && msUntil(promo, promo.startsAt, elapsed) <= 0 && msUntil(promo, promo.endsAt, elapsed) > 0);
-    if (!active && !shown) return;
+    if (!active && shown === false) return;
     shown = active;
     render({
       promo: active ? promo : null,
@@ -92,6 +102,7 @@ export function watchPromo(render: (view: PromoView) => void): void {
     } catch {
       received = null;
     }
+    answered = true;
     tick();
   };
   void read();
@@ -100,10 +111,8 @@ export function watchPromo(render: (view: PromoView) => void): void {
   window.addEventListener("focus", () => void read());
 }
 
-const PUMPKIN = '<svg class="rx-promo-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 7.5c-1.6-1-4.4-1.2-6.2.4C3.6 9.8 3.4 14 4.6 16.6c1.3 2.8 4.3 3.6 7.4 2.6 3.1 1 6.1.2 7.4-2.6 1.2-2.6 1-6.8-1.2-8.7-1.8-1.6-4.6-1.4-6.2-.4Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M12 7.5c-1.3 2.4-1.3 9.3 0 11.7m0-11.7c1.3 2.4 1.3 9.3 0 11.7M12 7.5c0-1.6.6-3 2-3.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
-
 export type PromoWords = {
-  title: string; lead: string; terms: string; ends: string; endsIn: string; units: [string, string, string, string];
+  kicker: string; lead: string; ends: string; fine: string; endsIn: string; units: [string, string, string, string];
   thenMonth: string; thenYear: string; thenUserMonth: string; thenUserYear: string;
   perMonth: string; perYear: string; perUserMonth: string; perUserYear: string;
 };
@@ -118,29 +127,74 @@ export function promoEndLabel(promo: Pick<Promo, "endsAt">, lang = "en"): string
 type Variant = "Month" | "Year" | "UserMonth" | "UserYear";
 const variant = (offer: PromoOffer): Variant => `${offer.perSeat ? "User" : ""}${offer.interval === "yearly" ? "Year" : "Month"}` as Variant;
 
-/** The large countdown banner. Static strings and numbers only: nothing from
- *  the network reaches the markup except parsed cents and a parsed date. */
-export function promoBanner(promo: Promo, words: PromoWords, lang = "en"): HTMLElement {
-  const percent = Math.min(...promo.offers.map(promoPercent));
-  const banner = document.createElement("aside");
-  banner.className = "rx-promo";
-  banner.setAttribute("aria-label", words.title);
-  banner.innerHTML = `<div class="rx-promo-copy"><p class="rx-promo-title">${PUMPKIN}<span></span></p><p class="rx-promo-lead"></p><p class="rx-promo-ends"></p></div>`
-    + `<div class="rx-promo-timer"><p class="rx-promo-ends-in"></p><div class="rx-promo-clock" role="timer" aria-live="off">${words.units.map(() => "<div><strong>00</strong><span></span></div>").join("")}</div></div>`
-    + `<p class="rx-promo-terms"></p>`;
-  banner.querySelector(".rx-promo-title span")!.textContent = words.title;
-  banner.querySelector(".rx-promo-lead")!.textContent = words.lead.replace("{percent}", percentLabel(percent, lang));
-  banner.querySelector(".rx-promo-ends")!.textContent = words.ends.replace("{date}", promoEndLabel(promo, lang));
-  banner.querySelector(".rx-promo-ends-in")!.textContent = words.endsIn;
-  banner.querySelector(".rx-promo-terms")!.textContent = words.terms;
-  banner.querySelectorAll(".rx-promo-clock span").forEach((span, i) => { span.textContent = words.units[i]; });
+/** The Halloween banner shared with PC Tweaker (carved pumpkins, countdown
+ *  cells), as plain DOM. Starts reserved: invisible, holding its exact place
+ *  until the server answers. Only static strings and numbers reach it. */
+function bannerElement(): HTMLElement {
+  const banner = document.createElement("section");
+  banner.className = "hw-offer hw-offer-reserved";
+  banner.setAttribute("aria-hidden", "true");
+  banner.innerHTML = `<div class="hw-offer-inner">`
+    + `<span class="hw-offer-decor hw-offer-decor-left" aria-hidden="true">${HALLOWEEN_DECOR_LEFT}</span>`
+    + `<span class="hw-offer-decor hw-offer-decor-right" aria-hidden="true">${HALLOWEEN_DECOR_RIGHT}</span>`
+    + `<div class="hw-offer-copy"><p class="hw-offer-kicker"></p><p class="hw-offer-heading" id="redaxa-promo-title"></p><p class="hw-offer-fine"></p></div>`
+    + `<div class="hw-offer-timer"><span aria-hidden="true"></span><div class="hw-offer-cells" role="timer" aria-live="off">`
+    + [0, 1, 2, 3].map(() => `<div class="hw-offer-cell" aria-hidden="true"><strong>00</strong><small></small></div>`).join("")
+    + `</div></div></div>`;
   return banner;
 }
 
-export function updatePromoClock(banner: HTMLElement, remaining: number, words: PromoWords): void {
+function fillBanner(banner: HTMLElement, promo: Promo | null, words: PromoWords, lang: string): void {
+  const percent = promo ? Math.min(...promo.offers.map(promoPercent)) : 50;
+  const end = promoEndLabel(promo ?? { endsAt: new Date(PROMO_LAYOUT_UNTIL).toISOString() }, lang);
+  banner.querySelector(".hw-offer-kicker")!.textContent = words.kicker;
+  banner.querySelector(".hw-offer-heading")!.textContent = `${words.lead.replace("{percent}", percentLabel(percent, lang))} ${words.ends.replace("{date}", end)}`;
+  banner.querySelector(".hw-offer-fine")!.textContent = words.fine;
+  banner.querySelector(".hw-offer-timer > span")!.textContent = words.endsIn;
+  banner.querySelectorAll(".hw-offer-cell small").forEach((unit, i) => { unit.textContent = words.units[i]; });
+}
+
+function clockBanner(banner: HTMLElement, remaining: number, words: PromoWords): void {
   const values = promoClock(remaining);
-  banner.querySelectorAll(".rx-promo-clock strong").forEach((cell, i) => { if (cell.textContent !== values[i]) cell.textContent = values[i]; });
-  banner.querySelector(".rx-promo-clock")!.setAttribute("aria-label", values.map((v, i) => `${v} ${words.units[i]}`).join(", "));
+  banner.querySelectorAll(".hw-offer-cell strong").forEach((cell, i) => { if (cell.textContent !== values[i]) cell.textContent = values[i]; });
+  banner.querySelector(".hw-offer-cells")!.setAttribute("aria-label", `${words.endsIn} ${values.slice(0, 3).map((v, i) => `${Number(v)} ${words.units[i]}`).join(", ")}`);
+}
+
+/** Puts the banner where `place` says, reserved until the server answers,
+ *  keeps it in step with the offer, and calls `onChange` when the offer first
+ *  becomes known, starts or stops. `relabel` re-reads the words after a
+ *  language change. */
+export function mountPromo(place: (banner: HTMLElement) => void, words: () => PromoWords, lang: () => string, onChange: (view: PromoView) => void): { relabel(): void } {
+  const banner = bannerElement();
+  let view: PromoView | null = null;
+  if (Date.now() < PROMO_LAYOUT_UNTIL) {
+    fillBanner(banner, null, words(), lang());
+    place(banner);
+  }
+  watchPromo((next) => {
+    const changed = view === null || Boolean(view.promo) !== Boolean(next.promo);
+    view = next;
+    if (changed) {
+      if (next.promo) {
+        fillBanner(banner, next.promo, words(), lang());
+        banner.classList.remove("hw-offer-reserved");
+        banner.removeAttribute("aria-hidden");
+        banner.setAttribute("aria-labelledby", "redaxa-promo-title");
+        if (!banner.isConnected) place(banner);
+      } else {
+        banner.remove();
+      }
+      onChange(next);
+    }
+    if (next.promo) clockBanner(banner, next.remaining, words());
+  });
+  return {
+    relabel() {
+      if (!banner.isConnected) return;
+      fillBanner(banner, view?.promo ?? null, words(), lang());
+      if (view?.promo) clockBanner(banner, view.remaining, words());
+    },
+  };
 }
 
 /** Struck reference, offer price, unit, the real percentage and what renews,
@@ -154,12 +208,12 @@ export function promoPriceHtml(offer: PromoOffer, words: PromoWords, lang = "en"
 }
 
 export const PROMO_WORDS_EN: PromoWords = {
-  title: "Halloween offer",
-  lead: "{percent} off your first month or year of Pro and Business.",
+  kicker: "Halloween offer",
+  lead: "{percent} off your first month or year.",
   ends: "Ends {date}.",
+  fine: "Struck-through prices are our lowest in the 30 days before the offer. Renewals are at the regular price, and eligible new subscribers still start with the 7-day trial. Prices exclude VAT.",
   endsIn: "Ends in",
-  units: ["days", "hours", "min", "sec"],
-  terms: "Struck-through prices are the lowest we charged in the 30 days before the offer began. The discount applies to the first paid month or year only; renewals are at the regular price. Eligible new subscribers still start with the 7-day trial. Prices exclude VAT, which is added at checkout where applicable.",
+  units: ["Days", "Hours", "Minutes", "Seconds"],
   thenMonth: "First month, then {price} a month",
   thenYear: "First year, then {price} a year",
   thenUserMonth: "First month, then {price} per user a month",

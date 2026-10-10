@@ -13,14 +13,14 @@ const document={querySelector:s=>elements.get(s),querySelectorAll:s=>s==='[data-
 // have produced.
 const window={promptShieldAuth:{hasAccess:()=>false,requestAccess:()=>authCalls++,scanPrompt:async()=>{scans++;if(!scanOutcome)throw Error('Demo must not scan');if(scanOutcome.error)throw Error(scanOutcome.error);return scanOutcome;}}};
 const realPromo=await import('../dist/promo.js');
-let showPromo=null;const inserted=[];
-elements.set('#pricing .billing-switch',{before:node=>inserted.push(node)});
-// The real price formatting, with the network and the DOM banner stubbed: the
-// harness drives the offer on and off by hand.
-const promo={...realPromo,watchPromo:fn=>{showPromo=fn;},promoBanner:()=>({remove(){inserted.length=0;}}),updatePromoClock:()=>{}};
+let showPromo=null;const placed=[];
+elements.set('#pricing .billing-switch',{before:node=>placed.push(node)});
+// The real price formatting, with the network and the banner stubbed: the
+// harness turns the offer on and off by hand.
+const promo={...realPromo,mountPromo:(place,words,lang,onChange)=>{place({});assert.equal(words().kicker,'Halloween offer');assert.equal(lang(),'en');showPromo=onChange;return {relabel(){}};}};
 const script=readFileSync(new URL('../dist/landing.js',import.meta.url),'utf8')
   .replace(/import \{ track \} from ['"]\.\/growth.js['"];?/, 'const track=()=>{};')
-  .replace(/import \{[^}]*\} from ['"]\.\/promo.js['"];?/, 'const { PROMO_WORDS_EN, promoBanner, watchPromo, promoPriceHtml, updatePromoClock } = promo;');
+  .replace(/import \{[^}]*\} from ['"]\.\/promo.js['"];?/, 'const { PROMO_WORDS_EN, mountPromo, promoPriceHtml } = promo;');
 new Function('document','window','promo',script)(document,window,promo);
 
 for (const [index,interval,personal,business] of [[0,'monthly','€7.99','€14.99'],[1,'yearly','€79.90','€149.90']]) {
@@ -36,7 +36,7 @@ assert.match(elements.get('#pro-plan-tag').textContent,/Recommended/);
 const offers=[['personal','yearly',7990,3995,false],['business','yearly',14990,7495,true],['personal','monthly',799,399,false],['business','monthly',1499,749,true]].map(([plan,interval,regular,price,perSeat])=>({plan,interval,regular,reference:regular,price,perSeat}));
 const view={promo:{offers},remaining:60_000,offer:(plan,interval)=>offers.find(o=>o.plan===plan&&o.interval===interval)??null};
 showPromo(view);
-assert.equal(inserted.length,1,'one banner, before the billing switch');
+assert.equal(placed.length,1,'one banner, before the billing switch');
 assert.ok(elements.get('#pro-plan-price').innerHTML.startsWith('<s class="rx-was">€79.90</s> €39.95'));
 assert.match(elements.get('#pro-plan-price').innerHTML,/First year, then €79\.90 a year/);
 assert.match(elements.get('#business-plan-price').innerHTML,/€149\.90<\/s> €74\.95 <small>\/ user \/ year<\/small>.*50%/);
@@ -44,7 +44,6 @@ billingButtons[0].handlers.click();
 assert.ok(elements.get('#pro-plan-price').innerHTML.startsWith('<s class="rx-was">€7.99</s> €3.99'));
 assert.match(elements.get('#business-plan-price').innerHTML,/First month, then €14\.99 per user a month/);
 showPromo({promo:null,remaining:0,offer:()=>null});
-assert.equal(inserted.length,0,'the banner leaves with the offer');
 assert.ok(elements.get('#pro-plan-price').innerHTML.startsWith('€7.99'));
 billingButtons[1].handlers.click();
 assert.ok(elements.get('#pro-plan-price').innerHTML.startsWith('€79.90'));

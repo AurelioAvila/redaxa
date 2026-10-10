@@ -1,5 +1,5 @@
 import { track } from './growth.js';
-import { PROMO_WORDS_EN, promoBanner, watchPromo, promoPriceHtml, updatePromoClock, type PromoView } from './promo.js';
+import { PROMO_WORDS_EN, mountPromo, promoPriceHtml, type PromoView } from './promo.js';
 
 const demoPrompt = 'Write a concise project update to maria.rossi@example.com. Mention that the staging server is at 192.168.1.20 and include this demo credential: password=demo-secret-credential-123.';
 
@@ -17,7 +17,6 @@ function mountLanding(): void {
   const billingButtons = document.querySelectorAll<HTMLButtonElement>('[data-billing]');
   let yearly = true;
   let view: PromoView | null = null;
-  let banner: HTMLElement | null = null;
   // The page ships regular prices; a running offer replaces them only once the
   // server has confirmed it, and they come back the moment it ends.
   const renderPrices = (): void => {
@@ -38,16 +37,9 @@ function mountLanding(): void {
     required('#pro-plan-tag').textContent = yearly ? 'Recommended · Pro yearly' : 'Your everyday privacy toolkit';
     document.querySelectorAll<HTMLElement>('[data-plan]').forEach(cta => { cta.dataset.interval = yearly ? 'yearly' : 'monthly'; });
   }));
-  watchPromo(next => {
-    const changed = Boolean(view?.promo) !== Boolean(next.promo);
+  mountPromo(banner => required('#pricing .billing-switch').before(banner), () => PROMO_WORDS_EN, () => 'en', next => {
     view = next;
-    if (changed) {
-      banner?.remove();
-      banner = next.promo ? promoBanner(next.promo, PROMO_WORDS_EN) : null;
-      if (banner) required('#pricing .billing-switch').before(banner);
-      renderPrices();
-    }
-    if (banner) updatePromoClock(banner, next.remaining, PROMO_WORDS_EN);
+    renderPrices();
   });
   const prompt = required<HTMLTextAreaElement>("#prompt");
   const findings = required<HTMLElement>("#findings");
