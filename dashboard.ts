@@ -3,6 +3,7 @@ import type { AccountState } from "./auth.js";
 import { enableAppShell } from "./pwa.js";
 import { track } from "./growth.js";
 import { enableDesktopCompanion } from "./desktop.js";
+import { PROMO_WORDS_EN, mountPromo, promoPriceHtml, type PromoView, type PromoWords } from "./promo.js";
 
 type HistoryEntry = { id: string; createdAt: string; findings: number; preview: string; byKind: Record<string, number> };
 type Language = "en" | "it" | "es" | "fr" | "de";
@@ -17,6 +18,64 @@ const maxPromptLength = 10_000;
 const defaultPreferences: Preferences = { language: "en", theme: "graphite", scanMode: "standard", includePersonalData: true, includeCredentials: true, includeFinancialData: true, saveHistory: true, autoClearAfterCopy: false, showRawValues: true, customTerms: [] };
 
 const languageNames: Record<Language, string> = { en: "English", it: "Italiano", es: "Español", fr: "Français", de: "Deutsch" };
+// Halloween offer copy. Units and renewal lines are spelled out per language
+// rather than assembled, so every sentence reads as written.
+const promoWordsByLanguage: Record<Language, PromoWords> = {
+  en: PROMO_WORDS_EN,
+  it: {
+    kicker: "Offerta di Halloween",
+    lead: "Almeno il {percent} di sconto sul primo mese o sul primo anno.",
+    ends: "Termina il {date}.",
+    endsIn: "Termina tra",
+    units: ["Giorni", "Ore", "Minuti", "Secondi"],
+    fine: "I prezzi barrati sono i più bassi dei 30 giorni prima dell'offerta. Solo per nuovi abbonamenti; i rinnovi sono al prezzo normale e i nuovi abbonati idonei iniziano comunque con la prova di 7 giorni. Prezzi IVA esclusa.",
+    thenMonth: "Primo mese, poi {price} al mese",
+    thenYear: "Primo anno, poi {price} all'anno",
+    thenUserMonth: "Primo mese, poi {price} per utente al mese",
+    thenUserYear: "Primo anno, poi {price} per utente all'anno",
+    perMonth: "/ mese", perYear: "/ anno", perUserMonth: "/ utente / mese", perUserYear: "/ utente / anno",
+  },
+  es: {
+    kicker: "Oferta de Halloween",
+    lead: "Al menos un {percent} de descuento en el primer mes o el primer año.",
+    ends: "Termina el {date}.",
+    endsIn: "Termina en",
+    units: ["Días", "Horas", "Minutos", "Segundos"],
+    fine: "Los precios tachados son los más bajos de los 30 días previos a la oferta. Solo para nuevas suscripciones; las renovaciones se cobran al precio habitual y los nuevos suscriptores que cumplan los requisitos siguen empezando con la prueba de 7 días. Precios sin IVA.",
+    thenMonth: "Primer mes, luego {price} al mes",
+    thenYear: "Primer año, luego {price} al año",
+    thenUserMonth: "Primer mes, luego {price} por usuario al mes",
+    thenUserYear: "Primer año, luego {price} por usuario al año",
+    perMonth: "/ mes", perYear: "/ año", perUserMonth: "/ usuario / mes", perUserYear: "/ usuario / año",
+  },
+  fr: {
+    kicker: "Offre d'Halloween",
+    lead: "Au moins {percent} de réduction sur le premier mois ou la première année.",
+    ends: "Se termine le {date}.",
+    endsIn: "Se termine dans",
+    units: ["Jours", "Heures", "Minutes", "Secondes"],
+    fine: "Les prix barrés sont nos plus bas des 30 jours précédant l'offre. Nouveaux abonnements uniquement ; les renouvellements se font au prix normal et les nouveaux abonnés éligibles commencent toujours par l'essai de 7 jours. Prix hors TVA.",
+    thenMonth: "Premier mois, puis {price} par mois",
+    thenYear: "Première année, puis {price} par an",
+    thenUserMonth: "Premier mois, puis {price} par mois et par utilisateur",
+    thenUserYear: "Première année, puis {price} par an et par utilisateur",
+    perMonth: "/ mois", perYear: "/ an", perUserMonth: "/ utilisateur / mois", perUserYear: "/ utilisateur / an",
+  },
+  de: {
+    kicker: "Halloween-Angebot",
+    lead: "Mindestens {percent} Rabatt auf den ersten Monat oder das erste Jahr.",
+    ends: "Endet am {date}.",
+    endsIn: "Endet in",
+    units: ["Tage", "Stunden", "Minuten", "Sekunden"],
+    fine: "Durchgestrichene Preise sind unsere niedrigsten der 30 Tage vor dem Angebot. Nur für neue Abos; Verlängerungen erfolgen zum regulären Preis, und berechtigte neue Abonnenten starten weiterhin mit der 7-tägigen Testphase. Preise ohne MwSt.",
+    thenMonth: "Erster Monat, danach {price} pro Monat",
+    thenYear: "Erstes Jahr, danach {price} pro Jahr",
+    thenUserMonth: "Erster Monat, danach {price} pro Nutzer und Monat",
+    thenUserYear: "Erstes Jahr, danach {price} pro Nutzer und Jahr",
+    perMonth: "/ Monat", perYear: "/ Jahr", perUserMonth: "/ Nutzer / Monat", perUserYear: "/ Nutzer / Jahr",
+  },
+};
+
 const copyByLanguage: Record<Language, Record<string, string>> = {
   en: {
     textMode: "Prompt check", textModeNote: "Remove private details before you send", repoMode: "GitHub repository", repoModeNote: "Exposed keys and vulnerable dependencies · free", stepInput: "Add your text", stepReview: "Review what was found", stepCopy: "Copy the safer version", previewHeadline: "See what stays private.", previewExplain: "An example of what you could share after the check.", compareAction: "Show safer version", sampleLead: "Start with a sample",
@@ -596,15 +655,27 @@ export function mountDashboard(): void {
   const management = workspaceDialog.querySelector(".workspace-content")!;
   management.append(plansDialog.querySelector(".plan-card:last-child")!, required("#team-section"), required("#org-section"));
   let billingInterval: "monthly" | "yearly" = "yearly";
+  // The Halloween offer, as last confirmed by the server. Regular prices until
+  // then, and again the moment it ends or cannot be read.
+  let promoView: PromoView | null = null;
+  const promo = mountPromo(banner => plansDialog.querySelector(".plans-intro")!.after(banner), () => promoWordsByLanguage[preferences.language], () => preferences.language, view => {
+    promoView = view;
+    renderBilling();
+  });
   const renderBilling = (): void => {
     plansDialog.querySelectorAll<HTMLElement>("[data-billing]").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.billing === billingInterval)));
     plansDialog.querySelectorAll<HTMLElement>("[data-plan]").forEach(button => { button.hidden = button.dataset.interval !== billingInterval; button.textContent = words().startTrial; });
     const cards = plansDialog.querySelectorAll<HTMLElement>(".plan-card");
-    cards[0].querySelector(".plan-price")!.innerHTML = billingInterval === "yearly" ? '€79.90 <small>/ year</small><small class="price-equiv">€6.66 a month, billed yearly</small>' : '€7.99 <small>/ month</small>';
-    cards[1].querySelector(".plan-price")!.innerHTML = billingInterval === "yearly" ? '€149.90 <small>/ user / year</small><small class="price-equiv">€12.49 a month, billed yearly</small>' : '€14.99 <small>/ user / month</small>';
+    const promoWords = promoWordsByLanguage[preferences.language];
+    const pro = promoView?.offer("personal", billingInterval) ?? null;
+    const business = promoView?.offer("business", billingInterval) ?? null;
+    promo.relabel();
+    cards[0].querySelector(".plan-price")!.innerHTML = pro ? promoPriceHtml(pro, promoWords, preferences.language) : billingInterval === "yearly" ? '€79.90 <small>/ year</small><small class="price-equiv">€6.66 a month, billed yearly</small>' : '€7.99 <small>/ month</small>';
+    cards[1].querySelector(".plan-price")!.innerHTML = business ? promoPriceHtml(business, promoWords, preferences.language) : billingInterval === "yearly" ? '€149.90 <small>/ user / year</small><small class="price-equiv">€12.49 a month, billed yearly</small>' : '€14.99 <small>/ user / month</small>';
     cards[0].querySelector(".plan-tag")!.textContent = billingInterval === "yearly" ? "Recommended · Pro yearly" : words().personalTag;
   };
   plansDialog.querySelectorAll<HTMLElement>("[data-billing]").forEach(button => button.addEventListener("click", () => { billingInterval = button.dataset.billing === "monthly" ? "monthly" : "yearly"; renderBilling(); }));
+
   const closeWorkspace = (): void => {
     workspaceDialog.classList.remove("open"); document.documentElement.classList.remove("preferences-open");
     if (location.hash === "#workspace") history.replaceState(null, "", location.pathname + location.search);
