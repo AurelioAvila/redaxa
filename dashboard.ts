@@ -3,6 +3,7 @@ import type { AccountState } from "./auth.js";
 import { enableAppShell } from "./pwa.js";
 import { track } from "./growth.js";
 import { enableDesktopCompanion } from "./desktop.js";
+import { PROMO_WORDS_EN, promoBanner, promoPriceHtml, updatePromoClock, watchPromo, type PromoView, type PromoWords } from "./promo.js";
 
 type HistoryEntry = { id: string; createdAt: string; findings: number; preview: string; byKind: Record<string, number> };
 type Language = "en" | "it" | "es" | "fr" | "de";
@@ -17,6 +18,64 @@ const maxPromptLength = 10_000;
 const defaultPreferences: Preferences = { language: "en", theme: "graphite", scanMode: "standard", includePersonalData: true, includeCredentials: true, includeFinancialData: true, saveHistory: true, autoClearAfterCopy: false, showRawValues: true, customTerms: [] };
 
 const languageNames: Record<Language, string> = { en: "English", it: "Italiano", es: "Español", fr: "Français", de: "Deutsch" };
+// Halloween offer copy. Units and renewal lines are spelled out per language
+// rather than assembled, so every sentence reads as written.
+const promoWordsByLanguage: Record<Language, PromoWords> = {
+  en: PROMO_WORDS_EN,
+  it: {
+    title: "Offerta di Halloween",
+    lead: "{percent} di sconto sul primo mese o sul primo anno di Pro e Business.",
+    ends: "Termina il {date}.",
+    endsIn: "Termina tra",
+    units: ["giorni", "ore", "min", "sec"],
+    terms: "I prezzi barrati sono i più bassi applicati nei 30 giorni precedenti l'inizio dell'offerta. Lo sconto vale solo per il primo mese o il primo anno pagato; i rinnovi sono al prezzo normale. I nuovi abbonati idonei iniziano comunque con la prova di 7 giorni. I prezzi non includono l'IVA, aggiunta al pagamento dove dovuta.",
+    thenMonth: "Primo mese, poi {price} al mese",
+    thenYear: "Primo anno, poi {price} all'anno",
+    thenUserMonth: "Primo mese, poi {price} per utente al mese",
+    thenUserYear: "Primo anno, poi {price} per utente all'anno",
+    perMonth: "/ mese", perYear: "/ anno", perUserMonth: "/ utente / mese", perUserYear: "/ utente / anno",
+  },
+  es: {
+    title: "Oferta de Halloween",
+    lead: "{percent} de descuento en el primer mes o el primer año de Pro y Business.",
+    ends: "Termina el {date}.",
+    endsIn: "Termina en",
+    units: ["días", "horas", "min", "seg"],
+    terms: "Los precios tachados son los más bajos aplicados en los 30 días anteriores al inicio de la oferta. El descuento solo se aplica al primer mes o al primer año de pago; las renovaciones se cobran al precio habitual. Los nuevos suscriptores que cumplan los requisitos siguen empezando con la prueba de 7 días. Los precios no incluyen el IVA, que se añade al pagar cuando corresponde.",
+    thenMonth: "Primer mes, luego {price} al mes",
+    thenYear: "Primer año, luego {price} al año",
+    thenUserMonth: "Primer mes, luego {price} por usuario al mes",
+    thenUserYear: "Primer año, luego {price} por usuario al año",
+    perMonth: "/ mes", perYear: "/ año", perUserMonth: "/ usuario / mes", perUserYear: "/ usuario / año",
+  },
+  fr: {
+    title: "Offre d'Halloween",
+    lead: "{percent} de réduction sur le premier mois ou la première année de Pro et Business.",
+    ends: "Se termine le {date}.",
+    endsIn: "Se termine dans",
+    units: ["jours", "heures", "min", "s"],
+    terms: "Les prix barrés sont les plus bas pratiqués au cours des 30 jours précédant le début de l'offre. La réduction ne porte que sur le premier mois ou la première année payés ; les renouvellements se font au prix normal. Les nouveaux abonnés éligibles commencent toujours par l'essai de 7 jours. Les prix s'entendent hors TVA ; la TVA applicable est ajoutée au paiement.",
+    thenMonth: "Premier mois, puis {price} par mois",
+    thenYear: "Première année, puis {price} par an",
+    thenUserMonth: "Premier mois, puis {price} par mois et par utilisateur",
+    thenUserYear: "Première année, puis {price} par an et par utilisateur",
+    perMonth: "/ mois", perYear: "/ an", perUserMonth: "/ utilisateur / mois", perUserYear: "/ utilisateur / an",
+  },
+  de: {
+    title: "Halloween-Angebot",
+    lead: "{percent} Rabatt auf den ersten Monat oder das erste Jahr von Pro und Business.",
+    ends: "Endet am {date}.",
+    endsIn: "Endet in",
+    units: ["Tage", "Std.", "Min.", "Sek."],
+    terms: "Durchgestrichene Preise sind die niedrigsten Preise, die wir in den 30 Tagen vor Beginn des Angebots verlangt haben. Der Rabatt gilt nur für den ersten bezahlten Monat bzw. das erste bezahlte Jahr; Verlängerungen erfolgen zum regulären Preis. Berechtigte neue Abonnenten starten weiterhin mit der 7-tägigen Testphase. Preise ohne MwSt.; die anfallende MwSt. wird beim Bezahlen hinzugefügt.",
+    thenMonth: "Erster Monat, danach {price} pro Monat",
+    thenYear: "Erstes Jahr, danach {price} pro Jahr",
+    thenUserMonth: "Erster Monat, danach {price} pro Nutzer und Monat",
+    thenUserYear: "Erstes Jahr, danach {price} pro Nutzer und Jahr",
+    perMonth: "/ Monat", perYear: "/ Jahr", perUserMonth: "/ Nutzer / Monat", perUserYear: "/ Nutzer / Jahr",
+  },
+};
+
 const copyByLanguage: Record<Language, Record<string, string>> = {
   en: {
     textMode: "Prompt check", textModeNote: "Remove private details before you send", repoMode: "GitHub repository", repoModeNote: "Exposed keys and vulnerable dependencies · free", stepInput: "Add your text", stepReview: "Review what was found", stepCopy: "Copy the safer version", previewHeadline: "See what stays private.", previewExplain: "An example of what you could share after the check.", compareAction: "Show safer version", sampleLead: "Start with a sample",
@@ -596,15 +655,34 @@ export function mountDashboard(): void {
   const management = workspaceDialog.querySelector(".workspace-content")!;
   management.append(plansDialog.querySelector(".plan-card:last-child")!, required("#team-section"), required("#org-section"));
   let billingInterval: "monthly" | "yearly" = "yearly";
+  // The Halloween offer, as last confirmed by the server. Regular prices until
+  // then, and again the moment it ends or cannot be read.
+  let promoView: PromoView | null = null;
+  let promoBannerElement: HTMLElement | null = null;
   const renderBilling = (): void => {
     plansDialog.querySelectorAll<HTMLElement>("[data-billing]").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.billing === billingInterval)));
     plansDialog.querySelectorAll<HTMLElement>("[data-plan]").forEach(button => { button.hidden = button.dataset.interval !== billingInterval; button.textContent = words().startTrial; });
     const cards = plansDialog.querySelectorAll<HTMLElement>(".plan-card");
-    cards[0].querySelector(".plan-price")!.innerHTML = billingInterval === "yearly" ? '€79.90 <small>/ year</small><small class="price-equiv">€6.66 a month, billed yearly</small>' : '€7.99 <small>/ month</small>';
-    cards[1].querySelector(".plan-price")!.innerHTML = billingInterval === "yearly" ? '€149.90 <small>/ user / year</small><small class="price-equiv">€12.49 a month, billed yearly</small>' : '€14.99 <small>/ user / month</small>';
+    const promoWords = promoWordsByLanguage[preferences.language];
+    const pro = promoView?.offer("personal", billingInterval) ?? null;
+    const business = promoView?.offer("business", billingInterval) ?? null;
+    promoBannerElement?.remove();
+    promoBannerElement = promoView?.promo ? promoBanner(promoView.promo, promoWords, preferences.language) : null;
+    if (promoBannerElement) {
+      plansDialog.querySelector(".plans-intro")!.after(promoBannerElement);
+      updatePromoClock(promoBannerElement, promoView!.remaining, promoWords);
+    }
+    cards[0].querySelector(".plan-price")!.innerHTML = pro ? promoPriceHtml(pro, promoWords, preferences.language) : billingInterval === "yearly" ? '€79.90 <small>/ year</small><small class="price-equiv">€6.66 a month, billed yearly</small>' : '€7.99 <small>/ month</small>';
+    cards[1].querySelector(".plan-price")!.innerHTML = business ? promoPriceHtml(business, promoWords, preferences.language) : billingInterval === "yearly" ? '€149.90 <small>/ user / year</small><small class="price-equiv">€12.49 a month, billed yearly</small>' : '€14.99 <small>/ user / month</small>';
     cards[0].querySelector(".plan-tag")!.textContent = billingInterval === "yearly" ? "Recommended · Pro yearly" : words().personalTag;
   };
   plansDialog.querySelectorAll<HTMLElement>("[data-billing]").forEach(button => button.addEventListener("click", () => { billingInterval = button.dataset.billing === "monthly" ? "monthly" : "yearly"; renderBilling(); }));
+  watchPromo(view => {
+    const changed = Boolean(promoView?.promo) !== Boolean(view.promo);
+    promoView = view;
+    if (changed) renderBilling();
+    else if (promoBannerElement) updatePromoClock(promoBannerElement, view.remaining, promoWordsByLanguage[preferences.language]);
+  });
   const closeWorkspace = (): void => {
     workspaceDialog.classList.remove("open"); document.documentElement.classList.remove("preferences-open");
     if (location.hash === "#workspace") history.replaceState(null, "", location.pathname + location.search);

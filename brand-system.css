@@ -810,3 +810,27 @@ html.rx-native .repository-page .download-app{display:none}
 .repository-page #status{margin-top:0}
 .repository-page .status-row{padding-top:12px}
 .repository-page .side-note{padding-right:4px}
+
+/* Halloween offer: one large countdown above the plans, shown only while the
+   server confirms the offer. Pumpkin orange marks the icon, frame and badge
+   border; every text colour stays the theme's own, so contrast holds on all
+   themes. */
+.rx-promo{--rx-pumpkin:#f28c28;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px 32px;align-items:center;margin:22px 0 26px;padding:26px 28px 20px;border:1px solid color-mix(in srgb,var(--rx-pumpkin) 55%,var(--theme-line));border-radius:14px;background:linear-gradient(135deg,color-mix(in srgb,var(--rx-pumpkin) 12%,transparent),color-mix(in srgb,var(--theme-accent) 6%,transparent));color:var(--theme-text)}
+.rx-promo p{margin:0}
+.rx-promo .rx-promo-title{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;line-height:1.2;letter-spacing:.14em;text-transform:uppercase}
+.rx-promo-icon{width:26px;height:26px;flex:none;color:var(--rx-pumpkin)}
+.rx-promo .rx-promo-lead{margin-top:12px;font-size:clamp(20px,2.4vw,28px);line-height:1.22;font-weight:650;letter-spacing:-.015em;text-wrap:balance}
+.rx-promo .rx-promo-ends{margin-top:8px;color:var(--theme-muted);font-size:14px}
+.rx-promo-timer{display:grid;gap:8px;justify-items:end}
+.rx-promo .rx-promo-ends-in{font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--theme-muted)}
+.rx-promo-clock{display:flex;gap:10px}
+.rx-promo-clock div{display:grid;justify-items:center;min-width:84px;padding:12px 10px 10px;border:1px solid var(--theme-line);border-radius:10px;background:var(--theme-inset)}
+.rx-promo-clock strong{font-size:clamp(34px,4.4vw,52px);line-height:1;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.rx-promo-clock span{margin-top:7px;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--theme-muted)}
+.rx-promo .rx-promo-terms{grid-column:1/-1;padding-top:14px;border-top:1px solid var(--theme-line);color:var(--theme-muted);font-size:12.5px;line-height:1.55}
+.plans-drawer .rx-promo{grid-template-columns:1fr;margin:14px 0 18px}
+.plans-drawer .rx-promo-timer{justify-items:start}
+@media (max-width:760px){.rx-promo{grid-template-columns:1fr;padding:20px 18px 16px}.rx-promo-timer{justify-items:start;width:100%}.rx-promo-clock{width:100%;gap:8px}.rx-promo-clock div{flex:1;min-width:0}}
+.rx-was{margin-right:6px;font-size:.55em;font-weight:500;color:var(--theme-muted);text-decoration-thickness:1.5px}
+.rx-off{display:inline-block;margin-left:8px;padding:3px 7px;border:1px solid color-mix(in srgb,#f28c28 60%,var(--theme-line));border-radius:6px;font-size:13px;font-weight:700;letter-spacing:.02em;line-height:1.3;vertical-align:middle;color:var(--theme-text)}
+@media (prefers-reduced-motion:no-preference){.rx-promo{animation:rx-promo-in .4s ease-out both}@keyframes rx-promo-in{from{opacity:0;transform:translateY(6px)}}}

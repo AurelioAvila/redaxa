@@ -62,6 +62,12 @@ export async function syncSubscription(subscription: Stripe.Subscription, fallba
  * the whole webhook and re-run the account sync that already succeeded, and
  * the customer's access does not depend on an email arriving.
  */
+/** A once-only coupon is gone from the subscription by the time this email is
+ *  written, so the promotion's metadata is how it knows to say so. */
+export function promoLabel(label: string | null, promoId: string | undefined): string | null {
+  return label && promoId ? `${label} (first payment discounted)` : label;
+}
+
 async function announceSubscription(subscription: Stripe.Subscription): Promise<void> {
   try {
     const item = subscription.items.data[0];
@@ -90,7 +96,7 @@ async function announceSubscription(subscription: Stripe.Subscription): Promise<
       firstName,
       plan: subscription.metadata.plan ?? null,
       interval,
-      priceLabel: formatChargedAmount(price?.unit_amount, price?.currency, interval),
+      priceLabel: promoLabel(formatChargedAmount(price?.unit_amount, price?.currency, interval), subscription.metadata.promo_id),
       renewsOn,
       trialing,
       appUrl: appUrl(),

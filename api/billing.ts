@@ -1,12 +1,14 @@
 import { accountFor, billingAppUrl, corsHeaders, parseJson, releaseCheckout, requireUser, reserveCheckout, saveCustomer, stripe } from "./_billing.js";
 import { clientIp, rateLimited } from "./_rateLimit.js";
+import { promoCheckout, promoState } from "./_promo.js";
 
 type RequestLike = { method?: string; body?: unknown; query?: Record<string, string | string[] | undefined>; headers?: Record<string, string | string[] | undefined> };
 type ResponseLike = { setHeader(name: string, value: string | string[]): void; status(code: number): ResponseLike; json(value: unknown): void; end(): void };
 
 // Consolidated with the portal action (Vercel's Hobby plan caps a deployment
 // at 12 serverless functions): ?action=portal opens the Stripe billing
-// portal, anything else starts a checkout session.
+// portal, GET ?action=promo publishes the current offer, anything else
+// starts a checkout session.
 const priceFor = (plan: string, interval: string): string | null => {
   const prices: Record<string, string | undefined> = {
     "personal:monthly": process.env.STRIPE_PRICE_PERSONAL_MONTHLY,
@@ -21,9 +23,15 @@ export default async function handler(request: RequestLike, response: ResponseLi
   const cors = corsHeaders(request);
   for (const [name, value] of Object.entries(cors)) response.setHeader(name, value);
   if (request.method === "OPTIONS") { response.status(204).end(); return; }
-  if (request.method !== "POST") { response.setHeader("Allow", "POST"); response.status(405).end(); return; }
-
   const action = Array.isArray(request.query?.action) ? request.query?.action[0] : request.query?.action;
+  // Public and uncached: the site and apps draw the offer and its countdown
+  // from this, and checkout below applies it from the same clock.
+  if (request.method === "GET" && action === "promo") {
+    response.setHeader("Cache-Control", "no-store");
+    response.status(200).json(promoState());
+    return;
+  }
+  if (request.method !== "POST") { response.setHeader("Allow", "POST"); response.status(405).end(); return; }
 
   if (action === "portal") {
     try {
@@ -60,6 +68,11 @@ export default async function handler(request: RequestLike, response: ResponseLi
         customerId = customer.id;
         await saveCustomer(user.id, customerId);
       }
+      // The discount follows the plan resolved above and the server's clock.
+      // A once-only coupon skips the 7-day trial's zero invoice and comes off
+      // the first paid one (checked on Stripe test clocks, 10 Oct 2026).
+      const promo = promoCheckout(process.env, Date.now(), plan, interval, seats);
+      const metadata = { redaxa_user_id: user.id, plan, interval, seats: String(seats), ...(promo ? { promo_id: promo.id } : {}) };
       const session = await stripe.checkout.sessions.create({
         customer: customerId,
         mode: "subscription",
@@ -67,12 +80,15 @@ export default async function handler(request: RequestLike, response: ResponseLi
         // Payments on (the newer default), which rejects an explicit list
         // and picks methods itself.
         line_items: [{ price, quantity: seats }],
-        allow_promotion_codes: interval === "monthly",
+        // Checkout refuses promotion codes alongside a discount.
+        ...(promo
+          ? { discounts: [{ coupon: promo.coupon }], expires_at: promo.expiresAt }
+          : { allow_promotion_codes: interval === "monthly" }),
         subscription_data: {
           trial_period_days: account.has_used_trial ? undefined : 7,
-          metadata: { redaxa_user_id: user.id, plan, interval, seats: String(seats) }
+          metadata
         },
-        metadata: { redaxa_user_id: user.id, plan, interval, seats: String(seats) },
+        metadata,
         success_url: `${billingAppUrl(request)}/?checkout=success`,
         cancel_url: `${billingAppUrl(request)}/?checkout=cancelled`
       }, { idempotencyKey: `ps-checkout-${user.id}-${Date.now()}` });

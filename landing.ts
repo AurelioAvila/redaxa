@@ -1,4 +1,5 @@
 import { track } from './growth.js';
+import { PROMO_WORDS_EN, promoBanner, watchPromo, promoPriceHtml, updatePromoClock, type PromoView } from './promo.js';
 
 const demoPrompt = 'Write a concise project update to maria.rossi@example.com. Mention that the staging server is at 192.168.1.20 and include this demo credential: password=demo-secret-credential-123.';
 
@@ -14,14 +15,40 @@ function escapeHtml(value: string): string {
 
 function mountLanding(): void {
   const billingButtons = document.querySelectorAll<HTMLButtonElement>('[data-billing]');
+  let yearly = true;
+  let view: PromoView | null = null;
+  let banner: HTMLElement | null = null;
+  // The page ships regular prices; a running offer replaces them only once the
+  // server has confirmed it, and they come back the moment it ends.
+  const renderPrices = (): void => {
+    const interval = yearly ? 'yearly' : 'monthly';
+    const pro = view?.offer('personal', interval);
+    const business = view?.offer('business', interval);
+    required('#pro-plan-price').innerHTML = pro
+      ? promoPriceHtml(pro, PROMO_WORDS_EN)
+      : yearly ? '€79.90 <small>/ year</small><small class="price-equiv">€6.66 a month, billed yearly</small>' : '€7.99 <small>/ month</small>';
+    required('#business-plan-price').innerHTML = business
+      ? promoPriceHtml(business, PROMO_WORDS_EN)
+      : yearly ? '€149.90 <small>/ user / year</small><small class="price-equiv">€12.49 a month, billed yearly</small>' : '€14.99 <small>/ user / month</small>';
+  };
   billingButtons.forEach(button => button.addEventListener('click', () => {
-    const yearly = button.dataset.billing === 'yearly';
+    yearly = button.dataset.billing === 'yearly';
     billingButtons.forEach(option => option.setAttribute('aria-pressed', String(option === button)));
-    required('#pro-plan-price').innerHTML = yearly ? '€79.90 <small>/ year</small><small class="price-equiv">€6.66 a month, billed yearly</small>' : '€7.99 <small>/ month</small>';
-    required('#business-plan-price').innerHTML = yearly ? '€149.90 <small>/ user / year</small><small class="price-equiv">€12.49 a month, billed yearly</small>' : '€14.99 <small>/ user / month</small>';
+    renderPrices();
     required('#pro-plan-tag').textContent = yearly ? 'Recommended · Pro yearly' : 'Your everyday privacy toolkit';
     document.querySelectorAll<HTMLElement>('[data-plan]').forEach(cta => { cta.dataset.interval = yearly ? 'yearly' : 'monthly'; });
   }));
+  watchPromo(next => {
+    const changed = Boolean(view?.promo) !== Boolean(next.promo);
+    view = next;
+    if (changed) {
+      banner?.remove();
+      banner = next.promo ? promoBanner(next.promo, PROMO_WORDS_EN) : null;
+      if (banner) required('#pricing .billing-switch').before(banner);
+      renderPrices();
+    }
+    if (banner) updatePromoClock(banner, next.remaining, PROMO_WORDS_EN);
+  });
   const prompt = required<HTMLTextAreaElement>("#prompt");
   const findings = required<HTMLElement>("#findings");
   const output = required<HTMLElement>("#safe-output");

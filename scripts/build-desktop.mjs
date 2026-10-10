@@ -21,7 +21,7 @@ cpSync(resolve(root, "dashboard.html"), resolve(output, "index.html"));
 // webview's DevTools console can't call inspectPrompt() directly and bypass
 // the server-enforced trial/subscription check in api/scan.ts.
 mkdirSync(resolve(output, 'dist'), {recursive:true});
-const modules = ['themes','auth','dashboard','desktop','pwa','growth','repository-ui','repository-report','repository-example'];
+const modules = ['themes','auth','dashboard','desktop','pwa','growth','promo','repository-ui','repository-report','repository-example'];
 for(const module of modules) {
   cpSync(resolve(root,'dist',module+'.js'),resolve(output,'dist',module+'.js'));
 }

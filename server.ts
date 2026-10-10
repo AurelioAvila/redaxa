@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { scanRepository, demoReport } from "./repository-scanner.js";
 import {scanFullRepository,type Progress} from './repository-full.js';
 import {verifyRepositoryAccess} from './repository-access.js';
+import {PROMO,promoState} from './api/_promo.js';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)));
 const mimeTypes: Record<string, string> = {
@@ -16,12 +17,22 @@ const mimeTypes: Record<string, string> = {
   ".woff2": "font/woff2"
 };
 
+const serverStarted = Date.now();
 let repositoryScanBusy = false;
 let lastRepositoryScan = 0;
 let repositoryProgress:Progress={stage:'Ready',checked:0,findings:0};
 let repositoryProgressId='';
 createServer(async (request, response) => {
   const pathname = new URL(request.url ?? "/", "http://127.0.0.1").pathname;
+  // Development preview of the Halloween offer: the public payload the API
+  // serves, switched on with PROMO_PREVIEW=1. PROMO_PREVIEW_NOW=<ISO time>
+  // starts the server's clock there, to watch the start, the end and the
+  // return to regular prices without waiting for them.
+  if(pathname==='/api/billing'&&request.method==='GET'&&new URL(request.url??'/','http://127.0.0.1').searchParams.get('action')==='promo'){
+    const now=Date.now()+(process.env.PROMO_PREVIEW_NOW?Date.parse(process.env.PROMO_PREVIEW_NOW)-serverStarted:0);
+    response.writeHead(200,securityHeaders('application/json'));
+    response.end(JSON.stringify(promoState({PROMO_ID:process.env.PROMO_PREVIEW==='1'?PROMO.id:undefined},now)));return;
+  }
   if(pathname==='/api/repository-config'){
     response.writeHead(200,securityHeaders('application/json'));
     response.end(JSON.stringify({available:process.env.REPO_SCAN_PREVIEW==='1',designReview:process.env.REPO_SCAN_PREVIEW==='1'&&process.env.REPO_SCAN_DESIGN_REVIEW==='1',requiresPlan:'pro'}));return;
@@ -102,7 +113,7 @@ createServer(async (request, response) => {
 
   const relativePath = pathname === "/" ? "index.html" : pathname.replace(/^\/+/, "");
   // Development server serves UI assets only, never source, credentials or Git metadata.
-  if (!/^(?:[a-zA-Z0-9_-]+\.(?:html|css|webmanifest)|dist\/(?:themes|auth|dashboard|desktop|pwa|landing|growth|repository-ui|repository-report|repository-example)\.js|browser-extension\/(?:popup\.(?:html|css|js)|config\.js|icons\/48\.png)|outputs\/[a-zA-Z0-9_.-]+\.(?:svg|png|webp|woff2)|(?:service-worker|theme-boot)\.js)$/.test(relativePath)) {
+  if (!/^(?:[a-zA-Z0-9_-]+\.(?:html|css|webmanifest)|dist\/(?:themes|auth|dashboard|desktop|pwa|landing|growth|promo|repository-ui|repository-report|repository-example)\.js|browser-extension\/(?:popup\.(?:html|css|js)|config\.js|icons\/48\.png)|outputs\/[a-zA-Z0-9_.-]+\.(?:svg|png|webp|woff2)|(?:service-worker|theme-boot)\.js)$/.test(relativePath)) {
     response.writeHead(404, securityHeaders('text/plain'));response.end('Not found');return;
   }
   const filePath = resolve(root, relativePath);
