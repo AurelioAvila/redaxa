@@ -5,7 +5,9 @@ import { applyTheme, restoreTheme, themes } from '../dist/themes.js';
 globalThis.document = { documentElement: { dataset: {} } };
 let saved = null;
 globalThis.localStorage = { getItem: () => saved, setItem: () => assert.fail('Restoring a theme must not overwrite preferences') };
-for (const [value, expected] of [[null, 'graphite'], ['{}', 'graphite'], ['null', 'graphite'], ['invalid json', 'graphite'], ['{"theme":"missing"}', 'graphite'], ['{"theme":"ocean"}', 'ocean']]) {
+// Ink & Violet is the default only for people who never chose a palette; the
+// earlier default, Petrol & Copper, stays for everyone who has it saved.
+for (const [value, expected] of [[null, 'violet'], ['{}', 'violet'], ['null', 'violet'], ['invalid json', 'violet'], ['{"theme":"missing"}', 'violet'], ['{"theme":"ocean"}', 'ocean'], ['{"theme":"graphite"}', 'graphite']]) {
   saved = value;
   restoreTheme();
   assert.equal(document.documentElement.dataset.theme, expected);
@@ -16,7 +18,7 @@ for (const { code } of themes) {
   assert.equal(document.documentElement.dataset.theme, code);
 }
 applyTheme('unknown');
-assert.equal(document.documentElement.dataset.theme, 'graphite');
+assert.equal(document.documentElement.dataset.theme, 'violet');
 
 const css = readFileSync(new URL('../themes.css', import.meta.url), 'utf8');
 const luminance = hex => hex.match(/[\da-f]{2}/gi).map(value => parseInt(value, 16) / 255).map(v => v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4).reduce((n, v, i) => n + v * [.2126, .7152, .0722][i], 0);

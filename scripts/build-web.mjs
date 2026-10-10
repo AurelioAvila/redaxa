@@ -8,7 +8,7 @@ if(dirname(output)!==resolve(root)||basename(output)!=='public')throw new Error(
 rmSync(output, { recursive: true, force: true });
 mkdirSync(output, { recursive: true });
 
-for (const file of ["index.html", "dashboard.html", "github.html", "repository.css", "brand-system.css", "themes.css", "theme-boot.js", "cf-beacon.js", "privacy.html", "terms.html", "api-docs.html", "redact-sensitive-data-before-chatgpt.html", "check-public-github-repo-for-leaked-api-keys.html", "protect-client-and-project-names-in-ai-prompts.html", "what-not-to-paste-into-chatgpt-checklist.html", "auth.css", "manifest.webmanifest", "service-worker.js", "robots.txt", "sitemap.xml", "50dbe3a3e39c297a807eb935fcdaba29.txt"]) {
+for (const file of ["index.html", "dashboard.html", "github.html", "repository.css", "brand-system.css", "themes.css", "app.css", "plans.css", "theme-boot.js", "cf-beacon.js", "privacy.html", "terms.html", "api-docs.html", "redact-sensitive-data-before-chatgpt.html", "check-public-github-repo-for-leaked-api-keys.html", "protect-client-and-project-names-in-ai-prompts.html", "what-not-to-paste-into-chatgpt-checklist.html", "auth.css", "manifest.webmanifest", "service-worker.js", "robots.txt", "sitemap.xml", "50dbe3a3e39c297a807eb935fcdaba29.txt"]) {
   cpSync(resolve(root, file), resolve(output, file));
 }
 

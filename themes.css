@@ -7,11 +7,20 @@ html[data-theme="lime"]{--theme-bg:#101409;--theme-surface:#1b2210;--theme-inset
 html[data-theme="emerald"]{--theme-bg:#0a1510;--theme-surface:#12251c;--theme-inset:#0d1b14;--theme-hover:#1d382b;--theme-text:#edf8f1;--theme-muted:#a0beaf;--theme-line:#2a4436;--theme-strong:#466b56;--theme-accent:#78dda6;--theme-ink:#102d1d}
 html[data-theme="teal"]{--theme-bg:#0a1517;--theme-surface:#11272a;--theme-inset:#0e1d20;--theme-hover:#1b3b3e;--theme-text:#edf7f8;--theme-muted:#9ebfc2;--theme-line:#28454a;--theme-strong:#426971;--theme-accent:#81dce1;--theme-ink:#102c30}
 html[data-theme="ocean"]{--theme-bg:#0c1322;--theme-surface:#14223a;--theme-inset:#101a2d;--theme-hover:#203454;--theme-text:#eff4fc;--theme-muted:#a5b7d4;--theme-line:#2c405e;--theme-strong:#45658d;--theme-accent:#8cbbff;--theme-ink:#132746}
-:root,html[data-theme="graphite"]{--theme-bg:#10252d;--theme-surface:#193740;--theme-inset:#142e37;--theme-hover:#244650;--theme-text:#eef5f4;--theme-muted:#b6cccd;--theme-line:#34525b;--theme-strong:#718e94;--theme-accent:#ffb184;--theme-ink:#3c2119}
+/* Ink & Violet is Lock Pup's own palette and the default for anyone who never
+   chose one. Paper is its light counterpart. */
+:root,html[data-theme="violet"]{--theme-bg:#100c1f;--theme-surface:#181330;--theme-inset:#130f27;--theme-hover:#241d45;--theme-text:#f4f3ef;--theme-muted:#b5acd6;--theme-line:#2d2650;--theme-strong:#6e63a6;--theme-accent:#a48bff;--theme-ink:#14092e}
+html[data-theme="paper"]{--theme-bg:#f7f6f2;--theme-surface:#ffffff;--theme-inset:#f2f0ea;--theme-hover:#ebe7f6;--theme-text:#14092e;--theme-muted:#554d70;--theme-line:#e2dfd6;--theme-strong:#857f9c;--theme-accent:#5637c9;--theme-ink:#ffffff;color-scheme:light}
+/* The marketing site is designed dark only: a light workspace choice must not
+   repaint it with dark-only artwork on a light page. */
+html[data-theme="paper"] body.redaxa-landing{--theme-bg:#100c1f;--theme-surface:#181330;--theme-inset:#130f27;--theme-hover:#241d45;--theme-text:#f4f3ef;--theme-muted:#b5acd6;--theme-line:#2d2650;--theme-strong:#6e63a6;--theme-accent:#a48bff;--theme-ink:#14092e;color-scheme:dark}
+html[data-theme="graphite"]{--theme-bg:#10252d;--theme-surface:#193740;--theme-inset:#142e37;--theme-hover:#244650;--theme-text:#eef5f4;--theme-muted:#b6cccd;--theme-line:#34525b;--theme-strong:#718e94;--theme-accent:#ffb184;--theme-ink:#3c2119}
 html[data-theme="crimson"]{--theme-bg:#190d11;--theme-surface:#2b171e;--theme-inset:#211118;--theme-hover:#40232d;--theme-text:#f9eff2;--theme-muted:#c9a4b2;--theme-line:#4c303b;--theme-strong:#775062;--theme-accent:#ffa0b7;--theme-ink:#351421}
 html[data-theme="slate"]{--theme-bg:#111213;--theme-surface:#1e2022;--theme-inset:#17181a;--theme-hover:#2c2f33;--theme-text:#f2f3f5;--theme-muted:#b0b5bc;--theme-line:#373c42;--theme-strong:#5d656f;--theme-accent:#d6dce5;--theme-ink:#20252d}
 
 html[data-theme="carbon"]{--theme-bg:#171e21;--theme-surface:#202b2e;--theme-inset:#1b2528;--theme-hover:#2c3b3d;--theme-text:#eff6f3;--theme-muted:#b5c9c2;--theme-line:#3d5350;--theme-strong:#6c8880;--theme-accent:#9edbbb;--theme-ink:#192d25}
+.theme-swatch-violet{--swatch:#a48bff}
+.theme-swatch-paper{--swatch:#f7f6f2}
 .theme-swatch-carbon{--swatch:#9edbbb}
 .theme-swatch-ice{--swatch:#b6cfff}
 .theme-swatch-graphite{--swatch:#ffb184}

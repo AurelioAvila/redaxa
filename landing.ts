@@ -34,7 +34,6 @@ function mountLanding(): void {
     yearly = button.dataset.billing === 'yearly';
     billingButtons.forEach(option => option.setAttribute('aria-pressed', String(option === button)));
     renderPrices();
-    required('#pro-plan-tag').textContent = yearly ? 'Recommended · Pro yearly' : 'Your everyday privacy toolkit';
     document.querySelectorAll<HTMLElement>('[data-plan]').forEach(cta => { cta.dataset.interval = yearly ? 'yearly' : 'monthly'; });
   }));
   mountPromo(banner => required('#pricing .billing-switch').before(banner), () => PROMO_WORDS_EN, () => 'en', next => {

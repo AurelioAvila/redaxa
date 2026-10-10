@@ -69,6 +69,12 @@ export async function openInSystemBrowser(url: string): Promise<boolean> {
   return true;
 }
 
+/** Opens a support e-mail in the user's mail app, from the desktop app or a browser. */
+export function openSupportEmail(): void {
+  const support = "mailto:redaxa@getcertsprint.com?subject=Redaxa%20support";
+  void openInSystemBrowser(support).then((opened) => { if (!opened) location.href = support; }).catch(() => { location.href = support; });
+}
+
 function nativeClipboardReader(): ClipboardReader | null {
   const invoke = tauriInvoke();
   if (!invoke) return null;

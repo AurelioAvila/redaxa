@@ -1,498 +1,31 @@
 <!doctype html>
-<html lang="en" data-account-loading data-plan-loading><head><script src="/theme-boot.js"></script><link rel="stylesheet" href="/auth.css"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Redaxa — Personal workspace</title><meta name="robots" content="noindex,nofollow"><link rel="icon" type="image/svg+xml" href="/outputs/redaxa-mark.svg"><style>
-:root{
-  --bg:#0c1322;
-  --surface-1:#14223a;
-  --surface-2:#203454;
-  --inset:#101a2d;
-  --line:#2c405e;
-  --line-strong:#45658d;
-  --text:#eff4fc;
-  --text-2:#a5b7d4;
-  --text-3:#a5b7d4;
-  --accent:#8cbbff;
-  --accent-ink:#132746;
-  --danger:#ff7a5c;
-  --warn:#ffc247;
-  --ok:#7ee08f;
-  --r-lg:18px;
-  --r:12px;
-  --r-sm:9px;
-}
-*{box-sizing:border-box}
-body{
-  margin:0;
-  background:radial-gradient(circle at 92% -4%,color-mix(in srgb,var(--accent) 13%,transparent) 0,transparent 34%),var(--bg);
-  color:var(--text);
-  font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
-  -webkit-font-smoothing:antialiased;
-}
-.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
-
-/* ---------- shell ---------- */
-.app{display:grid;grid-template-columns:250px minmax(0,1fr);min-height:100vh}
-.side{
-  position:sticky;top:0;height:100vh;
-  display:flex;flex-direction:column;
-  padding:24px 16px 20px;
-  border-right:1px solid var(--line);
-  background:#0c0e0b;
-}
-.brand{display:flex;align-items:center;gap:10px;padding:0 8px 26px;font-size:18px;font-weight:800;letter-spacing:-.04em}
-.mark{width:30px;height:30px;flex:0 0 30px;border-radius:9px;background:var(--accent);display:grid;place-items:center;color:var(--accent-ink);font-size:13px;font-weight:900;font-style:italic}
-.nav{display:flex;flex-direction:column;gap:2px}
-.nav-label{margin:16px 8px 6px;color:var(--text-3);font-size:12px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}
-.nav-item{
-  display:flex;align-items:center;gap:11px;width:100%;
-  padding:10px;border:0;border-radius:9px;
-  background:transparent;color:var(--text-2);
-  font:inherit;font-size:13.5px;text-align:left;cursor:pointer;
-  transition:background .14s ease,color .14s ease;
-}
-.nav-item:hover:not(.active){background:#ffffff08;color:var(--text)}
-.nav-item.active{background:color-mix(in srgb,var(--accent) 9%,transparent);color:var(--text);font-weight:650}
-.nav-item i.ico{display:flex;align-items:center;justify-content:center;width:18px;height:18px;flex:0 0 18px;color:var(--text-3)}
-.nav-item i.ico svg{width:16px;height:16px}
-.nav-item.active i.ico{color:var(--accent)}
-
-.side-foot{margin-top:auto;padding-top:20px;display:grid;gap:12px}
-.usage{padding:12px 13px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface-1)}
-.usage-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
-.usage-head span{color:var(--text-2);font-size:12.5px;font-weight:650}
-.usage-head b{color:var(--text);font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
-.usage-track{height:5px;margin-top:9px;border-radius:99px;background:#1e231b;overflow:hidden}
-.usage-fill{height:100%;border-radius:99px;background:var(--accent);transition:width .3s ease}
-.usage-note{margin:8px 0 0;color:var(--text-3);font-size:12.5px;line-height:1.5}
-/* Deliberately quieter than the composer CTA: informative, not a second
-   competing primary action in the corner of the eye. */
-.side-fill{padding:13px;border:1px solid var(--line);border-radius:var(--r);background:transparent}
-.side-fill b{display:block;font-size:12.5px;color:var(--text-2);margin-bottom:5px}
-.side-fill span{display:block;color:var(--text-3);font-size:12.5px;line-height:1.5}
-.side-fill a{display:inline-block;margin-top:9px;color:var(--text-2);font-size:12.5px;font-weight:700;text-decoration:underline;text-underline-offset:3px}
-.side-fill a:hover{color:var(--accent)}
-.privacy{display:flex;gap:8px;padding:0 4px;color:var(--text-3);font-size:12.5px;line-height:1.5}
-.privacy .dot{flex:0 0 6px;width:6px;height:6px;margin-top:5px;border-radius:50%;background:var(--ok)}
-.privacy a{color:var(--text-2);text-decoration:underline;text-underline-offset:3px}
-.privacy a:hover{color:var(--text)}
-
-/* ---------- main ---------- */
-main{width:100%;max-width:1280px;margin:0 auto;padding:36px 44px 96px}
-.top{display:flex;justify-content:space-between;align-items:flex-start;gap:24px}
-.eyebrow{color:var(--accent);font-size:12px;letter-spacing:.13em;text-transform:uppercase;font-weight:800}
-.top h1{margin:10px 0 6px;font-size:34px;line-height:1.12;letter-spacing:-.045em;font-weight:800}
-.top p{margin:0;color:var(--text-2);font-size:14px}
-.top-right{display:flex;flex-direction:column;align-items:flex-end;gap:10px}
-.status{display:flex;align-items:center;gap:7px;padding:7px 12px;border:1px solid var(--line-strong);border-radius:999px;background:#12180e;color:var(--text-2);font-size:12.5px;white-space:nowrap}
-.status i{width:6px;height:6px;border-radius:50%;background:var(--accent)}
-.small-btn{border:0;border-radius:8px;padding:9px 14px;background:var(--accent);color:var(--accent-ink);font:inherit;font-weight:750;font-size:13px;text-decoration:none;cursor:pointer;white-space:nowrap}
-.small-btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line-strong)}
-.small-btn.ghost:hover{border-color:#68755f;background:#181d16}
-
-/* ---------- onboarding strip ---------- */
-.onboarding{
-  position:relative;margin-top:26px;padding:12px 44px 12px 14px;
-  border:1px solid var(--line);border-radius:var(--r);
-  background:var(--surface-1);
-}
-#onboarding-list{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;align-items:center;gap:8px 22px}
-#onboarding-list li{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text-2)}
-/* Needed because the display:flex above would otherwise beat the UA rule for
-   [hidden] and keep completed tasks on screen. */
-#onboarding-list li[hidden]{display:none}
-#onboarding-list li i.ico{display:flex;align-items:center;justify-content:center;width:18px;height:18px;flex:0 0 18px;border:1.5px solid #3b4234;border-radius:50%;background:var(--inset);color:#5c6455}
-/* The tick is only drawn once the task is actually done -- showing it on every
-   row made all three read as already completed. */
-#onboarding-list li i.ico svg{width:11px;height:11px;opacity:0}
-#onboarding-list li.done i.ico svg{opacity:1}
-#onboarding-list li b{font-weight:650;color:var(--text-2)}
-#onboarding-list li span{display:none}
-#onboarding-list li[data-task="check"]{color:var(--text);font-size:13px}
-#onboarding-list li[data-task="check"] b{color:var(--text);font-weight:750}
-#onboarding-list li[data-task="check"] i.ico{border-color:color-mix(in srgb,var(--accent) 55%,transparent);color:var(--accent)}
-#onboarding-list li.done i.ico{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,var(--inset));color:var(--accent)}
-#onboarding-list li.done b{color:var(--text-3);text-decoration:line-through}
-.onboarding-close{position:absolute;top:50%;right:10px;transform:translateY(-50%);width:32px;height:32px;border:0;border-radius:8px;background:transparent;color:var(--text-3);font-size:18px;line-height:1;cursor:pointer}
-.onboarding-close:hover{background:#ffffff0d;color:var(--text)}
-
-/* ---------- layout ---------- */
-/* The composer and the results panel are their own section so that the
-   panel's sticky travel is bounded by the analysis area. When they shared one
-   grid with "Your activity" and "Recent local checks", the results column was
-   a grid item spanning only the first row but sized to its full content, which
-   left a tall dead zone under the composer and kept the panel alongside
-   sections it has nothing to do with. */
-.workspace{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(320px,.75fr);gap:18px;margin-top:20px;align-items:start}
-.stack{display:grid;gap:18px;margin-top:18px}
-.card{border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface-1)}
-.card-head{display:flex;align-items:center;gap:11px;margin-bottom:16px}
-.card-head h2{flex:1;margin:0;font-size:15px;font-weight:700;letter-spacing:-.02em}
-.card-icon{display:flex;align-items:center;justify-content:center;width:30px;height:30px;flex:0 0 30px;border-radius:9px;background:var(--surface-2);border:1px solid var(--line);color:var(--text-3)}
-.card-icon svg{width:16px;height:16px}
-.card-icon.accent{background:color-mix(in srgb,var(--accent) 13%,var(--surface-2));border-color:color-mix(in srgb,var(--accent) 28%,var(--line));color:var(--accent)}
-.tag{padding:4px 9px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);color:var(--text-3);font-size:12.5px;white-space:nowrap}
-
-/* ---------- composer ---------- */
-.composer{padding:24px}
-.composer h2{margin:0;font-size:19px;line-height:1.3;letter-spacing:-.03em;font-weight:750}
-.composer-sub{margin:7px 0 18px;color:var(--text-2);font-size:13px;line-height:1.5}
-.editor{
-  width:100%;height:206px;resize:vertical;
-  border:1px solid #333a30;border-radius:var(--r);
-  background:var(--inset);color:var(--text);padding:15px;
-  outline:none;font:13.5px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;
-}
-.editor::placeholder{color:#69705f}
-.editor:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 9%,transparent)}
-.prompt-meta{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-top:11px;font-size:12.5px;color:var(--text-3)}
-.meta-privacy{display:flex;align-items:center;gap:7px;min-width:0}
-.meta-privacy .dot{flex:0 0 6px;width:6px;height:6px;border-radius:50%;background:var(--ok)}
-.meta-privacy a{color:var(--text-2);text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
-.meta-privacy a:hover{color:var(--text)}
-#character-count{font-variant-numeric:tabular-nums;white-space:nowrap}
-#character-count strong{color:var(--text-2);font-weight:650}
-.samples{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
-.samples-label{display:block;margin-bottom:9px;color:var(--text-3);font-size:12px;font-weight:750;letter-spacing:.09em;text-transform:uppercase}
-.sample-row{display:flex;flex-wrap:wrap;gap:7px}
-.sample-chip{
-  display:inline-flex;align-items:center;gap:6px;min-height:34px;
-  padding:7px 13px;border:1px solid var(--line-strong);border-radius:999px;
-  background:transparent;color:var(--text-2);font:inherit;font-size:13px;cursor:pointer;
-  transition:border-color .14s ease,color .14s ease,background .14s ease;
-}
-.sample-chip:hover{border-color:color-mix(in srgb,var(--accent) 45%,transparent);color:var(--text);background:#ffffff0a}
-.sample-chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-/* Selected state carries a tick as well as colour, so "which example am I
-   looking at" survives for anyone who cannot separate the two greens. */
-.sample-chip[aria-pressed="true"]{
-  border-color:var(--accent);color:var(--accent);
-  background:color-mix(in srgb,var(--accent) 12%,transparent);font-weight:650;
-}
-.sample-chip[aria-pressed="true"]::before{content:"✓";font-size:12.5px;font-weight:800}
-.actions{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-top:18px}
-.ghost-btn{
-  border:1px solid var(--line-strong);border-radius:var(--r-sm);
-  background:transparent;color:var(--text-2);
-  padding:11px 15px;font:inherit;font-size:13px;cursor:pointer;
-  transition:border-color .14s ease,color .14s ease,background .14s ease;
-}
-.ghost-btn:hover{border-color:#68755f;color:var(--text);background:#181d16}
-.primary{
-  border:0;border-radius:var(--r-sm);padding:12px 18px;
-  background:var(--accent);color:var(--accent-ink);
-  font:inherit;font-weight:800;font-size:13px;white-space:nowrap;cursor:pointer;
-  transition:filter .14s ease,transform .14s ease;
-}
-.primary:hover:not(:disabled){filter:brightness(1.07);transform:translateY(-1px)}
-.primary:active:not(:disabled){transform:translateY(0)}
-.primary:disabled{background:#242a20;color:#6d7565;cursor:not-allowed;transform:none;filter:none}
-.kbd-hint{margin-right:auto;color:var(--text-3);font-size:12.5px}
-.kbd{padding:2px 5px;border:1px solid var(--line-strong);border-radius:5px;background:var(--surface-2);font:inherit;font-size:12px;color:var(--text-2)}
-
-/* ---------- results ---------- */
-/* Capped to the viewport with its own internal scroll: the panel now stays
-   entirely on screen no matter how many detections come back, instead of
-   growing to two screens tall and dragging the layout with it. */
-.results{
-  position:sticky;top:24px;
-  display:flex;flex-direction:column;
-  max-height:calc(100vh - 48px);
-  padding:0;overflow:hidden;
-}
-.results-head{flex:0 0 auto;padding:22px 22px 0}
-.results-head .card-head{margin-bottom:14px}
-/* The heading is the scroll/focus target after a check. Sizing it to its text
-   keeps the focus ring around the word "Results" instead of stretching it
-   across the whole panel, where it reads as a rendering fault. */
-.results-head .card-head h2{flex:0 1 auto}
-.results-head .risk-banner{margin-bottom:16px}
-.results-scroll{
-  flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;
-  padding:0 22px 18px;
-  scrollbar-width:thin;scrollbar-color:#3d4535 transparent;
-}
-.results-scroll::-webkit-scrollbar{width:11px}
-.results-scroll::-webkit-scrollbar-track{background:transparent}
-.results-scroll::-webkit-scrollbar-thumb{background:#3d4535;border-radius:99px;border:3px solid var(--surface-1)}
-.results-scroll::-webkit-scrollbar-thumb:hover{background:#525c47}
-.results-scroll:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
-.results-foot{flex:0 0 auto;padding:14px 22px;border-top:1px solid var(--line);background:var(--surface-1)}
-.results-foot .copy{margin-top:0}
-.preview-note{
-  display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:7px 10px;
-  border:1px dashed var(--line-strong);border-radius:8px;
-  color:var(--text-2);font-size:12.5px;letter-spacing:.02em;
-}
-.preview-note b{
-  flex:0 0 auto;padding:2px 6px;border-radius:4px;
-  background:#2a3120;color:var(--text-2);
-  font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
-}
-/* The demo result is dialled back so it reads as an illustration, not as
-   something the app just found in the user's own text. It lifts to full
-   strength on hover so it stays inspectable. */
-.preview-demo{opacity:.72;transition:opacity .16s ease}
-#res-preview:hover .preview-demo{opacity:1}
-.risk-banner{display:flex;align-items:center;gap:12px;padding:13px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface-2)}
-.risk-mark{
-  display:grid;place-items:center;width:38px;height:38px;flex:0 0 38px;border-radius:10px;
-  background:#1d221a;color:var(--text-2);font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;
-}
-.risk-banner b{display:block;font-size:13.5px;font-weight:750}
-/* Scoped to the text column on purpose: a bare `.risk-banner span` also matched
-   the .risk-mark badge and stripped its grid centring back to display:block. */
-.risk-banner>div>span{display:block;margin-top:2px;color:var(--text-2);font-size:12.5px;line-height:1.45}
-.risk-high{border-color:color-mix(in srgb,var(--danger) 34%,var(--line));background:color-mix(in srgb,var(--danger) 8%,var(--surface-2))}
-.risk-high .risk-mark{background:color-mix(in srgb,var(--danger) 17%,transparent);color:var(--danger)}
-.risk-medium{border-color:color-mix(in srgb,var(--warn) 32%,var(--line));background:color-mix(in srgb,var(--warn) 7%,var(--surface-2))}
-.risk-medium .risk-mark{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
-.risk-none{border-color:color-mix(in srgb,var(--ok) 30%,var(--line));background:color-mix(in srgb,var(--ok) 7%,var(--surface-2))}
-.risk-none .risk-mark{background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok)}
-.snippet{
-  margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:var(--r);
-  background:var(--inset);color:var(--text-2);
-  font:13px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere;
-  max-height:150px;overflow-y:auto;
-}
-.snippet-label{display:block;margin-top:16px;color:var(--text-3);font-size:12px;font-weight:750;letter-spacing:.09em;text-transform:uppercase}
-.snippet-label + .snippet{margin-top:8px}
-.snippet mark{
-  background:color-mix(in srgb,var(--danger) 20%,transparent);
-  color:#ffd9cd;border-radius:3px;padding:1px 3px;
-  box-shadow:inset 0 -1px 0 color-mix(in srgb,var(--danger) 55%,transparent);
-}
-.pill-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
-.pill{padding:4px 10px;border-radius:999px;border:1px solid var(--line-strong);background:var(--surface-2);color:var(--text-2);font-size:12.5px;white-space:nowrap}
-.pill-count{margin-left:5px;color:var(--text-3);font-variant-numeric:tabular-nums}
-.res-hint{
-  display:flex;align-items:center;gap:8px;margin-top:13px;padding:10px 12px;
-  border:1px solid var(--line);border-radius:var(--r);background:var(--surface-2);
-  color:var(--text-2);font-size:13px;line-height:1.45;
-}
-.res-hint svg{width:15px;height:15px;flex:0 0 15px;color:var(--text-3)}
-.preview-foot{margin:13px 0 0;color:var(--text-3);font-size:12.5px;line-height:1.5}
-.detects{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
-.findings-empty-label{display:block;margin-bottom:9px;color:var(--text-3);font-size:12px;font-weight:750;letter-spacing:.09em;text-transform:uppercase}
-.chip-row{display:flex;flex-wrap:wrap;gap:6px}
-.chip{padding:5px 10px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);color:var(--text-3);font-size:12.5px}
-.findings{margin-top:14px;display:grid;gap:10px}
-.fgroup{border:1px solid var(--line);border-radius:var(--r);background:var(--surface-2);overflow:hidden}
-.fgroup-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;border-bottom:1px solid var(--line)}
-.fgroup-head b{font-size:13px;font-weight:700}
-.fgroup-head .fgroup-count{color:var(--text-3);font-size:12.5px;font-variant-numeric:tabular-nums}
-.fitem{display:flex;align-items:baseline;gap:8px;padding:9px 12px;font-size:12.5px;border-top:1px solid #21261e}
-.fitem:first-of-type{border-top:0}
-.fitem code{color:var(--text-2);font:12.5px/1.5 ui-monospace,Menlo,monospace;overflow-wrap:anywhere;min-width:0}
-.fitem .arrow{color:var(--text-3);flex:0 0 auto}
-.fitem .repl{color:var(--accent);font:12.5px/1.5 ui-monospace,Menlo,monospace;flex:0 0 auto}
-.safe{display:none;margin-top:16px;padding-top:15px;border-top:1px solid var(--line)}
-.safe h3{margin:0 0 9px;font-size:13px;font-weight:700}
-.safe pre{max-height:132px;overflow:auto;margin:0;padding:12px;border-radius:var(--r-sm);background:var(--inset);border:1px solid var(--line);color:var(--text-2);font:12.5px/1.6 ui-monospace,Menlo,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
-.copy{
-  width:100%;margin-top:10px;padding:11px;
-  border:0;border-radius:var(--r-sm);background:var(--accent);color:var(--accent-ink);
-  font:inherit;font-weight:800;font-size:13px;cursor:pointer;transition:filter .14s ease;
-}
-.copy:hover{filter:brightness(1.07)}
-.empty{padding:16px;border:1px dashed var(--line-strong);border-radius:var(--r);color:var(--text-3);font-size:13px;line-height:1.55}
-
-/* ---------- activity ---------- */
-.activity{padding:22px}
-.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
-.metric{padding:14px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface-2)}
-.metric span{display:block;color:var(--text-3);font-size:12.5px;line-height:1.4}
-.metric b{display:block;margin-top:7px;font-size:20px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
-.metric.is-text b{font-size:14px;font-weight:700;letter-spacing:0}
-.bars-label{display:block;margin:20px 0 11px;color:var(--text-3);font-size:12px;font-weight:750;letter-spacing:.09em;text-transform:uppercase}
-.analytics-row{display:flex;align-items:center;gap:11px;margin:8px 0;font-size:13px}
-.analytics-label{flex:0 0 108px;color:var(--text-2)}
-.analytics-track{flex:1;height:7px;border-radius:99px;background:#1c211a;overflow:hidden}
-.analytics-fill{height:100%;border-radius:99px;background:var(--accent)}
-.analytics-value{flex:0 0 24px;text-align:right;color:var(--text-3);font-variant-numeric:tabular-nums}
-
-/* ---------- history ---------- */
-.history{padding:22px}
-.history-title{display:flex;flex:1;justify-content:space-between;align-items:center;gap:12px}
-.history-title h2{margin:0;font-size:15px;font-weight:700}
-.history-list{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
-.entry{padding:13px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface-2);cursor:pointer;transition:border-color .14s ease}
-.entry:hover{border-color:var(--line-strong)}
-.entry{min-width:0;overflow:hidden}
-/* The org-activity list is a 4-column card grid; the admin snapshot, the
-   per-member bars and the export button injected above the cards must span
-   the full row instead of being squeezed into one cell. */
-#org-activity-list > .metrics,#org-activity-list > .bars-label,#org-activity-list > .analytics-row,#org-activity-list > #org-export-csv,#org-activity-list > .audit-range,#org-activity-list > .audit-coverage{grid-column:1 / -1}
-#org-activity-list > #org-export-csv{justify-self:start}
-/* The date range and the line that says how much of the record is on screen.
-   The coverage line is not decoration: without it the panel is a confident
-   summary of an unstated fraction of the audit trail. */
-.audit-range{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
-.audit-range label{display:inline-flex;align-items:center;gap:7px;color:var(--text-3);font-size:12.5px;font-weight:650}
-.audit-range input{padding:6px 9px;border:1px solid var(--line);border-radius:7px;background:var(--panel);color:var(--text);font:inherit;font-size:12.5px}
-.audit-coverage{margin:2px 0 0;color:var(--text-3);font-size:12.5px;line-height:1.5}
-.entry strong{display:block;font-size:13px;font-weight:700;overflow-wrap:anywhere}
-.entry span{display:block;margin-top:6px;color:var(--text-3);font-size:12.5px;line-height:1.45;overflow-wrap:anywhere}
-.entry em{display:inline-block;margin-top:10px;color:var(--accent);font-size:12px;font-style:normal}
-.entry-detail{display:none;margin-top:9px;padding-top:9px;border-top:1px solid var(--line);color:var(--text-2);font-size:12.5px;line-height:1.5}
-.entry.open .entry-detail{display:block}
-.secondary{border:1px solid var(--line-strong);border-radius:var(--r-sm);background:transparent;color:var(--text-2);padding:8px 11px;font:inherit;font-size:13px;cursor:pointer}
-.secondary:hover{border-color:#68755f;color:var(--text);background:#181d16}
-
-/* ---------- floating controls ---------- */
-html.preferences-open,html.preferences-open body{overflow:hidden}
-html.preferences-open #pwa-install,html.preferences-open #inspect-clipboard{display:none}
-#pwa-install{
-  position:fixed;right:24px;bottom:24px;z-index:20;
-  border:1px solid var(--line-strong);border-radius:999px;padding:10px 15px;
-  background:#141810;color:var(--text-2);font:inherit;font-weight:700;font-size:13px;
-  box-shadow:0 12px 32px #0008;cursor:pointer;transition:border-color .14s ease,color .14s ease;
-}
-#pwa-install:hover{border-color:var(--accent);color:var(--accent)}
-/* Gains prominence once a check has run, but stays an outline: a second lime
-   fill would compete with "Copy redacted prompt", the action that actually
-   matters on a result. */
-#pwa-install.promoted{border-color:var(--accent);color:var(--accent)}
-#pwa-install.promoted:hover{background:color-mix(in srgb,var(--accent) 12%,transparent)}
-#inspect-clipboard{
-  position:fixed;right:24px;bottom:76px;z-index:20;
-  border:1px solid var(--line-strong);border-radius:999px;padding:10px 14px;
-  background:#141b10;color:var(--text-2);font:inherit;font-weight:700;font-size:13px;
-  box-shadow:0 12px 32px #0008;cursor:pointer;
-}
-#inspect-clipboard:hover{border-color:var(--accent);color:var(--accent)}
-/* Covers the live-result state (see revealResults()/renderRiskCopy() in
-   dashboard.ts, which toggle a "corner-blocked" class on <body class="redaxa-workspace"> based on an
-   actual measured overlap against #results-card -- both this state and the
-   pre-scan preview demo can render tall enough on ordinary viewport heights
-   to reach this same corner, and a fixed pixel guess at "tall enough" was
-   wrong in both directions when tested against real content). */
-body.corner-blocked #pwa-install,
-body.corner-blocked #inspect-clipboard{display:none}
-
-/* ---------- drawers (built by dashboard.ts) ---------- */
-.drawer-backdrop{position:fixed;inset:0;z-index:30;display:grid;place-items:center;overflow-y:auto;padding:24px;background:#000a;opacity:0;pointer-events:none;transition:opacity .18s ease}
-.drawer-backdrop.open{opacity:1;pointer-events:auto}
-.drawer{position:relative;width:min(470px,100%);max-height:calc(100dvh - 48px);overflow-y:auto;border:1px solid var(--line-strong);border-radius:var(--r-lg);background:#131711;padding:26px;box-shadow:0 30px 90px #000b}
-.drawer h2{font-size:21px;margin:0 0 8px;letter-spacing:-.03em}
-.drawer p{color:var(--text-2);font-size:13px;line-height:1.55;margin:0 0 20px}
-.pref-row{display:grid;gap:7px;margin:14px 0;color:var(--text-2);font-size:13px;font-weight:650}
-.pref-row select{border:1px solid #3b4437;border-radius:8px;background:var(--inset);color:var(--text);padding:10px;font:inherit;font-size:13px}
-.term-editor{width:100%;min-height:82px;resize:vertical;border:1px solid #3b4437;border-radius:8px;background:var(--inset);color:var(--text);padding:10px;font:inherit;font-size:13px;line-height:1.5}
-.switch{display:flex;gap:10px;align-items:center;margin:12px 0;color:var(--text-2);font-size:13px;cursor:pointer}
-.switch input{accent-color:var(--accent);width:16px;height:16px}
-.drawer-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
-.theme-pref-row{display:block!important}
-.theme-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px}
-.theme-swatch{appearance:none;-webkit-appearance:none;display:block;height:26px;width:26px;flex:0 0 26px;border-radius:9999px;border:0;cursor:pointer;padding:0;box-shadow:0 0 0 1px #ffffff33;transition:transform .12s ease}
-.theme-swatch:hover{transform:scale(1.1)}
-.theme-swatch.active{box-shadow:0 0 0 2px #ffffffcc}
-.plans-drawer{width:min(840px,100%)}
-.plan-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:6px;align-items:stretch}
-.plan-card{position:relative;height:100%;border:1px solid var(--line);border-radius:14px;background:#0e120c;padding:18px;display:flex;flex-direction:column;align-items:stretch;gap:10px;text-align:left;overflow:hidden;transition:border-color .16s ease,background .16s ease,transform .16s ease}
-.plan-card:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--accent) 40%,var(--line));background:linear-gradient(160deg,color-mix(in srgb,var(--accent) 7%,#0e120c),#0e120c)}
-.plan-card.featured{border-color:color-mix(in srgb,var(--accent) 22%,var(--line))}
-.plan-card.featured:hover{border-color:color-mix(in srgb,var(--accent) 55%,var(--line));background:linear-gradient(160deg,color-mix(in srgb,var(--accent) 12%,#0e120c),#0e120c)}
-.plan-tag{color:var(--accent);font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;min-height:13px}
-.plan-card h3{margin:0;font-size:18px}
-.plan-price{font-size:22px;font-weight:800;min-height:30px;display:flex;align-items:baseline;gap:5px}
-.plan-price small{font-size:13px;font-weight:600;color:var(--text-3)}
-.plan-card p{margin:0;color:var(--text-2);font-size:13px;line-height:1.55;flex:1}
-.plan-card .pref-row{margin:0 0 2px}
-.plan-card select{width:100%;border:1px solid #3b4437;border-radius:8px;background:var(--inset);color:var(--text);padding:8px;font:inherit;font-size:13px}
-.plan-card .plan-actions{display:flex;flex-direction:column;gap:8px;margin-top:auto}
-.plan-card button{width:100%}
-.team-section{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
-.team-section h3{margin:0 0 6px;font-size:14px}
-.team-section p{margin:0 0 10px;color:var(--text-3);font-size:13px}
-#team-invite-list{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:6px}
-#team-invite-list li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;color:var(--text-2)}
-#team-invite-list li.empty{color:var(--text-3);border-style:dashed}
-#org-section h3{margin:14px 0 4px}
-#api-key-list{list-style:none;margin:6px 0;padding:0;display:grid;gap:6px}
-#api-key-list li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;color:var(--text-2)}
-#api-key-list li.empty{color:var(--text-3);border-style:dashed}
-#api-key-new{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0}
-#api-key-new input{flex:1;min-width:220px;border:1px solid #3b4437;border-radius:8px;background:var(--inset);color:var(--text);padding:8px;font-family:ui-monospace,monospace;font-size:12.5px}
-#api-key-new[hidden]{display:none}
-#api-key-new .pref-note{width:100%;margin:0;font-size:12.5px;color:var(--text-3)}
-.policy-selects{display:flex;gap:6px}
-#org-policy-list{list-style:none;margin:0 0 8px;padding:0;display:grid;gap:6px}
-#org-policy-list li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;color:var(--text-2)}
-#org-policy-list select{border:1px solid #3b4437;border-radius:8px;background:var(--inset);color:var(--text);padding:6px 8px;font:inherit;font-size:13px}
-#org-member-list,#org-term-list{list-style:none;margin:0 0 8px;padding:0;display:grid;gap:6px}
-#org-member-list li,#org-term-list li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;color:var(--text-2)}
-#org-term-list li.empty{color:var(--text-3);border-style:dashed}
-#org-name-row,#org-term-row{display:flex;gap:8px;align-items:center;margin:8px 0}
-#org-name-row input,#org-term-row input{flex:1;border:1px solid #3b4437;border-radius:8px;background:var(--inset);color:var(--text);padding:10px;font:inherit;font-size:13px}
-#org-name-row button,#org-term-row button{flex:0 0 auto}
-#org-name-row[hidden],#org-term-row[hidden]{display:none}
-#team-invite-result{margin-top:10px;display:flex;gap:8px}
-#team-invite-result input{flex:1;border:1px solid #3b4437;border-radius:8px;background:var(--inset);color:var(--text);padding:8px;font:inherit;font-size:13px}
-
-/* ---------- responsive ---------- */
-@media(max-width:1180px){
-  .workspace{grid-template-columns:minmax(0,1fr)}
-  main{padding:32px 30px 90px}
-  /* One column: the panel flows under the input and scrolls with the page, so
-     no sticky positioning and no height cap. The action bar sticks to the
-     bottom of the viewport while the panel is on screen, then scrolls away
-     with it. */
-  .results{position:static;max-height:none;overflow:visible}
-  .results-scroll{overflow:visible;min-height:0}
-  .results-foot{position:sticky;bottom:0;border-radius:0 0 var(--r-lg) var(--r-lg)}
-  #res-live{padding-bottom:4px}
-}
-@media(max-width:900px){
-  .app{display:block}
-  .side{display:none}
-  main{padding:26px 18px 90px}
-  .top{flex-direction:column;align-items:stretch;gap:16px}
-  .top-right{align-items:flex-start}
-  .top h1{font-size:28px}
-  .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .history-list{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .onboarding{padding-right:40px}
-}
-@media(max-width:620px){
-  .metrics,.history-list{grid-template-columns:minmax(0,1fr)}
-  .actions{flex-direction:column-reverse;align-items:stretch}
-  .actions .primary,.actions .ghost-btn{width:100%;padding:14px}
-  .kbd-hint{display:none}
-  .composer,.activity,.history{padding:18px}
-  .results{padding:0}
-  .results-head{padding:18px 18px 0}
-  .results-scroll{padding:0 18px 14px}
-  .results-foot{padding:12px 18px}
-  .prompt-meta{flex-direction:column;align-items:flex-start;gap:6px}
-  #pwa-install,#inspect-clipboard{left:16px;right:16px;text-align:center}
-  #inspect-clipboard{bottom:74px}
-}
-@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
-</style><link rel="stylesheet" href="/brand-system.css"><link rel="stylesheet" href="/themes.css"></head>
-<body class="redaxa-workspace">
+<html lang="en" data-account-loading data-plan-loading><head><script src="/theme-boot.js"></script><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Redaxa — Personal workspace</title><meta name="robots" content="noindex,nofollow"><link rel="icon" type="image/svg+xml" href="/outputs/redaxa-mark.svg">
+<style>
+/* Earlier workspace layers stay as a fallback below the current design: the
+   unlayered app.css and plans.css always win, whatever their specificity. */
+@import url("/auth.css") layer(legacy);
+@import url("/brand-system.css") layer(legacy);
+@import url("/themes.css") layer(legacy);
+/* Page tokens for tooling (tokens.test.ts); the live palette comes from themes.css. */
+:root{--bg:#100c1f;--text:#f4f3ef;--text-2:#b5acd6;--text-3:#b5acd6;--accent:#a48bff;}
+</style>
+<link rel="stylesheet" href="/plans.css"><link rel="stylesheet" href="/app.css"></head>
+<body class="redaxa-workspace rx-shell">
 <div class="app">
   <aside class="side">
-    <div class="brand"><img src="/outputs/redaxa-mark.svg" alt="" width="35" height="35"><span class="rx-brand-name">Redaxa<small>Privacy workspace</small></span></div>
+    <a class="brand" href="#check"><img src="/outputs/redaxa-mark.svg" alt="" width="32" height="32"><span class="rx-brand-name">Redaxa<small data-i18n="brandTag">Check before you send</small></span></a>
     <nav class="nav" aria-label="Workspace">
-      <div class="nav-label" data-i18n="workspace">Workspace</div>
-      <button class="nav-item active" type="button" data-nav="check" aria-current="page">
-        <i class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg></i>
-        <span data-i18n="privateCheck">Check a prompt</span>
-      </button>
-      <a class="nav-item" href="/github.html"><i class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="6" r="2"/><path d="M6 7v10M18 8v2a5 5 0 0 1-5 5H6"/></svg></i> Repository check</a>
-      <button class="nav-item" type="button" data-nav="recent">
-        <i class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></i>
-        <span data-i18n="recent">Recent checks</span>
-      </button>
-      <div class="nav-label" data-i18n="account">Account</div>
-      <button class="nav-item" type="button" data-nav="plans">
-        <i class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M7 14.5h4"/></svg></i>
-        <span data-i18n="plans">Plans &amp; pricing</span>
-      </button>
-      <button class="nav-item" type="button" data-nav="prefs">
-        <i class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.6v2.2M12 19.2v2.2M21.4 12h-2.2M4.8 12H2.6M18.6 5.4l-1.6 1.6M7 17l-1.6 1.6M18.6 18.6L17 17M7 7L5.4 5.4"/></svg></i>
-        <span data-i18n="preferences">Preferences</span>
-      </button>
+      <div class="nav-group">
+        <div class="nav-label" data-i18n="groupProtect">Protect</div>
+        <a class="nav-item" href="#check" data-nav="check"><i class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6.5 3.5h7.6l4.4 4.4V20a.5.5 0 0 1-.5.5h-11.5A.5.5 0 0 1 6 20V4a.5.5 0 0 1 .5-.5z"/><path d="M14 3.7V8h4.3"/><path d="M9 11.5h6"/><rect class="ico-bar" x="9" y="14.6" width="6" height="2.4" rx="1.2"/></svg></i><span data-i18n="navCheck">Check text</span></a>
+        <a class="nav-item" href="/github.html"><i class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="7" cy="5.5" r="2"/><circle cx="7" cy="18.5" r="2"/><path d="M7 7.5v9"/><path d="M7 13c0-2.6 1.9-3.8 4.6-3.8"/><rect x="13.5" y="10" width="7" height="6" rx="1.5"/><path d="M15.3 10V8.6a1.7 1.7 0 0 1 3.4 0V10"/></svg></i><span data-i18n="navRepository">Repository check</span></a>
+        <a class="nav-item" href="#activity" data-nav="activity"><i class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.5 12.5h3.4l2.2-5.6 4.1 11 2.5-5.4h4.8"/></svg></i><span data-i18n="navActivity">Activity</span></a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-label" data-i18n="groupConfigure">Configure</div>
+        <a class="nav-item" href="#terms" data-nav="terms"><i class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.5 11.4V4.6a1.1 1.1 0 0 1 1.1-1.1h6.8l9 8.9a1.1 1.1 0 0 1 0 1.6l-6.4 6.4a1.1 1.1 0 0 1-1.6 0z"/><rect class="ico-bar" x="6.6" y="6.9" width="4.4" height="2.2" rx="1.1"/></svg></i><span data-i18n="navTerms">Protected terms</span></a>
+        <a class="nav-item" href="#settings" data-nav="settings"><i class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h9.2M17.8 7H20M4 17h2.2M10.8 17H20"/><circle cx="15.5" cy="7" r="2.2"/><circle cx="8.5" cy="17" r="2.2"/></svg></i><span data-i18n="navSettings">Settings</span></a>
+      </div>
     </nav>
 
     <div class="side-foot">
@@ -500,138 +33,127 @@ body.corner-blocked #inspect-clipboard{display:none}
         <div class="usage-head"><span id="plan-status-label" data-i18n="planNone">Free checks</span><b id="plan-status-value"></b></div>
         <div class="usage-track" id="plan-track" hidden><div class="usage-fill" id="plan-fill"></div></div>
         <p class="usage-note" id="plan-status-note" data-i18n="planNoneNote">5 checks a day, no card needed. Pro removes the limit; new subscribers get a 7-day trial.</p>
+        <div class="side-fill" id="side-fill"><a href="#plans" id="side-fill-cta" data-i18n="seePlans">Compare plans →</a></div>
       </div>
-      <div class="side-fill" id="side-fill">
-        <b data-i18n="freeTrialBadge">Go further with Pro</b>
-        <span data-i18n="freeTrialDesc">Protected terms for your clients, team policies and deep repository reviews on Windows.</span>
-        <a href="#" id="side-fill-cta" data-i18n="seePlans">Compare plans →</a>
-      </div>
+      <nav class="nav nav-foot" aria-label="Account">
+        <a class="nav-item nav-plans" href="#plans" data-nav="plans"><i class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.2l7.6 4.4v8.8L12 20.8l-7.6-4.4V7.6z"/><path d="M8.9 12.1l2.2 2.2 4.1-4.4"/></svg></i><span data-i18n="plans">Plans &amp; pricing</span></a>
+        <a class="nav-item" href="#workspace" data-nav="account"><i class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8.8" r="3.5"/><path d="M5.2 19.5c1.3-3.1 3.9-4.6 6.8-4.6s5.5 1.5 6.8 4.6"/></svg></i><span data-i18n="navAccount">Account &amp; team</span></a>
+        <button class="nav-item" type="button" id="help-link"><i class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M9.7 9.6a2.4 2.4 0 0 1 4.7.8c0 1.7-2.4 2-2.4 3.7"/><path d="M12 17.1h.01"/></svg></i><span data-i18n="navHelp">Help &amp; support</span></button>
+      </nav>
     </div>
   </aside>
 
   <main>
-    <section class="top">
-      <div>
-        <h1 data-i18n="title">Prompt check</h1>
-        <p data-i18n="subtitle">Review sensitive details before you share them with an AI.</p>
-      </div>
+    <header class="page-bar">
+      <p class="crumbs"><span data-i18n="workspace">Workspace</span><span aria-hidden="true">/</span><b id="view-label">Check text</b></p>
       <div class="top-right">
         <a class="small-btn" href="#account" data-i18n="createAccountBtn">Create account</a>
-        <div class="status"><i aria-hidden="true"></i><span data-i18n="protectionActive">Review before sharing</span></div>
       </div>
-    </section>
+    </header>
 
+    <section class="view" data-view="check" aria-labelledby="check-title">
+      <header class="view-head">
+        <h1 id="check-title" tabindex="-1" data-i18n="title">Review before you share.</h1>
+        <p data-i18n="subtitle">Find sensitive details in a prompt, or exposed keys and vulnerable dependencies in a GitHub repository.</p>
+      </header>
 
-
-    <nav class="task-switch" aria-label="Check type">
-      <a href="#prompt-workspace" aria-current="page"><span data-i18n="textMode">Prompt check</span><small data-i18n="textModeNote">Remove private details before you send</small></a>
-      <a href="/github.html"><span data-i18n="repoMode">GitHub repository</span><small data-i18n="repoModeNote">Exposed keys and vulnerable dependencies · free</small></a>
-    </nav>
-    <ol class="review-journey" aria-label="Review workflow"><li><b>1</b><span data-i18n="stepInput">Add your text</span></li><li><b>2</b><span data-i18n="stepReview">Review what was found</span></li><li><b>3</b><span data-i18n="stepCopy">Copy the safer version</span></li></ol>
-    <section class="workspace" id="prompt-workspace">
-      <article class="card composer">
-        <h2 id="composer-title" data-i18n="composerTitle">Prompt to review</h2>
-        <p class="composer-sub" data-i18n="composerSub">Paste your text below, then check it for sensitive data.</p>
-        <label class="sr-only" for="prompt" data-i18n="promptLabel">Prompt to check</label>
-        <textarea class="editor" id="prompt" data-i18n-placeholder="placeholder" placeholder="e.g. Draft a reply to Marco Rossi (m.rossi@acme.com) about the ACME invoice — my direct line is +39 02 5555 0180"></textarea>
-        <div class="prompt-meta">
-          <span class="meta-privacy">
-            <span class="dot" aria-hidden="true"></span>
-            <span id="meta-label" data-i18n="metaLabel">Private check — your text is never stored or logged.</span>
-            <a href="https://redaxa.getcertsprint.com/privacy.html" target="_blank" rel="noopener" data-i18n="howPrivacyWorks">How privacy works</a>
-          </span>
-          <span id="character-count"><strong>0</strong> / 10,000</span>
-        </div>
-
-        <div class="samples">
-          <span class="samples-label" data-i18n="sampleLead">Start with a sample</span>
-          <div class="sample-row">
-            <button class="sample-chip" type="button" aria-pressed="false" data-sample="brief" data-i18n="sampleBrief">Client brief</button>
-            <button class="sample-chip" type="button" aria-pressed="false" data-sample="apikey" data-i18n="sampleApiKey">API key</button>
-            <button class="sample-chip" type="button" aria-pressed="false" data-sample="email" data-i18n="sampleEmail">Email draft</button>
-            <button class="sample-chip" type="button" aria-pressed="false" data-sample="personal" data-i18n="samplePersonal">Personal details</button>
+      <section class="workspace" id="prompt-workspace">
+        <article class="card composer">
+          <h2 id="composer-title" data-i18n="composerTitle">What are you about to share?</h2>
+          <p class="composer-sub" data-i18n="composerSub">Paste your message, email or code. Nothing is sent to an AI provider.</p>
+          <label class="sr-only" for="prompt" data-i18n="promptLabel">Prompt to check</label>
+          <textarea class="editor" id="prompt" data-i18n-placeholder="placeholder" placeholder="Paste the text you want to check…"></textarea>
+          <div class="prompt-meta">
+            <span class="meta-privacy">
+              <span class="dot" aria-hidden="true"></span>
+              <span id="meta-label" data-i18n="metaLabel">Private check — your text is never stored or logged.</span>
+              <a href="https://redaxa.getcertsprint.com/privacy.html" target="_blank" rel="noopener" data-i18n="howPrivacyWorks">How privacy works</a>
+            </span>
+            <span id="character-count"><strong>0</strong> / 10,000</span>
           </div>
-        </div>
 
-        <div class="actions">
-          <span class="kbd-hint" aria-hidden="true"><span class="kbd" id="kbd-key">Ctrl</span> + <span class="kbd">Enter</span></span>
-          <button class="ghost-btn" type="button" id="clear-prompt" data-i18n="clear">Clear</button>
-          <button class="primary" type="button" id="scan" disabled data-i18n="scan">Check prompt →</button>
-        </div>
-      </article>
-
-      <aside class="card results" id="results-card">
-        <div class="results-head">
-          <div class="card-head">
-            <span class="card-icon accent" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4.3-4.3"/></svg></span>
-            <h2 id="results-title" tabindex="-1" data-i18n="resultsTitle">Results</h2><button id="clear-results" type="button" class="secondary">Clear results</button>
-          </div>
-          <div class="risk-banner" id="risk-banner" hidden>
-            <span class="risk-mark" id="risk-count" aria-hidden="true">&#8212;</span>
-            <div>
-              <b id="risk-title">Ready to check</b>
-              <span id="risk-copy">Results appear here: personal data, credentials and financial details.</span>
+          <div class="samples">
+            <span class="samples-label" data-i18n="sampleLead">Start with a sample</span>
+            <div class="sample-row">
+              <button class="sample-chip" type="button" aria-pressed="false" data-sample="brief" data-i18n="sampleBrief">Client brief</button>
+              <button class="sample-chip" type="button" aria-pressed="false" data-sample="apikey" data-i18n="sampleApiKey">API key</button>
+              <button class="sample-chip" type="button" aria-pressed="false" data-sample="email" data-i18n="sampleEmail">Email draft</button>
+              <button class="sample-chip" type="button" aria-pressed="false" data-sample="personal" data-i18n="samplePersonal">Personal details</button>
             </div>
           </div>
-        </div>
 
-        <div class="results-scroll" id="results-scroll" tabindex="0" role="group" aria-labelledby="results-title">
-        <p id="res-empty" class="empty" role="status" hidden>Results cleared. Run a new check when you are ready.</p><div id="res-preview">
-          <div class="review-ready">
-            <span class="review-kicker" data-i18n="previewBadge">Preview</span>
-            <h3 data-i18n="previewHeadline">See what stays private.</h3>
-            <p data-i18n="previewExplain">An example of what you could share after the check.</p>
-            <label class="compare-toggle"><input id="compare-redaction" type="checkbox"><span data-i18n="compareAction">Show safer version</span><i aria-hidden="true"></i></label>
-            <div class="preview-scenarios" role="group" aria-label="Preview scenario"><button type="button" data-preview="personal" aria-pressed="true">Personal data</button><button type="button" data-preview="credential" aria-pressed="false">Credentials</button></div>
-            <div class="compare-paper"><span class="compare-original">Hi <mark>Marco Rossi</mark>, send the invoice to <mark>m.rossi@acme.com</mark>.</span><span class="compare-redacted">Hi <em>[NAME]</em>, send the invoice to <em>[EMAIL]</em>.</span></div>
-            <button type="button" class="sample-chip preview-use" data-sample="email" id="preview-use">Try this type of check →</button>
-            <p class="compare-caption" data-i18n="previewLabel">Example result — not your prompt</p>
+          <div class="actions">
+            <span class="kbd-hint" aria-hidden="true"><span class="kbd" id="kbd-key">Ctrl</span> + <span class="kbd">Enter</span></span>
+            <button class="ghost-btn" type="button" id="clear-prompt" data-i18n="clear">Clear</button>
+            <button class="primary" type="button" id="scan" disabled data-i18n="scan">Check prompt →</button>
           </div>
-        </div>
+        </article>
 
-        <div id="res-live" hidden>
-          <span class="snippet-label" id="snippet-label" hidden data-i18n="foundInPrompt">Found in your prompt</span>
-          <div class="snippet" id="result-snippet" hidden></div>
-          <div class="findings" id="findings"></div>
-          <div class="safe" id="safe">
-            <h3 data-i18n="saferVersion">Safer version</h3>
-            <pre id="redacted"></pre>
+        <aside class="card results" id="results-card">
+          <div class="results-head">
+            <div class="card-head">
+              <h2 id="results-title" tabindex="-1" data-i18n="resultsTitle">Results</h2><button id="clear-results" type="button" class="secondary" data-i18n="clearResults">Clear results</button>
+            </div>
+            <div class="risk-banner" id="risk-banner" hidden>
+              <span class="risk-mark" id="risk-count" aria-hidden="true">&#8212;</span>
+              <div>
+                <b id="risk-title">Ready to check</b>
+                <span id="risk-copy">Results appear here: personal data, credentials and financial details.</span>
+              </div>
+            </div>
           </div>
-        </div>
-        </div>
 
-        <div class="results-foot" id="results-foot" hidden>
-          <button class="copy" type="button" id="copy" data-i18n="copySafer">Copy safer version</button>
-        </div>
-      </aside>
+          <div class="results-scroll" id="results-scroll" tabindex="0" role="group" aria-labelledby="results-title">
+            <p id="res-empty" class="empty" role="status" hidden data-i18n="resultsCleared">Results cleared. Run a new check when you are ready.</p>
+            <div id="res-preview">
+              <div class="review-ready">
+                <span class="review-kicker" data-i18n="previewBadge">Preview</span>
+                <h3 data-i18n="previewHeadline">See what stays private.</h3>
+                <p data-i18n="previewExplain">An example of what you could share after the check.</p>
+                <label class="compare-toggle"><input id="compare-redaction" type="checkbox"><span data-i18n="compareAction">Show safer version</span><i aria-hidden="true"></i></label>
+                <div class="preview-scenarios" role="group" aria-label="Preview scenario"><button type="button" data-preview="personal" aria-pressed="true" data-i18n="previewPersonal">Personal data</button><button type="button" data-preview="credential" aria-pressed="false" data-i18n="previewCredential">Credentials</button></div>
+                <div class="compare-paper"><span class="compare-original">Hi <mark>Marco Rossi</mark>, send the invoice to <mark>m.rossi@acme.com</mark>.</span><span class="compare-redacted">Hi <em>[NAME]</em>, send the invoice to <em>[EMAIL]</em>.</span></div>
+                <button type="button" class="sample-chip preview-use" data-sample="email" id="preview-use" data-i18n="previewUse">Try this type of check →</button>
+                <p class="compare-caption" data-i18n="previewLabel">Example result — not your prompt</p>
+              </div>
+            </div>
+
+            <div id="res-live" hidden>
+              <span class="snippet-label" id="snippet-label" hidden data-i18n="foundInPrompt">Found in your prompt</span>
+              <div class="snippet" id="result-snippet" hidden></div>
+              <div class="findings" id="findings"></div>
+              <div class="safe" id="safe">
+                <h3 data-i18n="saferVersion">Safer version</h3>
+                <pre id="redacted"></pre>
+              </div>
+            </div>
+          </div>
+
+          <div class="results-foot" id="results-foot" hidden>
+            <button class="copy" type="button" id="copy" data-i18n="copySafer">Copy safer version</button>
+          </div>
+        </aside>
+      </section>
+
+      <section class="onboarding workspace-setup" id="onboarding" aria-labelledby="onboarding-title">
+        <div class="onboarding-head"><h2 id="onboarding-title" data-i18n="onboardTitle">Get set up</h2><button class="onboarding-close" id="onboarding-close" type="button" aria-label="Dismiss checklist" data-i18n-label="onboardDismiss">×</button></div>
+        <ul id="onboarding-list">
+          <li data-task="check"><i class="ico" aria-hidden="true">1</i><div><b data-i18n="onboardCheckTitle">Run your first check</b><span data-i18n="onboardCheckDesc">Paste a prompt and check it once.</span></div></li>
+          <li data-task="terms"><i class="ico" aria-hidden="true">2</i><div><a href="#terms" data-i18n="onboardTermsTitle">Add a custom term</a><span data-i18n="onboardTermsDesc">Protect a client or project name in Preferences.</span></div></li>
+          <li data-task="theme"><i class="ico" aria-hidden="true">3</i><div><a href="#settings" data-i18n="onboardThemeTitle">Pick a theme</a><span data-i18n="onboardThemeDesc">Make the workspace yours in Preferences.</span></div></li>
+        </ul>
+      </section>
     </section>
 
-    <section class="onboarding workspace-setup" id="onboarding" aria-label="Setup checklist">
-      <button class="onboarding-close" id="onboarding-close" type="button" aria-label="Dismiss checklist">×</button>
-      <details><summary>Workspace setup</summary>
-      <ul id="onboarding-list">
-        <li data-task="check">
-          <i class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg></i>
-          <div><b data-i18n="onboardCheckTitle">Run your first check</b><span data-i18n="onboardCheckDesc">Paste a prompt and check it once.</span></div>
-        </li>
-        <li data-task="terms">
-          <i class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg></i>
-          <div><b data-i18n="onboardTermsTitle">Add a custom term</b><span data-i18n="onboardTermsDesc">Protect a client or project name in Preferences.</span></div>
-        </li>
-        <li data-task="theme">
-          <i class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg></i>
-          <div><b data-i18n="onboardThemeTitle">Pick a theme</b><span data-i18n="onboardThemeDesc">Make the workspace yours in Preferences.</span></div>
-        </li>
-      </ul>
-      </details>
-    </section>
-
-    <section class="stack">
-      <section class="card activity" id="activity-card">
+    <section class="view" data-view="activity" aria-labelledby="activity-page-title" hidden>
+      <header class="view-head">
+        <h1 id="activity-page-title" tabindex="-1" data-i18n="activityPageTitle">Activity</h1>
+        <p data-i18n="activityPageSub">What your recent checks found. Local summaries stay on this device; account activity never includes your text.</p>
+      </header>
+      <section class="card activity" id="activity-card" aria-labelledby="activity-title">
         <div class="card-head">
-          <span class="card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19V10"/><path d="M12 19V5"/><path d="M19 19v-6"/></svg></span>
-          <h2 data-i18n="activityTitle">Your activity</h2>
-          <span class="tag" data-i18n="last7">Last 7 days</span><button type="button" class="secondary" id="clear-local-activity" title="Clears local history and local activity on this device">Clear local activity</button>
+          <h2 id="activity-title" data-i18n="activityTitle">Your activity</h2>
+          <span class="tag" data-i18n="last7">Last 7 days</span><button type="button" class="secondary" id="clear-local-activity" data-i18n="clearLocalActivity">Clear local activity</button>
         </div>
         <div class="empty" id="analytics-empty" data-i18n="activityEmpty">Your privacy activity will appear here after your first check.</div>
         <div id="activity-body" hidden>
@@ -654,17 +176,36 @@ body.corner-blocked #inspect-clipboard{display:none}
         </div>
       </section>
 
-      <section class="card history" id="history-card">
+      <section class="card history" id="history-card" aria-labelledby="history-title">
         <div class="card-head">
-          <span class="card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></span>
-          <div class="history-title">
-            <h2 data-i18n="history">Recent checks</h2>
-            <button class="secondary" type="button" id="clear-history" data-i18n="clearHistory">Clear history</button>
-          </div>
+          <h2 id="history-title" data-i18n="history">Recent checks</h2>
+          <button class="secondary" type="button" id="clear-history" data-i18n="clearHistory">Clear history</button>
         </div>
         <div class="history-list" id="history"></div>
       </section>
     </section>
+
+    <section class="view" data-view="terms" aria-labelledby="terms-title" hidden>
+      <header class="view-head">
+        <h1 id="terms-title" tabindex="-1" data-i18n="termsTitle">Protected terms</h1>
+        <p data-i18n="termsSub">Names Redaxa should always flag, such as clients, projects and codenames.</p>
+      </header>
+      <section class="card" aria-labelledby="own-terms-title">
+        <div class="card-head"><h2 id="own-terms-title" data-i18n="ownTermsTitle">Your protected terms</h2><span class="tag" id="own-terms-count"></span></div>
+        <label class="field-label" for="custom-terms" data-i18n="ownTermsHint">One term per line, up to 30. Each check you run looks for them.</label>
+        <textarea class="term-editor" id="custom-terms" maxlength="1500" data-i18n-placeholder="ownTermsPlaceholder" placeholder="Acme Client&#10;Project Falcon"></textarea>
+        <div class="card-actions"><span class="form-status" id="terms-status" role="status"></span><button type="button" class="primary" id="save-terms" data-i18n="saveTerms">Save terms</button></div>
+      </section>
+      <section class="card" id="org-terms-card" aria-labelledby="org-terms-title" hidden>
+        <div class="card-head"><h2 id="org-terms-title" data-i18n="orgTermsLabel">Protected terms</h2><span class="rx-badge" data-i18n="businessName">Business</span></div>
+        <p class="card-note" data-i18n="orgTermsHint">Project codenames, client names — flagged in every member's prompts.</p>
+        <div id="org-terms-slot"></div>
+      </section>
+    </section>
+
+    <section class="view" data-view="settings" aria-labelledby="preferences-title" hidden></section>
+    <section class="view view-wide plans-page" data-view="plans" aria-labelledby="plans-title" hidden></section>
+    <section class="view" data-view="account" aria-labelledby="workspace-title" hidden></section>
   </main>
 </div>
 <script type="module" src="dist/dashboard.js"></script>
