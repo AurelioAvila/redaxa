@@ -1,6 +1,6 @@
 export const themes = [
-  {code:"violet",label:"Ink & Violet"},
-  {code:"paper",label:"Paper (light)"},
+  {code:"paper",label:"Paper"},
+  {code:"ink",label:"Ink & Copper"},
   {code:"graphite",label:"Petrol & Copper"},
   {code:"carbon",label:"Carbon & Mint"},
   {code:"ice",label:"Ice blue"}, {code:"amber",label:"Amber"},
@@ -10,9 +10,9 @@ export const themes = [
   {code:"crimson",label:"Ruby"}, {code:"slate",label:"Monochrome"}
 ] as const;
 export type ThemeName = typeof themes[number]["code"];
-// Lock Pup's own violet. Only people who never picked a palette get it: a
-// saved choice, including the earlier Petrol & Copper default, is kept.
-export const defaultTheme: ThemeName = "violet";
+// Light Paper for everyone who never picked a palette. A saved choice,
+// including the earlier Petrol & Copper default, is always kept.
+export const defaultTheme: ThemeName = "paper";
 export function applyTheme(code: string): void {
   document.documentElement.dataset.theme = themes.some(theme => theme.code === code) ? code : defaultTheme;
 }

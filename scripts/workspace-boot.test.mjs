@@ -4,7 +4,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 
 const early = fs.readFileSync(new URL('../theme-boot.js', import.meta.url), 'utf8');
-for (const [saved, expected] of [['{"theme":"carbon"}', 'carbon'], ['null', undefined], ['broken', undefined]]) {
+for (const [saved, expected] of [['{"theme":"carbon"}', 'carbon'], ['null', 'paper'], ['broken', 'paper']]) {
   const root = {dataset:{},classList:{add(){}}};
   vm.runInNewContext(early, {document:{documentElement:root},window:{},localStorage:{getItem:key=>{assert.equal(key,'redaxa.personal-preferences.v1');return saved;}}});
   assert.equal(root.dataset.theme, expected);

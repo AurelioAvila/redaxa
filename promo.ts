@@ -1,4 +1,4 @@
-import { isTauri } from "./desktop.js";
+import { isTauri, usesDesktopPreviewTransport } from "./desktop.js";
 import { HALLOWEEN_DECOR_LEFT, HALLOWEEN_DECOR_RIGHT } from "./halloween-decor.js";
 
 /** A time-limited offer as published by GET /api/billing?action=promo. Display
@@ -76,7 +76,11 @@ export const PROMO_LAYOUT_UNTIL = Date.parse("2026-11-06T23:00:00.000Z");
  *  it. Re-read every five minutes and whenever the window regains focus; any
  *  failure means regular prices. */
 export function watchPromo(render: (view: PromoView) => void): void {
-  const base = isTauri() ? "https://promptshield-beta.vercel.app" : "";
+  // The packaged app reads the live offer from the API (CORS allows its
+  // origin). A development build runs on 127.0.0.1, which the API rejects, so
+  // it reads the same live, read-only answer through the guarded local relay.
+  const preview = usesDesktopPreviewTransport(isTauri(), location.origin);
+  const url = preview ? "/api/desktop-preview/api/billing?action=promo" : `${isTauri() ? "https://promptshield-beta.vercel.app" : ""}/api/billing?action=promo`;
   const clock = () => ({ perf: performance.now(), wall: Date.now() });
   let received: { promo: Promo; at: ReturnType<typeof clock> } | null = null;
   let answered = false;
@@ -99,7 +103,7 @@ export function watchPromo(render: (view: PromoView) => void): void {
   };
   const read = async (): Promise<void> => {
     try {
-      const response = await fetch(`${base}/api/billing?action=promo`, { cache: "no-store", signal: AbortSignal.timeout(8000) });
+      const response = await fetch(url, { cache: "no-store", headers: preview ? { "x-redaxa-desktop": "1" } : undefined, signal: AbortSignal.timeout(8000) });
       const promo = response.ok ? parsePromo(await response.json()) : null;
       received = promo ? { promo, at: clock() } : null;
     } catch {

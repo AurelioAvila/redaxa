@@ -15,7 +15,7 @@ const storageKey = "redaxa.personal-history.v1";
 const preferencesKey = "redaxa.personal-preferences.v1";
 const maxPromptLength = 10_000;
 
-const defaultPreferences: Preferences = { language: "en", theme: "violet", scanMode: "standard", includePersonalData: true, includeCredentials: true, includeFinancialData: true, saveHistory: true, autoClearAfterCopy: false, showRawValues: true, customTerms: [] };
+const defaultPreferences: Preferences = { language: "en", theme: "paper", scanMode: "standard", includePersonalData: true, includeCredentials: true, includeFinancialData: true, saveHistory: true, autoClearAfterCopy: false, showRawValues: true, customTerms: [] };
 
 const languageNames: Record<Language, string> = { en: "English", it: "Italiano", es: "Español", fr: "Français", de: "Deutsch" };
 // Halloween offer copy. Units and renewal lines are spelled out per language
@@ -283,7 +283,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
 // Benefit lines carry <strong> markup and are only ever set as trusted HTML.
 const viewCopyByLanguage: Record<Language, Record<string, string>> = {
   en: {
-    brandTag: "Check before you send", groupProtect: "Protect", groupConfigure: "Configure",
+    ctaPro: "Go Pro", ctaBusiness: "Get Business", freeCurrent: "You’re on the Free plan", includedInPlan: "Included in your plan", brandTag: "Check before you send", groupProtect: "Protect", groupConfigure: "Configure",
     navCheck: "Check text", navRepository: "Repository check", navActivity: "Activity", navTerms: "Protected terms", navSettings: "Settings", navAccount: "Account & team", navHelp: "Help & support",
     clearResults: "Clear results", resultsCleared: "Results cleared. Run a new check when you are ready.", previewPersonal: "Personal data", previewCredential: "Credentials", previewUse: "Try this type of check →",
     onboardTitle: "Get set up", onboardDismiss: "Dismiss checklist", onboardTermsDesc: "Protect a client or project name.", onboardThemeDesc: "Make the workspace yours.",
@@ -308,7 +308,7 @@ const viewCopyByLanguage: Record<Language, Record<string, string>> = {
     sevCritical: "Critical", sevHigh: "High", sevMedium: "Medium", sevLow: "Low", sevCriticalHint: "Could give someone access to an account or system", sevHighHint: "Direct financial exposure or a strong identifier", sevMediumHint: "Personal details with indirect harm", sevLowHint: "Weak identifiers that depend on context"
   },
   it: {
-    brandTag: "Controlla prima di inviare", groupProtect: "Proteggi", groupConfigure: "Configura",
+    ctaPro: "Passa a Pro", ctaBusiness: "Passa a Business", freeCurrent: "Stai usando il piano Free", includedInPlan: "Incluso nel tuo piano", brandTag: "Controlla prima di inviare", groupProtect: "Proteggi", groupConfigure: "Configura",
     navCheck: "Controlla testo", navRepository: "Controllo repository", navActivity: "Attività", navTerms: "Termini protetti", navSettings: "Impostazioni", navAccount: "Account e team", navHelp: "Aiuto e supporto",
     clearResults: "Cancella risultati", resultsCleared: "Risultati cancellati. Avvia un nuovo controllo quando vuoi.", previewPersonal: "Dati personali", previewCredential: "Credenziali", previewUse: "Prova questo tipo di controllo →",
     onboardTitle: "Primi passi", onboardDismiss: "Chiudi l'elenco", onboardTermsDesc: "Proteggi il nome di un cliente o di un progetto.", onboardThemeDesc: "Personalizza lo spazio di lavoro.",
@@ -333,7 +333,7 @@ const viewCopyByLanguage: Record<Language, Record<string, string>> = {
     sevCritical: "Critico", sevHigh: "Alto", sevMedium: "Medio", sevLow: "Basso", sevCriticalHint: "Può dare accesso a un account o a un sistema", sevHighHint: "Esposizione finanziaria diretta o identificativo forte", sevMediumHint: "Dati personali con danno indiretto", sevLowHint: "Identificativi deboli, dipendono dal contesto"
   },
   es: {
-    brandTag: "Revisa antes de enviar", groupProtect: "Proteger", groupConfigure: "Configurar",
+    ctaPro: "Pasar a Pro", ctaBusiness: "Pasar a Business", freeCurrent: "Estás en el plan Free", includedInPlan: "Incluido en tu plan", brandTag: "Revisa antes de enviar", groupProtect: "Proteger", groupConfigure: "Configurar",
     navCheck: "Revisar texto", navRepository: "Revisión de repositorios", navActivity: "Actividad", navTerms: "Términos protegidos", navSettings: "Ajustes", navAccount: "Cuenta y equipo", navHelp: "Ayuda y soporte",
     clearResults: "Borrar resultados", resultsCleared: "Resultados borrados. Haz una nueva revisión cuando quieras.", previewPersonal: "Datos personales", previewCredential: "Credenciales", previewUse: "Prueba este tipo de revisión →",
     onboardTitle: "Primeros pasos", onboardDismiss: "Cerrar la lista", onboardTermsDesc: "Protege el nombre de un cliente o proyecto.", onboardThemeDesc: "Personaliza tu espacio de trabajo.",
@@ -358,7 +358,7 @@ const viewCopyByLanguage: Record<Language, Record<string, string>> = {
     sevCritical: "Crítico", sevHigh: "Alto", sevMedium: "Medio", sevLow: "Bajo", sevCriticalHint: "Puede dar acceso a una cuenta o a un sistema", sevHighHint: "Exposición financiera directa o identificador fuerte", sevMediumHint: "Datos personales con daño indirecto", sevLowHint: "Identificadores débiles que dependen del contexto"
   },
   fr: {
-    brandTag: "Vérifiez avant d’envoyer", groupProtect: "Protéger", groupConfigure: "Configurer",
+    ctaPro: "Passer à Pro", ctaBusiness: "Passer à Business", freeCurrent: "Vous êtes sur l’offre Free", includedInPlan: "Inclus dans votre offre", brandTag: "Vérifiez avant d’envoyer", groupProtect: "Protéger", groupConfigure: "Configurer",
     navCheck: "Vérifier un texte", navRepository: "Analyse de dépôt", navActivity: "Activité", navTerms: "Termes protégés", navSettings: "Réglages", navAccount: "Compte et équipe", navHelp: "Aide et support",
     clearResults: "Effacer les résultats", resultsCleared: "Résultats effacés. Lancez une nouvelle vérification quand vous voulez.", previewPersonal: "Données personnelles", previewCredential: "Identifiants", previewUse: "Essayer ce type de vérification →",
     onboardTitle: "Pour bien démarrer", onboardDismiss: "Fermer la liste", onboardTermsDesc: "Protégez le nom d’un client ou d’un projet.", onboardThemeDesc: "Personnalisez votre espace de travail.",
@@ -383,7 +383,7 @@ const viewCopyByLanguage: Record<Language, Record<string, string>> = {
     sevCritical: "Critique", sevHigh: "Élevée", sevMedium: "Moyenne", sevLow: "Faible", sevCriticalHint: "Peut donner accès à un compte ou à un système", sevHighHint: "Exposition financière directe ou identifiant fort", sevMediumHint: "Données personnelles au préjudice indirect", sevLowHint: "Identifiants faibles, selon le contexte"
   },
   de: {
-    brandTag: "Erst prüfen, dann senden", groupProtect: "Schützen", groupConfigure: "Einrichten",
+    ctaPro: "Zu Pro wechseln", ctaBusiness: "Zu Business wechseln", freeCurrent: "Sie nutzen den Free-Tarif", includedInPlan: "In Ihrem Tarif enthalten", brandTag: "Erst prüfen, dann senden", groupProtect: "Schützen", groupConfigure: "Einrichten",
     navCheck: "Text prüfen", navRepository: "Repository-Prüfung", navActivity: "Aktivität", navTerms: "Geschützte Begriffe", navSettings: "Einstellungen", navAccount: "Konto und Team", navHelp: "Hilfe und Support",
     clearResults: "Ergebnisse löschen", resultsCleared: "Ergebnisse gelöscht. Starten Sie eine neue Prüfung, wann immer Sie möchten.", previewPersonal: "Personenbezogene Daten", previewCredential: "Zugangsdaten", previewUse: "Diese Art von Prüfung testen →",
     onboardTitle: "Erste Schritte", onboardDismiss: "Liste schließen", onboardTermsDesc: "Schützen Sie den Namen eines Kunden oder Projekts.", onboardThemeDesc: "Gestalten Sie den Arbeitsbereich nach Ihrem Geschmack.",
@@ -734,6 +734,7 @@ export function mountDashboard(): void {
   const plansView = viewRoot("plans");
   const w0 = words();
   const checkIcon = '<svg class="cmp-yes" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.4l2.9 2.9 6.1-6.6"/></svg>';
+  const sparkIcon = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.8l1.5 4.2 4.3 1.5-4.3 1.5L8 13.2 6.5 9 2.2 7.5 6.5 6z"/></svg>';
   const benefits = (keys: string[]): string => `<ul class="rx-benefits">${keys.map((key) => `<li data-i18n-html="${key}">${w0[key]}</li>`).join("")}</ul>`;
   type CompareCell = string | boolean;
   const compareRows: [string, CompareCell, CompareCell, CompareCell][] = [
@@ -770,11 +771,12 @@ export function mountDashboard(): void {
         <p class="plan-desc" data-i18n="freeDesc">${w0.freeDesc}</p>
         <div class="plan-price" id="free-plan-price"></div>
         <p class="plan-note" data-i18n="freeNote">${w0.freeNote}</p>
-        <div class="plan-actions"><a class="ghost-btn" href="#check" data-i18n="freeCta">${w0.freeCta}</a></div>
+        <div class="plan-actions"><button type="button" class="secondary plan-free-status" disabled>${w0.freeCurrent}</button></div>
         ${benefits(["freeB1", "freeB2", "freeB3", "freeB4"])}
       </article>
       <article class="plan-card featured" data-plan-card="personal" aria-labelledby="plan-pro-name">
-        <div class="plan-top"><h2 id="plan-pro-name" data-i18n="personalName">${w0.personalName}</h2><span class="rx-badge rx-badge-accent" data-i18n="recommended">${w0.recommended}</span><span class="rx-badge rx-badge-current" data-current hidden data-i18n="currentPlan">${w0.currentPlan}</span></div>
+        <span class="plan-ribbon">${sparkIcon}<span data-i18n="recommended">${w0.recommended}</span></span>
+        <div class="plan-top"><h2 id="plan-pro-name" data-i18n="personalName">${w0.personalName}</h2><span class="rx-badge rx-badge-current" data-current hidden data-i18n="currentPlan">${w0.currentPlan}</span></div>
         <p class="plan-desc" data-i18n="personalDesc">${w0.personalDesc}</p>
         <div class="plan-price"></div>
         <p class="plan-note"></p>
@@ -873,7 +875,7 @@ export function mountDashboard(): void {
   const renderBilling = (): void => {
     const promoWords = promoWordsByLanguage[preferences.language];
     plansView.querySelectorAll<HTMLElement>("[data-billing]").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.billing === billingInterval)));
-    plansView.querySelectorAll<HTMLElement>("[data-plan]").forEach(button => { button.hidden = button.dataset.interval !== billingInterval; button.textContent = words().startTrial; });
+    plansView.querySelectorAll<HTMLElement>("[data-plan]").forEach(button => { button.hidden = button.dataset.interval !== billingInterval; button.textContent = button.dataset.plan === "business" ? words().ctaBusiness : words().ctaPro; });
     const yearly = billingInterval === "yearly";
     const pro = promoView?.offer("personal", billingInterval) ?? null;
     const business = promoView?.offer("business", billingInterval) ?? null;
@@ -1075,13 +1077,22 @@ export function mountDashboard(): void {
     }
     return true;
   };
+  // Page links switch the view in the same task as the click: the address is
+  // updated with pushState instead of waiting for a hashchange round trip.
+  // Back and forward, and hashes set elsewhere, still arrive as events.
   window.addEventListener("hashchange", () => { showView(location.hash, true); });
-  // A rail or menu link to the page already on screen still moves focus there.
+  window.addEventListener("popstate", () => { showView(location.hash, true); });
   document.addEventListener("click", (event) => {
-    const link = (event.target as HTMLElement).closest<HTMLAnchorElement>('a[href^="#"], .ps-menu-link[href]');
-    if (!link) return;
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    const link = (event.target as HTMLElement).closest<HTMLAnchorElement>("a[href]");
+    if (!link || link.target === "_blank") return;
     const url = new URL(link.href);
-    if (url.pathname === location.pathname && url.hash === location.hash && viewForHash[url.hash]) { event.preventDefault(); showView(url.hash, true); }
+    // The desktop app serves this workspace as "/", the site as "/dashboard.html".
+    const samePage = url.pathname === location.pathname || (url.pathname === "/dashboard.html" && location.pathname === "/");
+    if (url.origin !== location.origin || !samePage || !viewForHash[url.hash]) return;
+    event.preventDefault();
+    if (url.hash !== location.hash) history.pushState(null, "", url.hash);
+    showView(url.hash, true);
   });
   document.addEventListener("redaxa:account", () => {
     if (currentView !== "account") return;
@@ -1243,6 +1254,7 @@ export function mountDashboard(): void {
       manage.hidden = !mine;
       if (mine) card.querySelectorAll<HTMLElement>("[data-plan]").forEach((button) => { button.hidden = true; });
     });
+    required<HTMLElement>(".plan-free-status").textContent = held === "free" ? w.freeCurrent : w.includedInPlan;
     const trialing = accountState?.status === "trialing" && accountState.currentPeriodEnd;
     const left = trialing ? Math.max(0, Math.ceil((new Date(accountState!.currentPeriodEnd!).getTime() - Date.now()) / 86_400_000)) : 0;
     const label = held === "free" ? w.freeName : planName(accountState?.plan);

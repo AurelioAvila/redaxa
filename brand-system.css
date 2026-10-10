@@ -207,7 +207,7 @@
 .redaxa-workspace .ps-auth-toggle-pw:hover{color:var(--text)}
 .redaxa-workspace .ps-auth-link,.redaxa-workspace .ps-auth-forgot,.redaxa-workspace .ps-auth-legal a{color:var(--theme-accent)}
 .redaxa-workspace .ps-auth-legal,.redaxa-workspace .ps-auth-message{color:var(--text-2)!important}
-.redaxa-workspace .ps-auth-message.error{color:#ff9ca7!important}
+.redaxa-workspace .ps-auth-message.error{color:var(--sev-critical,#ff9ca7)!important}
 .redaxa-workspace .ps-account-menu{background:var(--surface-1);border-color:var(--line);box-shadow:0 12px 30px #00000015}
 .redaxa-workspace .ps-account-menu-head{border-color:var(--line)}
 .redaxa-workspace .ps-account-email,.redaxa-workspace .ps-signout{color:var(--text)}

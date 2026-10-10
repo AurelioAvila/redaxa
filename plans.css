@@ -22,14 +22,19 @@
 .plans-status + .hw-offer, .plans-head + .hw-offer { margin: 0 0 20px; }
 
 .billing-switch { display: inline-flex; gap: 2px; margin: 0 0 16px; padding: 3px; border: 1px solid var(--theme-line); border-radius: 10px; background: var(--theme-inset); }
-.billing-switch button { min-height: 34px; padding: 0 14px; border: 0; border-radius: 7px; background: transparent; color: var(--theme-muted); font-size: 13px; font-weight: 650; cursor: pointer; transition: background-color .14s ease, color .14s ease; }
+.billing-switch button { min-height: 34px; padding: 0 14px; border: 0; border-radius: 7px; background: transparent; color: var(--theme-muted); font-size: 13px; font-weight: 650; cursor: pointer; }
 .billing-switch button:hover { color: var(--theme-text); }
 .billing-switch button[aria-pressed="true"] { background: var(--theme-accent); color: var(--theme-ink); }
 
-.plan-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: stretch; margin: 0; }
-.plan-card { position: relative; display: flex; flex-direction: column; gap: 10px; min-width: 0; height: auto; padding: 22px; border: 1px solid var(--theme-line); border-radius: 16px; background: var(--theme-surface); text-align: left; overflow: visible; transform: none; transition: border-color .16s ease; }
+/* Room above the cards for the ribbon that sits across the Pro card's edge. */
+.plan-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: stretch; margin: 0; padding-top: 12px; }
+.plan-card { position: relative; display: flex; flex-direction: column; gap: 10px; min-width: 0; height: auto; padding: 22px; border: 1px solid var(--theme-line); border-radius: 16px; background: var(--theme-surface); text-align: left; overflow: visible; transform: none; transition: border-color .12s ease; }
 .plan-card:hover { transform: none; }
-.plan-card.featured { border-color: color-mix(in srgb, var(--theme-accent) 60%, var(--theme-line)); background: linear-gradient(180deg, color-mix(in srgb, var(--theme-accent) 9%, var(--theme-surface)), var(--theme-surface) 46%); box-shadow: 0 0 0 1px color-mix(in srgb, var(--theme-accent) 22%, transparent); }
+.plan-card.featured { border-color: color-mix(in srgb, var(--theme-accent) 70%, var(--theme-line)); background: linear-gradient(180deg, color-mix(in srgb, var(--theme-accent) 7%, var(--theme-surface)), var(--theme-surface) 42%); box-shadow: 0 0 0 1px color-mix(in srgb, var(--theme-accent) 25%, transparent), 0 14px 34px -22px color-mix(in srgb, var(--theme-accent) 70%, transparent); }
+/* The same ribbon as PC Tweaker's plan cards, across the top edge of the highlighted plan. */
+.plan-ribbon { position: absolute; top: -12px; left: 50%; display: inline-flex; align-items: center; gap: 6px; padding: 5px 13px; border-radius: 999px; background: var(--theme-accent); color: var(--theme-ink); box-shadow: 0 6px 18px -8px var(--theme-accent); font: 700 11px/1.2 var(--font-text); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; transform: translateX(-50%); }
+.plan-ribbon svg { width: 12px; height: 12px; fill: currentColor; }
+
 .plan-card.is-current { border-color: color-mix(in srgb, var(--theme-text) 34%, var(--theme-line)); }
 .plan-top { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-height: 28px; }
 .plan-top :is(h2, h3) { margin: 0 auto 0 0; color: var(--theme-text); font: 600 21px/1.2 var(--font-display); }
@@ -44,8 +49,22 @@
 .plan-note:empty { display: none; }
 .seats-row { margin: 2px 0 0; }
 .seats-row select { width: 100%; max-width: none; }
-.plan-actions { display: grid; gap: 8px; margin: 6px 0 4px; }
+.plan-actions { display: grid; gap: 8px; margin: 6px 0 0; }
+/* Benefits first, then the plan button at the bottom of every card, so the
+   buttons line up across the row whatever each card holds. */
+.plan-card > .rx-benefits { order: 1; align-content: start; }
+.plan-card > .plan-footnote { order: 2; }
+.plan-card > .seats-row { order: 3; margin-top: auto; padding-top: 14px; }
+.plan-card > .plan-actions { order: 4; margin-top: auto; padding-top: 14px; }
+.plan-card > .seats-row + .plan-actions { margin-top: 0; padding-top: 8px; }
 .plan-actions > * { width: 100%; }
+/* One plan button for every product: full width, 42 px, 8 px corners. */
+.plan-card .plan-actions > :is(button, a) { min-height: 42px; border-radius: 8px; font-size: 13.5px; font-weight: 650; }
+.plan-card .plan-actions > button:disabled:not([aria-busy="true"]) { opacity: 1; border-style: dashed; color: var(--theme-muted); background: transparent; cursor: default; }
+/* auth.ts marks a plan button busy while the checkout or portal opens. */
+.plan-card .plan-actions > [aria-busy="true"] { position: relative; color: transparent !important; cursor: progress; }
+.plan-card .plan-actions > [aria-busy="true"]::after { content: ""; position: absolute; inset: 0; margin: auto; width: 16px; height: 16px; border: 2px solid var(--theme-ink); border-right-color: transparent; border-radius: 50%; animation: plan-busy .7s linear infinite; }
+@keyframes plan-busy { to { transform: rotate(1turn); } }
 .plan-actions [hidden] { display: none; }
 
 .plan-card .rx-benefits { display: grid; gap: 10px; margin: 6px 0 0; padding: 16px 0 0; border-top: 1px solid var(--theme-line); list-style: none; color: var(--theme-muted); font-size: 13px; line-height: 1.55; }
@@ -57,7 +76,7 @@
 .seats-row { display: grid; gap: 6px; color: var(--theme-text); font-size: 13px; font-weight: 600; }
 .seats-row select { min-height: 38px; padding: 6px 10px; border: 1px solid var(--theme-strong); border-radius: 7px; background: var(--theme-inset); color: var(--theme-text); font: inherit; }
 /* Plan buttons on pages without the workspace's own button styles (the site). */
-.plan-card .rx-plan-cta { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 0 18px; border: 1px solid var(--theme-accent); border-radius: 8px; background: var(--theme-accent); color: var(--theme-ink); font-size: 13.5px; font-weight: 700; text-decoration: none; cursor: pointer; transition: filter .14s ease, background-color .14s ease; }
+.plan-card .rx-plan-cta { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 0 18px; border: 1px solid var(--theme-accent); border-radius: 8px; background: var(--theme-accent); color: var(--theme-ink); font-size: 13.5px; font-weight: 700; text-decoration: none; cursor: pointer; transition: filter .12s ease, background-color .12s ease; }
 .plan-card .rx-plan-cta:hover { filter: brightness(1.08); }
 .plan-card .rx-plan-cta.ghost { border-color: var(--theme-strong); background: transparent; color: var(--theme-text); }
 .plan-card .rx-plan-cta.ghost:hover { background: var(--theme-hover); filter: none; }
@@ -114,6 +133,7 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .plan-card, .billing-switch button { transition: none; }
+  .plan-card .plan-actions > [aria-busy="true"]::after { animation-duration: 2.4s; }
 }
 
 /* The shared Halloween banner is drawn for dark surfaces; on the light Paper

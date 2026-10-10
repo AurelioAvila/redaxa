@@ -17,6 +17,8 @@
   --rail-bg: color-mix(in srgb, var(--theme-bg) 84%, #000);
   --card: var(--theme-surface);
   --field: var(--theme-inset);
+  /* Field outlines keep 3:1 against their surface in every palette. */
+  --field-border: color-mix(in srgb, var(--theme-strong) 62%, var(--theme-text));
   --sev-critical: #ff7a8a;
   --sev-high: #ffab5c;
   --sev-medium: #f2d36b;
@@ -39,7 +41,7 @@
   color-scheme: dark;
 }
 html[data-theme="paper"] .rx-shell {
-  --rail-bg: #efede6;
+  --rail-bg: #efece4;
   --sev-critical: #b4233a;
   --sev-high: #9a4a08;
   --sev-medium: #7a6100;
@@ -88,7 +90,8 @@ html.rx-native .rx-shell .brand { display: none; }
   background: transparent; color: var(--theme-muted);
   font: 500 13.5px/1.2 var(--font-text); text-align: left; text-decoration: none;
   cursor: pointer;
-  transition: background-color .14s var(--ease), color .14s var(--ease);
+  /* No transition: the selected page must light up in the frame of the click. */
+  transition: none;
 }
 .rx-shell .nav-item:hover { background: var(--theme-hover); color: var(--theme-text); }
 .rx-shell .nav-item.active { background: color-mix(in srgb, var(--theme-accent) 14%, transparent); color: var(--theme-text); font-weight: 650; box-shadow: none; }
@@ -134,10 +137,9 @@ html.rx-native .rx-shell .brand { display: none; }
 .rx-shell .small-btn.ghost { border-color: var(--theme-strong); background: transparent; color: var(--theme-text); }
 .rx-shell .small-btn.ghost:hover { background: var(--theme-hover); }
 
-.rx-shell .view { max-width: 1200px; margin: 0; padding: 28px var(--pad-x) 0; animation: rx-view-in .18s var(--ease); }
+.rx-shell .view { max-width: 1200px; margin: 0; padding: 28px var(--pad-x) 0; }
 .rx-shell .view[hidden] { display: none; }
 .rx-shell .view-wide { max-width: 1260px; }
-@keyframes rx-view-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 .rx-shell .view-head { margin: 0 0 22px; padding: 0; }
 .rx-shell .view-head h1 { margin: 0; color: var(--theme-text); font: 600 28px/1.18 var(--font-display); letter-spacing: -.01em; }
 .rx-shell .view-head h1:focus { outline: none; }
@@ -162,7 +164,7 @@ html.rx-native .rx-shell .brand { display: none; }
   background: var(--theme-accent); color: var(--theme-ink);
   font: 650 13.5px/1 var(--font-text); white-space: nowrap; cursor: pointer;
   box-shadow: none; transform: none;
-  transition: filter .14s var(--ease), background-color .14s var(--ease);
+  transition: filter .12s var(--ease), background-color .12s var(--ease);
 }
 .rx-shell .primary:hover:not(:disabled), .rx-shell .copy:hover { filter: brightness(1.08); transform: none; }
 .rx-shell .primary:active:not(:disabled) { filter: brightness(.96); }
@@ -173,14 +175,14 @@ html.rx-native .rx-shell .brand { display: none; }
   border: 1px solid var(--theme-strong); border-radius: var(--r-sm);
   background: transparent; color: var(--theme-text);
   font: 600 13px/1 var(--font-text); text-decoration: none; white-space: nowrap; cursor: pointer;
-  transition: background-color .14s var(--ease), border-color .14s var(--ease);
+  transition: background-color .12s var(--ease), border-color .12s var(--ease);
 }
 .rx-shell .ghost-btn { min-height: 40px; }
 .rx-shell .ghost-btn:hover:not(:disabled), .rx-shell .secondary:hover:not(:disabled) { border-color: var(--theme-muted); background: var(--theme-hover); color: var(--theme-text); }
 .rx-shell .secondary:disabled, .rx-shell .ghost-btn:disabled { opacity: .55; cursor: not-allowed; }
 .rx-shell select, .rx-shell input[type="text"], .rx-shell input[type="date"], .rx-shell .term-editor {
   min-height: 40px; padding: 8px 11px;
-  border: 1px solid var(--theme-strong); border-radius: var(--r-sm);
+  border: 1px solid var(--field-border); border-radius: var(--r-sm);
   background: var(--field); color: var(--theme-text); font-size: 13.5px;
 }
 .rx-shell select:focus-visible, .rx-shell input:focus-visible, .rx-shell textarea:focus-visible { outline: 2px solid var(--theme-accent); outline-offset: 1px; }
@@ -198,11 +200,15 @@ html.rx-native .rx-shell .brand { display: none; }
 .rx-shell .editor {
   display: block; width: 100%; height: auto; min-height: 230px; resize: vertical;
   padding: 14px 15px;
-  border: 1px solid var(--theme-strong); border-radius: var(--r);
+  border: 1px solid var(--field-border); border-radius: var(--r);
   background: var(--field); color: var(--theme-text);
   font: 13.5px/1.65 var(--font-mono); box-shadow: none;
 }
 .rx-shell .editor::placeholder { color: var(--theme-muted); opacity: 1; }
+/* Focus lands here on every switch to this page: no transition to wait for. */
+.rx-shell .editor { transition: none; }
+/* Pages are shown and hidden, so a CSS entrance animation would replay on every visit. */
+.rx-shell .view .hw-offer-inner { animation: none; }
 .rx-shell .editor:focus { border-color: var(--theme-accent); outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-accent) 22%, transparent); }
 .rx-shell .prompt-meta { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; color: var(--theme-muted); font-size: 12.5px; }
 .rx-shell .meta-privacy { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 7px; min-width: 0; }
@@ -217,7 +223,7 @@ html.rx-native .rx-shell .brand { display: none; }
   display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 13px;
   border: 1px solid var(--theme-strong); border-radius: 999px; background: transparent; color: var(--theme-text);
   font-size: 13px; font-weight: 500; cursor: pointer; transform: none;
-  transition: background-color .14s var(--ease), border-color .14s var(--ease);
+  transition: background-color .12s var(--ease), border-color .12s var(--ease);
 }
 .rx-shell .sample-chip:hover { border-color: var(--theme-accent); background: var(--theme-hover); transform: none; }
 .rx-shell .sample-chip[aria-pressed="true"] { border-color: var(--theme-accent); background: color-mix(in srgb, var(--theme-accent) 16%, transparent); color: var(--theme-text); font-weight: 650; }
@@ -325,7 +331,7 @@ html.rx-native .rx-shell .brand { display: none; }
 .rx-shell .analytics-fill { height: 100%; border-radius: inherit; background: var(--theme-accent); }
 .rx-shell .analytics-value { flex: 0 0 32px; color: var(--theme-muted); text-align: right; font-variant-numeric: tabular-nums; }
 .rx-shell .history-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
-.rx-shell .entry { min-width: 0; padding: 13px 14px; border: 1px solid var(--theme-line); border-radius: var(--r); background: var(--field); cursor: pointer; transition: border-color .14s var(--ease); }
+.rx-shell .entry { min-width: 0; padding: 13px 14px; border: 1px solid var(--theme-line); border-radius: var(--r); background: var(--field); cursor: pointer; transition: border-color .12s var(--ease); }
 .rx-shell .entry:hover { border-color: var(--theme-strong); }
 .rx-shell .entry strong { display: block; font-size: 13.5px; font-weight: 650; overflow-wrap: anywhere; }
 .rx-shell .entry span { display: block; margin-top: 5px; color: var(--theme-muted); font-size: 12.5px; line-height: 1.45; overflow-wrap: anywhere; }
@@ -367,6 +373,50 @@ html.rx-native .rx-shell .brand { display: none; }
 .rx-shell #team-invite-result { display: flex; gap: 8px; margin-top: 10px; }
 .rx-shell #team-invite-result input { flex: 1; }
 .rx-shell #workspace-empty { margin-bottom: 16px; }
+
+/* ---------- dialogs, sheets and menus (auth.ts) ----------
+   Every surface a dialog paints comes from the active theme, so Paper gets a
+   light dialog with light fields and the dark palettes get dark ones. */
+.rx-shell .ps-auth-backdrop { background: color-mix(in srgb, #0b0910 55%, transparent); backdrop-filter: blur(3px); }
+html[data-theme="paper"] .rx-shell .ps-auth-backdrop { background: color-mix(in srgb, #1b1724 34%, transparent); }
+.rx-shell .ps-auth-dialog { padding: 26px; border: 1px solid var(--theme-line); border-radius: 16px; background: var(--card); color: var(--theme-text); box-shadow: 0 24px 70px color-mix(in srgb, #000 28%, transparent); }
+.rx-shell .ps-auth-dialog h2 { margin: 0 0 8px; color: var(--theme-text); font: 600 24px/1.2 var(--font-display); letter-spacing: -.01em; }
+.rx-shell .ps-auth-dialog p { color: var(--theme-muted); font-size: 13.5px; line-height: 1.55; }
+.rx-shell .ps-auth-field { display: grid; gap: 7px; margin: 14px 0; color: var(--theme-text); font-size: 13px; font-weight: 600; }
+.rx-shell .ps-auth-field input, .rx-shell .ps-auth-pw-wrap input {
+  width: 100%; min-height: 44px; padding: 10px 12px;
+  border: 1px solid var(--field-border); border-radius: 8px;
+  background: var(--field); color: var(--theme-text); font: 500 14px/1.3 var(--font-text);
+}
+.rx-shell .ps-auth-field input::placeholder { color: var(--theme-muted); opacity: 1; }
+.rx-shell .ps-auth-field input:focus { border-color: var(--theme-accent); outline: 2px solid color-mix(in srgb, var(--theme-accent) 35%, transparent); outline-offset: 1px; }
+.rx-shell .ps-auth-field input[aria-invalid="true"] { border-color: var(--sev-critical); }
+.rx-shell .ps-auth-field input:disabled { opacity: .6; cursor: not-allowed; }
+.rx-shell .ps-auth-submit { min-height: 44px; border: 0; border-radius: 8px; background: var(--theme-accent); color: var(--theme-ink); font: 650 14px/1 var(--font-text); }
+.rx-shell .ps-auth-submit:hover:not(:disabled) { filter: brightness(1.08); }
+.rx-shell .ps-auth-submit:disabled { opacity: .6; }
+.rx-shell :is(.ps-auth-close, .ps-auth-toggle-pw, [data-sheet-close], [data-invite-cancel][aria-label]) { color: var(--theme-muted); background: transparent; }
+.rx-shell :is(.ps-auth-close, .ps-auth-toggle-pw, [data-sheet-close]):hover { color: var(--theme-text); }
+.rx-shell .ps-auth-toggle-pw { border-radius: 6px; }
+.rx-shell .ps-auth-toggle-pw:focus-visible { outline: 2px solid var(--theme-accent); }
+.rx-shell :is(.ps-auth-link, .ps-auth-forgot, .ps-auth-legal a) { color: var(--theme-accent); text-decoration: underline; text-underline-offset: 3px; }
+.rx-shell .ps-auth-remember { color: var(--theme-text); }
+.rx-shell .ps-auth-remember input { accent-color: var(--theme-accent); }
+.rx-shell .ps-account-sheet { border: 1px solid var(--theme-line); background: var(--card); color: var(--theme-text); box-shadow: 0 24px 70px color-mix(in srgb, #000 28%, transparent); }
+.rx-shell .ps-account-sheet::backdrop { background: color-mix(in srgb, #0b0910 55%, transparent); }
+html[data-theme="paper"] .rx-shell .ps-account-sheet::backdrop { background: color-mix(in srgb, #1b1724 34%, transparent); }
+.rx-shell .ps-account-sheet :is(h2, dd) { color: var(--theme-text); }
+.rx-shell .ps-account-sheet :is(header p, dt, .ps-account-message) { color: var(--theme-muted); }
+.rx-shell .ps-account-actions button { min-height: 38px; padding: 0 14px; border: 1px solid var(--theme-strong); border-radius: 8px; background: transparent; color: var(--theme-text); font: 600 13px/1 var(--font-text); cursor: pointer; }
+.rx-shell .ps-account-actions button:first-child { border-color: var(--theme-accent); background: var(--theme-accent); color: var(--theme-ink); }
+.rx-shell .ps-account-actions button:hover:not(:disabled) { filter: brightness(1.06); }
+.rx-shell .ps-account-menu { border: 1px solid var(--theme-line); background: var(--card); color: var(--theme-text); box-shadow: 0 18px 44px color-mix(in srgb, #000 22%, transparent); }
+.rx-shell .ps-account-menu-head { border-bottom-color: var(--theme-line); }
+.rx-shell :is(.ps-account-email, .ps-menu-link) { color: var(--theme-text); }
+.rx-shell .ps-signout { border: 0; background: transparent; color: var(--sev-critical); }
+.rx-shell .ps-signout:hover { background: color-mix(in srgb, var(--sev-critical) 12%, transparent); color: var(--sev-critical); }
+.rx-shell .ps-avatar-btn { border-color: var(--theme-strong); background: var(--card); }
+.rx-shell .ps-avatar { background: var(--theme-accent); color: var(--theme-ink); }
 
 /* Floating install and clipboard pills sit under the page, not over it. */
 .rx-shell #pwa-install, .rx-shell #inspect-clipboard { border-color: var(--theme-strong); background: var(--card); color: var(--theme-text); }
