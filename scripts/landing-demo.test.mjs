@@ -31,7 +31,9 @@ for (const [index,interval,personal,business] of [[0,'monthly','€7.99','€14.
   assert.equal(billingButtons[1-index].attributes['aria-pressed'],'false');
   assert.ok(checkoutButtons.every(button=>button.dataset.interval===interval),'checkout must match the displayed billing period');
 }
-assert.match(elements.get('#pro-plan-tag').textContent,/Recommended/);
+// The Pro recommendation is a fixed badge in the markup, whatever the billing period.
+assert.match(readFileSync(new URL('../index.html',import.meta.url),'utf8'),/id="pro-plan-tag">Recommended</);
+assert.equal(elements.get('#pro-plan-tag').textContent,'','the badge is not rewritten on a period switch');
 // A running offer strikes the lawful reference and names the renewal; its end restores the list prices.
 const offers=[['personal','yearly',7990,3900,false],['business','yearly',14990,7400,true],['personal','monthly',799,399,false],['business','monthly',1499,700,true]].map(([plan,interval,regular,price,perSeat])=>({plan,interval,regular,reference:regular,price,perSeat}));
 const view={promo:{offers},remaining:60_000,offer:(plan,interval)=>offers.find(o=>o.plan===plan&&o.interval===interval)??null};

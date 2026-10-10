@@ -1,13 +1,13 @@
-import type { Finding, ScanOptions } from "./scanner.js";
+import type { Finding, FindingSeverity, ScanOptions } from "./scanner.js";
 import type { AccountState } from "./auth.js";
 import { enableAppShell } from "./pwa.js";
 import { track } from "./growth.js";
-import { enableDesktopCompanion } from "./desktop.js";
-import { PROMO_WORDS_EN, mountPromo, promoPriceHtml, type PromoView, type PromoWords } from "./promo.js";
+import { enableDesktopCompanion, openSupportEmail, shellCopyByLanguage } from "./desktop.js";
+import { PROMO_WORDS_EN, euro, mountPromo, promoPriceHtml, type PromoView, type PromoWords } from "./promo.js";
 
 type HistoryEntry = { id: string; createdAt: string; findings: number; preview: string; byKind: Record<string, number> };
 type Language = "en" | "it" | "es" | "fr" | "de";
-import { themes, restoreTheme, applyTheme, type ThemeName } from "./themes.js";
+import { themes, restoreTheme, applyTheme, defaultTheme, type ThemeName } from "./themes.js";
 type Preferences = ScanOptions & { language: Language; theme: ThemeName; scanMode: "standard" | "strict"; saveHistory: boolean; autoClearAfterCopy: boolean; showRawValues: boolean; customTerms: string[] };
 type RiskLevel = "none" | "medium" | "high";
 
@@ -15,7 +15,7 @@ const storageKey = "redaxa.personal-history.v1";
 const preferencesKey = "redaxa.personal-preferences.v1";
 const maxPromptLength = 10_000;
 
-const defaultPreferences: Preferences = { language: "en", theme: "graphite", scanMode: "standard", includePersonalData: true, includeCredentials: true, includeFinancialData: true, saveHistory: true, autoClearAfterCopy: false, showRawValues: true, customTerms: [] };
+const defaultPreferences: Preferences = { language: "en", theme: "paper", scanMode: "standard", includePersonalData: true, includeCredentials: true, includeFinancialData: true, saveHistory: true, autoClearAfterCopy: false, showRawValues: true, customTerms: [] };
 
 const languageNames: Record<Language, string> = { en: "English", it: "Italiano", es: "Español", fr: "Français", de: "Deutsch" };
 // Halloween offer copy. Units and renewal lines are spelled out per language
@@ -278,6 +278,128 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
     previewBadge: "Vorschau", previewLabel: "Beispielergebnis — nicht Ihr Prompt", planNone: "Kostenlose Prüfungen", planNoneNote: "5 Prüfungen pro Tag ohne Karte. Wählen Sie einen Tarif für unbegrenzte Prüfungen; berechtigte neue Abonnenten erhalten 7 Tage Testzeitraum.", planTrial: "Kostenlose Testphase", planTrialNote: "Ihre Testphase umfasst unbegrenzte Prüfungen. Wählen Sie einen Tarif, um sie fortzusetzen.", planActive: "Aktiver Tarif", planActiveNote: "Unbegrenzte Prüfungen und eigene geschützte Begriffe sind aktiv.", planDayOf: "Tag {day} von {total}", planEndsToday: "Endet heute", planDaysLeft: "noch {n} Tag|noch {n} Tage", foundInPrompt: "In Ihrem Prompt gefunden"
   }
 };
+// Copy for the workspace shell, its views and the Plans & pricing page.
+// Merged into copyByLanguage below, so data-i18n and words() reach it too.
+// Benefit lines carry <strong> markup and are only ever set as trusted HTML.
+const viewCopyByLanguage: Record<Language, Record<string, string>> = {
+  en: {
+    ctaPro: "Go Pro", ctaBusiness: "Get Business", freeCurrent: "You’re on the Free plan", includedInPlan: "Included in your plan", clearResults: "Clear results", resultsCleared: "Results cleared. Run a new check when you are ready.", previewPersonal: "Personal data", previewCredential: "Credentials", previewUse: "Try this type of check →",
+    onboardTitle: "Get set up", onboardDismiss: "Dismiss checklist", onboardTermsDesc: "Protect a client or project name.", onboardThemeDesc: "Make the workspace yours.",
+    activityPageTitle: "Activity", activityPageSub: "What your recent checks found. Local summaries stay on this device; account activity never includes your text.", clearLocalActivity: "Clear local activity",
+    termsTitle: "Protected terms", termsSub: "Names Redaxa should always flag, such as clients, projects and codenames.", ownTermsTitle: "Your protected terms", ownTermsHint: "One term per line, up to 30. Every check you run looks for them.", ownTermsPlaceholder: "Acme Client\nProject Falcon", saveTerms: "Save terms", termsSaved: "Saved.", termsCount: "{n} term|{n} terms",
+    settingsTitle: "Settings", settingsAppearance: "Appearance and language", settingsDetection: "Detection", settingsDevice: "On this device", themeLabel: "Theme", prefsSaved: "Preferences saved.",
+    apiTitle: "Developer API keys", apiHint: "For scripts and pipelines.", apiDocs: "API documentation", apiSignIn: "Sign in to manage API keys.", apiNone: "No API keys yet.", apiCreate: "Create API key", apiCopy: "Copy", apiOnce: "This key is shown once. Store it now — it cannot be recovered.",
+    accountTitle: "Account & team", accountSub: "Manage your subscription, members and shared protection.", accountEmpty: "Sign in to manage your workspace. Team controls are available with Business.",
+    plansHeadline: "Choose how much Redaxa checks for you.", billingPeriod: "Billing period", billingMonthly: "Monthly", billingYearly: "Yearly · 2 months free",
+    recommended: "Recommended", currentPlan: "Current plan", equivYearly: "{price} a month, billed yearly",
+    freeName: "Free", freeDesc: "Check what you share, with no account needed.", freeNote: "No card needed", freeCta: "Start checking",
+    freeB1: "<strong>5 prompt checks a day</strong> on the web and in the Windows app", freeB2: "<strong>No limit in the Chrome extension:</strong> free checks run on your device", freeB3: "<strong>Public repository checks</strong> on the web, 3 a day", freeB4: "<strong>Grouped findings</strong> and a redacted copy to share",
+    proB1: "<strong>Prompt checks with no daily limit</strong> on the web, in Windows and in Chrome", proB2: "<strong>Your protected terms</strong> for client and project names, on every device", proB3: "<strong>Repository checks:</strong> 60 a day on the web, plus reviews in the Windows app with history and a prioritized recap", proB4: "<strong>Redacted text reports</strong> for repository reviews",
+    bizB1: "<strong>Everything in Pro</strong>", bizB2: "<strong>Shared protected terms</strong> for every member", bizB3: "<strong>Warn, redact or block</strong> through team policies", bizB4: "<strong>Activity and CSV export</strong> without prompt content",
+    statusFree: "You are on the free plan: 5 prompt checks a day on the web and in the Windows app.", statusTrial: "Your free trial is running: {left}.", statusActive: "Your {plan} plan is active.",
+    checkoutNote: "Payments are processed by Stripe. Manage subscription opens the billing portal, where you can update your card, download invoices or cancel renewal.",
+    compareTitle: "Compare plans", compareFeature: "Feature", included: "Included", notIncluded: "Not included",
+    cmpPrompt: "Prompt checks on the web and in the Windows app", cmpExtension: "Checks in the Chrome extension", cmpTerms: "Your protected terms", cmpRepoWeb: "Public repository checks on the web", cmpRepoLocal: "Repository reviews in the Windows app, with history and archives", cmpReports: "Redacted repository reports", cmpPolicies: "Team policies: warn, redact or block", cmpActivity: "Team activity and CSV export, metadata only", cmpSeats: "Users",
+    cellFiveDaily: "5 a day", cellNoLimit: "No daily limit", cellExtFree: "No limit, on your device", cellExtPlan: "No limit, on Redaxa's server", cellTermsFree: "Web and Windows app", cellTermsPro: "Web, Windows and Chrome", cellTermsBiz: "Plus shared terms", cellThreeDaily: "3 a day", cellSixtyDaily: "60 a day", cellOneUser: "1", cellSeats: "1–3",
+    trustTitle: "What leaves your device", trustExtT: "Free checks in Chrome", trustExt: "Run in your browser. The text you check does not leave your device.", trustServerT: "Checks on the web, in Windows and with a plan", trustServer: "Sent over an encrypted connection, analyzed and discarded. Never stored and never forwarded to an AI provider.", trustMetaT: "Activity record", trustMeta: "Metadata only: time, application, finding categories and counts. Never your text.", trustRepoT: "Repository reviews", trustRepo: "Public repositories only; reviews in the Windows app run locally. Private repositories are not supported.", trustLimit: "Detection can miss sensitive information or flag harmless text. Review every result before sharing.", privacyPolicy: "Read the privacy policy",
+    faqTitle: "Questions", faqTrialQ: "How does the 7-day trial work?", faqTrialA: "Eligible new subscribers start with a 7-day trial. A card is required; cancel before the trial ends to avoid a charge.", faqCancelQ: "Can I cancel or change my plan?", faqCancelA: "Yes. Manage subscription opens the billing portal, where you can update your payment method, download invoices or cancel renewal whenever you need to.", faqBizQ: "What does Business add?", faqBizA: "Everything in Pro, plus shared protected terms, category policies and metadata-only activity for your team. Choose one to three users.", faqStoredQ: "Is the text I check stored?", faqStoredA: "No. Checks on the web, in the Windows app and with a plan are analyzed and discarded, and Redaxa keeps metadata only. Free checks in the Chrome extension never leave your device.", faqMissQ: "Will Redaxa find everything?", faqMissA: "No tool can promise that. Detection can miss sensitive information or flag harmless text, so review every result before you share it.",
+    sevCritical: "Critical", sevHigh: "High", sevMedium: "Medium", sevLow: "Low", sevCriticalHint: "Could give someone access to an account or system", sevHighHint: "Direct financial exposure or a strong identifier", sevMediumHint: "Personal details with indirect harm", sevLowHint: "Weak identifiers that depend on context"
+  },
+  it: {
+    ctaPro: "Passa a Pro", ctaBusiness: "Passa a Business", freeCurrent: "Stai usando il piano Free", includedInPlan: "Incluso nel tuo piano", clearResults: "Cancella risultati", resultsCleared: "Risultati cancellati. Avvia un nuovo controllo quando vuoi.", previewPersonal: "Dati personali", previewCredential: "Credenziali", previewUse: "Prova questo tipo di controllo →",
+    onboardTitle: "Primi passi", onboardDismiss: "Chiudi l'elenco", onboardTermsDesc: "Proteggi il nome di un cliente o di un progetto.", onboardThemeDesc: "Personalizza lo spazio di lavoro.",
+    activityPageTitle: "Attività", activityPageSub: "Cosa hanno trovato i controlli recenti. I riepiloghi locali restano su questo dispositivo; l'attività dell'account non include mai il tuo testo.", clearLocalActivity: "Cancella attività locale",
+    termsTitle: "Termini protetti", termsSub: "Nomi che Redaxa deve sempre segnalare, come clienti, progetti e nomi in codice.", ownTermsTitle: "I tuoi termini protetti", ownTermsHint: "Un termine per riga, fino a 30. Ogni controllo che avvii li cerca.", ownTermsPlaceholder: "Cliente Acme\nProgetto Falco", saveTerms: "Salva termini", termsSaved: "Salvato.", termsCount: "{n} termine|{n} termini",
+    settingsTitle: "Impostazioni", settingsAppearance: "Aspetto e lingua", settingsDetection: "Rilevamento", settingsDevice: "Su questo dispositivo", themeLabel: "Tema", prefsSaved: "Impostazioni salvate.",
+    apiTitle: "Chiavi API per sviluppatori", apiHint: "Per script e pipeline.", apiDocs: "Documentazione API", apiSignIn: "Accedi per gestire le chiavi API.", apiNone: "Nessuna chiave API.", apiCreate: "Crea chiave API", apiCopy: "Copia", apiOnce: "La chiave viene mostrata una sola volta. Salvala ora: non si può recuperare.",
+    accountTitle: "Account e team", accountSub: "Gestisci abbonamento, membri e protezione condivisa.", accountEmpty: "Accedi per gestire il tuo spazio di lavoro. I controlli per i team sono inclusi in Business.",
+    plansHeadline: "Scegli quanto deve controllare Redaxa per te.", billingPeriod: "Periodo di fatturazione", billingMonthly: "Mensile", billingYearly: "Annuale · 2 mesi gratis",
+    recommended: "Consigliato", currentPlan: "Piano attuale", equivYearly: "{price} al mese, fatturati annualmente",
+    freeName: "Gratis", freeDesc: "Controlla cosa condividi, senza bisogno di un account.", freeNote: "Nessuna carta richiesta", freeCta: "Inizia a controllare",
+    freeB1: "<strong>5 controlli di prompt al giorno</strong> sul web e nell'app per Windows", freeB2: "<strong>Nessun limite nell'estensione per Chrome:</strong> i controlli gratuiti avvengono sul tuo dispositivo", freeB3: "<strong>Controlli di repository pubblici</strong> sul web, 3 al giorno", freeB4: "<strong>Risultati raggruppati</strong> e una copia oscurata da condividere",
+    proB1: "<strong>Controlli di prompt senza limite giornaliero</strong> sul web, su Windows e in Chrome", proB2: "<strong>I tuoi termini protetti</strong> per nomi di clienti e progetti, su ogni dispositivo", proB3: "<strong>Controlli di repository:</strong> 60 al giorno sul web, più le revisioni nell'app per Windows con cronologia e un riepilogo per priorità", proB4: "<strong>Report testuali oscurati</strong> per le revisioni dei repository",
+    bizB1: "<strong>Tutto ciò che include Pro</strong>", bizB2: "<strong>Termini protetti condivisi</strong> per ogni membro", bizB3: "<strong>Avvisa, oscura o blocca</strong> con le policy del team", bizB4: "<strong>Attività ed esportazione CSV</strong> senza il contenuto dei prompt",
+    statusFree: "Stai usando il piano gratuito: 5 controlli di prompt al giorno sul web e nell'app per Windows.", statusTrial: "La prova gratuita è in corso: {left}.", statusActive: "Il tuo piano {plan} è attivo.",
+    checkoutNote: "I pagamenti sono gestiti da Stripe. Gestisci abbonamento apre il portale di fatturazione, dove puoi aggiornare la carta, scaricare le fatture o annullare il rinnovo.",
+    compareTitle: "Confronta i piani", compareFeature: "Funzione", included: "Incluso", notIncluded: "Non incluso",
+    cmpPrompt: "Controlli di prompt sul web e nell'app per Windows", cmpExtension: "Controlli nell'estensione per Chrome", cmpTerms: "I tuoi termini protetti", cmpRepoWeb: "Controlli di repository pubblici sul web", cmpRepoLocal: "Revisioni di repository nell'app per Windows, con cronologia e archivi", cmpReports: "Report oscurati dei repository", cmpPolicies: "Policy del team: avvisa, oscura o blocca", cmpActivity: "Attività del team ed esportazione CSV, solo metadati", cmpSeats: "Utenti",
+    cellFiveDaily: "5 al giorno", cellNoLimit: "Senza limite giornaliero", cellExtFree: "Senza limiti, sul tuo dispositivo", cellExtPlan: "Senza limiti, sul server di Redaxa", cellTermsFree: "Web e app per Windows", cellTermsPro: "Web, Windows e Chrome", cellTermsBiz: "Più i termini condivisi", cellThreeDaily: "3 al giorno", cellSixtyDaily: "60 al giorno", cellOneUser: "1", cellSeats: "1–3",
+    trustTitle: "Cosa lascia il tuo dispositivo", trustExtT: "Controlli gratuiti in Chrome", trustExt: "Avvengono nel browser. Il testo che controlli non lascia il tuo dispositivo.", trustServerT: "Controlli sul web, su Windows e con un piano", trustServer: "Inviati con una connessione cifrata, analizzati ed eliminati. Mai conservati e mai inoltrati a un fornitore di AI.", trustMetaT: "Registro attività", trustMeta: "Solo metadati: ora, applicazione, categorie e numero di rilevamenti. Mai il tuo testo.", trustRepoT: "Revisioni dei repository", trustRepo: "Solo repository pubblici; le revisioni nell'app per Windows avvengono in locale. I repository privati non sono supportati.", trustLimit: "Il rilevamento può non trovare alcune informazioni sensibili o segnalare testo innocuo. Rivedi ogni risultato prima di condividere.", privacyPolicy: "Leggi l'informativa sulla privacy",
+    faqTitle: "Domande", faqTrialQ: "Come funziona la prova di 7 giorni?", faqTrialA: "I nuovi abbonati idonei iniziano con una prova di 7 giorni. Serve una carta; annulla prima della fine della prova per evitare l'addebito.", faqCancelQ: "Posso annullare o cambiare piano?", faqCancelA: "Sì. Gestisci abbonamento apre il portale di fatturazione, dove puoi aggiornare il metodo di pagamento, scaricare le fatture o annullare il rinnovo quando vuoi.", faqBizQ: "Cosa aggiunge Business?", faqBizA: "Tutto ciò che include Pro, più termini protetti condivisi, policy per categoria e attività del team con soli metadati. Scegli da uno a tre utenti.", faqStoredQ: "Il testo che controllo viene conservato?", faqStoredA: "No. I controlli sul web, nell'app per Windows e con un piano vengono analizzati ed eliminati, e Redaxa conserva solo i metadati. I controlli gratuiti nell'estensione per Chrome non lasciano mai il tuo dispositivo.", faqMissQ: "Redaxa trova proprio tutto?", faqMissA: "Nessuno strumento può garantirlo. Il rilevamento può non trovare alcune informazioni sensibili o segnalare testo innocuo: rivedi ogni risultato prima di condividerlo.",
+    sevCritical: "Critico", sevHigh: "Alto", sevMedium: "Medio", sevLow: "Basso", sevCriticalHint: "Può dare accesso a un account o a un sistema", sevHighHint: "Esposizione finanziaria diretta o identificativo forte", sevMediumHint: "Dati personali con danno indiretto", sevLowHint: "Identificativi deboli, dipendono dal contesto"
+  },
+  es: {
+    ctaPro: "Pasar a Pro", ctaBusiness: "Pasar a Business", freeCurrent: "Estás en el plan Free", includedInPlan: "Incluido en tu plan", clearResults: "Borrar resultados", resultsCleared: "Resultados borrados. Haz una nueva revisión cuando quieras.", previewPersonal: "Datos personales", previewCredential: "Credenciales", previewUse: "Prueba este tipo de revisión →",
+    onboardTitle: "Primeros pasos", onboardDismiss: "Cerrar la lista", onboardTermsDesc: "Protege el nombre de un cliente o proyecto.", onboardThemeDesc: "Personaliza tu espacio de trabajo.",
+    activityPageTitle: "Actividad", activityPageSub: "Lo que encontraron tus revisiones recientes. Los resúmenes locales se quedan en este dispositivo; la actividad de la cuenta nunca incluye tu texto.", clearLocalActivity: "Borrar actividad local",
+    termsTitle: "Términos protegidos", termsSub: "Nombres que Redaxa debe señalar siempre, como clientes, proyectos y nombres en clave.", ownTermsTitle: "Tus términos protegidos", ownTermsHint: "Un término por línea, hasta 30. Cada revisión que haces los busca.", ownTermsPlaceholder: "Cliente Acme\nProyecto Halcón", saveTerms: "Guardar términos", termsSaved: "Guardado.", termsCount: "{n} término|{n} términos",
+    settingsTitle: "Ajustes", settingsAppearance: "Apariencia e idioma", settingsDetection: "Detección", settingsDevice: "En este dispositivo", themeLabel: "Tema", prefsSaved: "Preferencias guardadas.",
+    apiTitle: "Claves API para desarrolladores", apiHint: "Para scripts y pipelines.", apiDocs: "Documentación de la API", apiSignIn: "Inicia sesión para gestionar las claves API.", apiNone: "Aún no hay claves API.", apiCreate: "Crear clave API", apiCopy: "Copiar", apiOnce: "Esta clave se muestra una sola vez. Guárdala ahora: no se puede recuperar.",
+    accountTitle: "Cuenta y equipo", accountSub: "Gestiona tu suscripción, los miembros y la protección compartida.", accountEmpty: "Inicia sesión para gestionar tu espacio de trabajo. Los controles de equipo están incluidos en Business.",
+    plansHeadline: "Elige cuánto revisa Redaxa por ti.", billingPeriod: "Periodo de facturación", billingMonthly: "Mensual", billingYearly: "Anual · 2 meses gratis",
+    recommended: "Recomendado", currentPlan: "Plan actual", equivYearly: "{price} al mes, facturado anualmente",
+    freeName: "Gratis", freeDesc: "Revisa lo que compartes, sin necesidad de cuenta.", freeNote: "Sin tarjeta", freeCta: "Empezar a revisar",
+    freeB1: "<strong>5 revisiones de prompts al día</strong> en la web y en la app para Windows", freeB2: "<strong>Sin límite en la extensión para Chrome:</strong> las revisiones gratuitas se hacen en tu dispositivo", freeB3: "<strong>Revisiones de repositorios públicos</strong> en la web, 3 al día", freeB4: "<strong>Resultados agrupados</strong> y una copia redactada para compartir",
+    proB1: "<strong>Revisiones de prompts sin límite diario</strong> en la web, en Windows y en Chrome", proB2: "<strong>Tus términos protegidos</strong> para nombres de clientes y proyectos, en todos tus dispositivos", proB3: "<strong>Revisiones de repositorios:</strong> 60 al día en la web, más revisiones en la app para Windows con historial y un resumen por prioridad", proB4: "<strong>Informes de texto redactados</strong> para las revisiones de repositorios",
+    bizB1: "<strong>Todo lo incluido en Pro</strong>", bizB2: "<strong>Términos protegidos compartidos</strong> para cada miembro", bizB3: "<strong>Avisar, redactar o bloquear</strong> con políticas de equipo", bizB4: "<strong>Actividad y exportación CSV</strong> sin el contenido de los prompts",
+    statusFree: "Estás en el plan gratuito: 5 revisiones de prompts al día en la web y en la app para Windows.", statusTrial: "Tu prueba gratuita está en curso: {left}.", statusActive: "Tu plan {plan} está activo.",
+    checkoutNote: "Los pagos los procesa Stripe. Gestionar suscripción abre el portal de facturación, donde puedes actualizar la tarjeta, descargar facturas o cancelar la renovación.",
+    compareTitle: "Compara los planes", compareFeature: "Función", included: "Incluido", notIncluded: "No incluido",
+    cmpPrompt: "Revisiones de prompts en la web y en la app para Windows", cmpExtension: "Revisiones en la extensión para Chrome", cmpTerms: "Tus términos protegidos", cmpRepoWeb: "Revisiones de repositorios públicos en la web", cmpRepoLocal: "Revisiones de repositorios en la app para Windows, con historial y archivos comprimidos", cmpReports: "Informes redactados de repositorios", cmpPolicies: "Políticas de equipo: avisar, redactar o bloquear", cmpActivity: "Actividad del equipo y exportación CSV, solo metadatos", cmpSeats: "Usuarios",
+    cellFiveDaily: "5 al día", cellNoLimit: "Sin límite diario", cellExtFree: "Sin límite, en tu dispositivo", cellExtPlan: "Sin límite, en el servidor de Redaxa", cellTermsFree: "Web y app para Windows", cellTermsPro: "Web, Windows y Chrome", cellTermsBiz: "Más términos compartidos", cellThreeDaily: "3 al día", cellSixtyDaily: "60 al día", cellOneUser: "1", cellSeats: "1–3",
+    trustTitle: "Qué sale de tu dispositivo", trustExtT: "Revisiones gratuitas en Chrome", trustExt: "Se hacen en tu navegador. El texto que revisas no sale de tu dispositivo.", trustServerT: "Revisiones en la web, en Windows y con un plan", trustServer: "Se envían por una conexión cifrada, se analizan y se descartan. Nunca se guardan ni se reenvían a un proveedor de IA.", trustMetaT: "Registro de actividad", trustMeta: "Solo metadatos: hora, aplicación, categorías y número de detecciones. Nunca tu texto.", trustRepoT: "Revisiones de repositorios", trustRepo: "Solo repositorios públicos; las revisiones en la app para Windows se hacen en local. Los repositorios privados no son compatibles.", trustLimit: "La detección puede pasar por alto información sensible o marcar texto inofensivo. Revisa cada resultado antes de compartir.", privacyPolicy: "Leer la política de privacidad",
+    faqTitle: "Preguntas", faqTrialQ: "¿Cómo funciona la prueba de 7 días?", faqTrialA: "Los nuevos suscriptores que cumplan los requisitos empiezan con una prueba de 7 días. Se necesita una tarjeta; cancela antes de que termine la prueba para evitar el cargo.", faqCancelQ: "¿Puedo cancelar o cambiar de plan?", faqCancelA: "Sí. Gestionar suscripción abre el portal de facturación, donde puedes actualizar el método de pago, descargar facturas o cancelar la renovación cuando quieras.", faqBizQ: "¿Qué añade Business?", faqBizA: "Todo lo incluido en Pro, más términos protegidos compartidos, políticas por categoría y actividad del equipo solo con metadatos. Elige de uno a tres usuarios.", faqStoredQ: "¿Se guarda el texto que reviso?", faqStoredA: "No. Las revisiones en la web, en la app para Windows y con un plan se analizan y se descartan, y Redaxa solo guarda metadatos. Las revisiones gratuitas en la extensión para Chrome nunca salen de tu dispositivo.", faqMissQ: "¿Redaxa lo encuentra todo?", faqMissA: "Ninguna herramienta puede prometerlo. La detección puede pasar por alto información sensible o marcar texto inofensivo, así que revisa cada resultado antes de compartirlo.",
+    sevCritical: "Crítico", sevHigh: "Alto", sevMedium: "Medio", sevLow: "Bajo", sevCriticalHint: "Puede dar acceso a una cuenta o a un sistema", sevHighHint: "Exposición financiera directa o identificador fuerte", sevMediumHint: "Datos personales con daño indirecto", sevLowHint: "Identificadores débiles que dependen del contexto"
+  },
+  fr: {
+    ctaPro: "Passer à Pro", ctaBusiness: "Passer à Business", freeCurrent: "Vous êtes sur l’offre Free", includedInPlan: "Inclus dans votre offre", clearResults: "Effacer les résultats", resultsCleared: "Résultats effacés. Lancez une nouvelle vérification quand vous voulez.", previewPersonal: "Données personnelles", previewCredential: "Identifiants", previewUse: "Essayer ce type de vérification →",
+    onboardTitle: "Pour bien démarrer", onboardDismiss: "Fermer la liste", onboardTermsDesc: "Protégez le nom d’un client ou d’un projet.", onboardThemeDesc: "Personnalisez votre espace de travail.",
+    activityPageTitle: "Activité", activityPageSub: "Ce que vos vérifications récentes ont trouvé. Les résumés locaux restent sur cet appareil ; l’activité du compte n’inclut jamais votre texte.", clearLocalActivity: "Effacer l’activité locale",
+    termsTitle: "Termes protégés", termsSub: "Les noms que Redaxa doit toujours signaler : clients, projets, noms de code.", ownTermsTitle: "Vos termes protégés", ownTermsHint: "Un terme par ligne, jusqu’à 30. Chaque vérification les recherche.", ownTermsPlaceholder: "Client Acme\nProjet Faucon", saveTerms: "Enregistrer les termes", termsSaved: "Enregistré.", termsCount: "{n} terme|{n} termes",
+    settingsTitle: "Réglages", settingsAppearance: "Apparence et langue", settingsDetection: "Détection", settingsDevice: "Sur cet appareil", themeLabel: "Thème", prefsSaved: "Préférences enregistrées.",
+    apiTitle: "Clés API pour développeurs", apiHint: "Pour les scripts et les pipelines.", apiDocs: "Documentation de l’API", apiSignIn: "Connectez-vous pour gérer les clés API.", apiNone: "Aucune clé API pour l’instant.", apiCreate: "Créer une clé API", apiCopy: "Copier", apiOnce: "Cette clé ne s’affiche qu’une fois. Conservez-la maintenant : elle ne peut pas être récupérée.",
+    accountTitle: "Compte et équipe", accountSub: "Gérez votre abonnement, les membres et la protection partagée.", accountEmpty: "Connectez-vous pour gérer votre espace de travail. Les contrôles d’équipe sont inclus dans Business.",
+    plansHeadline: "Choisissez ce que Redaxa vérifie pour vous.", billingPeriod: "Période de facturation", billingMonthly: "Mensuel", billingYearly: "Annuel · 2 mois offerts",
+    recommended: "Recommandé", currentPlan: "Offre actuelle", equivYearly: "{price} par mois, facturé annuellement",
+    freeName: "Gratuit", freeDesc: "Vérifiez ce que vous partagez, sans compte.", freeNote: "Sans carte bancaire", freeCta: "Commencer",
+    freeB1: "<strong>5 vérifications de prompts par jour</strong> sur le web et dans l’application Windows", freeB2: "<strong>Aucune limite dans l’extension Chrome :</strong> les vérifications gratuites ont lieu sur votre appareil", freeB3: "<strong>Analyses de dépôts publics</strong> sur le web, 3 par jour", freeB4: "<strong>Résultats regroupés</strong> et une copie caviardée à partager",
+    proB1: "<strong>Vérifications de prompts sans limite quotidienne</strong> sur le web, sous Windows et dans Chrome", proB2: "<strong>Vos termes protégés</strong> pour les noms de clients et de projets, sur tous vos appareils", proB3: "<strong>Analyses de dépôts :</strong> 60 par jour sur le web, plus les analyses dans l’application Windows avec historique et récapitulatif par priorité", proB4: "<strong>Rapports texte caviardés</strong> pour les analyses de dépôts",
+    bizB1: "<strong>Tout ce qu’inclut Pro</strong>", bizB2: "<strong>Termes protégés partagés</strong> pour chaque membre", bizB3: "<strong>Avertir, caviarder ou bloquer</strong> avec des règles d’équipe", bizB4: "<strong>Activité et export CSV</strong> sans le contenu des prompts",
+    statusFree: "Vous utilisez l’offre gratuite : 5 vérifications de prompts par jour sur le web et dans l’application Windows.", statusTrial: "Votre essai gratuit est en cours : {left}.", statusActive: "Votre offre {plan} est active.",
+    checkoutNote: "Les paiements sont traités par Stripe. Gérer l’abonnement ouvre le portail de facturation, où vous pouvez mettre à jour votre carte, télécharger vos factures ou annuler le renouvellement.",
+    compareTitle: "Comparer les offres", compareFeature: "Fonction", included: "Inclus", notIncluded: "Non inclus",
+    cmpPrompt: "Vérifications de prompts sur le web et dans l’application Windows", cmpExtension: "Vérifications dans l’extension Chrome", cmpTerms: "Vos termes protégés", cmpRepoWeb: "Analyses de dépôts publics sur le web", cmpRepoLocal: "Analyses de dépôts dans l’application Windows, avec historique et archives", cmpReports: "Rapports de dépôts caviardés", cmpPolicies: "Règles d’équipe : avertir, caviarder ou bloquer", cmpActivity: "Activité de l’équipe et export CSV, métadonnées uniquement", cmpSeats: "Utilisateurs",
+    cellFiveDaily: "5 par jour", cellNoLimit: "Sans limite quotidienne", cellExtFree: "Sans limite, sur votre appareil", cellExtPlan: "Sans limite, sur le serveur de Redaxa", cellTermsFree: "Web et application Windows", cellTermsPro: "Web, Windows et Chrome", cellTermsBiz: "Plus les termes partagés", cellThreeDaily: "3 par jour", cellSixtyDaily: "60 par jour", cellOneUser: "1", cellSeats: "1–3",
+    trustTitle: "Ce qui quitte votre appareil", trustExtT: "Vérifications gratuites dans Chrome", trustExt: "Elles ont lieu dans votre navigateur. Le texte vérifié ne quitte pas votre appareil.", trustServerT: "Vérifications sur le web, sous Windows et avec une offre", trustServer: "Envoyées via une connexion chiffrée, analysées puis supprimées. Jamais conservées ni transmises à un fournisseur d’IA.", trustMetaT: "Journal d’activité", trustMeta: "Métadonnées uniquement : heure, application, catégories et nombre de détections. Jamais votre texte.", trustRepoT: "Analyses de dépôts", trustRepo: "Dépôts publics uniquement ; les analyses dans l’application Windows ont lieu en local. Les dépôts privés ne sont pas pris en charge.", trustLimit: "La détection peut manquer des informations sensibles ou signaler un texte anodin. Relisez chaque résultat avant de partager.", privacyPolicy: "Lire la politique de confidentialité",
+    faqTitle: "Questions", faqTrialQ: "Comment fonctionne l’essai de 7 jours ?", faqTrialA: "Les nouveaux abonnés éligibles commencent par un essai de 7 jours. Une carte est requise ; annulez avant la fin de l’essai pour éviter d’être débité.", faqCancelQ: "Puis-je annuler ou changer d’offre ?", faqCancelA: "Oui. Gérer l’abonnement ouvre le portail de facturation, où vous pouvez mettre à jour votre moyen de paiement, télécharger vos factures ou annuler le renouvellement à tout moment.", faqBizQ: "Qu’apporte Business ?", faqBizA: "Tout ce qu’inclut Pro, plus des termes protégés partagés, des règles par catégorie et une activité d’équipe limitée aux métadonnées. De un à trois utilisateurs.", faqStoredQ: "Le texte vérifié est-il conservé ?", faqStoredA: "Non. Les vérifications sur le web, dans l’application Windows et avec une offre sont analysées puis supprimées, et Redaxa ne conserve que des métadonnées. Les vérifications gratuites dans l’extension Chrome ne quittent jamais votre appareil.", faqMissQ: "Redaxa trouve-t-il tout ?", faqMissA: "Aucun outil ne peut le promettre. La détection peut manquer des informations sensibles ou signaler un texte anodin : relisez chaque résultat avant de le partager.",
+    sevCritical: "Critique", sevHigh: "Élevée", sevMedium: "Moyenne", sevLow: "Faible", sevCriticalHint: "Peut donner accès à un compte ou à un système", sevHighHint: "Exposition financière directe ou identifiant fort", sevMediumHint: "Données personnelles au préjudice indirect", sevLowHint: "Identifiants faibles, selon le contexte"
+  },
+  de: {
+    ctaPro: "Zu Pro wechseln", ctaBusiness: "Zu Business wechseln", freeCurrent: "Sie nutzen den Free-Tarif", includedInPlan: "In Ihrem Tarif enthalten", clearResults: "Ergebnisse löschen", resultsCleared: "Ergebnisse gelöscht. Starten Sie eine neue Prüfung, wann immer Sie möchten.", previewPersonal: "Personenbezogene Daten", previewCredential: "Zugangsdaten", previewUse: "Diese Art von Prüfung testen →",
+    onboardTitle: "Erste Schritte", onboardDismiss: "Liste schließen", onboardTermsDesc: "Schützen Sie den Namen eines Kunden oder Projekts.", onboardThemeDesc: "Gestalten Sie den Arbeitsbereich nach Ihrem Geschmack.",
+    activityPageTitle: "Aktivität", activityPageSub: "Was Ihre letzten Prüfungen gefunden haben. Lokale Zusammenfassungen bleiben auf diesem Gerät; die Kontoaktivität enthält nie Ihren Text.", clearLocalActivity: "Lokale Aktivität löschen",
+    termsTitle: "Geschützte Begriffe", termsSub: "Namen, die Redaxa immer markieren soll, etwa Kunden, Projekte und Codenamen.", ownTermsTitle: "Ihre geschützten Begriffe", ownTermsHint: "Ein Begriff pro Zeile, bis zu 30. Jede Prüfung sucht danach.", ownTermsPlaceholder: "Kunde Acme\nProjekt Falke", saveTerms: "Begriffe speichern", termsSaved: "Gespeichert.", termsCount: "{n} Begriff|{n} Begriffe",
+    settingsTitle: "Einstellungen", settingsAppearance: "Darstellung und Sprache", settingsDetection: "Erkennung", settingsDevice: "Auf diesem Gerät", themeLabel: "Design", prefsSaved: "Einstellungen gespeichert.",
+    apiTitle: "API-Schlüssel für Entwickler", apiHint: "Für Skripte und Pipelines.", apiDocs: "API-Dokumentation", apiSignIn: "Melden Sie sich an, um API-Schlüssel zu verwalten.", apiNone: "Noch keine API-Schlüssel.", apiCreate: "API-Schlüssel erstellen", apiCopy: "Kopieren", apiOnce: "Dieser Schlüssel wird nur einmal angezeigt. Speichern Sie ihn jetzt – er kann nicht wiederhergestellt werden.",
+    accountTitle: "Konto und Team", accountSub: "Verwalten Sie Ihr Abo, die Mitglieder und den gemeinsamen Schutz.", accountEmpty: "Melden Sie sich an, um Ihren Arbeitsbereich zu verwalten. Team-Funktionen sind in Business enthalten.",
+    plansHeadline: "Wählen Sie, wie viel Redaxa für Sie prüft.", billingPeriod: "Abrechnungszeitraum", billingMonthly: "Monatlich", billingYearly: "Jährlich · 2 Monate gratis",
+    recommended: "Empfohlen", currentPlan: "Aktueller Tarif", equivYearly: "{price} pro Monat, jährlich abgerechnet",
+    freeName: "Kostenlos", freeDesc: "Prüfen Sie, was Sie teilen – ganz ohne Konto.", freeNote: "Keine Karte nötig", freeCta: "Jetzt prüfen",
+    freeB1: "<strong>5 Prompt-Prüfungen pro Tag</strong> im Web und in der Windows-App", freeB2: "<strong>Kein Limit in der Chrome-Erweiterung:</strong> kostenlose Prüfungen laufen auf Ihrem Gerät", freeB3: "<strong>Prüfungen öffentlicher Repositorys</strong> im Web, 3 pro Tag", freeB4: "<strong>Gruppierte Ergebnisse</strong> und eine geschwärzte Kopie zum Teilen",
+    proB1: "<strong>Prompt-Prüfungen ohne Tageslimit</strong> im Web, unter Windows und in Chrome", proB2: "<strong>Ihre geschützten Begriffe</strong> für Kunden- und Projektnamen, auf jedem Gerät", proB3: "<strong>Repository-Prüfungen:</strong> 60 pro Tag im Web, dazu Prüfungen in der Windows-App mit Verlauf und priorisierter Zusammenfassung", proB4: "<strong>Geschwärzte Textberichte</strong> für Repository-Prüfungen",
+    bizB1: "<strong>Alles aus Pro</strong>", bizB2: "<strong>Gemeinsame geschützte Begriffe</strong> für jedes Mitglied", bizB3: "<strong>Warnen, schwärzen oder blockieren</strong> mit Team-Richtlinien", bizB4: "<strong>Aktivität und CSV-Export</strong> ohne Prompt-Inhalte",
+    statusFree: "Sie nutzen den kostenlosen Tarif: 5 Prompt-Prüfungen pro Tag im Web und in der Windows-App.", statusTrial: "Ihre kostenlose Testphase läuft: {left}.", statusActive: "Ihr Tarif {plan} ist aktiv.",
+    checkoutNote: "Zahlungen werden von Stripe abgewickelt. „Abonnement verwalten“ öffnet das Abrechnungsportal, in dem Sie Ihre Karte aktualisieren, Rechnungen herunterladen oder die Verlängerung kündigen können.",
+    compareTitle: "Tarife vergleichen", compareFeature: "Funktion", included: "Enthalten", notIncluded: "Nicht enthalten",
+    cmpPrompt: "Prompt-Prüfungen im Web und in der Windows-App", cmpExtension: "Prüfungen in der Chrome-Erweiterung", cmpTerms: "Ihre geschützten Begriffe", cmpRepoWeb: "Prüfungen öffentlicher Repositorys im Web", cmpRepoLocal: "Repository-Prüfungen in der Windows-App, mit Verlauf und Archiven", cmpReports: "Geschwärzte Repository-Berichte", cmpPolicies: "Team-Richtlinien: warnen, schwärzen oder blockieren", cmpActivity: "Team-Aktivität und CSV-Export, nur Metadaten", cmpSeats: "Nutzer",
+    cellFiveDaily: "5 pro Tag", cellNoLimit: "Ohne Tageslimit", cellExtFree: "Ohne Limit, auf Ihrem Gerät", cellExtPlan: "Ohne Limit, auf dem Redaxa-Server", cellTermsFree: "Web und Windows-App", cellTermsPro: "Web, Windows und Chrome", cellTermsBiz: "Plus gemeinsame Begriffe", cellThreeDaily: "3 pro Tag", cellSixtyDaily: "60 pro Tag", cellOneUser: "1", cellSeats: "1–3",
+    trustTitle: "Was Ihr Gerät verlässt", trustExtT: "Kostenlose Prüfungen in Chrome", trustExt: "Laufen in Ihrem Browser. Der geprüfte Text verlässt Ihr Gerät nicht.", trustServerT: "Prüfungen im Web, unter Windows und mit einem Tarif", trustServer: "Werden verschlüsselt übertragen, analysiert und verworfen. Nie gespeichert und nie an einen KI-Anbieter weitergegeben.", trustMetaT: "Aktivitätsprotokoll", trustMeta: "Nur Metadaten: Zeit, Anwendung, Kategorien und Anzahl der Funde. Nie Ihr Text.", trustRepoT: "Repository-Prüfungen", trustRepo: "Nur öffentliche Repositorys; Prüfungen in der Windows-App laufen lokal. Private Repositorys werden nicht unterstützt.", trustLimit: "Die Erkennung kann sensible Informationen übersehen oder harmlosen Text markieren. Prüfen Sie jedes Ergebnis, bevor Sie etwas teilen.", privacyPolicy: "Datenschutzerklärung lesen",
+    faqTitle: "Fragen", faqTrialQ: "Wie funktioniert die 7-tägige Testphase?", faqTrialA: "Berechtigte neue Abonnenten starten mit einer 7-tägigen Testphase. Eine Karte ist erforderlich; kündigen Sie vor Ende der Testphase, um eine Abbuchung zu vermeiden.", faqCancelQ: "Kann ich kündigen oder den Tarif wechseln?", faqCancelA: "Ja. „Abonnement verwalten“ öffnet das Abrechnungsportal, in dem Sie jederzeit Ihre Zahlungsmethode aktualisieren, Rechnungen herunterladen oder die Verlängerung kündigen können.", faqBizQ: "Was bietet Business zusätzlich?", faqBizA: "Alles aus Pro, dazu gemeinsame geschützte Begriffe, Richtlinien pro Kategorie und Team-Aktivität nur mit Metadaten. Wählen Sie ein bis drei Nutzer.", faqStoredQ: "Wird der geprüfte Text gespeichert?", faqStoredA: "Nein. Prüfungen im Web, in der Windows-App und mit einem Tarif werden analysiert und verworfen; Redaxa speichert nur Metadaten. Kostenlose Prüfungen in der Chrome-Erweiterung verlassen Ihr Gerät nie.", faqMissQ: "Findet Redaxa wirklich alles?", faqMissA: "Das kann kein Werkzeug versprechen. Die Erkennung kann sensible Informationen übersehen oder harmlosen Text markieren – prüfen Sie daher jedes Ergebnis, bevor Sie es teilen.",
+    sevCritical: "Kritisch", sevHigh: "Hoch", sevMedium: "Mittel", sevLow: "Niedrig", sevCriticalHint: "Kann Zugriff auf ein Konto oder System geben", sevHighHint: "Direktes finanzielles Risiko oder starkes Identifikationsmerkmal", sevMediumHint: "Persönliche Angaben mit indirektem Schaden", sevLowHint: "Schwache Merkmale, je nach Kontext"
+  }
+};
+for (const language of Object.keys(viewCopyByLanguage) as Language[]) Object.assign(copyByLanguage[language], shellCopyByLanguage[language], viewCopyByLanguage[language]);
+
 const settingsByLanguage: Record<Language, string[]> = {
   en: ["Preferences", "Saved in this browser only. Nothing here creates an account or uploads your text.", "Interface language", "Check mode", "Detect personal data (email, phone, IP, fiscal code)", "Detect API keys and credentials", "Detect cards and IBANs", "Keep local check summaries", "Show the detected value on screen", "Clear the prompt after copying its safer version", "Close", "Save preferences", "Custom protected terms"],
   it: ["Impostazioni personali", "Queste impostazioni restano in questo browser. Non creano un account online e non caricano il contenuto dei prompt.", "Lingua dell'interfaccia", "Modalità di controllo", "Rileva dati personali (email, telefono, IP, codice fiscale)", "Rileva API key e credenziali", "Rileva carte e IBAN", "Mantieni i riepiloghi locali", "Mostra il valore rilevato sullo schermo", "Svuota il prompt dopo aver copiato la versione sicura", "Chiudi", "Salva impostazioni", "Termini personali protetti"],
@@ -378,7 +500,7 @@ function readPreferences(): Preferences {
       return {
         ...defaultPreferences,
         language: ["en", "it", "es", "fr", "de"].includes(String(candidate.language)) ? candidate.language as Language : "en",
-        theme: themes.some((t) => t.code === candidate.theme) ? candidate.theme as ThemeName : "graphite",
+        theme: themes.some((t) => t.code === candidate.theme) ? candidate.theme as ThemeName : defaultTheme,
         scanMode: candidate.scanMode === "strict" ? "strict" : "standard",
         includePersonalData: candidate.includePersonalData !== false,
         includeCredentials: candidate.includeCredentials !== false,
@@ -411,6 +533,20 @@ function required<T extends Element>(selector: string): T {
   if (!element) throw new Error(`Redaxa dashboard element missing: ${selector}`);
   return element;
 }
+
+// The engine sets severity on every finding; older servers may not send it,
+// so the same mapping as scanner.ts is the fallback.
+const severityOrder: FindingSeverity[] = ["critical", "high", "medium", "low"];
+const fallbackSeverity: Record<string, FindingSeverity> = { secret: "critical", privateKey: "critical", credential: "critical", card: "high", iban: "high", ssn: "high", crypto: "high", fiscalCode: "high", email: "medium", phone: "medium", address: "medium", custom: "medium", name: "low", ip: "low" };
+export function severityOf(finding: Pick<Finding, "kind"> & { severity?: FindingSeverity }): FindingSeverity {
+  return finding.severity && severityOrder.includes(finding.severity) ? finding.severity : fallbackSeverity[finding.kind] ?? "medium";
+}
+const severityIcons: Record<FindingSeverity, string> = {
+  critical: '<svg class="sev-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M5.4 1.8h5.2l3.6 3.6v5.2l-3.6 3.6H5.4l-3.6-3.6V5.4z"/><path d="M8 4.8v3.8M8 11.2h.01"/></svg>',
+  high: '<svg class="sev-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.2l6.2 11H1.8z"/><path d="M8 6.4v3M8 11.4h.01"/></svg>',
+  medium: '<svg class="sev-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 7.2v4M8 4.9h.01"/></svg>',
+  low: '<svg class="sev-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="1.6"/></svg>'
+};
 
 export function mountDashboard(): void {
   enableAppShell();
@@ -498,37 +634,43 @@ export function mountDashboard(): void {
   const dateTime = (iso: string): string => new Date(iso).toLocaleString(preferences.language);
   const dateOnly = (iso: string): string => new Date(iso).toLocaleDateString(preferences.language);
 
-  navItems.forEach((item) => item.setAttribute("type", "button"));
-
-  const preferenceDialog = document.createElement("div");
-  preferenceDialog.className = "drawer-backdrop";
-  preferenceDialog.innerHTML = `
-    <section class="drawer" role="dialog" aria-modal="true" aria-labelledby="preferences-title">
-      <h2 id="preferences-title">Preferences</h2>
-      <p>Saved in this browser only. Nothing here creates an account or uploads your text.</p>
-      <label class="pref-row">Interface language<select id="language"><option value="en">English</option><option value="it">Italiano</option><option value="es">Español</option><option value="fr">Français</option><option value="de">Deutsch</option></select></label>
-      <div class="pref-row theme-pref-row">Theme<div class="theme-row" id="theme-row"></div></div>
-      <label class="pref-row">Check mode<select id="scan-mode"><option value="standard">Standard</option><option value="strict">Strict</option></select></label>
-      <label class="switch"><input id="detect-personal" type="checkbox" checked> Detect personal data</label>
-      <label class="switch"><input id="detect-credentials" type="checkbox" checked> Detect API keys and credentials</label>
-      <label class="switch"><input id="detect-financial" type="checkbox" checked> Detect cards and IBANs</label>
-      <label class="switch"><input id="save-history" type="checkbox" checked> Keep local check summaries</label>
-      <label class="switch"><input id="show-raw" type="checkbox" checked> Show the detected value on screen</label>
-      <label class="switch"><input id="clear-after-copy" type="checkbox"> Clear the prompt after copying its safer version</label>
-      <label class="pref-row">Custom protected terms<textarea class="term-editor" id="custom-terms" maxlength="1500" placeholder="One term per line, for example: Acme Client"></textarea></label>
-      <div class="pref-row" id="api-keys-block">
-        <span>API keys <small style="color:var(--text-3);font-weight:500">— for scripts and pipelines (<a href="/api-docs.html" target="_blank" rel="noopener">docs</a>)</span></small>
-        <ul id="api-key-list"></ul>
-        <div id="api-key-new" hidden>
-          <input type="text" id="api-key-value" readonly>
-          <button type="button" class="secondary" id="api-key-copy">Copy</button>
-          <p class="pref-note">This key is shown once. Store it now — it cannot be recovered.</p>
-        </div>
-        <button type="button" class="secondary" id="api-key-create">Create API key</button>
+  // Settings, Plans & pricing and Account & team are pages of the workspace,
+  // not dialogs: each lives in its own [data-view] section and the rail and
+  // the address hash choose which one is on screen.
+  const viewRoot = (name: string): HTMLElement => required<HTMLElement>(`[data-view="${name}"]`);
+  const settingsView = viewRoot("settings");
+  settingsView.innerHTML = `
+    <header class="view-head"><h1 id="preferences-title" tabindex="-1" data-i18n="settingsTitle">Settings</h1><p data-s="1">Saved in this browser only. Nothing here creates an account or uploads your text.</p></header>
+    <section class="card settings-card" aria-labelledby="settings-appearance">
+      <div class="card-head"><h2 id="settings-appearance" data-i18n="settingsAppearance">Appearance and language</h2></div>
+      <label class="pref-row"><span data-s="2">Interface language</span><select id="language"><option value="en">English</option><option value="it">Italiano</option><option value="es">Español</option><option value="fr">Français</option><option value="de">Deutsch</option></select></label>
+      <div class="pref-row theme-pref-row"><span id="theme-label" data-i18n="themeLabel">Theme</span><div class="theme-row" id="theme-row" role="group" aria-labelledby="theme-label"></div></div>
+    </section>
+    <section class="card settings-card" aria-labelledby="settings-detection">
+      <div class="card-head"><h2 id="settings-detection" data-i18n="settingsDetection">Detection</h2></div>
+      <label class="pref-row"><span data-s="3">Check mode</span><select id="scan-mode"><option value="standard">Standard</option><option value="strict">Strict</option></select></label>
+      <label class="switch"><input id="detect-personal" type="checkbox" checked><span data-s="4">Detect personal data</span></label>
+      <label class="switch"><input id="detect-credentials" type="checkbox" checked><span data-s="5">Detect API keys and credentials</span></label>
+      <label class="switch"><input id="detect-financial" type="checkbox" checked><span data-s="6">Detect cards and IBANs</span></label>
+    </section>
+    <section class="card settings-card" aria-labelledby="settings-device">
+      <div class="card-head"><h2 id="settings-device" data-i18n="settingsDevice">On this device</h2></div>
+      <label class="switch"><input id="save-history" type="checkbox" checked><span data-s="7">Keep local check summaries</span></label>
+      <label class="switch"><input id="show-raw" type="checkbox" checked><span data-s="8">Show the detected value on screen</span></label>
+      <label class="switch"><input id="clear-after-copy" type="checkbox"><span data-s="9">Clear the prompt after copying its safer version</span></label>
+    </section>
+    <div class="settings-actions"><span class="form-status" id="prefs-status" role="status"></span><button class="primary" id="save-preferences" type="button" data-s="11">Save preferences</button></div>
+    <section class="card settings-card" id="api-keys-block" aria-labelledby="api-keys-title">
+      <div class="card-head"><h2 id="api-keys-title" data-i18n="apiTitle">Developer API keys</h2><a class="text-link" href="https://redaxa.getcertsprint.com/api-docs.html" target="_blank" rel="noopener" data-i18n="apiDocs">API documentation</a></div>
+      <p class="card-note" data-i18n="apiHint">For scripts and pipelines.</p>
+      <ul id="api-key-list"></ul>
+      <div id="api-key-new" hidden>
+        <input type="text" id="api-key-value" readonly aria-label="New API key">
+        <button type="button" class="secondary" id="api-key-copy" data-i18n="apiCopy">Copy</button>
+        <p class="pref-note" data-i18n="apiOnce">This key is shown once. Store it now — it cannot be recovered.</p>
       </div>
-      <div class="drawer-actions"><button class="secondary" id="close-preferences" type="button">Close</button><button class="primary" id="save-preferences" type="button">Save preferences</button></div>
+      <button type="button" class="secondary" id="api-key-create" data-i18n="apiCreate">Create API key</button>
     </section>`;
-  document.body.append(preferenceDialog);
   // Static palette classes work under desktop CSP and repaint every surface.
   const themeRow = required<HTMLElement>("#theme-row");
   themeRow.innerHTML = themes.map((theme) => `<button type="button" class="theme-swatch theme-swatch-${theme.code}${theme.code === preferences.theme ? " active" : ""}" data-theme="${theme.code}" title="${theme.label}" aria-label="${theme.label} theme" aria-pressed="${theme.code === preferences.theme}"><span class="theme-dot" aria-hidden="true"></span><span>${theme.label}</span></button>`).join("");
@@ -548,13 +690,13 @@ export function mountDashboard(): void {
   const apiKeyNew = required<HTMLElement>("#api-key-new");
   const apiKeyValue = required<HTMLInputElement>("#api-key-value");
   const loadApiKeys = async (): Promise<void> => {
-    if (!window.promptShieldAuth?.hasAccess()) { apiKeyList.innerHTML = `<li class="empty">Sign in to manage API keys.</li>`; return; }
+    if (!window.promptShieldAuth?.hasAccess()) { apiKeyList.innerHTML = `<li class="empty">${escapeHtml(words().apiSignIn)}</li>`; return; }
     try {
       const data = await window.promptShieldAuth.request("/api/account?action=keys", undefined, "GET") as { keys?: { id: string; name: string; prefix: string; createdAt: string; revoked: boolean }[] };
       const keys = (data.keys ?? []).filter((key) => !key.revoked);
       apiKeyList.innerHTML = keys.map((key) =>
-        `<li><span><code>${escapeHtml(key.prefix)}…</code> ${escapeHtml(key.name)}</span><button type="button" class="secondary" data-key-revoke="${escapeHtml(key.id)}">Revoke</button></li>`
-      ).join("") || `<li class="empty">No API keys yet.</li>`;
+        `<li><span><code>${escapeHtml(key.prefix)}…</code> ${escapeHtml(key.name)}</span><button type="button" class="secondary" data-key-revoke="${escapeHtml(key.id)}">${escapeHtml(words().revoke)}</button></li>`
+      ).join("") || `<li class="empty">${escapeHtml(words().apiNone)}</li>`;
     } catch { apiKeyList.innerHTML = ""; }
   };
   required<HTMLButtonElement>("#api-key-create").addEventListener("click", async () => {
@@ -577,126 +719,167 @@ export function mountDashboard(): void {
     await loadApiKeys();
   });
 
-  const plansDialog = document.createElement("div");
-  plansDialog.className = "drawer-backdrop";
-  plansDialog.innerHTML = `
-    <section class="drawer plans-drawer" role="dialog" aria-modal="true" aria-labelledby="plans-title">
-      <h2 id="plans-title" tabindex="-1">${words().plansTitle}</h2>
-      <p class="plans-intro">${words().plansIntro}</p>
-      <div class="billing-switch" role="group" aria-label="Billing period"><button type="button" data-billing="monthly" aria-pressed="false">Monthly</button><button type="button" data-billing="yearly" aria-pressed="true">Yearly · 2 months free</button></div>
-      <div class="plan-grid">
-        <article class="plan-card featured">
-          <div class="plan-tag">${words().personalTag}</div>
-          <h3>${words().personalName}</h3>
-          <div class="plan-price">€7.99 <small>/ month</small></div>
-          <p>${words().personalDesc}</p>
-          <ul class="rx-benefits"><li><strong>Prompt checks with no daily limit</strong> on web, Windows and Chrome</li><li><strong>Custom protected terms</strong> for client and project names</li><li><strong>Repository checks:</strong> 60 a day on the web, plus local reviews on Windows with history and a prioritized recap</li><li><strong>Redacted text reports</strong> for repository reviews</li></ul>
-          <div class="plan-actions">
-            <button type="button" class="primary" data-plan="personal" data-interval="monthly">${words().startTrial}</button>
-            <button type="button" class="primary" data-plan="personal" data-interval="yearly">${words().yearlyPersonal}</button>
-          </div>
-        </article>
-        <article class="plan-card">
-          <div class="plan-tag">${words().businessTag}</div>
-          <h3>${words().businessName}</h3>
-          <div class="plan-price">€14.99 <small>/ user / month</small></div>
-          <p>${words().businessDesc}</p>
-          <ul class="rx-benefits"><li><strong>Everything in Pro</strong></li><li><strong>Shared protected terms</strong> for every member</li><li><strong>Warn, redact or block</strong> through team policies</li><li><strong>Activity &amp; CSV export</strong> without prompt content</li></ul>
-          <label class="pref-row">${words().seatsLabel}<select id="business-seats"><option value="1">${words().seat1}</option><option value="2">${words().seat2}</option><option value="3">${words().seat3}</option></select></label>
-          <div class="plan-actions">
-            <button type="button" class="primary" data-plan="business" data-interval="monthly">${words().startTrial}</button>
-            <button type="button" class="primary" data-plan="business" data-interval="yearly">${words().yearlyBusiness}</button>
-          </div>
-        </article>
-        <article class="plan-card">
-          <div class="plan-tag">${words().manageTag}</div>
-          <h3>${words().manageTitle}</h3>
-          <div class="plan-price">&nbsp;</div>
-          <p>${words().manageDesc}</p>
-          <div class="plan-actions"><button type="button" class="secondary" id="manage-billing">${words().manageBtn}</button></div>
-        </article>
+  // Plans & pricing is a full page. Regular prices are fixed here as before;
+  // an offer replaces them only once the server confirms it (promo.ts).
+  const plansView = viewRoot("plans");
+  const w0 = words();
+  const checkIcon = '<svg class="cmp-yes" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.4l2.9 2.9 6.1-6.6"/></svg>';
+  const sparkIcon = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.8l1.5 4.2 4.3 1.5-4.3 1.5L8 13.2 6.5 9 2.2 7.5 6.5 6z"/></svg>';
+  const benefits = (keys: string[]): string => `<ul class="rx-benefits">${keys.map((key) => `<li data-i18n-html="${key}">${w0[key]}</li>`).join("")}</ul>`;
+  type CompareCell = string | boolean;
+  const compareRows: [string, CompareCell, CompareCell, CompareCell][] = [
+    ["cmpPrompt", "cellFiveDaily", "cellNoLimit", "cellNoLimit"],
+    ["cmpExtension", "cellExtFree", "cellExtPlan", "cellExtPlan"],
+    ["cmpTerms", "cellTermsFree", "cellTermsPro", "cellTermsBiz"],
+    ["cmpRepoWeb", "cellThreeDaily", "cellSixtyDaily", "cellSixtyDaily"],
+    ["cmpRepoLocal", false, true, true],
+    ["cmpReports", false, true, true],
+    ["cmpPolicies", false, false, true],
+    ["cmpActivity", false, false, true],
+    ["cmpSeats", "cellOneUser", "cellOneUser", "cellSeats"]
+  ];
+  const compareCell = (value: CompareCell): string => typeof value === "string"
+    ? `<td data-i18n="${value}">${w0[value]}</td>`
+    : value ? `<td class="cmp-cell-yes">${checkIcon}<span class="sr-only" data-i18n="included">${w0.included}</span></td>`
+    : `<td class="cmp-cell-no"><span aria-hidden="true">—</span><span class="sr-only" data-i18n="notIncluded">${w0.notIncluded}</span></td>`;
+  const faq = ["Trial", "Cancel", "Biz", "Stored", "Miss"].map((key) => `<details class="faq-item"><summary data-i18n="faq${key}Q">${w0[`faq${key}Q`]}</summary><p data-i18n="faq${key}A">${w0[`faq${key}A`]}</p></details>`).join("");
+  plansView.innerHTML = `
+    <header class="view-head plans-head">
+      <p class="eyebrow" data-i18n="plansTitle">${w0.plansTitle}</p>
+      <h1 id="plans-title" tabindex="-1" data-i18n="plansHeadline">${w0.plansHeadline}</h1>
+      <p class="plans-intro" data-i18n="plansIntro">${w0.plansIntro}</p>
+    </header>
+    <div class="plans-status" id="plans-status" role="status">
+      <span class="rx-badge" id="plans-status-badge"></span>
+      <p id="plans-status-text"></p>
+      <button type="button" class="secondary" id="plans-manage" hidden data-i18n="manageBtn">${w0.manageBtn}</button>
+    </div>
+    <div class="billing-switch" role="group" aria-label="${w0.billingPeriod}" data-i18n-label="billingPeriod"><button type="button" data-billing="monthly" aria-pressed="false" data-i18n="billingMonthly">${w0.billingMonthly}</button><button type="button" data-billing="yearly" aria-pressed="true" data-i18n="billingYearly">${w0.billingYearly}</button></div>
+    <div class="plan-grid">
+      <article class="plan-card plan-free" data-plan-card="free" aria-labelledby="plan-free-name">
+        <div class="plan-top"><h2 id="plan-free-name" data-i18n="freeName">${w0.freeName}</h2><span class="rx-badge rx-badge-current" data-current hidden data-i18n="currentPlan">${w0.currentPlan}</span></div>
+        <p class="plan-desc" data-i18n="freeDesc">${w0.freeDesc}</p>
+        <div class="plan-price" id="free-plan-price"></div>
+        <p class="plan-note" data-i18n="freeNote">${w0.freeNote}</p>
+        <div class="plan-actions"><button type="button" class="secondary plan-free-status" disabled>${w0.freeCurrent}</button></div>
+        ${benefits(["freeB1", "freeB2", "freeB3", "freeB4"])}
+      </article>
+      <article class="plan-card featured" data-plan-card="personal" aria-labelledby="plan-pro-name">
+        <span class="plan-ribbon">${sparkIcon}<span data-i18n="recommended">${w0.recommended}</span></span>
+        <div class="plan-top"><h2 id="plan-pro-name" data-i18n="personalName">${w0.personalName}</h2><span class="rx-badge rx-badge-current" data-current hidden data-i18n="currentPlan">${w0.currentPlan}</span></div>
+        <p class="plan-desc" data-i18n="personalDesc">${w0.personalDesc}</p>
+        <div class="plan-price"></div>
+        <p class="plan-note"></p>
+        <div class="plan-actions">
+          <button type="button" class="primary" data-plan="personal" data-interval="monthly">${w0.startTrial}</button>
+          <button type="button" class="primary" data-plan="personal" data-interval="yearly">${w0.startTrial}</button>
+          <button type="button" class="secondary plan-manage" hidden data-i18n="manageBtn">${w0.manageBtn}</button>
+        </div>
+        ${benefits(["proB1", "proB2", "proB3", "proB4"])}
+      </article>
+      <article class="plan-card" data-plan-card="business" aria-labelledby="plan-business-name">
+        <div class="plan-top"><h2 id="plan-business-name" data-i18n="businessName">${w0.businessName}</h2><span class="rx-badge rx-badge-current" data-current hidden data-i18n="currentPlan">${w0.currentPlan}</span></div>
+        <p class="plan-tagline" data-i18n="businessTag">${w0.businessTag}</p>
+        <p class="plan-desc" data-i18n="businessDesc">${w0.businessDesc}</p>
+        <div class="plan-price"></div>
+        <p class="plan-note"></p>
+        <label class="pref-row seats-row"><span data-i18n="seatsLabel">${w0.seatsLabel}</span><select id="business-seats"><option value="1" data-i18n="seat1">${w0.seat1}</option><option value="2" data-i18n="seat2">${w0.seat2}</option><option value="3" data-i18n="seat3">${w0.seat3}</option></select></label>
+        <div class="plan-actions">
+          <button type="button" class="primary" data-plan="business" data-interval="monthly">${w0.startTrial}</button>
+          <button type="button" class="primary" data-plan="business" data-interval="yearly">${w0.startTrial}</button>
+          <button type="button" class="secondary plan-manage" hidden data-i18n="manageBtn">${w0.manageBtn}</button>
+        </div>
+        ${benefits(["bizB1", "bizB2", "bizB3", "bizB4"])}
+      </article>
+    </div>
+    <p class="plans-checkout-note" data-i18n="checkoutNote">${w0.checkoutNote}</p>
+    <section class="plans-section" aria-labelledby="compare-title">
+      <h2 id="compare-title" data-i18n="compareTitle">${w0.compareTitle}</h2>
+      <div class="compare-wrap" tabindex="0" role="region" aria-labelledby="compare-title">
+        <table class="compare-table">
+          <thead><tr><th scope="col" data-i18n="compareFeature">${w0.compareFeature}</th><th scope="col" data-i18n="freeName">${w0.freeName}</th><th scope="col" class="cmp-featured" data-i18n="personalName">${w0.personalName}</th><th scope="col" data-i18n="businessName">${w0.businessName}</th></tr></thead>
+          <tbody>${compareRows.map(([label, free, pro, business]) => `<tr><th scope="row" data-i18n="${label}">${w0[label]}</th>${compareCell(free)}${compareCell(pro)}${compareCell(business)}</tr>`).join("")}</tbody>
+        </table>
       </div>
-      <section id="team-section" class="team-section" hidden>
-        <h3>${words().teamTitle}</h3>
-        <p id="team-seats"></p>
-        <ul id="team-invite-list"></ul>
-        <button type="button" class="secondary" id="team-invite-btn">${words().inviteCreate}</button>
-        <div id="team-invite-result"></div>
-      </section>
-      <section id="org-section" class="team-section" hidden>
-        <h3 id="org-title">${words().orgTitle}</h3>
-        <p>${words().orgIntro}</p>
-        <div class="pref-row" id="org-name-row" hidden>
-          <input type="text" id="org-name-input" maxlength="80">
-          <button type="button" class="secondary" id="org-name-save">${words().orgRenameSave}</button>
-        </div>
-        <h3>${words().orgMembersLabel}</h3>
-        <ul id="org-member-list"></ul>
-        <h3>${words().orgPoliciesLabel}</h3>
-        <p>${words().orgPoliciesHint}</p>
-        <ul id="org-policy-list"></ul>
-        <h3>${words().orgTermsLabel}</h3>
-        <p>${words().orgTermsHint}</p>
-        <ul id="org-term-list"></ul>
-        <div class="pref-row" id="org-term-row" hidden>
-          <input type="text" id="org-term-input" maxlength="64" placeholder="${words().orgTermPlaceholder}">
-          <button type="button" class="secondary" id="org-term-add">${words().orgTermAdd}</button>
-        </div>
-      </section>
-      <div class="drawer-actions"><button class="secondary" id="close-plans" type="button">${settingsByLanguage[preferences.language][10]}</button></div>
+    </section>
+    <section class="plans-section plans-trust" aria-labelledby="trust-title">
+      <h2 id="trust-title" data-i18n="trustTitle">${w0.trustTitle}</h2>
+      <div class="trust-grid">
+        ${["Ext", "Server", "Meta", "Repo"].map((key) => `<article class="trust-item"><h3 data-i18n="trust${key}T">${w0[`trust${key}T`]}</h3><p data-i18n="trust${key}">${w0[`trust${key}`]}</p></article>`).join("")}
+      </div>
+      <p class="trust-limit"><span data-i18n="trustLimit">${w0.trustLimit}</span> <a href="https://redaxa.getcertsprint.com/privacy.html" target="_blank" rel="noopener" data-i18n="privacyPolicy">${w0.privacyPolicy}</a></p>
+    </section>
+    <section class="plans-section" aria-labelledby="faq-title">
+      <h2 id="faq-title" data-i18n="faqTitle">${w0.faqTitle}</h2>
+      <div class="faq-list">${faq}</div>
     </section>`;
-  document.body.append(plansDialog);
-  required<HTMLElement>(".plans-drawer").prepend(required("#close-plans"));
-  plansDialog.querySelectorAll(".drawer-actions").forEach(element => element.remove());
-  const workspaceDialog = document.createElement("div");
-  workspaceDialog.className = "drawer-backdrop";
-  workspaceDialog.innerHTML = '<section class="drawer workspace-drawer" role="dialog" aria-modal="true" aria-labelledby="workspace-title"><h2 id="workspace-title" tabindex="-1">Workspace & team</h2><p>Manage members, shared protection and your subscription.</p><p id="workspace-empty" hidden>Sign in to manage your workspace. Team controls are available with Business.</p><div class="workspace-content"></div><div class="drawer-actions"><button class="secondary" id="close-workspace" type="button">Close</button></div></section>';
-  document.body.append(workspaceDialog);
-  const management = workspaceDialog.querySelector(".workspace-content")!;
-  management.append(plansDialog.querySelector(".plan-card:last-child")!, required("#team-section"), required("#org-section"));
+
+  const accountView = viewRoot("account");
+  accountView.innerHTML = `
+    <header class="view-head"><h1 id="workspace-title" tabindex="-1" data-i18n="accountTitle">${w0.accountTitle}</h1><p data-i18n="accountSub">${w0.accountSub}</p></header>
+    <p class="empty" id="workspace-empty" hidden data-i18n="accountEmpty">${w0.accountEmpty}</p>
+    <section class="card billing-card" aria-labelledby="billing-title">
+      <div class="card-head"><h2 id="billing-title" data-i18n="manageTitle">${w0.manageTitle}</h2><span class="rx-badge" id="account-plan-badge"></span></div>
+      <p class="card-note" data-i18n="manageDesc">${w0.manageDesc}</p>
+      <div class="card-actions"><a class="ghost-btn" id="account-compare" href="#plans" data-i18n="seePlans">${w0.seePlans}</a><button type="button" class="primary" id="manage-billing" data-i18n="manageBtn">${w0.manageBtn}</button></div>
+    </section>
+    <section id="team-section" class="card team-section" hidden aria-labelledby="team-title">
+      <div class="card-head"><h2 id="team-title" data-i18n="teamTitle">${w0.teamTitle}</h2></div>
+      <p id="team-seats"></p>
+      <ul id="team-invite-list"></ul>
+      <button type="button" class="secondary" id="team-invite-btn" data-i18n="inviteCreate">${w0.inviteCreate}</button>
+      <div id="team-invite-result"></div>
+    </section>
+    <section id="org-section" class="card team-section" hidden aria-labelledby="org-title">
+      <div class="card-head"><h2 id="org-title">${w0.orgTitle}</h2></div>
+      <p class="card-note" data-i18n="orgIntro">${w0.orgIntro}</p>
+      <div class="pref-row" id="org-name-row" hidden>
+        <input type="text" id="org-name-input" maxlength="80" aria-labelledby="org-title">
+        <button type="button" class="secondary" id="org-name-save" data-i18n="orgRenameSave">${w0.orgRenameSave}</button>
+      </div>
+      <h3 data-i18n="orgMembersLabel">${w0.orgMembersLabel}</h3>
+      <ul id="org-member-list"></ul>
+      <h3 data-i18n="orgPoliciesLabel">${w0.orgPoliciesLabel}</h3>
+      <p class="card-note" data-i18n="orgPoliciesHint">${w0.orgPoliciesHint}</p>
+      <ul id="org-policy-list"></ul>
+    </section>`;
+  // The workspace's shared terms are edited on the Protected terms page.
+  required<HTMLElement>("#org-terms-slot").innerHTML = `<ul id="org-term-list"></ul>
+    <div class="pref-row" id="org-term-row" hidden>
+      <input type="text" id="org-term-input" maxlength="64" placeholder="${w0.orgTermPlaceholder}" data-i18n-placeholder="orgTermPlaceholder" aria-labelledby="org-terms-title">
+      <button type="button" class="secondary" id="org-term-add" data-i18n="orgTermAdd">${w0.orgTermAdd}</button>
+    </div>`;
+
   let billingInterval: "monthly" | "yearly" = "yearly";
   // The Halloween offer, as last confirmed by the server. Regular prices until
   // then, and again the moment it ends or cannot be read.
   let promoView: PromoView | null = null;
-  const promo = mountPromo(banner => plansDialog.querySelector(".plans-intro")!.after(banner), () => promoWordsByLanguage[preferences.language], () => preferences.language, view => {
+  const promo = mountPromo(banner => required("#plans-status").after(banner), () => promoWordsByLanguage[preferences.language], () => preferences.language, view => {
     promoView = view;
     renderBilling();
   });
+  const planCard = (plan: string): HTMLElement => required<HTMLElement>(`[data-plan-card="${plan}"]`);
+  // Regular prices in euro cents, unchanged; only their formatting follows the language.
+  const regularPrice = (cents: number, unit: string, monthlyEquivalent?: number): string =>
+    `${euro(cents, preferences.language)} <small>${unit}</small>${monthlyEquivalent ? `<small class="price-equiv">${format(words().equivYearly, { price: euro(monthlyEquivalent, preferences.language) })}</small>` : ""}`;
   const renderBilling = (): void => {
-    plansDialog.querySelectorAll<HTMLElement>("[data-billing]").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.billing === billingInterval)));
-    plansDialog.querySelectorAll<HTMLElement>("[data-plan]").forEach(button => { button.hidden = button.dataset.interval !== billingInterval; button.textContent = words().startTrial; });
-    const cards = plansDialog.querySelectorAll<HTMLElement>(".plan-card");
     const promoWords = promoWordsByLanguage[preferences.language];
+    plansView.querySelectorAll<HTMLElement>("[data-billing]").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.billing === billingInterval)));
+    plansView.querySelectorAll<HTMLElement>("[data-plan]").forEach(button => { button.hidden = button.dataset.interval !== billingInterval; button.textContent = button.dataset.plan === "business" ? words().ctaBusiness : words().ctaPro; });
+    const yearly = billingInterval === "yearly";
     const pro = promoView?.offer("personal", billingInterval) ?? null;
     const business = promoView?.offer("business", billingInterval) ?? null;
     promo.relabel();
-    cards[0].querySelector(".plan-price")!.innerHTML = pro ? promoPriceHtml(pro, promoWords, preferences.language) : billingInterval === "yearly" ? '€79.90 <small>/ year</small><small class="price-equiv">€6.66 a month, billed yearly</small>' : '€7.99 <small>/ month</small>';
-    cards[1].querySelector(".plan-price")!.innerHTML = business ? promoPriceHtml(business, promoWords, preferences.language) : billingInterval === "yearly" ? '€149.90 <small>/ user / year</small><small class="price-equiv">€12.49 a month, billed yearly</small>' : '€14.99 <small>/ user / month</small>';
-    cards[0].querySelector(".plan-tag")!.textContent = billingInterval === "yearly" ? "Recommended · Pro yearly" : words().personalTag;
+    required<HTMLElement>("#free-plan-price").textContent = euro(0, preferences.language);
+    planCard("personal").querySelector(".plan-price")!.innerHTML = pro ? promoPriceHtml(pro, promoWords, preferences.language) : yearly ? regularPrice(7990, promoWords.perYear, 666) : regularPrice(799, promoWords.perMonth);
+    planCard("business").querySelector(".plan-price")!.innerHTML = business ? promoPriceHtml(business, promoWords, preferences.language) : yearly ? regularPrice(14990, promoWords.perUserYear, 1249) : regularPrice(1499, promoWords.perUserMonth);
+    renderPlanChoice();
   };
-  plansDialog.querySelectorAll<HTMLElement>("[data-billing]").forEach(button => button.addEventListener("click", () => { billingInterval = button.dataset.billing === "monthly" ? "monthly" : "yearly"; renderBilling(); }));
+  plansView.querySelectorAll<HTMLElement>("[data-billing]").forEach(button => button.addEventListener("click", () => { billingInterval = button.dataset.billing === "monthly" ? "monthly" : "yearly"; renderBilling(); }));
+  // Every "Manage subscription" control reaches the one button auth.ts binds to the billing portal.
+  [required<HTMLButtonElement>("#plans-manage"), ...plansView.querySelectorAll<HTMLButtonElement>(".plan-manage")]
+    .forEach(button => button.addEventListener("click", () => required<HTMLButtonElement>("#manage-billing").click()));
 
-  const closeWorkspace = (): void => {
-    workspaceDialog.classList.remove("open"); document.documentElement.classList.remove("preferences-open");
-    if (location.hash === "#workspace") history.replaceState(null, "", location.pathname + location.search);
-    document.querySelector<HTMLElement>('.ps-account-trigger')?.focus();
-  };
-  required("#close-workspace").addEventListener("click", closeWorkspace);
-  workspaceDialog.addEventListener("click", event => { if (event.target === workspaceDialog) closeWorkspace(); });
-  workspaceDialog.addEventListener("keydown", event => {
-    if (event.key === "Escape") { event.preventDefault(); closeWorkspace(); }
-    if (event.key === "Tab") {
-      const items = [...workspaceDialog.querySelectorAll<HTMLElement>('button:not(:disabled),a[href],select,input')].filter(el => el.getClientRects().length);
-      if (event.shiftKey && (document.activeElement === items[0] || document.activeElement?.id === "workspace-title")) { event.preventDefault(); items.at(-1)?.focus(); }
-      else if (!event.shiftKey && document.activeElement === items.at(-1)) { event.preventDefault(); items[0]?.focus(); }
-    }
-  });
-  const closePlans = (): void => {
-    plansDialog.classList.remove("open");
-    document.documentElement.classList.remove("preferences-open");
-    if (window.location.hash === "#plans") window.history.replaceState(null, "", window.location.pathname + window.location.search);
-    document.querySelector<HTMLButtonElement>('[data-nav="plans"]')?.focus();
-  };
   const teamSection = required<HTMLElement>("#team-section");
   const teamSeats = required<HTMLElement>("#team-seats");
   const teamInviteList = required<HTMLUListElement>("#team-invite-list");
@@ -753,6 +936,7 @@ export function mountDashboard(): void {
   const orgTermRow = required<HTMLElement>("#org-term-row");
   const orgTermInput = required<HTMLInputElement>("#org-term-input");
   const orgPolicyList = required<HTMLUListElement>("#org-policy-list");
+  const orgTermsCard = required<HTMLElement>("#org-terms-card");
   type OrgPayload = {
     organization: { id: string; name: string } | null;
     role?: "owner" | "admin" | "member";
@@ -769,6 +953,7 @@ export function mountDashboard(): void {
   // the whole Organization section popped in ~400ms after the drawer opened.
   let orgCache: OrgPayload | null = null;
   const renderOrganization = (data: OrgPayload): void => {
+    orgTermsCard.hidden = !data.organization;
     if (!data.organization) { orgSection.hidden = true; return; }
     orgSection.hidden = false;
       const canManage = data.role === "owner" || data.role === "admin";
@@ -800,13 +985,13 @@ export function mountDashboard(): void {
       }).join("");
   };
   const loadOrganization = async (): Promise<void> => {
-    if (!window.promptShieldAuth?.hasAccess()) { orgSection.hidden = true; return; }
+    if (!window.promptShieldAuth?.hasAccess()) { orgSection.hidden = true; orgTermsCard.hidden = true; return; }
     if (orgCache) renderOrganization(orgCache);
     try {
       const data = await window.promptShieldAuth.request("/api/team?action=org", undefined, "GET") as OrgPayload;
       orgCache = data;
       renderOrganization(data);
-    } catch { if (!orgCache) orgSection.hidden = true; }
+    } catch { if (!orgCache) { orgSection.hidden = true; orgTermsCard.hidden = true; } }
   };
   required<HTMLButtonElement>("#org-name-save").addEventListener("click", async () => {
     const name = orgNameInput.value.trim();
@@ -841,39 +1026,72 @@ export function mountDashboard(): void {
     await loadOrganization();
   });
 
-  const openPlans = (): void => {
-    plansDialog.classList.add("open");
-    required<HTMLElement>(".plans-drawer").scrollTop = 0;
-    required<HTMLElement>("#plans-title").focus({ preventScroll: true });
-    document.documentElement.classList.add("preferences-open");
-    renderBilling();
-  };
-  const openWorkspace = (): void => {
-    workspaceDialog.classList.add("open"); document.documentElement.classList.add("preferences-open");
-    required<HTMLElement>("#workspace-title").focus({preventScroll:true});
-    required<HTMLElement>("#workspace-empty").hidden = !!window.promptShieldAuth?.hasAccess();
-    void loadTeam(); void loadOrganization();
-  };
-  document.addEventListener("redaxa:account", () => {
-    if (workspaceDialog.classList.contains("open")) {
+  // ---- Views ---------------------------------------------------------------
+  // One page per task, chosen by the address hash. The links of the earlier
+  // dialogs (#preferences, #history, #api-keys, #workspace) still land on the
+  // right page: e-mails, the account menu and the repository page use them.
+  // "#account" stays with auth.ts, which opens its sign-in dialog on it.
+  type ViewName = "check" | "activity" | "terms" | "settings" | "plans" | "account";
+  const viewForHash: Record<string, ViewName> = { "": "check", "#": "check", "#check": "check", "#prompt-workspace": "check", "#activity": "activity", "#history": "activity", "#terms": "terms", "#settings": "settings", "#preferences": "settings", "#api-keys": "settings", "#plans": "plans", "#workspace": "account" };
+  const viewLabelKey: Record<ViewName, string> = { check: "navCheck", activity: "navActivity", terms: "navTerms", settings: "navSettings", plans: "navPlans", account: "navAccount" };
+  const viewSections = Array.from(document.querySelectorAll<HTMLElement>("main [data-view]"));
+  const viewLabel = required<HTMLElement>("#view-label");
+  let currentView: ViewName = "check";
+  const showView = (hash: string, moveFocus: boolean): boolean => {
+    const name = viewForHash[hash];
+    if (!name) return false;
+    currentView = name;
+    viewSections.forEach((section) => { section.hidden = section.dataset.view !== name; });
+    navItems.forEach((item) => {
+      const active = item.dataset.nav === name;
+      item.classList.toggle("active", active);
+      if (active) item.setAttribute("aria-current", "page"); else item.removeAttribute("aria-current");
+    });
+    viewLabel.textContent = words()[viewLabelKey[name]];
+    window.scrollTo(0, 0);
+    if (name === "settings") void loadApiKeys();
+    if (name === "plans") renderBilling();
+    if (name === "terms") void loadOrganization();
+    if (name === "account") {
       required<HTMLElement>("#workspace-empty").hidden = !!window.promptShieldAuth?.hasAccess();
       void loadTeam(); void loadOrganization();
     }
-  });
-  required<HTMLButtonElement>("#close-plans").addEventListener("click", closePlans);
-  document.querySelector("#side-fill-cta")?.addEventListener("click", (event) => { event.preventDefault(); openPlans(); });
-  plansDialog.addEventListener("click", (event) => { if (event.target === plansDialog) closePlans(); });
-  document.addEventListener("redaxa:need-upgrade", () => openPlans());
-
-  plansDialog.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") { event.preventDefault(); closePlans(); }
-    if (event.key === "Tab") {
-      const focusable = [...plansDialog.querySelectorAll<HTMLElement>('button:not(:disabled),a[href],select,input')].filter((element) => element.getClientRects().length > 0);
-      const first = focusable[0], last = focusable[focusable.length - 1];
-      if (event.shiftKey && (document.activeElement === first || document.activeElement?.id === "plans-title")) { event.preventDefault(); last?.focus(); }
-      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    // A deep link to one block of a page goes to that block.
+    const block = hash === "#api-keys" ? required<HTMLElement>("#api-key-create") : hash === "#history" ? historyCard : null;
+    if (block) {
+      if (block === historyCard) historyCard.tabIndex = -1;
+      block.scrollIntoView({ block: "center" });
+      block.focus({ preventScroll: true });
+    } else if (moveFocus) {
+      (name === "check" ? prompt : required<HTMLElement>(`[data-view="${name}"] h1`)).focus({ preventScroll: true });
     }
+    return true;
+  };
+  // Page links switch the view in the same task as the click: the address is
+  // updated with pushState instead of waiting for a hashchange round trip.
+  // Back and forward, and hashes set elsewhere, still arrive as events.
+  window.addEventListener("hashchange", () => { showView(location.hash, true); });
+  window.addEventListener("popstate", () => { showView(location.hash, true); });
+  document.addEventListener("click", (event) => {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    const link = (event.target as HTMLElement).closest<HTMLAnchorElement>("a[href]");
+    if (!link || link.target === "_blank") return;
+    const url = new URL(link.href);
+    // The desktop app serves this workspace as "/", the site as "/dashboard.html".
+    const samePage = url.pathname === location.pathname || (url.pathname === "/dashboard.html" && location.pathname === "/");
+    if (url.origin !== location.origin || !samePage || !viewForHash[url.hash]) return;
+    event.preventDefault();
+    if (url.hash !== location.hash) history.pushState(null, "", url.hash);
+    showView(url.hash, true);
   });
+  document.addEventListener("redaxa:account", () => {
+    if (currentView !== "account") return;
+    required<HTMLElement>("#workspace-empty").hidden = !!window.promptShieldAuth?.hasAccess();
+    void loadTeam(); void loadOrganization();
+  });
+  document.addEventListener("redaxa:need-upgrade", () => { if (location.hash === "#plans") showView("#plans", true); else location.hash = "#plans"; });
+  document.addEventListener("redaxa:auth-ready", () => { if (currentView === "settings") void loadApiKeys(); });
+  required<HTMLButtonElement>("#help-link").addEventListener("click", openSupportEmail);
 
   const languageSelect = required<HTMLSelectElement>("#language");
   const scanModeSelect = required<HTMLSelectElement>("#scan-mode");
@@ -896,17 +1114,13 @@ export function mountDashboard(): void {
     customTermsInput.value = preferences.customTerms.join("\n");
   };
   syncPreferenceControls();
-
-  const closePreferences = (): void => {
-    preferenceDialog.classList.remove("open");
-    document.documentElement.classList.remove("preferences-open");
+  const renderTermsCount = (): void => {
+    required<HTMLElement>("#own-terms-count").textContent = plural(words().termsCount, preferences.customTerms.length);
   };
-  document.addEventListener("redaxa:auth-ready", () => { if (preferenceDialog.classList.contains("open")) void loadApiKeys(); });
-  const openPreferences = (): void => {
-    void loadApiKeys();
-    preferenceDialog.classList.add("open");
-    document.documentElement.classList.add("preferences-open");
-    languageSelect.focus();
+  // A short confirmation next to the button that saved, cleared after a moment.
+  const flash = (element: HTMLElement, message: string): void => {
+    element.textContent = message;
+    window.setTimeout(() => { if (element.textContent === message) element.textContent = ""; }, 2400);
   };
 
   // Every translatable string carries a data-i18n key in the markup instead of
@@ -921,82 +1135,39 @@ export function mountDashboard(): void {
       const value = w[element.dataset.i18n ?? ""];
       if (value !== undefined) element.textContent = value;
     });
+    // Only this file's own copy, which carries <strong> emphasis, is set as HTML.
+    document.querySelectorAll<HTMLElement>("[data-i18n-html]").forEach((element) => {
+      const value = w[element.dataset.i18nHtml ?? ""];
+      if (value !== undefined) element.innerHTML = value;
+    });
     document.querySelectorAll<HTMLElement>("[data-i18n-placeholder]").forEach((element) => {
       const value = w[element.dataset.i18nPlaceholder ?? ""];
       if (value !== undefined) element.setAttribute("placeholder", value);
+    });
+    document.querySelectorAll<HTMLElement>("[data-i18n-label]").forEach((element) => {
+      const value = w[element.dataset.i18nLabel ?? ""];
+      if (value !== undefined) element.setAttribute("aria-label", value);
     });
     document.querySelectorAll<HTMLElement>("[data-kind]").forEach((element) => {
       const value = labels()[element.dataset.kind ?? ""];
       if (value !== undefined) element.textContent = value;
     });
+    document.querySelectorAll<HTMLElement>("[data-s]").forEach((element) => {
+      const value = settings[Number(element.dataset.s)];
+      if (value !== undefined) element.textContent = value;
+    });
     languageSelect.setAttribute("aria-label", `${w.interfaceLanguage}: ${languageNames[preferences.language]}`);
-
-    required<HTMLElement>("#preferences-title").textContent = settings[0];
-    required<HTMLElement>(".drawer p").textContent = settings[1];
-    const prefRows = Array.from(preferenceDialog.querySelectorAll<HTMLElement>(".pref-row:not(.theme-pref-row)"));
-    prefRows.slice(0, 2).forEach((row, index) => { if (row.firstChild) row.firstChild.textContent = settings[index + 2]; });
-    if (prefRows[2]?.firstChild) prefRows[2].firstChild.textContent = settings[12];
-    const switches = Array.from(preferenceDialog.querySelectorAll<HTMLElement>(".switch"));
-    switches.forEach((row, index) => { if (row.lastChild) row.lastChild.textContent = settings[index + 4]; });
-    required<HTMLButtonElement>("#close-preferences").textContent = settings[10];
-    required<HTMLButtonElement>("#save-preferences").textContent = settings[11];
     scanModeSelect.options[0].textContent = w.scanModeStandard;
     scanModeSelect.options[1].textContent = w.scanModeStrict;
-
-    // The plans drawer is patched in place rather than rebuilt via innerHTML:
-    // rebuilding would detach the click handlers auth.ts bound to these exact
-    // button elements at boot.
-    required<HTMLElement>("#plans-title").textContent = w.plansTitle;
-    required<HTMLElement>(".plans-intro").textContent = w.plansIntro;
-
-    const [personalCard, businessCard] = Array.from(plansDialog.querySelectorAll<HTMLElement>(".plan-card"));
-    const manageCard = workspaceDialog.querySelector<HTMLElement>(".plan-card")!;
-    personalCard.querySelector(".plan-tag")!.textContent = w.personalTag;
-    personalCard.querySelector("h3")!.textContent = w.personalName;
-    personalCard.querySelector("p")!.textContent = w.personalDesc;
-    personalCard.querySelector<HTMLElement>('[data-interval="monthly"]')!.textContent = w.startTrial;
-    personalCard.querySelector<HTMLElement>('[data-interval="yearly"]')!.textContent = w.yearlyPersonal;
-    businessCard.querySelector(".plan-tag")!.textContent = w.businessTag;
-    businessCard.querySelector("h3")!.textContent = w.businessName;
-    businessCard.querySelector("p")!.textContent = w.businessDesc;
-    const seatRow = businessCard.querySelector<HTMLElement>(".pref-row");
-    if (seatRow?.firstChild) seatRow.firstChild.textContent = w.seatsLabel;
-    const seatOptions = businessCard.querySelectorAll<HTMLOptionElement>("#business-seats option");
-    [w.seat1, w.seat2, w.seat3].forEach((label, index) => { if (seatOptions[index]) seatOptions[index].textContent = label; });
-    businessCard.querySelector<HTMLElement>('[data-interval="monthly"]')!.textContent = w.startTrial;
-    businessCard.querySelector<HTMLElement>('[data-interval="yearly"]')!.textContent = w.yearlyBusiness;
-    manageCard.querySelector(".plan-tag")!.textContent = w.manageTag;
-    manageCard.querySelector("h3")!.textContent = w.manageTitle;
-    manageCard.querySelector("p")!.textContent = w.manageDesc;
-    required<HTMLElement>("#manage-billing").textContent = w.manageBtn;
-    required<HTMLElement>("#team-section h3").textContent = w.teamTitle;
-    required<HTMLElement>("#team-invite-btn").textContent = w.inviteCreate;
-    required<HTMLElement>("#close-plans").textContent = settings[10];
+    viewLabel.textContent = w[viewLabelKey[currentView]];
 
     renderBilling();
     updateCharacterCount();
     renderPlanStatus();
     renderHistory();
+    renderTermsCount();
     if (!resLive.hidden) renderRiskCopy();
   };
-
-  const setActiveNav = (active: HTMLElement): void => {
-    navItems.forEach((item) => {
-      const isActive = item === active;
-      item.classList.toggle("active", isActive);
-      if (isActive) item.setAttribute("aria-current", "page"); else item.removeAttribute("aria-current");
-    });
-  };
-  navItems.forEach((item) => {
-    item.addEventListener("click", () => {
-      switch (item.dataset.nav) {
-        case "check": setActiveNav(item); prompt.focus(); break;
-        case "recent": setActiveNav(item); historyCard.scrollIntoView({ behavior: "smooth", block: "start" }); break;
-        case "plans": openPlans(); break;
-        case "prefs": openPreferences(); break;
-      }
-    });
-  });
 
   const escapeHtml = (value: string): string => value.replace(/[&<>'"]/g, (character) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#039;", "\"": "&quot;"
@@ -1030,8 +1201,12 @@ export function mountDashboard(): void {
   // does not exist.
   const trialLengthDays = 7;
   let accountState: AccountState | null = null;
+  // "personal" is the billing name of Pro.
+  const planName = (plan: string | null | undefined): string => plan === "business" ? words().businessName : words().personalName;
   const renderPlanStatus = (): void => {
     const w = words();
+    const paid = Boolean(accountState?.active);
+    required<HTMLElement>("#side-fill").hidden = paid;
     if (accountState?.status === "trialing" && accountState.currentPeriodEnd) {
       const daysLeft = Math.max(0, Math.ceil((new Date(accountState.currentPeriodEnd).getTime() - Date.now()) / 86_400_000));
       const dayNumber = Math.min(trialLengthDays, Math.max(1, trialLengthDays - daysLeft + 1));
@@ -1041,18 +1216,49 @@ export function mountDashboard(): void {
       planFill.style.width = `${Math.round((dayNumber / trialLengthDays) * 100)}%`;
       planTrack.setAttribute("aria-label", format(w.planDayOf, { day: dayNumber, total: trialLengthDays }));
       planNote.textContent = w.planTrialNote;
-      return;
-    }
-    planTrack.hidden = true;
-    if (accountState?.active) {
-      planLabel.textContent = w.planActive;
-      planValue.textContent = accountState.plan ? accountState.plan.charAt(0).toUpperCase() + accountState.plan.slice(1) : "";
-      planNote.textContent = w.planActiveNote;
     } else {
-      planLabel.textContent = w.planNone;
-      planValue.textContent = "";
-      planNote.textContent = w.planNoneNote;
+      planTrack.hidden = true;
+      if (paid) {
+        planLabel.textContent = w.planActive;
+        planValue.textContent = planName(accountState?.plan);
+        planNote.textContent = w.planActiveNote;
+      } else {
+        planLabel.textContent = w.planNone;
+        planValue.textContent = "";
+        planNote.textContent = w.planNoneNote;
+      }
     }
+    renderPlanChoice();
+  };
+  // The plan this account holds is marked on Plans & pricing, and its checkout
+  // buttons give way to the billing portal so nobody subscribes twice.
+  const renderPlanChoice = (): void => {
+    const w = words();
+    const held = accountState?.active ? (accountState.plan === "business" ? "business" : "personal") : "free";
+    plansView.querySelectorAll<HTMLElement>("[data-plan-card]").forEach((card) => {
+      const mine = card.dataset.planCard === held;
+      card.classList.toggle("is-current", mine);
+      card.querySelector<HTMLElement>("[data-current]")!.hidden = !mine;
+      const manage = card.querySelector<HTMLElement>(".plan-manage");
+      if (!manage) return;
+      manage.hidden = !mine;
+      if (mine) card.querySelectorAll<HTMLElement>("[data-plan]").forEach((button) => { button.hidden = true; });
+    });
+    required<HTMLElement>(".plan-free-status").textContent = held === "free" ? w.freeCurrent : w.includedInPlan;
+    const trialing = accountState?.status === "trialing" && accountState.currentPeriodEnd;
+    const left = trialing ? Math.max(0, Math.ceil((new Date(accountState!.currentPeriodEnd!).getTime() - Date.now()) / 86_400_000)) : 0;
+    const label = held === "free" ? w.freeName : planName(accountState?.plan);
+    required<HTMLElement>("#plans-status-badge").textContent = trialing ? w.planTrial : label;
+    required<HTMLElement>("#plans-status-text").textContent = trialing
+      ? format(w.statusTrial, { left: left <= 0 ? w.planEndsToday : plural(w.planDaysLeft, left) })
+      : held === "free" ? w.statusFree : format(w.statusActive, { plan: label });
+    required<HTMLElement>("#plans-manage").hidden = held === "free";
+    // Without a subscription there is nothing to manage yet: plans come first.
+    required<HTMLElement>("#manage-billing").hidden = held === "free";
+    required<HTMLElement>("#account-compare").classList.toggle("primary", held === "free");
+    required<HTMLElement>("#account-compare").classList.toggle("ghost-btn", held !== "free");
+    required<HTMLElement>("#plans-status").classList.toggle("is-paid", held !== "free");
+    required<HTMLElement>("#account-plan-badge").textContent = trialing ? w.planTrial : label;
   };
   // Account activity: the metadata-only audit trail (kinds, counts, decision,
   // surface — never prompt content), pulled from the server so it spans every
@@ -1345,7 +1551,7 @@ export function mountDashboard(): void {
   // answers "where in my prompt?" and not just "how many". Honours the
   // "show the detected value on screen" preference.
   const buildSnippet = (source: string, findings: Finding[]): string => {
-    const ranges: { start: number; end: number }[] = [];
+    const ranges: { start: number; end: number; severity: FindingSeverity }[] = [];
     for (const finding of findings) {
       if (!finding.value) continue;
       let from = 0;
@@ -1353,7 +1559,7 @@ export function mountDashboard(): void {
         const at = source.indexOf(finding.value, from);
         if (at === -1) break;
         if (!ranges.some((range) => at < range.end && at + finding.value.length > range.start)) {
-          ranges.push({ start: at, end: at + finding.value.length });
+          ranges.push({ start: at, end: at + finding.value.length, severity: severityOf(finding) });
           break;
         }
         from = at + 1;
@@ -1372,7 +1578,7 @@ export function mountDashboard(): void {
       text = source.slice(offset, offset + windowSize);
     }
     const visible = ranges
-      .map((range) => ({ start: range.start - offset, end: range.end - offset }))
+      .map((range) => ({ start: range.start - offset, end: range.end - offset, severity: range.severity }))
       .filter((range) => range.start >= 0 && range.end <= text.length);
 
     let html = offset > 0 ? "… " : "";
@@ -1380,7 +1586,7 @@ export function mountDashboard(): void {
     for (const range of visible) {
       html += escapeHtml(text.slice(cursor, range.start));
       const raw = text.slice(range.start, range.end);
-      html += `<mark>${escapeHtml(preferences.showRawValues ? raw : "•".repeat(Math.min(10, raw.length)))}</mark>`;
+      html += `<mark class="sev-${range.severity}">${escapeHtml(preferences.showRawValues ? raw : "•".repeat(Math.min(10, raw.length)))}</mark>`;
       cursor = range.end;
     }
     html += escapeHtml(text.slice(cursor));
@@ -1406,22 +1612,25 @@ export function mountDashboard(): void {
     resultSnippet.hidden = !snippet;
     snippetLabel.hidden = !snippet;
 
-    const groups = new Map<string, Finding[]>();
-    for (const finding of lastResult.findings) {
-      const bucket = groups.get(finding.kind) ?? [];
-      bucket.push(finding);
-      groups.set(finding.kind, bucket);
-    }
+    // Grouped by what a leak would cost, worst first. Each group says so in
+    // words and with its own icon, not with colour alone.
     const shorten = (value: string): string => value.length > 42 ? `${value.slice(0, 20)}…${value.slice(-14)}` : value;
-    const priority=(kind:string)=>kind==='secret'?3:kind==='privateKey'||kind==='credential'?2:1;
-    findingsRoot.innerHTML = [...groups.entries()].sort(([a],[b])=>priority(b)-priority(a)).map(([kind, items]) => {
+    const bySeverity = new Map<FindingSeverity, Finding[]>();
+    for (const finding of lastResult.findings) {
+      const severity = severityOf(finding);
+      bySeverity.set(severity, [...(bySeverity.get(severity) ?? []), finding]);
+    }
+    const severityKey: Record<FindingSeverity, string> = { critical: "Critical", high: "High", medium: "Medium", low: "Low" };
+    findingsRoot.innerHTML = severityOrder.filter((severity) => bySeverity.has(severity)).map((severity) => {
+      const items = bySeverity.get(severity)!;
       const rows = items.map((finding) => {
         const shown = preferences.showRawValues ? escapeHtml(shorten(finding.value)) : `<em>${escapeHtml(words().sensitiveValueHidden)}</em>`;
-        const context=finding.credential;
-        const advice=context?`<details class="credential-advice"><summary>${escapeHtml(context.service+' · '+context.type)}</summary><p>${escapeHtml(context.evidence)}</p><p>${escapeHtml(context.response+': '+context.guidance)}</p></details>`:'';
-        return `<div class="fitem"><code>${shown}</code><span class="arrow" aria-hidden="true">→</span><span class="repl">${escapeHtml(finding.replacement.replace("$1$2", ""))}</span></div>${advice}`;
+        const context = finding.credential;
+        const advice = context ? `<details class="credential-advice"><summary>${escapeHtml(context.service + " · " + context.type)}</summary><p>${escapeHtml(context.evidence)}</p><p>${escapeHtml(context.response + ": " + context.guidance)}</p></details>` : "";
+        return `<li class="fitem"><span class="fkind">${escapeHtml(labels()[finding.kind] ?? finding.kind)}</span><code>${shown}</code><span class="arrow" aria-hidden="true">→</span><span class="repl">${escapeHtml(finding.replacement.replace("$1$2", ""))}</span>${advice}</li>`;
       }).join("");
-      return `<div class="fgroup"><div class="fgroup-head"><b>${escapeHtml(labels()[kind] ?? kind)}</b><span class="fgroup-count">${items.length}</span></div>${rows}</div>`;
+      const key = severityKey[severity];
+      return `<section class="fgroup sev-${severity}" aria-label="${escapeHtml(words()[`sev${key}`])}"><div class="fgroup-head">${severityIcons[severity]}<b>${escapeHtml(words()[`sev${key}`])}</b><span class="fgroup-hint">${escapeHtml(words()[`sev${key}Hint`])}</span><span class="fgroup-count">${items.length}</span></div><ul>${rows}</ul></section>`;
     }).join("");
     safeRoot.style.display = n ? "block" : "none";
     resultsFoot.hidden = !n;
@@ -1590,7 +1799,6 @@ export function mountDashboard(): void {
     if (entry) { event.preventDefault(); toggleEntry(entry); }
   });
 
-  required<HTMLButtonElement>("#close-preferences").addEventListener("click", closePreferences);
   required<HTMLButtonElement>("#save-preferences").addEventListener("click", () => {
     preferences.language = ["en", "it", "es", "fr", "de"].includes(languageSelect.value) ? languageSelect.value as Language : "en";
     preferences.scanMode = scanModeSelect.value === "strict" ? "strict" : "standard";
@@ -1600,13 +1808,20 @@ export function mountDashboard(): void {
     preferences.saveHistory = historyToggle.checked;
     preferences.showRawValues = rawValueToggle.checked;
     preferences.autoClearAfterCopy = clearAfterCopyToggle.checked;
-    preferences.customTerms = customTermsInput.value.split(/\r?\n/).map((term) => term.trim()).filter(Boolean).slice(0, 30);
     savePreferences(preferences);
     pushSyncedSettings();
     applyLanguage();
-    closePreferences();
+    flash(required<HTMLElement>("#prefs-status"), words().prefsSaved);
   });
-  preferenceDialog.addEventListener("click", (event) => { if (event.target === preferenceDialog) closePreferences(); });
+  required<HTMLButtonElement>("#save-terms").addEventListener("click", () => {
+    preferences.customTerms = customTermsInput.value.split(/\r?\n/).map((term) => term.trim()).filter(Boolean).slice(0, 30);
+    customTermsInput.value = preferences.customTerms.join("\n");
+    savePreferences(preferences);
+    pushSyncedSettings();
+    renderTermsCount();
+    renderOnboarding();
+    flash(required<HTMLElement>("#terms-status"), words().termsSaved);
+  });
 
   required<HTMLButtonElement>("#copy").addEventListener("click", async () => {
     const button = required<HTMLButtonElement>("#copy");
@@ -1627,22 +1842,7 @@ export function mountDashboard(): void {
   syncChipSelection();
   applyLanguage();
   avoidCornerOverlap();
-  const openAccountSection = (): void => {
-    switch (window.location.hash) {
-      case "#plans": openPlans(); break;
-      case "#workspace": openWorkspace(); break;
-      case "#preferences": openPreferences(); break;
-      case "#api-keys": openPreferences(); required<HTMLElement>("#api-keys-block").scrollIntoView({block:"center"}); required<HTMLButtonElement>("#api-key-create").focus({preventScroll:true}); break;
-      case "#history": historyCard.scrollIntoView({block:"start"}); historyCard.tabIndex=-1;historyCard.focus({preventScroll:true});break;
-    }
-  };
-  window.addEventListener("hashchange", openAccountSection);
-  // A repeated menu link still reopens a closed panel when its hash is unchanged.
-  document.addEventListener("click", event => {
-    const link=(event.target as HTMLElement).closest<HTMLAnchorElement>('.ps-menu-link[href]');
-    if(link && new URL(link.href).pathname===location.pathname && new URL(link.href).hash===location.hash){event.preventDefault();openAccountSection();}
-  });
-  openAccountSection();
+  if (!showView(location.hash, false)) showView("", false);
 }
 
 type ScanRequestOptions = { includePersonalData?: boolean; includeCredentials?: boolean; includeFinancialData?: boolean; customTerms?: string[] };

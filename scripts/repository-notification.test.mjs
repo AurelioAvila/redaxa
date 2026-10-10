@@ -24,7 +24,7 @@ const walk=node=>[node,...node.children.flatMap(walk)];
 const body=new Element('body');
 const find=(id,node=body)=>node.id===id?node:node.children.map(c=>find(id,c)).find(Boolean);
 for(const id of ['repo-form','demo','cancel','scan','status','preview-notice','api-findings','results','repository-loading']){const node=new Element('div');node.id=id;body.append(node);}
-const sandbox=vm.createContext({aggregateRepositoryReport,reportToText,apiKeyCandidates,document:{body,createElement:tag=>new Element(tag),getElementById:find,addEventListener(){}},location:{origin:'https://preview.invalid',search:''},URLSearchParams,nativeRepositoryEngine:()=>false});
+const sandbox=vm.createContext({applyShellLanguage(){},aggregateRepositoryReport,reportToText,apiKeyCandidates,document:{body,createElement:tag=>new Element(tag),getElementById:find,addEventListener(){}},location:{origin:'https://preview.invalid',search:''},URLSearchParams,nativeRepositoryEngine:()=>false});
 const source=readFileSync(new URL('../dist/repository-ui.js',import.meta.url),'utf8').replace(/^import .*;\r?\n/gm,'');
 vm.runInContext(source,sandbox);
 const notify=vm.runInContext('notifyApiKeys',sandbox),reset=vm.runInContext('resetApiNotice',sandbox);

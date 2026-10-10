@@ -4,7 +4,12 @@
 // other process or user account with filesystem access. This gives the
 // same "stays logged in until you sign out or uninstall" behavior while
 // keeping the refresh token off disk in the clear.
+// Debug builds keep their own entry so a development run never reads or
+// rotates the session of a Redaxa installed on the same machine.
+#[cfg(not(debug_assertions))]
 const KEYRING_SERVICE: &str = "com.redaxa.desktop";
+#[cfg(debug_assertions)]
+const KEYRING_SERVICE: &str = "com.redaxa.desktop.dev";
 const KEYRING_USER: &str = "session";
 mod repository;
 mod update_identity;
