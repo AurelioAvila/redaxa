@@ -109,3 +109,33 @@ export function enableDesktopCompanion(onPrompt: (value: string) => void): void 
   // wrong and silently non-functional, so this build only ships the visible
   // "Inspect clipboard" button, which needs no callback channel.
 }
+
+// The rail and page bar are shared by the workspace and the repository page,
+// so their labels live here, where both pages already import from.
+export type ShellLanguage = "en" | "it" | "es" | "fr" | "de";
+export const shellCopyByLanguage: Record<ShellLanguage, Record<string, string>> = {
+  en: { brandTag: "Check before you send", groupProtect: "Protect", groupConfigure: "Configure", navCheck: "Check text", navRepository: "Repository check", navActivity: "Activity", navTerms: "Protected terms", navSettings: "Settings", navAccount: "Account & team", navHelp: "Help & support", navPlans: "Plans & pricing", crumbWorkspace: "Workspace", repoNoteTitle: "Values stay hidden", repoNoteText: "Matched values are masked until you choose to reveal them." },
+  it: { brandTag: "Controlla prima di inviare", groupProtect: "Proteggi", groupConfigure: "Configura", navCheck: "Controlla testo", navRepository: "Controllo repository", navActivity: "Attività", navTerms: "Termini protetti", navSettings: "Impostazioni", navAccount: "Account e team", navHelp: "Aiuto e supporto", navPlans: "Piani e prezzi", crumbWorkspace: "Spazio di lavoro", repoNoteTitle: "I valori restano nascosti", repoNoteText: "I valori trovati sono mascherati finché non scegli di mostrarli." },
+  es: { brandTag: "Revisa antes de enviar", groupProtect: "Proteger", groupConfigure: "Configurar", navCheck: "Revisar texto", navRepository: "Revisión de repositorios", navActivity: "Actividad", navTerms: "Términos protegidos", navSettings: "Ajustes", navAccount: "Cuenta y equipo", navHelp: "Ayuda y soporte", navPlans: "Planes y precios", crumbWorkspace: "Espacio de trabajo", repoNoteTitle: "Los valores quedan ocultos", repoNoteText: "Los valores encontrados se enmascaran hasta que decides mostrarlos." },
+  fr: { brandTag: "Vérifiez avant d’envoyer", groupProtect: "Protéger", groupConfigure: "Configurer", navCheck: "Vérifier un texte", navRepository: "Analyse de dépôt", navActivity: "Activité", navTerms: "Termes protégés", navSettings: "Réglages", navAccount: "Compte et équipe", navHelp: "Aide et support", navPlans: "Offres et tarifs", crumbWorkspace: "Espace de travail", repoNoteTitle: "Les valeurs restent masquées", repoNoteText: "Les valeurs trouvées restent masquées tant que vous ne choisissez pas de les afficher." },
+  de: { brandTag: "Erst prüfen, dann senden", groupProtect: "Schützen", groupConfigure: "Einrichten", navCheck: "Text prüfen", navRepository: "Repository-Prüfung", navActivity: "Aktivität", navTerms: "Geschützte Begriffe", navSettings: "Einstellungen", navAccount: "Konto und Team", navHelp: "Hilfe und Support", navPlans: "Tarife & Preise", crumbWorkspace: "Arbeitsbereich", repoNoteTitle: "Werte bleiben verborgen", repoNoteText: "Gefundene Werte bleiben maskiert, bis Sie sie bewusst einblenden." }
+};
+
+/** Translates the shared rail and page bar on pages that do not load the
+ *  workspace, in the language picked in Settings. Only those two regions
+ *  change language, so they carry their own lang attribute. */
+export function applyShellLanguage(): void {
+  let language: ShellLanguage = "en";
+  try {
+    const saved: unknown = JSON.parse(localStorage.getItem("redaxa.personal-preferences.v1") ?? "{}")?.language;
+    if (typeof saved === "string" && saved in shellCopyByLanguage) language = saved as ShellLanguage;
+  } catch { /* storage unavailable: English */ }
+  const copy = shellCopyByLanguage[language];
+  document.querySelectorAll<HTMLElement>(".side, .page-bar .crumbs").forEach((region) => {
+    region.lang = language;
+    region.querySelectorAll<HTMLElement>("[data-i18n]").forEach((element) => {
+      const value = copy[element.dataset.i18n ?? ""];
+      if (value !== undefined) element.textContent = value;
+    });
+  });
+}

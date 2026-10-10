@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.5.0 — 2026-10-10
+
+A redesign of the Windows app and the web workspace. Detection, accounts, billing and the browser extension are unchanged.
+
+- One sidebar with a page for every task: Check text, Repository check, Activity, Protected terms, Settings, Account & team, and Plans & pricing. Links to the earlier dialogs still open the matching page.
+- Check results are grouped by severity, with an icon and a label as well as a colour, and each value found is highlighted in the original text.
+- Plans & pricing is a full page in the app and on the website: current plan, Free, Pro and Business side by side, a comparison table, what leaves your device, and common questions. The Halloween offer appears only while the server confirms it.
+- Paper is the default theme for anyone who never chose one; Ink & Copper is its dark counterpart and the website's palette. Saved themes are kept.
+- Sign-in, account, team and invitation dialogs take every colour from the active theme; text meets WCAG AA and field outlines 3:1 in all 14 palettes.
+- Page switches render in the frame of the click: no entrance animations and no transitions longer than 120 ms.
+- Development builds keep their own credential entry and read the live offer through the local preview relay, so a development run never touches an installed copy.
+
 ## v0.4.7 — 2026-10-02
 
 - Removing an accepted teammate removes their organization access. Team invitation creation and acceptance enforce paid seat limits atomically.

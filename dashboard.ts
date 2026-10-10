@@ -2,7 +2,7 @@ import type { Finding, FindingSeverity, ScanOptions } from "./scanner.js";
 import type { AccountState } from "./auth.js";
 import { enableAppShell } from "./pwa.js";
 import { track } from "./growth.js";
-import { enableDesktopCompanion, openSupportEmail } from "./desktop.js";
+import { enableDesktopCompanion, openSupportEmail, shellCopyByLanguage } from "./desktop.js";
 import { PROMO_WORDS_EN, euro, mountPromo, promoPriceHtml, type PromoView, type PromoWords } from "./promo.js";
 
 type HistoryEntry = { id: string; createdAt: string; findings: number; preview: string; byKind: Record<string, number> };
@@ -283,9 +283,7 @@ const copyByLanguage: Record<Language, Record<string, string>> = {
 // Benefit lines carry <strong> markup and are only ever set as trusted HTML.
 const viewCopyByLanguage: Record<Language, Record<string, string>> = {
   en: {
-    ctaPro: "Go Pro", ctaBusiness: "Get Business", freeCurrent: "You’re on the Free plan", includedInPlan: "Included in your plan", brandTag: "Check before you send", groupProtect: "Protect", groupConfigure: "Configure",
-    navCheck: "Check text", navRepository: "Repository check", navActivity: "Activity", navTerms: "Protected terms", navSettings: "Settings", navAccount: "Account & team", navHelp: "Help & support",
-    clearResults: "Clear results", resultsCleared: "Results cleared. Run a new check when you are ready.", previewPersonal: "Personal data", previewCredential: "Credentials", previewUse: "Try this type of check →",
+    ctaPro: "Go Pro", ctaBusiness: "Get Business", freeCurrent: "You’re on the Free plan", includedInPlan: "Included in your plan", clearResults: "Clear results", resultsCleared: "Results cleared. Run a new check when you are ready.", previewPersonal: "Personal data", previewCredential: "Credentials", previewUse: "Try this type of check →",
     onboardTitle: "Get set up", onboardDismiss: "Dismiss checklist", onboardTermsDesc: "Protect a client or project name.", onboardThemeDesc: "Make the workspace yours.",
     activityPageTitle: "Activity", activityPageSub: "What your recent checks found. Local summaries stay on this device; account activity never includes your text.", clearLocalActivity: "Clear local activity",
     termsTitle: "Protected terms", termsSub: "Names Redaxa should always flag, such as clients, projects and codenames.", ownTermsTitle: "Your protected terms", ownTermsHint: "One term per line, up to 30. Every check you run looks for them.", ownTermsPlaceholder: "Acme Client\nProject Falcon", saveTerms: "Save terms", termsSaved: "Saved.", termsCount: "{n} term|{n} terms",
@@ -308,9 +306,7 @@ const viewCopyByLanguage: Record<Language, Record<string, string>> = {
     sevCritical: "Critical", sevHigh: "High", sevMedium: "Medium", sevLow: "Low", sevCriticalHint: "Could give someone access to an account or system", sevHighHint: "Direct financial exposure or a strong identifier", sevMediumHint: "Personal details with indirect harm", sevLowHint: "Weak identifiers that depend on context"
   },
   it: {
-    ctaPro: "Passa a Pro", ctaBusiness: "Passa a Business", freeCurrent: "Stai usando il piano Free", includedInPlan: "Incluso nel tuo piano", brandTag: "Controlla prima di inviare", groupProtect: "Proteggi", groupConfigure: "Configura",
-    navCheck: "Controlla testo", navRepository: "Controllo repository", navActivity: "Attività", navTerms: "Termini protetti", navSettings: "Impostazioni", navAccount: "Account e team", navHelp: "Aiuto e supporto",
-    clearResults: "Cancella risultati", resultsCleared: "Risultati cancellati. Avvia un nuovo controllo quando vuoi.", previewPersonal: "Dati personali", previewCredential: "Credenziali", previewUse: "Prova questo tipo di controllo →",
+    ctaPro: "Passa a Pro", ctaBusiness: "Passa a Business", freeCurrent: "Stai usando il piano Free", includedInPlan: "Incluso nel tuo piano", clearResults: "Cancella risultati", resultsCleared: "Risultati cancellati. Avvia un nuovo controllo quando vuoi.", previewPersonal: "Dati personali", previewCredential: "Credenziali", previewUse: "Prova questo tipo di controllo →",
     onboardTitle: "Primi passi", onboardDismiss: "Chiudi l'elenco", onboardTermsDesc: "Proteggi il nome di un cliente o di un progetto.", onboardThemeDesc: "Personalizza lo spazio di lavoro.",
     activityPageTitle: "Attività", activityPageSub: "Cosa hanno trovato i controlli recenti. I riepiloghi locali restano su questo dispositivo; l'attività dell'account non include mai il tuo testo.", clearLocalActivity: "Cancella attività locale",
     termsTitle: "Termini protetti", termsSub: "Nomi che Redaxa deve sempre segnalare, come clienti, progetti e nomi in codice.", ownTermsTitle: "I tuoi termini protetti", ownTermsHint: "Un termine per riga, fino a 30. Ogni controllo che avvii li cerca.", ownTermsPlaceholder: "Cliente Acme\nProgetto Falco", saveTerms: "Salva termini", termsSaved: "Salvato.", termsCount: "{n} termine|{n} termini",
@@ -333,9 +329,7 @@ const viewCopyByLanguage: Record<Language, Record<string, string>> = {
     sevCritical: "Critico", sevHigh: "Alto", sevMedium: "Medio", sevLow: "Basso", sevCriticalHint: "Può dare accesso a un account o a un sistema", sevHighHint: "Esposizione finanziaria diretta o identificativo forte", sevMediumHint: "Dati personali con danno indiretto", sevLowHint: "Identificativi deboli, dipendono dal contesto"
   },
   es: {
-    ctaPro: "Pasar a Pro", ctaBusiness: "Pasar a Business", freeCurrent: "Estás en el plan Free", includedInPlan: "Incluido en tu plan", brandTag: "Revisa antes de enviar", groupProtect: "Proteger", groupConfigure: "Configurar",
-    navCheck: "Revisar texto", navRepository: "Revisión de repositorios", navActivity: "Actividad", navTerms: "Términos protegidos", navSettings: "Ajustes", navAccount: "Cuenta y equipo", navHelp: "Ayuda y soporte",
-    clearResults: "Borrar resultados", resultsCleared: "Resultados borrados. Haz una nueva revisión cuando quieras.", previewPersonal: "Datos personales", previewCredential: "Credenciales", previewUse: "Prueba este tipo de revisión →",
+    ctaPro: "Pasar a Pro", ctaBusiness: "Pasar a Business", freeCurrent: "Estás en el plan Free", includedInPlan: "Incluido en tu plan", clearResults: "Borrar resultados", resultsCleared: "Resultados borrados. Haz una nueva revisión cuando quieras.", previewPersonal: "Datos personales", previewCredential: "Credenciales", previewUse: "Prueba este tipo de revisión →",
     onboardTitle: "Primeros pasos", onboardDismiss: "Cerrar la lista", onboardTermsDesc: "Protege el nombre de un cliente o proyecto.", onboardThemeDesc: "Personaliza tu espacio de trabajo.",
     activityPageTitle: "Actividad", activityPageSub: "Lo que encontraron tus revisiones recientes. Los resúmenes locales se quedan en este dispositivo; la actividad de la cuenta nunca incluye tu texto.", clearLocalActivity: "Borrar actividad local",
     termsTitle: "Términos protegidos", termsSub: "Nombres que Redaxa debe señalar siempre, como clientes, proyectos y nombres en clave.", ownTermsTitle: "Tus términos protegidos", ownTermsHint: "Un término por línea, hasta 30. Cada revisión que haces los busca.", ownTermsPlaceholder: "Cliente Acme\nProyecto Halcón", saveTerms: "Guardar términos", termsSaved: "Guardado.", termsCount: "{n} término|{n} términos",
@@ -358,9 +352,7 @@ const viewCopyByLanguage: Record<Language, Record<string, string>> = {
     sevCritical: "Crítico", sevHigh: "Alto", sevMedium: "Medio", sevLow: "Bajo", sevCriticalHint: "Puede dar acceso a una cuenta o a un sistema", sevHighHint: "Exposición financiera directa o identificador fuerte", sevMediumHint: "Datos personales con daño indirecto", sevLowHint: "Identificadores débiles que dependen del contexto"
   },
   fr: {
-    ctaPro: "Passer à Pro", ctaBusiness: "Passer à Business", freeCurrent: "Vous êtes sur l’offre Free", includedInPlan: "Inclus dans votre offre", brandTag: "Vérifiez avant d’envoyer", groupProtect: "Protéger", groupConfigure: "Configurer",
-    navCheck: "Vérifier un texte", navRepository: "Analyse de dépôt", navActivity: "Activité", navTerms: "Termes protégés", navSettings: "Réglages", navAccount: "Compte et équipe", navHelp: "Aide et support",
-    clearResults: "Effacer les résultats", resultsCleared: "Résultats effacés. Lancez une nouvelle vérification quand vous voulez.", previewPersonal: "Données personnelles", previewCredential: "Identifiants", previewUse: "Essayer ce type de vérification →",
+    ctaPro: "Passer à Pro", ctaBusiness: "Passer à Business", freeCurrent: "Vous êtes sur l’offre Free", includedInPlan: "Inclus dans votre offre", clearResults: "Effacer les résultats", resultsCleared: "Résultats effacés. Lancez une nouvelle vérification quand vous voulez.", previewPersonal: "Données personnelles", previewCredential: "Identifiants", previewUse: "Essayer ce type de vérification →",
     onboardTitle: "Pour bien démarrer", onboardDismiss: "Fermer la liste", onboardTermsDesc: "Protégez le nom d’un client ou d’un projet.", onboardThemeDesc: "Personnalisez votre espace de travail.",
     activityPageTitle: "Activité", activityPageSub: "Ce que vos vérifications récentes ont trouvé. Les résumés locaux restent sur cet appareil ; l’activité du compte n’inclut jamais votre texte.", clearLocalActivity: "Effacer l’activité locale",
     termsTitle: "Termes protégés", termsSub: "Les noms que Redaxa doit toujours signaler : clients, projets, noms de code.", ownTermsTitle: "Vos termes protégés", ownTermsHint: "Un terme par ligne, jusqu’à 30. Chaque vérification les recherche.", ownTermsPlaceholder: "Client Acme\nProjet Faucon", saveTerms: "Enregistrer les termes", termsSaved: "Enregistré.", termsCount: "{n} terme|{n} termes",
@@ -383,9 +375,7 @@ const viewCopyByLanguage: Record<Language, Record<string, string>> = {
     sevCritical: "Critique", sevHigh: "Élevée", sevMedium: "Moyenne", sevLow: "Faible", sevCriticalHint: "Peut donner accès à un compte ou à un système", sevHighHint: "Exposition financière directe ou identifiant fort", sevMediumHint: "Données personnelles au préjudice indirect", sevLowHint: "Identifiants faibles, selon le contexte"
   },
   de: {
-    ctaPro: "Zu Pro wechseln", ctaBusiness: "Zu Business wechseln", freeCurrent: "Sie nutzen den Free-Tarif", includedInPlan: "In Ihrem Tarif enthalten", brandTag: "Erst prüfen, dann senden", groupProtect: "Schützen", groupConfigure: "Einrichten",
-    navCheck: "Text prüfen", navRepository: "Repository-Prüfung", navActivity: "Aktivität", navTerms: "Geschützte Begriffe", navSettings: "Einstellungen", navAccount: "Konto und Team", navHelp: "Hilfe und Support",
-    clearResults: "Ergebnisse löschen", resultsCleared: "Ergebnisse gelöscht. Starten Sie eine neue Prüfung, wann immer Sie möchten.", previewPersonal: "Personenbezogene Daten", previewCredential: "Zugangsdaten", previewUse: "Diese Art von Prüfung testen →",
+    ctaPro: "Zu Pro wechseln", ctaBusiness: "Zu Business wechseln", freeCurrent: "Sie nutzen den Free-Tarif", includedInPlan: "In Ihrem Tarif enthalten", clearResults: "Ergebnisse löschen", resultsCleared: "Ergebnisse gelöscht. Starten Sie eine neue Prüfung, wann immer Sie möchten.", previewPersonal: "Personenbezogene Daten", previewCredential: "Zugangsdaten", previewUse: "Diese Art von Prüfung testen →",
     onboardTitle: "Erste Schritte", onboardDismiss: "Liste schließen", onboardTermsDesc: "Schützen Sie den Namen eines Kunden oder Projekts.", onboardThemeDesc: "Gestalten Sie den Arbeitsbereich nach Ihrem Geschmack.",
     activityPageTitle: "Aktivität", activityPageSub: "Was Ihre letzten Prüfungen gefunden haben. Lokale Zusammenfassungen bleiben auf diesem Gerät; die Kontoaktivität enthält nie Ihren Text.", clearLocalActivity: "Lokale Aktivität löschen",
     termsTitle: "Geschützte Begriffe", termsSub: "Namen, die Redaxa immer markieren soll, etwa Kunden, Projekte und Codenamen.", ownTermsTitle: "Ihre geschützten Begriffe", ownTermsHint: "Ein Begriff pro Zeile, bis zu 30. Jede Prüfung sucht danach.", ownTermsPlaceholder: "Kunde Acme\nProjekt Falke", saveTerms: "Begriffe speichern", termsSaved: "Gespeichert.", termsCount: "{n} Begriff|{n} Begriffe",
@@ -408,7 +398,7 @@ const viewCopyByLanguage: Record<Language, Record<string, string>> = {
     sevCritical: "Kritisch", sevHigh: "Hoch", sevMedium: "Mittel", sevLow: "Niedrig", sevCriticalHint: "Kann Zugriff auf ein Konto oder System geben", sevHighHint: "Direktes finanzielles Risiko oder starkes Identifikationsmerkmal", sevMediumHint: "Persönliche Angaben mit indirektem Schaden", sevLowHint: "Schwache Merkmale, je nach Kontext"
   }
 };
-for (const language of Object.keys(viewCopyByLanguage) as Language[]) Object.assign(copyByLanguage[language], viewCopyByLanguage[language]);
+for (const language of Object.keys(viewCopyByLanguage) as Language[]) Object.assign(copyByLanguage[language], shellCopyByLanguage[language], viewCopyByLanguage[language]);
 
 const settingsByLanguage: Record<Language, string[]> = {
   en: ["Preferences", "Saved in this browser only. Nothing here creates an account or uploads your text.", "Interface language", "Check mode", "Detect personal data (email, phone, IP, fiscal code)", "Detect API keys and credentials", "Detect cards and IBANs", "Keep local check summaries", "Show the detected value on screen", "Clear the prompt after copying its safer version", "Close", "Save preferences", "Custom protected terms"],
@@ -1043,7 +1033,7 @@ export function mountDashboard(): void {
   // "#account" stays with auth.ts, which opens its sign-in dialog on it.
   type ViewName = "check" | "activity" | "terms" | "settings" | "plans" | "account";
   const viewForHash: Record<string, ViewName> = { "": "check", "#": "check", "#check": "check", "#prompt-workspace": "check", "#activity": "activity", "#history": "activity", "#terms": "terms", "#settings": "settings", "#preferences": "settings", "#api-keys": "settings", "#plans": "plans", "#workspace": "account" };
-  const viewLabelKey: Record<ViewName, string> = { check: "navCheck", activity: "navActivity", terms: "navTerms", settings: "navSettings", plans: "plans", account: "navAccount" };
+  const viewLabelKey: Record<ViewName, string> = { check: "navCheck", activity: "navActivity", terms: "navTerms", settings: "navSettings", plans: "navPlans", account: "navAccount" };
   const viewSections = Array.from(document.querySelectorAll<HTMLElement>("main [data-view]"));
   const viewLabel = required<HTMLElement>("#view-label");
   let currentView: ViewName = "check";

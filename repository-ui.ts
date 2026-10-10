@@ -3,7 +3,8 @@ import type { DependencyReport, DependencyAdvisory } from './repository-deps.js'
 import { aggregateRepositoryReport, reportToText, apiKeyCandidates, type FindingGroup } from './repository-report.js';
 import { repositoryRequest, repositoryProgress, nativeRepositoryEngine, type AccountState } from './auth.js';
 import { repositoryExample } from './repository-example.js';
-import { openInSystemBrowser, openSupportEmail } from './desktop.js';
+import { applyShellLanguage, openInSystemBrowser, openSupportEmail } from './desktop.js';
+applyShellLanguage();
 document.getElementById('help-link')?.addEventListener('click', openSupportEmail);
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const text = (tag:string,value:string,cls='') => {const el=document.createElement(tag);el.textContent=value;el.className=cls;return el;};

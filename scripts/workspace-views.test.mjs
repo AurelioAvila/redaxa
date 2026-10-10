@@ -5,8 +5,8 @@ import ts from 'typescript';
 
 // The workspace copy is read straight from dashboard.ts, as the other
 // workspace tests do, so this needs no DOM.
-const source = ts.createSourceFile('dashboard.ts', fs.readFileSync(new URL('../dashboard.ts', import.meta.url), 'utf8'), ts.ScriptTarget.Latest);
-const constant = name => {
+const parse = file => ts.createSourceFile(file, fs.readFileSync(new URL('../' + file, import.meta.url), 'utf8'), ts.ScriptTarget.Latest);
+const constant = (name, source = parse('dashboard.ts')) => {
   let found;
   const visit = node => { if (ts.isVariableDeclaration(node) && node.name.getText(source) === name) found = node.initializer; else ts.forEachChild(node, visit); };
   visit(source);
@@ -17,6 +17,8 @@ const constant = name => {
 const languages = ['en', 'it', 'es', 'fr', 'de'];
 const base = constant('copyByLanguage');
 const views = constant('viewCopyByLanguage');
+// The rail and page bar copy, shared with the repository page (desktop.ts).
+const shell = constant('shellCopyByLanguage', parse('desktop.ts'));
 
 // Every language carries every key of the new pages, and none is left empty or in English by accident.
 const keys = Object.keys(views.en).sort();
@@ -24,16 +26,26 @@ for (const language of languages) {
   assert.deepEqual(Object.keys(views[language]).sort(), keys, `${language}: view copy keys differ from English`);
   for (const key of keys) assert.ok(views[language][key].trim(), `${language}.${key} is empty`);
 }
-for (const key of ['navCheck', 'plansHeadline', 'trustServer', 'faqMissA', 'sevCriticalHint']) {
+const shellKeys = Object.keys(shell.en).sort();
+for (const language of languages) assert.deepEqual(Object.keys(shell[language]).sort(), shellKeys, `${language}: shell copy keys differ from English`);
+for (const key of ['plansHeadline', 'trustServer', 'faqMissA', 'sevCriticalHint']) {
   for (const language of languages.slice(1)) assert.notEqual(views[language][key], views.en[key], `${language}.${key} is untranslated`);
+}
+for (const key of ['navCheck', 'navRepository', 'repoNoteText']) {
+  for (const language of languages.slice(1)) assert.notEqual(shell[language][key], shell.en[key], `${language}.${key} is untranslated`);
 }
 
 // Every data-i18n key the workspace markup uses exists in all five languages.
 const markup = fs.readFileSync(new URL('../dashboard.html', import.meta.url), 'utf8') + fs.readFileSync(new URL('../dashboard.ts', import.meta.url), 'utf8');
 const used = new Set([...markup.matchAll(/data-i18n(?:-placeholder|-label|-html)?="([A-Za-z0-9]+)"/g)].map(match => match[1]));
 for (const language of languages) {
-  for (const key of used) assert.ok(key in base[language] || key in views[language], `${language}: data-i18n key "${key}" has no copy`);
+  for (const key of used) assert.ok(key in base[language] || key in views[language] || key in shell[language], `${language}: data-i18n key "${key}" has no copy`);
 }
+// The repository page translates only its rail and page bar, from the shell copy.
+const repository = fs.readFileSync(new URL('../github.html', import.meta.url), 'utf8');
+const repositoryKeys = [...repository.matchAll(/data-i18n="([A-Za-z0-9]+)"/g)].map(match => match[1]);
+assert.ok(repositoryKeys.length >= 12, 'repository rail is translatable');
+for (const key of repositoryKeys) assert.ok(key in shell.en, `github.html: "${key}" is not shell copy`);
 
 // Claims the pages must never make: absolute protection or private repositories.
 const english = Object.values(views.en).join(' ');
@@ -45,4 +57,4 @@ assert.match(views.en.trustLimit, /can miss sensitive information/);
 const routes = constant('viewForHash');
 for (const [hash, view] of [['', 'check'], ['#plans', 'plans'], ['#preferences', 'settings'], ['#api-keys', 'settings'], ['#history', 'activity'], ['#workspace', 'account'], ['#terms', 'terms']]) assert.equal(routes[hash], view, hash);
 assert.equal(routes['#account'], undefined, '#account belongs to the sign-in dialog in auth.ts');
-console.log(`Workspace views: ${keys.length} keys in ${languages.length} languages, ${used.size} markup keys covered, hash routes ${Object.keys(routes).length}.`);
+console.log(`Workspace views: ${keys.length} view and ${shellKeys.length} shell keys in ${languages.length} languages, ${used.size} markup keys covered, hash routes ${Object.keys(routes).length}.`);
