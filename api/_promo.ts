@@ -1,5 +1,5 @@
 /**
- * Halloween 2026: half price on the first month or year of every paid plan,
+ * Halloween 2026: at least 50% off the first month or year of every paid plan,
  * from release until 23:59:59 on 6 November (Europe/Rome). Owner decision of
  * 10 October 2026, the same offer PC Tweaker runs.
  *
@@ -13,7 +13,14 @@
  *   - Pro yearly        €79.99 until 27 Sep 08:01 UTC, €79.90 since.
  *   - Business monthly  €14.99 per user since 11 Aug.
  *   - Business yearly   €149.99 until 27 Sep 08:00 UTC, €149.90 since.
- * So the references equal today's prices and every badge reads 50%.
+ * So the references equal today's prices.
+ *
+ * Price rule (owner decision, 10 October 2026): a real 50% or more off the
+ * lawful reference, rounded down to a round figure: the highest P with
+ * P <= 50% of the reference, where P is a whole euro amount or ends in ,99,
+ * and from 100 euro a multiple of 5. Badges show the real percentage.
+ *   Pro 7.99 -> 3.99 (50%), 79.90 -> 39 (51%); Business per user
+ *   14.99 -> 7 (53%), 149.90 -> 74 (50%).
  *
  * Every amount is in euro cents per user, excluding VAT, like the Stripe
  * Prices. Business is sold in 1–3 seats, and an amount_off coupon comes off
@@ -40,9 +47,9 @@ export const PROMO = {
   endsAt: "2026-11-06T23:00:00.000Z",
   offers: [
     { plan: "personal", interval: "monthly", priceEnv: "STRIPE_PRICE_PERSONAL_MONTHLY", regular: 799, reference: 799, price: 399 },
-    { plan: "personal", interval: "yearly", priceEnv: "STRIPE_PRICE_PERSONAL_YEARLY", regular: 7990, reference: 7990, price: 3995 },
-    { plan: "business", interval: "monthly", priceEnv: "STRIPE_PRICE_BUSINESS_MONTHLY", regular: 1499, reference: 1499, price: 749 },
-    { plan: "business", interval: "yearly", priceEnv: "STRIPE_PRICE_BUSINESS_YEARLY", regular: 14990, reference: 14990, price: 7495 },
+    { plan: "personal", interval: "yearly", priceEnv: "STRIPE_PRICE_PERSONAL_YEARLY", regular: 7990, reference: 7990, price: 3900 },
+    { plan: "business", interval: "monthly", priceEnv: "STRIPE_PRICE_BUSINESS_MONTHLY", regular: 1499, reference: 1499, price: 700 },
+    { plan: "business", interval: "yearly", priceEnv: "STRIPE_PRICE_BUSINESS_YEARLY", regular: 14990, reference: 14990, price: 7400 },
   ],
 } as const;
 

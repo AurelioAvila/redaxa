@@ -24,7 +24,7 @@ const promoWordsByLanguage: Record<Language, PromoWords> = {
   en: PROMO_WORDS_EN,
   it: {
     kicker: "Offerta di Halloween",
-    lead: "{percent} di sconto sul primo mese o sul primo anno.",
+    lead: "Almeno il {percent} di sconto sul primo mese o sul primo anno.",
     ends: "Termina il {date}.",
     endsIn: "Termina tra",
     units: ["Giorni", "Ore", "Minuti", "Secondi"],
@@ -37,7 +37,7 @@ const promoWordsByLanguage: Record<Language, PromoWords> = {
   },
   es: {
     kicker: "Oferta de Halloween",
-    lead: "{percent} de descuento en el primer mes o el primer año.",
+    lead: "Al menos un {percent} de descuento en el primer mes o el primer año.",
     ends: "Termina el {date}.",
     endsIn: "Termina en",
     units: ["Días", "Horas", "Minutos", "Segundos"],
@@ -50,7 +50,7 @@ const promoWordsByLanguage: Record<Language, PromoWords> = {
   },
   fr: {
     kicker: "Offre d'Halloween",
-    lead: "{percent} de réduction sur le premier mois ou la première année.",
+    lead: "Au moins {percent} de réduction sur le premier mois ou la première année.",
     ends: "Se termine le {date}.",
     endsIn: "Se termine dans",
     units: ["Jours", "Heures", "Minutes", "Secondes"],
@@ -63,7 +63,7 @@ const promoWordsByLanguage: Record<Language, PromoWords> = {
   },
   de: {
     kicker: "Halloween-Angebot",
-    lead: "{percent} Rabatt auf den ersten Monat oder das erste Jahr.",
+    lead: "Mindestens {percent} Rabatt auf den ersten Monat oder das erste Jahr.",
     ends: "Endet am {date}.",
     endsIn: "Endet in",
     units: ["Tage", "Stunden", "Minuten", "Sekunden"],

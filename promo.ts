@@ -59,8 +59,9 @@ export function percentLabel(value: number, lang = "en"): string {
   return new Intl.NumberFormat(lang === "en" ? "en-IE" : lang, { style: "percent", maximumFractionDigits: 0 }).format(value / 100);
 }
 
+/** €3.99, €39: whole euros stay short, anything else shows cents. */
 export function euro(centsValue: number, lang = "en"): string {
-  return new Intl.NumberFormat(lang === "en" ? "en-IE" : lang, { style: "currency", currency: "EUR" }).format(centsValue / 100);
+  return new Intl.NumberFormat(lang === "en" ? "en-IE" : lang, { style: "currency", currency: "EUR", minimumFractionDigits: centsValue % 100 ? 2 : 0 }).format(centsValue / 100);
 }
 
 export type PromoView = { promo: Promo | null; remaining: number; offer(plan: string, interval: string): PromoOffer | null };
@@ -219,7 +220,7 @@ export function promoPriceHtml(offer: PromoOffer, words: PromoWords, lang = "en"
 
 export const PROMO_WORDS_EN: PromoWords = {
   kicker: "Halloween offer",
-  lead: "{percent} off your first month or year.",
+  lead: "At least {percent} off your first month or year.",
   ends: "Ends {date}.",
   fine: "Struck-through prices are our lowest in the 30 days before the offer. New subscriptions only; renewals are at the regular price, and eligible new subscribers still start with the 7-day trial. Prices exclude VAT.",
   endsIn: "Ends in",

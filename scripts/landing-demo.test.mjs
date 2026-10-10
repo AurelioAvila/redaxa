@@ -33,13 +33,13 @@ for (const [index,interval,personal,business] of [[0,'monthly','€7.99','€14.
 }
 assert.match(elements.get('#pro-plan-tag').textContent,/Recommended/);
 // A running offer strikes the lawful reference and names the renewal; its end restores the list prices.
-const offers=[['personal','yearly',7990,3995,false],['business','yearly',14990,7495,true],['personal','monthly',799,399,false],['business','monthly',1499,749,true]].map(([plan,interval,regular,price,perSeat])=>({plan,interval,regular,reference:regular,price,perSeat}));
+const offers=[['personal','yearly',7990,3900,false],['business','yearly',14990,7400,true],['personal','monthly',799,399,false],['business','monthly',1499,700,true]].map(([plan,interval,regular,price,perSeat])=>({plan,interval,regular,reference:regular,price,perSeat}));
 const view={promo:{offers},remaining:60_000,offer:(plan,interval)=>offers.find(o=>o.plan===plan&&o.interval===interval)??null};
 showPromo(view);
 assert.equal(placed.length,1,'one banner, before the billing switch');
-assert.ok(elements.get('#pro-plan-price').innerHTML.startsWith('<s class="rx-was">€79.90</s> €39.95'));
+assert.ok(elements.get('#pro-plan-price').innerHTML.startsWith('<s class="rx-was">€79.90</s> €39 <small>/ year</small>'));
 assert.match(elements.get('#pro-plan-price').innerHTML,/First year, then €79\.90 a year/);
-assert.match(elements.get('#business-plan-price').innerHTML,/€149\.90<\/s> €74\.95 <small>\/ user \/ year<\/small>.*50%/);
+assert.match(elements.get('#business-plan-price').innerHTML,/€149\.90<\/s> €74 <small>\/ user \/ year<\/small>.*50%/);
 billingButtons[0].handlers.click();
 assert.ok(elements.get('#pro-plan-price').innerHTML.startsWith('<s class="rx-was">€7.99</s> €3.99'));
 assert.match(elements.get('#business-plan-price').innerHTML,/First month, then €14\.99 per user a month/);

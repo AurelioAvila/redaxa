@@ -31,6 +31,14 @@ const HISTORY: Record<string, [string, string | null, number][]> = {
   "business:monthly": [["2026-08-11T18:38Z", null, 1499]],
   "business:yearly": [["2026-08-11T18:39Z", "2026-09-27T08:00Z", 14999], ["2026-09-27T08:00Z", null, 14990]],
 };
+// The owner's rule: the highest whole-euro or ,99 amount at or under half the
+// reference; from 100 euro, a multiple of 5.
+function roundedHalf(reference: number): number {
+  const half = reference / 2;
+  if (half >= 10_000) return Math.floor(half / 500) * 500;
+  return Math.max(Math.floor(half / 100) * 100, Math.floor((half - 99) / 100) * 100 + 99);
+}
+assert.deepEqual([799, 7990, 1499, 14990, 1900, 17000, 3900, 35000, 9900, 75000, 25000].map(roundedHalf), [399, 3900, 700, 7400, 900, 8500, 1900, 17500, 4900, 37500, 12500]);
 const lowestBefore = (key: string, startMs: number) => Math.min(...HISTORY[key]
   .filter(([from, until]) => Date.parse(from) < startMs && (until === null || Date.parse(until) > startMs - 30 * 86_400_000))
   .map(([, , cents]) => cents));
@@ -39,9 +47,10 @@ for (const offer of PROMO.offers) {
   // The reference may never be above the lowest price of the 30 days before any go-live moment.
   assert.equal(offer.reference, lowestBefore(key, START), key);
   for (let t = START; t < END; t += 3_600_000) assert.ok(offer.reference <= lowestBefore(key, t), `${key} at ${new Date(t).toISOString()}`);
-  assert.equal(offer.price, Math.floor(offer.regular / 2), `${key} is half the list price, rounded down to the cent`);
-  assert.equal(percentOff(offer.reference, offer.price), 50, key);
+  assert.equal(offer.price, roundedHalf(offer.reference), `${key} follows the price rule`);
+  assert.ok(percentOff(offer.reference, offer.price) >= 50, key);
 }
+assert.deepEqual(PROMO.offers.map((o) => percentOff(o.reference, o.price)), [50, 51, 53, 50]);
 assert.equal(percentOff(1000, 801), 19, "rounded down, never up");
 
 // Simulated clock: nothing before the switch or the start, every offer during, nothing from the end.
@@ -57,7 +66,7 @@ for (const now of [START, DURING, END - 1]) {
   assert.equal(state.endsAt, PROMO.endsAt);
   assert.equal(state.serverTime, new Date(now).toISOString());
   assert.deepEqual(state.offers.find((o) => o.plan === "business" && o.interval === "monthly"),
-    { plan: "business", interval: "monthly", currency: "eur", regular: 1499, reference: 1499, price: 749, percentOff: 50, perSeat: true, firstPeriodOnly: true });
+    { plan: "business", interval: "monthly", currency: "eur", regular: 1499, reference: 1499, price: 700, percentOff: 53, perSeat: true, firstPeriodOnly: true });
   assert.equal(state.offers.length, 4);
 }
 for (const now of [END, END + 86_400_000, Date.parse("2027-10-31T12:00:00Z")]) {
