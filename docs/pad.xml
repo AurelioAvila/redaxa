@@ -34,7 +34,7 @@
   </Company_Info>
   <Program_Info>
     <Program_Name>Redaxa</Program_Name>
-    <Program_Version>0.4.13</Program_Version>
+    <Program_Version>0.5.0</Program_Version>
     <Program_Release_Month>10</Program_Release_Month>
     <Program_Release_Day>10</Program_Release_Day>
     <Program_Release_Year>2026</Program_Release_Year>
@@ -47,9 +47,9 @@
     <Program_OS_Support>WinOther</Program_OS_Support>
     <Program_Language>English</Program_Language>
     <File_Info>
-      <File_Size_Bytes>34577304</File_Size_Bytes>
-      <File_Size_K>33766.90</File_Size_K>
-      <File_Size_MB>32.98</File_Size_MB>
+      <File_Size_Bytes>34597416</File_Size_Bytes>
+      <File_Size_K>33786.54</File_Size_K>
+      <File_Size_MB>32.99</File_Size_MB>
     </File_Info>
     <Expire_Info>
       <Has_Expire_Info>N</Has_Expire_Info>
@@ -60,7 +60,7 @@
       <Expire_Day></Expire_Day>
       <Expire_Year></Expire_Year>
     </Expire_Info>
-    <Program_Change_Info>Redaxa 0.4.13 brings the Halloween offer to Plans &amp; pricing: at least 50% off your first month or year of Pro or Business until 6 November.</Program_Change_Info>
+    <Program_Change_Info>Redesigned app: one sidebar with a page for every task, a full Plans &amp; pricing page, results grouped by severity, and a light Paper theme by default.</Program_Change_Info>
     <Program_Category_Class>Security &amp; Privacy::Other</Program_Category_Class>
     <Program_Specific_Category></Program_Specific_Category>
     <Program_System_Requirements>Windows 10/11 x64; internet for accounts, updates and supported online features.</Program_System_Requirements>
@@ -84,7 +84,7 @@
       <Application_XML_File_URL>https://raw.githubusercontent.com/AurelioAvila/redaxa/main/docs/pad.xml</Application_XML_File_URL>
     </Application_URLs>
     <Download_URLs>
-      <Primary_Download_URL>https://github.com/AurelioAvila/redaxa/releases/download/v0.4.13/Redaxa_0.4.13_x64-setup.exe</Primary_Download_URL>
+      <Primary_Download_URL>https://github.com/AurelioAvila/redaxa/releases/download/v0.5.0/Redaxa_0.5.0_x64-setup.exe</Primary_Download_URL>
       <Secondary_Download_URL></Secondary_Download_URL>
       <Additional_Download_URL_1></Additional_Download_URL_1>
       <Additional_Download_URL_2></Additional_Download_URL_2>
