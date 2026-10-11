@@ -293,7 +293,7 @@ html.rx-native .rx-shell .brand { display: none; }
 .rx-shell .safe { margin-top: 2px; padding: 0; border: 0; }
 .rx-shell .safe pre { max-height: 150px; overflow: auto; margin: 0; padding: 12px 13px; border: 1px solid var(--theme-line); border-radius: var(--r); background: var(--field); color: var(--theme-text); font: 12.5px/1.65 var(--font-mono); white-space: pre-wrap; overflow-wrap: anywhere; }
 
-/* The pre-check preview: an illustration, clearly labelled as such. */
+/* The pre-check preview: an example, clearly labelled as such. */
 .rx-shell .review-ready { display: grid; gap: 10px; max-width: none; padding: 4px 0 0; }
 .rx-shell .review-kicker { color: var(--theme-accent); font: 650 11.5px/1.2 var(--font-text); letter-spacing: .1em; text-transform: uppercase; }
 .rx-shell .review-ready h3 { margin: 0; font: 600 19px/1.25 var(--font-display); }

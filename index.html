@@ -178,7 +178,7 @@
       .sc-live { font-size: 12px; font-weight: 700; letter-spacing: 0.1em; color: var(--dim); border: 1px solid var(--line-2); border-radius: 999px; padding: 3px 8px; }
       .sc-status { margin-left: auto; position: relative; font-size: 12.5px; font-weight: 750; letter-spacing: 0.08em; height: 16px; min-width: 96px; text-align: right; }
       .sc-status .scanning, .sc-status .protected { position: absolute; inset: 0; white-space: nowrap; text-align: right; }
-      .sc-status .scanning { color: var(--warn); animation: swap-out 200ms var(--ease) 1500ms both; }
+      .sc-status .scanning { color: var(--mut); animation: swap-out 200ms var(--ease) 1500ms both; }
       .sc-status .protected { color: var(--acid); opacity: 0; animation: swap-in 260ms var(--ease) 1500ms both; }
       @keyframes swap-out { to { opacity: 0; } }
       @keyframes swap-in { to { opacity: 1; } }
@@ -351,6 +351,8 @@
   <body class="redaxa-landing">
     <div class="frame">
       <a class="skip" href="#content">Skip to content</a>
+      <!-- Halloween strip: room kept from the first paint; dist/promo.js fills or removes it. -->
+      <div class="rx-strip rx-reserved" aria-hidden="true"><div class="rx-strip-inner"><span class="rx-strip-pumpkin" aria-hidden="true"></span><strong class="rx-strip-label"><span class="rx-strip-full">Halloween offer · 50% off</span><span class="rx-strip-short">Halloween · −50%</span></strong><span class="rx-strip-timer" role="timer" aria-live="off"><span class="rx-strip-ends" aria-hidden="true">Ends in</span> <span class="rx-strip-digits" aria-hidden="true">00d 00h 00m 00s</span></span><a class="rx-strip-cta" href="#pricing">See the offer</a><button type="button" class="rx-strip-close"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" focusable="false"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button></div></div>
       <nav class="nav">
         <a class="brand" href="#top" aria-label="Redaxa home"><span class="mark"><img src="outputs/redaxa-mark.svg" alt="" width="30" height="30" /></span><span>Redaxa</span></a>
         <div class="nav-right">
@@ -374,6 +376,7 @@
             <a class="btn-primary" href="https://chromewebstore.google.com/detail/redaxa/clkobbjoaegkgnmkibjghlboeoplpmok">Get the Chrome extension</a>
             <a class="btn-ghost" href="#scanner">See a free example</a>
           </div>
+          <aside class="rx-hw-card rx-reserved" aria-hidden="true"><span class="rx-hw-card-mark" aria-hidden="true"></span><span class="rx-hw-card-tag">HALLOWEEN</span><div class="rx-hw-card-row"><span class="rx-hw-card-now">€00</span><s class="rx-hw-card-was">€00</s><span class="rx-hw-card-pct">−50%</span></div><span class="rx-hw-card-plan">Pro · first year, then €00 / year</span><div class="rx-hw-card-foot"><span class="rx-hw-card-note">Ends 6 November 2026 at 23:59 CET</span><a class="rx-hw-card-cta" href="#pricing"><span>See the offer</span><svg viewBox="0 0 14 10" width="14" height="10" aria-hidden="true" focusable="false"><path d="M1 5h11M8 1l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></a></div></aside>
           <p class="hero-meta"><b>Prompt checks across web, Windows and Chrome.</b> Free GitHub repository checks on the web; Git history and archives with Pro on Windows. Free checks in the Chrome extension stay in your browser; on the web and in the Windows app, prompt text is processed by Redaxa’s servers and is not stored. <b>7-day trial for eligible new subscribers; card required.</b></p>
         </div>
 
@@ -398,7 +401,7 @@
             <span class="label">Safe prompt</span>
             <code>&ldquo;Send a payment reminder to <b>[email]</b> about invoice IBAN <b>[iban]</b>, due Friday.&rdquo;</code>
           </div>
-          <div class="sc-foot"><span class="pulse"></span> Illustrative preview · review before sharing</div>
+          <div class="sc-foot"><span class="pulse"></span> Example preview · review before sharing</div>
         </aside>
       </header>
 
@@ -437,8 +440,8 @@
           <ul class="rx-benefits"><li><strong>Start with credentials.</strong> Repeated values are grouped; common examples, emails and public identifiers are excluded.</li><li><strong>Vulnerable dependencies.</strong> npm, yarn, pnpm, Cargo, Python, Go, PHP and Ruby lockfiles are checked against the public OSV database.</li><li><strong>Act with context.</strong> Review rotation guidance and export a report with values hidden.</li></ul>
           <a class="btn-primary" href="/github.html">Check a repository free →</a><p class="rx-preview-note">3 free checks a day on the default branch of public repositories. Git history, archives and revealed values run on your PC in the Windows app with Pro or Business. Private repositories are not supported. Results identify possible exposures, not verified working keys or every code vulnerability.</p>
         </div>
-        <div class="rx-repo-visual" aria-label="Illustrative repository review workflow"><div class="rx-repo-visual-label"><span>Repository check</span><span class="rx-pro-badge">EXAMPLE</span></div><h3>Less noise. A useful review.</h3>
-          <div class="rx-repo-example is-priority"><span>Likely keys &amp; access tokens</span><span>Review first</span></div><div class="rx-repo-example"><span>Probable service &amp; evidence</span><span>Understand</span></div><div class="rx-repo-example"><span>Rotation guidance</span><span>Take action</span></div><div class="rx-repo-example"><span>Checked &amp; skipped files</span><span>See coverage</span></div><p class="rx-preview-note">Illustrative workflow. Values stay hidden until you reveal them. Key validity is never tested.</p>
+        <div class="rx-repo-visual" aria-label="Example repository review workflow"><div class="rx-repo-visual-label"><span>Repository check</span><span class="rx-pro-badge">EXAMPLE</span></div><h3>Less noise. A useful review.</h3>
+          <div class="rx-repo-example is-priority"><span>Likely keys &amp; access tokens</span><span>Review first</span></div><div class="rx-repo-example"><span>Probable service &amp; evidence</span><span>Understand</span></div><div class="rx-repo-example"><span>Rotation guidance</span><span>Take action</span></div><div class="rx-repo-example"><span>Checked &amp; skipped files</span><span>See coverage</span></div><p class="rx-preview-note">Example workflow. Values stay hidden until you reveal them. Key validity is never tested.</p>
         </div>
       </section><hr class="rule" />
 
@@ -452,7 +455,7 @@
         <div class="scanner-head"><h3 id="scanner-title">Private prompt check</h3><div class="local"><span>●</span> Encrypted in transit — never stored</div></div>
         <div class="scanner-grid">
           <div class="scan-area"><label for="prompt">Paste a prompt to inspect</label><textarea id="prompt" placeholder="Example: Draft a reply to my client…"></textarea><div class="actions"><button class="sample" id="sample" type="button">See a free example</button><button class="primary" id="scan" type="button">Scan prompt →</button></div></div>
-          <aside class="results" aria-live="polite"><h3 id="result-title">Ready when you are</h3><p class="results-copy" id="result-copy">We look for common personal details and credentials, then discard your prompt immediately.</p><div id="findings" class="empty">Choose “See a free example” for an immediate before-and-after. The example is illustrative, not a live scan.</div><div class="safe-output" id="safe-output"><h3>Safer version</h3><pre id="redacted"></pre><button class="copy" id="copy" type="button">Copy safer prompt</button></div></aside>
+          <aside class="results" aria-live="polite"><h3 id="result-title">Ready when you are</h3><p class="results-copy" id="result-copy">We look for common personal details and credentials, then discard your prompt immediately.</p><div id="findings" class="empty">Choose “See a free example” for an immediate before-and-after. The example uses made-up data, not a live scan.</div><div class="safe-output" id="safe-output"><h3>Safer version</h3><pre id="redacted"></pre><button class="copy" id="copy" type="button">Copy safer prompt</button></div></aside>
         </div>
       </section>
 
@@ -548,6 +551,7 @@
             <ul class="rx-benefits"><li><strong>Everything in Pro</strong></li><li><strong>Shared protected terms</strong> for every member</li><li><strong>Category policies:</strong> warn, redact, or block sending in the extension</li><li><strong>Metadata-only activity</strong> and CSV export for admins</li></ul>
           </article>
         </div>
+        <p class="plans-checkout-note" id="promo-fine" hidden></p>
         <p class="plans-checkout-note">Payments are processed by Stripe. From your account you can update your card, download invoices or cancel renewal.</p>
 
         <div class="plans-section">

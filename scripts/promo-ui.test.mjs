@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { euro, msUntil, parsePromo, percentLabel, promoClock, promoPercent } from "../dist/promo.js";
+import { OFFER_WORDS_EN, euro, msUntil, parsePromo, percentLabel, promoClock, promoPercent } from "../dist/promo.js";
 
 const offer = { plan: "business", interval: "monthly", currency: "eur", regular: 1499, reference: 1499, price: 700, percentOff: 53, perSeat: true, firstPeriodOnly: true };
 const active = { serverTime: "2026-11-06T22:59:00.000Z", id: "halloween50-2026", status: "active", startsAt: "2026-10-10T00:00:00.000Z", endsAt: "2026-11-06T23:00:00.000Z", offers: [offer] };
@@ -36,5 +36,13 @@ assert.equal(msUntil(active, active.endsAt, -5_000), 60_000, "negative elapsed t
 // Days, hours, minutes and seconds, stopping at zero.
 assert.deepEqual(promoClock(27 * 86_400_000 + 13 * 3_600_000 + 5 * 60_000 + 12_000), ["27", "13", "05", "12"]);
 for (const ms of [999, -5000, Number.NaN]) assert.deepEqual(promoClock(ms), ["00", "00", "00", "00"]);
+
+// The strip and the card fill their numbers from the server's offer; the words only carry placeholders.
+assert.match(OFFER_WORDS_EN.strip, /{percent}/);
+assert.match(OFFER_WORDS_EN.stripShort, /{percent}/);
+assert.match(OFFER_WORDS_EN.plan, /{price}/);
+assert.match(OFFER_WORDS_EN.planMonth, /{price}/);
+assert.match(OFFER_WORDS_EN.ends, /{date}/);
+assert.doesNotMatch(JSON.stringify(OFFER_WORDS_EN), /illustrat/i, "the banned word never appears on screen");
 
 console.log("Promo display: parsing, honest percentages, server-clock countdown and fallback passed.");

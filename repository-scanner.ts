@@ -90,7 +90,7 @@ function classify(f:Finding,path:string,text:string,offset:number):{disposition:
       // are documentation, not credentials anyone could use.
       if(/^(?:<[^<>]{1,40}>|\{\{[^{}]{1,40}\}\}|secret|password|passwd|pass|pwd|some[-_ ]?password|my[-_ ]?password|mypassword|test|qwerty|letmein)$/i.test(value))return reference('Placeholder or dictionary-word value used in documentation, not a usable credential.');
       // Inside a documentation comment of a source file (JSDoc @example, //, #).
-      if(/\.(?:[cm]?[jt]sx?|py|rs|go|java|kt|rb|php|cs|swift)$/i.test(path)&&/^\s*(?:\*|\/\/|#(?!!))/.test(line))return {disposition:'review',severity:'low',confidence:'low',reason:'Password-like value inside a code comment or documentation example. Usually illustrative; confirm it is not a real credential.'};
+      if(/\.(?:[cm]?[jt]sx?|py|rs|go|java|kt|rb|php|cs|swift)$/i.test(path)&&/^\s*(?:\*|\/\/|#(?!!))/.test(line))return {disposition:'review',severity:'low',confidence:'low',reason:'Password-like value inside a code comment or documentation example. Usually a placeholder; confirm it is not a real credential.'};
       const match=/^(?:password|passwd|pwd|secret)(\s*[:=]\s*|\s+)(.*)$/i.exec(f.value);
       const token=match?.[2]??value;
       const unquoted=token.replace(/^["'`]/,'').replace(/["'`)}\]]+$/,'');

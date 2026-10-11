@@ -1,5 +1,5 @@
 import { track } from './growth.js';
-import { PROMO_WORDS_EN, mountPromo, promoPriceHtml, type PromoView } from './promo.js';
+import { OFFER_WORDS_EN, PROMO_WORDS_EN, mountOfferExtras, mountPromo, promoPriceHtml, type PromoView } from './promo.js';
 
 const demoPrompt = 'Write a concise project update to maria.rossi@example.com. Mention that the staging server is at 192.168.1.20 and include this demo credential: password=demo-secret-credential-123.';
 
@@ -36,10 +36,17 @@ function mountLanding(): void {
     renderPrices();
     document.querySelectorAll<HTMLElement>('[data-plan]').forEach(cta => { cta.dataset.interval = yearly ? 'yearly' : 'monthly'; });
   }));
-  mountPromo(banner => required('#pricing .billing-switch').before(banner), () => PROMO_WORDS_EN, () => 'en', next => {
+  // The strip above the page and the card under the hero buttons show the same offer, from the same answer.
+  const offerExtras = mountOfferExtras(OFFER_WORDS_EN, 'en', strip => required('.nav').before(strip), card => required('.hero .cta-row').after(card));
+  // No banner low on the page: the strip and the card above carry the offer, and the
+  // plans keep the struck prices with the note that explains them.
+  const promoFine = required<HTMLElement>('#promo-fine');
+  promoFine.textContent = PROMO_WORDS_EN.fine;
+  mountPromo(null, () => PROMO_WORDS_EN, () => 'en', next => {
     view = next;
+    promoFine.hidden = !next.promo;
     renderPrices();
-  });
+  }, offerExtras);
   const prompt = required<HTMLTextAreaElement>("#prompt");
   const findings = required<HTMLElement>("#findings");
   const output = required<HTMLElement>("#safe-output");
@@ -53,7 +60,7 @@ function mountLanding(): void {
     isDemo = true;
     prompt.value = demoPrompt;
     resultTitle.textContent = '3 example details to review';
-    resultCopy.textContent = 'Illustrative demo with fictional data, answered without a scan. Replace it with your own text to run a real check.';
+    resultCopy.textContent = 'Demo with fictional data, answered without a scan. Replace it with your own text to run a real check.';
     findings.className = '';
     findings.innerHTML = '<div class="finding"><i class="severity"></i><div><b>Email</b><span>maria.rossi@example.com → [email]</span></div></div><div class="finding"><i class="severity"></i><div><b>Server address</b><span>192.168.1.20 → [ip]</span></div></div><div class="finding"><i class="severity"></i><div><b>Demo credential</b><span>password=demo-secret-credential-123 → [credential]</span></div></div>';
     redacted.textContent = 'Write a concise project update to [email]. Mention that the staging server is at [ip] and include this demo credential: [credential].';
