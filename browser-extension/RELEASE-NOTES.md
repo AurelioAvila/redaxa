@@ -1,4 +1,8 @@
-# Extension 0.4.10
+# Extension 0.4.11
+
+The bundled detection engine matches Redaxa 0.5.4. Checks now find AWS secret access keys next to an `aws_secret_access_key` or `secret_access_key` assignment (a bare 40-character string, AWS's documented example key and filler values are not flagged) and UK National Insurance numbers, shown as "UK National Insurance number" (prefixes that are never issued, such as QQ and BG, and placeholder digits like 123456 are ignored). An Italian fiscal code needs a correct check letter, so a mistyped or invented code is no longer reported. Free checks still run inside the browser and send nothing. No new permissions, telemetry or dependencies. This version includes the 0.4.10 changes.
+
+## Previous extension 0.4.10
 
 Fewer permissions. The extension no longer asks for access to any website besides ChatGPT, Claude, Gemini and Perplexity: the host permission for the old backend (promptshield-beta.vercel.app) is gone, because the Redaxa API on redaxa.getcertsprint.com answers the extension over CORS, and free checks never call it. The retired chat.openai.com and copilot.microsoft.com patterns are removed (the first redirects to chatgpt.com, the second to copilot.com, where the extension does not run). Removing permissions does not ask existing users to approve anything.
 

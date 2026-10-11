@@ -85,8 +85,8 @@ clean('aws_secret_access_key = wJalrXUtnFEMI/K7MDENG/bPxRfiCY' + 'EXAMPLEKEY', '
 clean('aws_secret_access_key = ' + 'A'.repeat(40), 'filler value');
 
 // UK National Insurance numbers: valid prefixes only, no documented examples.
-found('NI number JG 10 37 59 A', 'ssn', 'UK National Insurance number with spaces');
-found('NINO JG103759A', 'ssn', 'UK National Insurance number without spaces');
+found('NI number JG 10 37 59 A', 'niNumber', 'UK National Insurance number with spaces');
+found('NINO JG103759A', 'niNumber', 'UK National Insurance number without spaces');
 clean('NI QQ 12 34 56 C', 'HMRC example prefix QQ is never issued');
 clean('ref BG123456C', 'BG prefix is never issued');
 clean('NI AB 12 34 56 C', 'placeholder digits 123456');

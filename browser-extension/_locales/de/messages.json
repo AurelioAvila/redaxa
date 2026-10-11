@@ -107,6 +107,7 @@
   "editorBlocked": {"message": "Dieser Editor hat die Änderung blockiert. Fügen Sie Ihren Prompt im Redaxa-Popup ein und kopieren Sie die geschwärzte Fassung."},
   "kind_email": {"message": "E-Mail-Adresse"},
   "kind_ssn": {"message": "US-Sozialversicherungsnummer (SSN)"},
+  "kind_niNumber": {"message": "Britische Sozialversicherungsnummer (NI)"},
   "kind_name": {"message": "Personenname"},
   "kind_address": {"message": "Postanschrift"},
   "kind_secret": {"message": "API-Schlüssel oder Token"},

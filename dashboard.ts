@@ -408,11 +408,11 @@ const settingsByLanguage: Record<Language, string[]> = {
   de: ["Persönliche Einstellungen", "Diese Einstellungen bleiben in diesem Browser. Sie erstellen kein Konto und laden keine Prompts hoch.", "Oberflächensprache", "Prüfmodus", "Personenbezogene Daten erkennen (E-Mail, Telefon, IP, Steuernummer)", "API-Schlüssel und Zugangsdaten erkennen", "Karten und IBAN erkennen", "Lokale Prüfzusammenfassungen speichern", "Erkannten Wert anzeigen", "Prompt nach dem Kopieren leeren", "Schließen", "Einstellungen speichern", "Eigene geschützte Begriffe"]
 };
 const findingLabelsByLanguage: Record<Language, Record<string, string>> = {
-  en: { email: "Email", phone: "Phone", secret: "API key", card: "Card", ip: "IP address", iban: "IBAN", fiscalCode: "Fiscal code", credential: "Credential", ssn: "SSN", crypto: "Wallet address", privateKey: "Private key", name: "Personal name", address: "Street address", custom: "Custom term" },
-  it: { email: "Email", phone: "Telefono", secret: "Chiave API", card: "Carta", ip: "Indirizzo IP", iban: "IBAN", fiscalCode: "Codice fiscale", credential: "Credenziale", ssn: "SSN", crypto: "Indirizzo wallet", privateKey: "Chiave privata", name: "Nome personale", address: "Indirizzo", custom: "Termine personalizzato" },
-  es: { email: "Correo electrónico", phone: "Teléfono", secret: "Clave API", card: "Tarjeta", ip: "Dirección IP", iban: "IBAN", fiscalCode: "Código fiscal", credential: "Credencial", ssn: "SSN", crypto: "Dirección de wallet", privateKey: "Clave privada", name: "Nombre personal", address: "Dirección postal", custom: "Término personalizado" },
-  fr: { email: "E-mail", phone: "Téléphone", secret: "Clé API", card: "Carte", ip: "Adresse IP", iban: "IBAN", fiscalCode: "Code fiscal", credential: "Identifiant", ssn: "SSN", crypto: "Adresse de portefeuille", privateKey: "Clé privée", name: "Nom personnel", address: "Adresse postale", custom: "Terme personnalisé" },
-  de: { email: "E-Mail", phone: "Telefon", secret: "API-Schlüssel", card: "Karte", ip: "IP-Adresse", iban: "IBAN", fiscalCode: "Steuernummer", credential: "Zugangsdaten", ssn: "SSN", crypto: "Wallet-Adresse", privateKey: "Privater Schlüssel", name: "Persönlicher Name", address: "Straßenadresse", custom: "Eigener Begriff" }
+  en: { email: "Email", phone: "Phone", secret: "API key", card: "Card", ip: "IP address", iban: "IBAN", fiscalCode: "Fiscal code", credential: "Credential", ssn: "SSN", niNumber: "NI number", crypto: "Wallet address", privateKey: "Private key", name: "Personal name", address: "Street address", custom: "Custom term" },
+  it: { email: "Email", phone: "Telefono", secret: "Chiave API", card: "Carta", ip: "Indirizzo IP", iban: "IBAN", fiscalCode: "Codice fiscale", credential: "Credenziale", ssn: "SSN", niNumber: "Numero NI", crypto: "Indirizzo wallet", privateKey: "Chiave privata", name: "Nome personale", address: "Indirizzo", custom: "Termine personalizzato" },
+  es: { email: "Correo electrónico", phone: "Teléfono", secret: "Clave API", card: "Tarjeta", ip: "Dirección IP", iban: "IBAN", fiscalCode: "Código fiscal", credential: "Credencial", ssn: "SSN", niNumber: "Número NI", crypto: "Dirección de wallet", privateKey: "Clave privada", name: "Nombre personal", address: "Dirección postal", custom: "Término personalizado" },
+  fr: { email: "E-mail", phone: "Téléphone", secret: "Clé API", card: "Carte", ip: "Adresse IP", iban: "IBAN", fiscalCode: "Code fiscal", credential: "Identifiant", ssn: "SSN", niNumber: "Numéro NI", crypto: "Adresse de portefeuille", privateKey: "Clé privée", name: "Nom personnel", address: "Adresse postale", custom: "Terme personnalisé" },
+  de: { email: "E-Mail", phone: "Telefon", secret: "API-Schlüssel", card: "Karte", ip: "IP-Adresse", iban: "IBAN", fiscalCode: "Steuernummer", credential: "Zugangsdaten", ssn: "SSN", niNumber: "NI-Nummer", crypto: "Wallet-Adresse", privateKey: "Privater Schlüssel", name: "Persönlicher Name", address: "Straßenadresse", custom: "Eigener Begriff" }
 };
 
 // Sample prompts are real, detector-exercising text rather than lorem ipsum:
@@ -427,7 +427,7 @@ const samplePrompts: Record<string, string> = {
 // Anything in this set means a leak with immediate, concrete consequences (money
 // moved, an account taken over) rather than a privacy annoyance -- that is the
 // line between "high risk" and "review this".
-const highRiskKinds = new Set(["secret", "privateKey", "credential", "card", "iban", "ssn", "crypto"]);
+const highRiskKinds = new Set(["secret", "privateKey", "credential", "card", "iban", "ssn", "niNumber", "crypto"]);
 
 // "one|other" plural forms split on the pipe; index 0 for n===1, index 1 otherwise.
 // English/Romance/German all use a simple singular/plural split -- good enough
@@ -538,7 +538,7 @@ function required<T extends Element>(selector: string): T {
 // The engine sets severity on every finding; older servers may not send it,
 // so the same mapping as scanner.ts is the fallback.
 const severityOrder: FindingSeverity[] = ["critical", "high", "medium", "low"];
-const fallbackSeverity: Record<string, FindingSeverity> = { secret: "critical", privateKey: "critical", credential: "critical", card: "high", iban: "high", ssn: "high", crypto: "high", fiscalCode: "high", email: "medium", phone: "medium", address: "medium", custom: "medium", name: "low", ip: "low" };
+const fallbackSeverity: Record<string, FindingSeverity> = { secret: "critical", privateKey: "critical", credential: "critical", card: "high", iban: "high", ssn: "high", niNumber: "high", crypto: "high", fiscalCode: "high", email: "medium", phone: "medium", address: "medium", custom: "medium", name: "low", ip: "low" };
 export function severityOf(finding: Pick<Finding, "kind"> & { severity?: FindingSeverity }): FindingSeverity {
   return finding.severity && severityOrder.includes(finding.severity) ? finding.severity : fallbackSeverity[finding.kind] ?? "medium";
 }

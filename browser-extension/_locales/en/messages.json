@@ -107,6 +107,7 @@
   "editorBlocked": {"message": "This editor blocked the change. Paste your prompt into the Redaxa popup and copy the redacted version."},
   "kind_email": {"message": "Email address"},
   "kind_ssn": {"message": "Social Security number"},
+  "kind_niNumber": {"message": "UK National Insurance number"},
   "kind_name": {"message": "Personal name"},
   "kind_address": {"message": "Street address"},
   "kind_secret": {"message": "API key or token"},
