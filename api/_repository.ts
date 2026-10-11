@@ -57,7 +57,8 @@ export async function handleRepositoryCheck(
   const skipped = report.coverage.filter(c => c.status !== "scanned");
   response.status(200).json({
     ...report,
-    findings: report.findings.slice(0, maxFindings),
+    // Test values are only counted; listed findings go first if the cap applies.
+    findings: [...report.findings.filter(f => !f.testValue), ...report.findings.filter(f => f.testValue)].slice(0, maxFindings),
     findingsTruncated: report.findingsTruncated || report.findings.length > maxFindings,
     coverage: skipped.slice(0, 500),
     dependencies: report.dependencies && { ...report.dependencies, advisories: report.dependencies.advisories.slice(0, maxAdvisories) },

@@ -31,8 +31,8 @@ for(const source of ['password: string','password = process.env.USER_PASSWORD','
 }
 assert.equal(inspectFile('src/auth.ts','password = "literal-credential-789"')[0].disposition,'review');
 assert.equal(inspectFile('src/auth.ts','password = "literal-credential-789"')[0].severity,'high');
-assert.equal(inspectFile('tests/auth.test.ts','password = "literal-credential-789"')[0].severity,'medium');
-assert.equal(inspectFile('tests/auth.test.ts','password = "literal-credential-789"')[0].disposition,'review');
+assert.equal(inspectFile('tests/auth.test.ts','password = "literal-credential-789"')[0].testValue,true,'A password in a test file is a test value');
+assert.equal(inspectFile('auth.example.ts','password = "literal-credential-789"')[0].severity,'medium','An example-named file outside test folders is still listed');
 assert.equal(inspectFile('.env.example','TOKEN='+synthetic)[0].disposition,'review');
 assert.equal(inspectFile('config.env','password = '+synthetic).length,1,'Do not re-detect the prompt scanner’s generated redaction markers');
 assert.equal(inspectFile('README.md','Contact support@brand.io for help')[0].disposition,'reference');
@@ -61,7 +61,7 @@ const report=demoReport();report.findings=[...inspectFile('config.env','KEY='+sy
 const assessment=aggregateRepositoryReport(report);
 assert.equal(apiKeyCandidates(assessment.groups).length,1,'API banner counts a repeated credential once');
 assert.equal(apiKeyCandidates(assessment.groups).every(g=>g.disposition==='review'&&g.kind==='secret'),true);
-assert.deepEqual(assessment.summary,{rawMatches:5,uniqueFindings:2,actionable:1,reference:1,current:1,historyOnly:0,critical:1,high:0,medium:0,low:0,duplicatesCollapsed:3});
+assert.deepEqual(assessment.summary,{rawMatches:5,uniqueFindings:2,actionable:1,reference:1,testValues:0,current:1,historyOnly:0,critical:1,high:0,medium:0,low:0,duplicatesCollapsed:3});
 assert.equal(assessment.groups[0].occurrences.length,3);
 assert.equal(assessment.groups[0].historyCount,2);
 assert.equal(assessment.groups[0].currentCount,1);
@@ -86,3 +86,29 @@ assert.match(inspectFile('key.env','KEY=AIza'+'Ab123456'.repeat(4))[0].credentia
 assert.equal(inspectFile('key.env','KEY=AKIA1234567890ABCDEF')[0].credential?.type,'Access key ID');
 assert.equal(inspectFile('key.env','KEY=sk-'+'RandomKey1234'.repeat(3))[0].credential?.service,'Unknown service','Generic sk prefix does not establish OpenAI ownership');
 const contextReport=demoReport();contextReport.findings=[identified];assert.match(reportToText(contextReport),/Probable service: GitHub/);assert.ok(!reportToText(contextReport).includes(synthetic));
+// Test values: excluded from counts and lists, counted in the summary, never exported.
+{
+  const live='sk_live_'+'4eC39HqLyjWDarjtT1zdp7dc9Xk2Lm';
+  const r=demoReport(true);
+  r.findings=[
+    ...inspectFile('tests/fixtures/webhook.json','{"secret": "wh-secret-test"}',true),
+    ...inspectFile('test/hook.test.ts','const secret = "wh-secret-test";',true),
+    ...inspectFile('tests/fixtures/users.ts',"email: 'maria.bianchi@gmail.com'",true),
+    ...inspectFile('tests/billing.test.ts','STRIPE_KEY='+live,true),
+    ...inspectFile('tests/auth.test.ts','password = "shared-literal-789"',true),
+    ...inspectFile('src/auth.ts','password = "shared-literal-789"',true),
+  ];
+  const {groups,summary}=aggregateRepositoryReport(r);
+  assert.equal(summary.testValues,2,'wh-secret-test (two files, one value) and the sample email are counted once each');
+  assert.ok(!groups.some(g=>g.testValue),'No test value is listed');
+  assert.equal(summary.actionable,2,'The live key in a test file and the password reused in src are listed');
+  assert.equal(summary.rawMatches,3,'Unlisted test values are not raw matches');assert.equal(summary.duplicatesCollapsed,1,'Only the reused password counts as a grouped repeat');
+  const key=groups.find(g=>g.kind==='secret')!;assert.equal(key.severity,'low');assert.match(key.label,/found in a test file/);
+  const shared=groups.find(g=>g.kind==='credential')!;
+  assert.equal(shared.path,'src/auth.ts','A value also found in src is listed from src');assert.equal(shared.severity,'high');assert.equal(shared.occurrenceCount,2,'The test-file occurrence is shown with it');
+  const text=reportToText(r);
+  assert.match(text,/^2 test or example values not reported \(values not included\)\./m);
+  assert.ok(!text.includes('wh-secret-test')&&!text.includes('maria.bianchi')&&!text.includes(live),'The export carries no value');
+  assert.ok(!text.includes('tests/fixtures/webhook.json'),'Test values are not listed in the export');
+  console.log('Passed report: test values counted, not listed or exported; a live key in a test file and a value reused in src stay listed.');
+}

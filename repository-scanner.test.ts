@@ -57,8 +57,42 @@ assert.ok(inspectFile('pnpm-lock.yaml','  passwd: 1.0.0\n').every(f=>f.dispositi
 assert.ok(inspectFile('src/types.ts',"const o = { secret: '<SECRET>' }").filter(f=>f.category==='credentials').every(f=>f.disposition==='reference'));
 assert.equal(inspectFile('src/client.ts',"   * password: 'hunter2-x9Q'").find(f=>f.category==='credentials')?.severity,'low');
 assert.ok(inspectFile('src/api.ts',"// email: 'example@email.com'").filter(f=>f.kind==='email').every(f=>f.disposition==='reference'));
-assert.equal(inspectFile('tests/fixtures/users.ts',"email: 'maria.bianchi@gmail.com'").find(f=>f.kind==='email')?.severity,'low');
+const sampleUser=inspectFile('tests/fixtures/users.ts',"email: 'maria.bianchi@gmail.com'",true).find(f=>f.kind==='email');
+assert.equal(sampleUser?.testValue,true,'Sample data in a fixture is counted, not listed');assert.equal(sampleUser?.value,undefined,'A test value never carries its value');
 console.log('Passed precision: Supabase demo keys (signature-checked), lockfile names, documentation placeholders and sample data.');
+// Test and example values: counted, never listed, unless shaped like a real key.
+for(const path of ['tests/webhook.ts','test/a.js','src/__tests__/a.ts','spec/a.rb','fixtures/hook.json','src/mocks/a.ts','testdata/a.txt','e2e/login.ts','examples/app.py','sample/app.py','demo/app.js','src/hook.test.ts','src/hook.spec.js','pkg/hook_test.go','test_hook.py','conftest.py','src/__snapshots__/a.snap','[history 0123456789ab]/tests/webhook.ts']){
+  const found=inspectFile(path,'const secret = "wh-secret-real-9Qz";',true);
+  assert.equal(found.length,1,path);assert.equal(found[0].testValue,true,path);assert.equal(found[0].disposition,'reference',path);
+  assert.equal(found[0].value,undefined,path);assert.equal(found[0].credential,undefined,path);
+}
+for(const path of ['src/latest.ts','src/contest/a.ts','src/attestation.ts','docs/setup.md','src/testimonials.ts'])assert.equal(inspectFile(path,'const secret = "wh-secret-real-9Qz";')[0]?.disposition,'review',path+' is not a test location');
+// Outside test folders only an explicit marker in the value or variable name counts.
+for(const source of ['const secret = "wh-secret-test";','password = "test1234"','password = "dummy-pass-Xq9"','secret = "fake_webhook_9Qz"','password = "changeme-9Qz"','password = "xxx-9Qz"','mockSecret = "secret = r3al-l00king-9Qz"','password = "MySamplePass9"']){
+  const found=inspectFile('src/config.ts',source);
+  assert.ok(found.length>0&&found.every(f=>f.testValue),source);
+}
+assert.equal(inspectFile('src/auth.ts','Bearer q8ZrTest9-x7Lm2Vb4Nc6Kd1Pf3')[0]?.disposition,'review','A token body is not split into words to find a marker');
+for(const source of ['password = "Xq9-hunter2-prod"','secret = "latest-9Qz-real"'])assert.equal(inspectFile('src/config.ts',source)[0]?.disposition,'review',source);
+// Real-looking keys stay listed, at low priority, in a test file.
+const liveStripe='sk_live_'+'4eC39HqLyjWDarjtT1zdp7dc9Xk2Lm',liveGitHub='ghp_'+'Q7mZ2kR9vT4wX8yB1nC6dF3gH5jK0pL2sA9e';
+for(const [source,label] of [['STRIPE_KEY='+liveStripe,'stripe'],['TOKEN='+liveGitHub,'github'],['AWS_ACCESS_KEY_ID=AKIA'+'Z3MQ7XK2PVN4RT8W','aws']]){
+  const found=inspectFile('tests/billing.test.ts',source,true).find(f=>f.category==='credentials')!;
+  assert.equal(found.disposition,'review',label);assert.equal(found.severity,'low',label);assert.match(found.label,/ · found in a test file$/,label);assert.ok(!found.testValue,label);
+}
+assert.equal(inspectFile('src/billing.ts','STRIPE_KEY='+liveStripe)[0].severity,'critical','The same key outside tests keeps its priority');
+for(const source of ['STRIPE_KEY=sk_'+'live_1234567890abcdefghijklmnop','STRIPE_KEY=sk_'+'live_TESTkeyQ7mZ2kR9vT4wX8yB1n','TOKEN=ghp_'+'a'.repeat(36),'AWS_ACCESS_KEY_ID=AKIA'+'IOSFODNN7EXAMPLE','STRIPE_KEY=sk_test_'+'51Hx9qLmZp2Rt7Vw4Ky8Nb3Jc6Fd'])
+  assert.equal(inspectFile('tests/billing.test.ts',source).find(f=>f.category==='credentials')?.testValue,true,source+' is a test value in a test file');
+assert.equal(inspectFile('src/client.ts','const KEY = "sk_test_'+'51Hx9qLmZp2Rt7Vw4Ky8Nb3Jc6Fd"')[0].disposition,'review','A provider test-mode key outside tests stays listed');
+const pemBody='MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC7'.repeat(5);
+assert.equal(inspectFile('tests/tls.test.ts','-----BEGIN PRIVATE KEY-----\n'+pemBody+'\n-----END PRIVATE KEY-----').find(f=>f.kind==='privateKey')?.severity,'low','A complete private key in a test file is listed');
+assert.equal(inspectFile('tests/tls.test.ts','-----BEGIN PRIVATE KEY-----\nMIIfake\n-----END PRIVATE KEY-----').find(f=>f.kind==='privateKey')?.testValue,true,'A truncated private-key stub is a test value');
+assert.equal(inspectFile('tests/pay.test.ts','card 4111 1111 1111 1111 visa').find(f=>f.kind==='card')?.testValue,true,'Documented test card');
+assert.equal(inspectFile('tests/pay.test.ts','card 4929 3812 7765 0143 visa').find(f=>f.kind==='card')?.disposition,'review','Other card numbers in tests stay listed');
+assert.equal(inspectFile('tests/pay.test.ts','IBAN IT60X0542811101000000123456').find(f=>f.kind==='iban')?.testValue,true,'An IBAN in a test file is a test value');
+// The credentials-only (extended) check keeps test values so they can be counted.
+assert.equal(inspectFile('tests/webhook.ts','const secret = "wh-secret-test";',true,true)[0]?.testValue,true);
+console.log('Passed test values: test locations and markers counted, real-looking keys listed as found in a test file.');
 // Archive-only mode (web): no GitHub API call, commit read from the archive root, lockfiles audited.
 const headSha='c'.repeat(40);
 const headTar=pack();const headChunks:Buffer[]=[];const headCollect=(async()=>{for await(const chunk of headTar)headChunks.push(chunk);})();
