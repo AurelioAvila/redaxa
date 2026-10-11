@@ -41,11 +41,12 @@ assert.equal(el('text-count').textContent, '0 / 20,000');
 // Visible links: the Redaxa site and the Windows app, never the old backend host.
 assert.equal(el('link-privacy').href, 'https://redaxa.getcertsprint.com/privacy.html');
 assert.equal(el('link-windows').href, 'https://github.com/AurelioAvila/redaxa/releases/latest');
-assert.equal(el('link-repository').href, 'https://redaxa.getcertsprint.com/github.html?source=extension');
+assert.ok(!nodes.has('link-repository'), 'single purpose: no repository tool in the popup');
 assert.match(el('review-rate').href, /^https:\/\/chromewebstore\.google\.com\/detail\/redaxa\/clkobbjoaegkgnmkibjghlboeoplpmok\/reviews$/);
-assert.doesNotMatch(markup, /promptshield|copilot|Repository tab|checks a day/i);
+assert.doesNotMatch(markup, /promptshield|copilot|Repository tab|checks a day|github\.html/i);
 // The review link appears once after three helpful checks, with no reward and an easy "Not now".
 assert.equal(el('review-ask').hidden, false);
+assert.equal(JSON.stringify(saved.shift()), '{"redaxa_review_prompt":"done"}', 'shown once: marked as asked when displayed');
 fire('review-later');
 assert.equal(el('review-ask').hidden, true);
 assert.equal(JSON.stringify(saved.pop()), '{"redaxa_review_prompt":"done"}');

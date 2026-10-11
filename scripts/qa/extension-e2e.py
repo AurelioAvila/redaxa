@@ -189,7 +189,18 @@ def run(lang):
         check(elapsed < 1500, f"20,000-character prompt checked in {elapsed:.0f} ms (dialog shown)")
         typing = page.evaluate("""() => { const t0 = performance.now(); for (let i = 0; i < 200; i++) document.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true })); return performance.now() - t0; }""")
         check(typing < 50, f"200 ordinary keystrokes handled in {typing:.1f} ms")
-        page.keyboard.press("Escape"); page.close()
+        page.keyboard.press("Escape")
+        # Over the limit: said plainly, and free use can still send without a check.
+        page.evaluate("t => { const b = document.querySelector('textarea'); b.value = t; }", "y" * 20100)
+        page.focus("textarea"); page.keyboard.press("Enter")
+        page.wait_for_selector("#ps-int-send-unchecked")
+        check(page.inner_text("#ps-int-title") == "Too long to check", "over 20,000 characters: explained, not stuck")
+        for _ in range(3): page.keyboard.press("Tab")
+        check(page.evaluate("() => document.getElementById('redaxa-intercept').contains(document.activeElement)"), "Tab stays inside the dialog")
+        before = len(sent(page)); page.click("#ps-int-send-unchecked")
+        page.wait_for_function(f"() => window.__sent.length === {before + 1}", timeout=5000)
+        check(True, "free use can send an over-limit prompt without a check")
+        page.close()
 
         # Off switch, set the way the popup sets it.
         worker.evaluate("() => chrome.storage.local.set({ redaxa_auto_check: false })")
@@ -206,12 +217,14 @@ def run(lang):
         popup.wait_for_selector("#check-access")
         check(popup.inner_text("#check-access") == "Free and unlimited. No account needed.", "popup: free access line")
         check(popup.evaluate("document.documentElement.scrollWidth <= 380"), "popup: no horizontal overflow at 380 px")
+        popup.wait_for_timeout(300)
+        check(popup.is_visible("#review-ask"), "review link offered after three helpful checks")
         if shots: popup.screenshot(path=str(shots / "e2e-popup.png"), full_page=True)
         stored = worker.evaluate("() => chrome.storage.local.get(null)")
-        check(set(stored) <= {"redaxa_auto_check", "redaxa_helpful_checks"}, f"storage holds settings and a counter only: {sorted(stored)}")
+        check(set(stored) <= {"redaxa_auto_check", "redaxa_helpful_checks", "redaxa_review_prompt"}, f"storage holds settings and counters only: {sorted(stored)}")
         check(stored.get("redaxa_helpful_checks", 0) >= 3, "helpful-check counter counted AI-site findings")
-        popup.reload(); popup.wait_for_selector("#check-access")
-        check(popup.is_visible("#review-ask"), "review link offered after three helpful checks")
+        popup.reload(); popup.wait_for_selector("#check-access"); popup.wait_for_timeout(300)
+        check(not popup.is_visible("#review-ask"), "review link shown only once")
         popup.close()
 
         # Privacy: free checks sent nothing; pages only talked to their own (stand-in) origins.

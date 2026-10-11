@@ -42,7 +42,7 @@ assert.ok(!shown.includes('<img'), 'Prompt text is escaped in the preview');
 sandbox.chrome.i18n.getMessage = (key, subs) => getMessage(key, subs, 'it');
 assert.ok(list([{ kind: 'iban', label: 'IBAN' }, { kind: 'card', label: 'Card number' }]).includes('Numero di carta'), 'Labels follow the interface language');
 const italianKey = list([{ kind: 'secret', label: 'API key or token', credential: { service: 'OpenAI (probable)', type: 'Project API key', response: 'Revoke or rotate if genuine', evidence: 'x', guidance: 'y' } }]);
-assert.ok(italianKey.includes('OpenAI · Chiave API o token') && italianKey.includes('Revocala o ruotala se è autentica'), 'Credential advice is translated');
+assert.ok(italianKey.includes('OpenAI (probabile) · Chiave API o token') && italianKey.includes('Revocala o ruotala se è autentica'), 'Credential advice is translated');
 sandbox.chrome.i18n.getMessage = getMessage;
 let currentModal;
 sandbox.document.createElement=()=>({innerHTML:'',remove(){},querySelector(){return {addEventListener(){}};}});
@@ -117,3 +117,33 @@ assert.equal(lastScan.requireAccount, false, 'a visitor is checked on the device
 assert.match(ui.get('#redaxa-body').innerHTML, /Checked on this device/);
 assert.ok(!ui.get('#redaxa-body').innerHTML.includes(token));
 console.log('Manual check: runs locally on one click and says so, without exposing values.');
+// Too long to check: free use may send it unchecked, a plan account may not.
+sandbox.document.createElement=()=>({innerHTML:'',remove(){},querySelector(selector){return {addEventListener(_e,h){handlers.set(selector,h);}};}});
+sandbox.document.body={append(m){currentModal=m;}};
+let unchecked=0;
+sandbox.chrome.runtime.sendMessage=(message,callback)=>callback({ok:true,result:message.type==='STATUS'?{signedIn:false}:{findings:[],redactedText:''}});
+vm.runInContext('statusCheckedAt = 0',sandbox);
+const long={value:'x'.repeat(20001)};
+await gate(long,()=>unchecked++);
+assert.match(currentModal.innerHTML,/longer than 20,000 characters/);
+handlers.get('#ps-int-send-unchecked')();
+assert.equal(unchecked,1,'free use can send a too-long prompt without a check');
+sandbox.chrome.runtime.sendMessage=(message,callback)=>callback({ok:true,result:message.type==='STATUS'?{signedIn:true,active:true}:{findings:[],redactedText:''}});
+vm.runInContext('statusCheckedAt = 0',sandbox);
+await gate(long,()=>unchecked++);
+assert.ok(!currentModal.innerHTML.includes('ps-int-send-unchecked'),'a plan account cannot skip team rules');
+// A check dismissed while it runs never sends.
+let finish;
+sandbox.chrome.runtime.sendMessage=(message,callback)=>{ if(message.type==='SCAN') finish=()=>callback({ok:true,result:{findings:[],redactedText:'later'}}); else callback({ok:true,result:{signedIn:false}}); };
+vm.runInContext('statusCheckedAt = 0',sandbox);
+let late=0;
+const pendingGate=gate({value:'later'},()=>late++);
+for(let i=0;i<10;i++) await Promise.resolve();
+vm.runInContext('dismissModal()',sandbox);
+finish(); await pendingGate;
+assert.equal(late,0,'a dismissed check does not send');
+// Server codes become words the user can act on.
+assert.match(vm.runInContext('errorText',sandbox)({httpStatus:402,message:'TRIAL_REQUIRED'}),/plan could not be confirmed/);
+assert.match(vm.runInContext('errorText',sandbox)({httpStatus:401,message:'UNAUTHORIZED'}),/Sign in again/);
+console.log('Dialog: too-long prompts, dismissal during a check and readable server errors passed.');
+

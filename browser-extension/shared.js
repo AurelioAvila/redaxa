@@ -7,6 +7,8 @@
 let previewMessages;
 function t(key, substitutions) {
   if (globalThis.chrome?.i18n) return chrome.i18n.getMessage(key, substitutions);
+  // Only the local dev server preview reaches this point.
+  if (!/^(localhost|127\.0\.0\.1)$/.test(globalThis.location?.hostname ?? "")) return "";
   if (previewMessages === undefined) {
     try {
       const request = new XMLHttpRequest();
@@ -50,8 +52,9 @@ function findingTitle(f) {
   const c = f.credential;
   if (!c) return findingLabel(f);
   if (english()) return `${c.service} · ${c.type}`;
-  const service = c.service.replace(/ \(.*\)$/, "");
-  return ["Unknown service", "Issuer not established"].includes(service) ? findingLabel(f) : `${service} · ${findingLabel(f)}`;
+  // "OpenAI (probable)", "Supabase (claimed issuer)": the hedge stays, translated.
+  const service = c.service.replace(/ \(.*\)$/, "") + (c.service.includes("(") ? ` (${t("probable")})` : "");
+  return ["Unknown service", "Issuer not established"].includes(c.service) ? findingLabel(f) : `${service} · ${findingLabel(f)}`;
 }
 
 function credentialAdvice(c) {
@@ -70,6 +73,13 @@ function groupFindings(findings) {
     groups.set(title, group);
   }
   return [...groups.values()];
+}
+
+// Server error codes in words the user can act on.
+function errorText(error) {
+  if (error?.httpStatus === 402 || error?.message === "TRIAL_REQUIRED") return t("planNotConfirmed");
+  if (error?.httpStatus === 401 || error?.message === "UNAUTHORIZED") return t("errSignInAgain");
+  return error?.message || t("checkFailedShort");
 }
 
 const policyKeys = {

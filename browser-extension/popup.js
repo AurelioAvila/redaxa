@@ -19,7 +19,6 @@ for (const el of document.querySelectorAll("[data-i18n-label]")) el.setAttribute
 $("link-privacy").href = `${REDAXA_WORKSPACE_URL}/privacy.html`;
 $("link-website").href = `${REDAXA_WORKSPACE_URL}/?source=extension`;
 $("link-windows").href = "https://github.com/AurelioAvila/redaxa/releases/latest";
-$("link-repository").href = `${REDAXA_WORKSPACE_URL}/github.html?source=extension`;
 $("review-rate").href = `${STORE_URL}/reviews`;
 
 function send(message) {
@@ -149,7 +148,7 @@ $("quick-check").addEventListener("submit", async (event) => {
   } catch (error) {
     if (revision !== checkedRevision) return;
     const needsPlan = error.httpStatus === 402 || error.message === "TRIAL_REQUIRED";
-    checkMessage.textContent = needsPlan ? t("planNotConfirmed") : error.message || t("checkFailed");
+    checkMessage.textContent = errorText(error);
     if (needsPlan) $("pro-benefits").hidden = false;
   } finally {
     checking = false;
@@ -173,8 +172,10 @@ if (installed && chrome.storage?.local) {
   chrome.storage.local.get(["redaxa_auto_check", HELPFUL_KEY, REVIEW_KEY]).then(stored => {
     autoCheck.checked = stored?.redaxa_auto_check !== false;
     autoStep();
-    // Asked once, after three checks on AI sites that found something. No reward, no pressure.
-    $("review-ask").hidden = !(Number(stored?.[HELPFUL_KEY]) >= 3 && stored?.[REVIEW_KEY] !== "done");
+    // Shown once, after three checks on AI sites that found something. No reward, no pressure.
+    const ask = Number(stored?.[HELPFUL_KEY]) >= 3 && stored?.[REVIEW_KEY] !== "done";
+    $("review-ask").hidden = !ask;
+    if (ask) void chrome.storage.local.set({ [REVIEW_KEY]: "done" });
   }).catch(() => undefined);
   autoCheck.addEventListener("change", () => { autoStep(); void chrome.storage.local.set({ redaxa_auto_check: autoCheck.checked }); });
 }

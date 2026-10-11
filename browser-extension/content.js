@@ -125,7 +125,7 @@ function send(message) {
 }
 
 function escapeHtml(value) {
-  return value.replace(/[&<>'"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#039;", '"': "&quot;" }[c] ?? c));
+  return String(value ?? "").replace(/[&<>'"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#039;", '"': "&quot;" }[c] ?? c));
 }
 
 // ---------------------------------------------------------------------------
@@ -137,7 +137,6 @@ function buildUI() {
   button.id = "redaxa-check-btn";
   button.type = "button";
   button.textContent = t("pageCheck");
-  button.setAttribute("aria-label", t("pageCheckLabel"));
   document.body.append(button);
 
   const panel = document.createElement("div");
@@ -168,7 +167,7 @@ function buildUI() {
       const result = await runScan(text, status.signedIn === true && status.active === true);
       renderFindings(body, result, composer, () => panel.classList.remove("open"));
     } catch (error) {
-      body.innerHTML = `<p class="ps-empty">${escapeHtml(error.message || t("checkFailedShort"))}</p>`;
+      body.innerHTML = `<p class="ps-empty">${escapeHtml(errorText(error))}</p>`;
     }
   });
 }
@@ -266,6 +265,8 @@ const AUTO_CHECK_KEY = "redaxa_auto_check";
 chrome.storage?.local?.get(AUTO_CHECK_KEY).then(stored => { autoCheck = stored?.[AUTO_CHECK_KEY] !== false; }).catch(() => undefined);
 chrome.storage?.onChanged?.addListener((changes, area) => {
   if (area === "local" && AUTO_CHECK_KEY in changes) autoCheck = changes[AUTO_CHECK_KEY].newValue !== false;
+  // Signing in or out in the popup takes effect on the next send, not 30 s later.
+  if (area === "local" && "redaxa_session" in changes) statusCheckedAt = 0;
 });
 let statusCheckedAt = 0;
 let bypassArm = false;
@@ -293,27 +294,49 @@ async function currentStatus() {
 }
 
 let modalEl = null;
+let modalComposer = null;
+// Bumped when the user dismisses a dialog, so a check still running for it
+// neither sends nor reopens anything.
+let gateRun = 0;
 
 function closeModal() {
   modalEl?.remove();
   modalEl = null;
 }
 
-// A labelled dialog: Escape closes it and focus goes back to the composer.
+function dismissModal() {
+  gateRun++;
+  const composer = modalComposer;
+  closeModal();
+  composer?.focus?.();
+}
+
+// A labelled dialog; the card takes focus until a button is focused.
 function showModal(html, composer) {
   closeModal();
+  modalComposer = composer;
   modalEl = document.createElement("div");
   modalEl.id = "redaxa-intercept";
-  modalEl.innerHTML = `<div class="ps-intercept-card" role="dialog" aria-modal="true" aria-labelledby="ps-int-title">${html}</div>`;
-  modalEl.addEventListener?.("keydown", (event) => {
-    if (event.key !== "Escape") return;
-    event.stopPropagation();
-    closeModal();
-    composer?.focus?.();
-  });
+  modalEl.innerHTML = `<div class="ps-intercept-card" role="dialog" aria-modal="true" aria-labelledby="ps-int-title" tabindex="-1">${html}</div>`;
   document.body.append(modalEl);
+  modalEl.querySelector("#ps-int-close")?.addEventListener("click", dismissModal);
+  modalEl.querySelector(".ps-intercept-card")?.focus?.();
   return modalEl;
 }
+
+// While a dialog is open: Escape dismisses it and Tab stays inside it.
+document.addEventListener("keydown", (event) => {
+  if (!modalEl) return;
+  if (event.key === "Escape") { event.preventDefault(); event.stopImmediatePropagation(); dismissModal(); return; }
+  if (event.key !== "Tab") return;
+  const focusable = [...modalEl.querySelectorAll("button, summary")];
+  if (!focusable.length) return;
+  const first = focusable[0], last = focusable[focusable.length - 1], active = document.activeElement;
+  if (!modalEl.contains(active) || (event.shiftKey && active === first) || (!event.shiftKey && active === last)) {
+    event.preventDefault();
+    (event.shiftKey ? last : first).focus();
+  }
+}, true);
 
 // Re-fires the original send action after the user explicitly approves it.
 // `bypassArm` tells this same interceptor to step aside for exactly the next
@@ -336,13 +359,14 @@ function resendVia(kind, target) {
 async function gate(composer, resend) {
   if (gatePending) return;
   gatePending = true;
+  const run = ++gateRun;
   const text = composerText(composer).trim();
   const sendChecked = () => { if (sameCheckedPrompt(composer, text)) { closeModal(); resend(); } };
   const closeButton = `<button type="button" class="ps-int-x" id="ps-int-close" aria-label="${escapeHtml(t("close"))}">×</button>`;
   // A clean local check takes milliseconds: the "Checking" notice only
   // appears when a check is slow, so ordinary sends do not flash a dialog.
   const loading = window.setTimeout(() => showModal(`
-    <div class="ps-int-head"><span id="ps-int-title">Redaxa</span></div>
+    <div class="ps-int-head"><span id="ps-int-title">Redaxa</span>${closeButton}</div>
     <div class="ps-int-body"><p class="ps-loading">${escapeHtml(t("checkingBeforeSend"))}</p></div>
   `, composer), 300);
   let result;
@@ -351,22 +375,39 @@ async function gate(composer, resend) {
     // A signed-in account whose plan cannot be confirmed may carry team
     // policies that block sending, so it waits rather than guessing.
     if (status.unavailable) throw new Error(t("couldNotVerify"));
-    result = await runScan(text, status.signedIn === true && status.active === true);
+    const account = status.signedIn === true && status.active === true;
+    // Longer than a check accepts: say so instead of holding the send forever.
+    result = text.length > 20_000 ? { tooLong: true, account } : await runScan(text, account);
   } catch (error) {
     window.clearTimeout(loading);
+    if (run !== gateRun) return;
     showModal(`
       <div class="ps-int-head"><span id="ps-int-title">Redaxa</span>${closeButton}</div>
       <div class="ps-int-body">
-        <p class="ps-empty">${escapeHtml(error.message || t("checkFailedShort"))}</p>
+        <p class="ps-empty">${escapeHtml(errorText(error))}</p>
         <p class="ps-empty">${escapeHtml(t("notSent"))}</p>
       </div>
     `, composer);
-    modalEl.querySelector("#ps-int-close")?.addEventListener("click", closeModal);
     modalEl.querySelector("#ps-int-close")?.focus?.();
     return;
   } finally {
     window.clearTimeout(loading);
     gatePending = false;
+  }
+  if (run !== gateRun) return;
+
+  if (result.tooLong) {
+    // A plan may carry team rules that block sending, so only free use can skip the check.
+    showModal(`
+      <div class="ps-int-head"><span id="ps-int-title">${escapeHtml(t("tooLongTitle"))}</span>${closeButton}</div>
+      <div class="ps-int-body">
+        <p class="ps-empty">${escapeHtml(t(result.account ? "tooLongAccount" : "tooLongBody"))}</p>
+        ${result.account ? "" : `<button type="button" class="ps-int-secondary" id="ps-int-send-unchecked">${escapeHtml(t("sendUnchecked"))}</button>`}
+      </div>
+    `, composer);
+    modalEl.querySelector("#ps-int-send-unchecked")?.addEventListener("click", sendChecked);
+    modalEl.querySelector("#ps-int-close")?.focus?.();
+    return;
   }
 
   if (!result.findings.length && result.decision?.action !== "block") {
@@ -393,7 +434,6 @@ async function gate(composer, resend) {
       ${blocked ? "" : `<button type="button" class="ps-int-secondary" id="ps-int-send-anyway">${escapeHtml(t("sendAnyway"))}</button>`}
     </div>
   `, composer);
-  modalEl.querySelector("#ps-int-close")?.addEventListener("click", () => { closeModal(); composer?.focus?.(); });
   modalEl.querySelector("#ps-int-fix")?.addEventListener("click", () => {
     if (!sameCheckedPrompt(composer, text)) return;
     setComposerText(composer, result.redactedText);
