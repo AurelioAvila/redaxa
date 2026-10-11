@@ -34,7 +34,7 @@
   </Company_Info>
   <Program_Info>
     <Program_Name>Redaxa</Program_Name>
-    <Program_Version>0.5.2</Program_Version>
+    <Program_Version>0.5.3</Program_Version>
     <Program_Release_Month>10</Program_Release_Month>
     <Program_Release_Day>11</Program_Release_Day>
     <Program_Release_Year>2026</Program_Release_Year>
@@ -47,8 +47,8 @@
     <Program_OS_Support>WinOther</Program_OS_Support>
     <Program_Language>English</Program_Language>
     <File_Info>
-      <File_Size_Bytes>34595072</File_Size_Bytes>
-      <File_Size_K>33784.25</File_Size_K>
+      <File_Size_Bytes>34596448</File_Size_Bytes>
+      <File_Size_K>33785.59</File_Size_K>
       <File_Size_MB>32.99</File_Size_MB>
     </File_Info>
     <Expire_Info>
@@ -60,7 +60,7 @@
       <Expire_Day></Expire_Day>
       <Expire_Year></Expire_Year>
     </Expire_Info>
-    <Program_Change_Info>Updates close Redaxa and its local scanner before replacing files, so they no longer stop with a file-in-use error, and reopen the app when done.</Program_Change_Info>
+    <Program_Change_Info>The repository check counts test and example values on one line instead of listing them as exposures; keys in test files that look real are still listed.</Program_Change_Info>
     <Program_Category_Class>Security &amp; Privacy::Other</Program_Category_Class>
     <Program_Specific_Category></Program_Specific_Category>
     <Program_System_Requirements>Windows 10/11 x64; internet for accounts, updates and supported online features.</Program_System_Requirements>
@@ -84,7 +84,7 @@
       <Application_XML_File_URL>https://raw.githubusercontent.com/AurelioAvila/redaxa/main/docs/pad.xml</Application_XML_File_URL>
     </Application_URLs>
     <Download_URLs>
-      <Primary_Download_URL>https://github.com/AurelioAvila/redaxa/releases/download/v0.5.2/Redaxa_0.5.2_x64-setup.exe</Primary_Download_URL>
+      <Primary_Download_URL>https://github.com/AurelioAvila/redaxa/releases/download/v0.5.3/Redaxa_0.5.3_x64-setup.exe</Primary_Download_URL>
       <Secondary_Download_URL></Secondary_Download_URL>
       <Additional_Download_URL_1></Additional_Download_URL_1>
       <Additional_Download_URL_2></Additional_Download_URL_2>
