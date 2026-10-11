@@ -1,15 +1,19 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import { getMessage } from './messages.test.mjs';
 
 let scanResult;
 const sandbox=vm.createContext({
-  document:{body:null,addEventListener(){}},window:{setInterval(){}},
-  chrome:{runtime:{id:'test-extension',sendMessage(message,callback){callback({ok:true,result:message.type==='SCAN'?scanResult:{signedIn:true,active:true}});}}}
+  document:{body:null,addEventListener(){}},window:{setInterval(){},setTimeout(){},clearTimeout(){}},
+  chrome:{i18n:{getMessage},runtime:{id:'test-extension',sendMessage(message,callback){callback({ok:true,result:message.type==='SCAN'?scanResult:{signedIn:true,active:true}});}}}
 });
+vm.runInContext(fs.readFileSync(new URL('shared.js',import.meta.url),'utf8'),sandbox);
 vm.runInContext(fs.readFileSync(new URL('content.js',import.meta.url),'utf8'),sandbox);
 const warning=vm.runInContext('apiWarning',sandbox);
 const sorted=vm.runInContext('findingPriority',sandbox);
+const list=vm.runInContext('findingList',sandbox);
+const preview=vm.runInContext('redactedPreview',sandbox);
 const render=vm.runInContext('renderFindings',sandbox);
 const token='ghp_SYNTHETIC_DO_NOT_USE_1234567890';
 const findings=[{kind:'email',label:'Email address',severity:'medium',value:'person@company.com'}, {kind:'privateKey',label:'Private key',severity:'critical',value:'SYNTHETIC PEM'}, {kind:'secret',label:'API key or token',severity:'medium',value:token},{kind:'secret',label:'API key or token',severity:'medium',value:token}];
@@ -27,6 +31,19 @@ assert.ok(body.innerHTML.indexOf('API key or token</b>')<body.innerHTML.indexOf(
 assert.ok(body.innerHTML.includes('Policy &lt;script&gt;'));
 assert.ok(!body.innerHTML.includes(token));
 assert.ok(!body.innerHTML.includes('person@company.com'));
+
+// Grouped rows, credentials first; the redacted preview is escaped and marks placeholders only.
+const grouped = list(findings);
+assert.ok(grouped.indexOf('API key or token</b> <span class="ps-times">× 2</span>') >= 0, 'Duplicate keys are grouped');
+assert.ok(grouped.indexOf('API key or token') < grouped.indexOf('Private key') && grouped.indexOf('Private key') < grouped.indexOf('Email address'));
+const shown = preview({ redactedText: 'Mail [EMAIL] <img src=x onerror=alert(1)> key [SECRET]' });
+assert.ok(shown.includes('<mark>[EMAIL]</mark>') && shown.includes('<mark>[SECRET]</mark>'));
+assert.ok(!shown.includes('<img'), 'Prompt text is escaped in the preview');
+sandbox.chrome.i18n.getMessage = (key, subs) => getMessage(key, subs, 'it');
+assert.ok(list([{ kind: 'iban', label: 'IBAN' }, { kind: 'card', label: 'Card number' }]).includes('Numero di carta'), 'Labels follow the interface language');
+const italianKey = list([{ kind: 'secret', label: 'API key or token', credential: { service: 'OpenAI (probable)', type: 'Project API key', response: 'Revoke or rotate if genuine', evidence: 'x', guidance: 'y' } }]);
+assert.ok(italianKey.includes('OpenAI (probabile) · Chiave API o token') && italianKey.includes('Revocala o ruotala se è autentica'), 'Credential advice is translated');
+sandbox.chrome.i18n.getMessage = getMessage;
 let currentModal;
 sandbox.document.createElement=()=>({innerHTML:'',remove(){},querySelector(){return {addEventListener(){}};}});
 sandbox.document.body={append(modal){currentModal=modal;}};
@@ -81,7 +98,7 @@ assert.equal(vm.runInContext('sameCheckedPrompt',sandbox)({value:'checked',isCon
 console.log('Extension: API alert, deduplication, priority, escaping and secret-free markup passed.');
 // Manual checks run straight away and say where they ran.
 const ui = new Map();
-const uiNode = () => ({ innerHTML: '', handlers: {}, classList: { add() {}, remove() {} },
+const uiNode = () => ({ innerHTML: '', handlers: {}, classList: { add() {}, remove() {} }, setAttribute() {},
   addEventListener(event, handler) { this.handlers[event] = handler; },
   querySelector(selector) { if (!ui.has(selector)) ui.set(selector, uiNode()); return ui.get(selector); }
 });
@@ -100,3 +117,33 @@ assert.equal(lastScan.requireAccount, false, 'a visitor is checked on the device
 assert.match(ui.get('#redaxa-body').innerHTML, /Checked on this device/);
 assert.ok(!ui.get('#redaxa-body').innerHTML.includes(token));
 console.log('Manual check: runs locally on one click and says so, without exposing values.');
+// Too long to check: free use may send it unchecked, a plan account may not.
+sandbox.document.createElement=()=>({innerHTML:'',remove(){},querySelector(selector){return {addEventListener(_e,h){handlers.set(selector,h);}};}});
+sandbox.document.body={append(m){currentModal=m;}};
+let unchecked=0;
+sandbox.chrome.runtime.sendMessage=(message,callback)=>callback({ok:true,result:message.type==='STATUS'?{signedIn:false}:{findings:[],redactedText:''}});
+vm.runInContext('statusCheckedAt = 0',sandbox);
+const long={value:'x'.repeat(20001)};
+await gate(long,()=>unchecked++);
+assert.match(currentModal.innerHTML,/longer than 20,000 characters/);
+handlers.get('#ps-int-send-unchecked')();
+assert.equal(unchecked,1,'free use can send a too-long prompt without a check');
+sandbox.chrome.runtime.sendMessage=(message,callback)=>callback({ok:true,result:message.type==='STATUS'?{signedIn:true,active:true}:{findings:[],redactedText:''}});
+vm.runInContext('statusCheckedAt = 0',sandbox);
+await gate(long,()=>unchecked++);
+assert.ok(!currentModal.innerHTML.includes('ps-int-send-unchecked'),'a plan account cannot skip team rules');
+// A check dismissed while it runs never sends.
+let finish;
+sandbox.chrome.runtime.sendMessage=(message,callback)=>{ if(message.type==='SCAN') finish=()=>callback({ok:true,result:{findings:[],redactedText:'later'}}); else callback({ok:true,result:{signedIn:false}}); };
+vm.runInContext('statusCheckedAt = 0',sandbox);
+let late=0;
+const pendingGate=gate({value:'later'},()=>late++);
+for(let i=0;i<10;i++) await Promise.resolve();
+vm.runInContext('dismissModal()',sandbox);
+finish(); await pendingGate;
+assert.equal(late,0,'a dismissed check does not send');
+// Server codes become words the user can act on.
+assert.match(vm.runInContext('errorText',sandbox)({httpStatus:402,message:'TRIAL_REQUIRED'}),/plan could not be confirmed/);
+assert.match(vm.runInContext('errorText',sandbox)({httpStatus:401,message:'UNAUTHORIZED'}),/Sign in again/);
+console.log('Dialog: too-long prompts, dismissal during a check and readable server errors passed.');
+

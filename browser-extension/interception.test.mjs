@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import { getMessage } from './messages.test.mjs';
 
 const listeners = new Map(), controls = new Map(), callbacks = [];
 const composer = { value: 'Synthetic private prompt', contains: node => node === composer, focus() {}, dispatchEvent() {} };
@@ -12,13 +13,14 @@ const context = vm.createContext({
     createElement() { return { innerHTML: '', remove() {}, querySelector(selector) {
       return { addEventListener(_type, handler) { controls.set(selector, handler); } };
     } }; } },
-  window: { setInterval() {}, setTimeout() {} },
+  window: { setInterval() {}, setTimeout() {}, clearTimeout() {} },
   KeyboardEvent: class { constructor(type, init) { Object.assign(this, init, { type }); } },
-  chrome: { runtime: { id: 'test-extension', sendMessage(message, callback) {
+  chrome: { i18n: { getMessage }, runtime: { id: 'test-extension', sendMessage(message, callback) {
     if (message.type === 'SCAN') scans++;
     callbacks.push({ message, callback });
   } } }
 });
+vm.runInContext(fs.readFileSync(new URL('shared.js', import.meta.url), 'utf8'), context);
 vm.runInContext(fs.readFileSync(new URL('content.js', import.meta.url), 'utf8'), context);
 context.document.body = { append(node) { modal = node; } };
 const drain = async () => { for (let i = 0; i < 12; i++) await Promise.resolve(); };

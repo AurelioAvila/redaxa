@@ -29,7 +29,7 @@ for (const surface of ['desktop', 'extension']) {
     const context=vm.createContext({AbortSignal,AbortController,URL,setTimeout,clearTimeout,console,
       fetch:fetcher,authFetch:fetcher,apiBase:'',importScripts(){},
       readDesktopSession:async()=>session,saveDesktopSession:async value=>{session=value;},clearDesktopSession:async()=>{deleted=true;},
-      chrome:{storage:{local:{get:async()=>({redaxa_session:session}),set:async value=>{session=value.redaxa_session;},remove:async()=>{deleted=true;}}},runtime:{onMessage:{addListener(){}}}}
+      chrome:{storage:{local:{get:async()=>({redaxa_session:session}),set:async value=>{session=value.redaxa_session;},remove:async()=>{deleted=true;}}},runtime:{onMessage:{addListener(){}},onInstalled:{addListener(){}}},i18n:{getMessage:key=>key}}
     });
     vm.runInContext(surface==='desktop'?desktopCode:extensionCode,context);
     const result=vm.runInContext(surface==='desktop'?'desktopAccessToken()':'accessToken()',context);

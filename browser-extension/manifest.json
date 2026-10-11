@@ -1,18 +1,17 @@
 {
   "manifest_version": 3,
-  "name": "Redaxa – Redact PII & API Keys for ChatGPT, Claude, Gemini",
+  "name": "__MSG_extName__",
   "short_name": "Redaxa",
-  "version": "0.4.9",
-  "description": "Catch API keys, passwords and personal data before a prompt reaches ChatGPT, Claude or Gemini. Checked on your device, free.",
+  "version": "0.4.10",
+  "description": "__MSG_extDescription__",
+  "default_locale": "en",
   "permissions": [
     "storage",
     "clipboardWrite"
   ],
-  "host_permissions": [
-    "https://promptshield-beta.vercel.app/*"
-  ],
   "icons": {
     "16": "icons/16.png",
+    "32": "icons/32.png",
     "48": "icons/48.png",
     "128": "icons/128.png"
   },
@@ -25,21 +24,20 @@
     "default_title": "Redaxa",
     "default_icon": {
       "16": "icons/16.png",
-      "48": "icons/48.png",
-      "128": "icons/128.png"
+      "32": "icons/32.png",
+      "48": "icons/48.png"
     }
   },
   "content_scripts": [
     {
       "matches": [
-        "https://chat.openai.com/*",
         "https://chatgpt.com/*",
         "https://claude.ai/*",
         "https://gemini.google.com/*",
-        "https://copilot.microsoft.com/*",
         "https://www.perplexity.ai/*"
       ],
       "js": [
+        "shared.js",
         "content.js"
       ],
       "css": [

@@ -3,64 +3,71 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Redaxa — Your privacy workspace</title>
+  <title>Redaxa</title>
   <link rel="stylesheet" href="popup.css" />
 </head>
 <body>
-  <header class="brand"><img src="icons/48.png" alt="" width="32" height="32" /><strong>Redaxa</strong><button class="link-btn edition" id="open-account" type="button">Account</button></header>
-  <p id="preview-note" class="preview-note" hidden>Design preview · Account actions work in the installed extension.</p>
-  <nav class="tabs" aria-label="Protection tools"><button id="prompt-tab" class="tab selected" type="button" aria-pressed="true">Prompt protection</button><button id="repository-tab" class="tab" type="button" aria-pressed="false">Repository</button></nav>
+  <header class="brand"><img src="icons/48.png" alt="" width="28" height="28" /><strong>Redaxa</strong><button class="link-btn edition" id="open-account" type="button" data-i18n="account">Account</button></header>
+  <p id="preview-note" class="preview-note" hidden>Design preview · Checks run in the installed extension.</p>
   <main>
+    <section id="welcome" class="welcome" hidden aria-labelledby="welcome-heading">
+      <h1 id="welcome-heading" data-i18n="welcomeTitle">Welcome to Redaxa</h1>
+      <ol class="steps">
+        <li id="step-enable"><span data-i18n="welcomeStep1">Automatic checks are on</span> <span class="sr-only" data-i18n="stepDone">done</span></li>
+        <li id="step-example"><span data-i18n="welcomeStep2">Try an example</span> <span class="sr-only" data-i18n="stepDone">done</span></li>
+        <li id="step-result"><span data-i18n="welcomeStep3">See what Redaxa finds</span> <span class="sr-only" data-i18n="stepDone">done</span></li>
+      </ol>
+      <p class="hint" data-i18n="welcomeTip">Pin Redaxa from the puzzle icon in the toolbar. Then use ChatGPT, Claude, Gemini or Perplexity as usual: Redaxa checks your message when you send it.</p>
+    </section>
     <section id="prompt-panel" aria-labelledby="prompt-heading">
-      <h1 id="prompt-heading">Check before you share.</h1>
-      <p class="intro">Catch credentials and personal details in a prompt, email or draft.</p>
+      <div id="prompt-intro">
+        <h1 id="prompt-heading" data-i18n="heading">Check before you share.</h1>
+        <p class="intro" data-i18n="intro">Catch API keys, passwords and personal details in a prompt, email or code before you share it.</p>
+      </div>
       <form id="quick-check">
-        <div class="label-row"><label for="check-text">Text to review</label><button type="button" class="link-btn" id="try-example">Try an example</button></div>
-        <textarea id="check-text" rows="4" maxlength="20000" spellcheck="false" autocomplete="off" placeholder="Paste text here. Nothing is read from your tabs or clipboard automatically." required aria-describedby="check-privacy check-access"></textarea>
-        <div class="input-meta"><span id="text-count">0 / 20,000</span><button type="button" class="link-btn" id="clear-check">Clear</button></div>
-        <p class="micro" id="check-privacy">Checked on this device. Your text is not sent anywhere.</p>
-        <button class="primary" id="check-button" type="submit">Check text <span aria-hidden="true">→</span></button>
-        <p class="hint" id="check-access">Free and unlimited. No account needed.</p>
-        <label class="toggle"><input id="auto-check" type="checkbox" checked /> <span>Check automatically before sending on ChatGPT, Claude, Gemini and Perplexity</span></label>
+        <div class="label-row"><label for="check-text" data-i18n="textLabel">Text to check</label><button type="button" class="link-btn" id="try-example" data-i18n="tryExample">Try an example</button></div>
+        <textarea id="check-text" rows="4" maxlength="20000" spellcheck="false" autocomplete="off" placeholder="Paste a prompt, email or code." data-i18n-placeholder="textPlaceholder" required aria-describedby="check-privacy check-access"></textarea>
+        <div class="input-meta"><span id="text-count">0 / 20,000</span><button type="button" class="link-btn" id="clear-check" data-i18n="clear">Clear</button></div>
+        <p class="micro" id="check-privacy" data-i18n="privacyLocal">Checked on this device. Your text is not sent anywhere.</p>
+        <button class="primary" id="check-button" type="submit" data-i18n="checkButton">Check text</button>
+        <p class="hint" id="check-access" data-i18n="accessFree">Free and unlimited. No account needed.</p>
+        <label class="toggle"><input id="auto-check" type="checkbox" checked /> <span data-i18n="autoCheck">Check automatically before sending on ChatGPT, Claude, Gemini and Perplexity</span></label>
       </form>
       <p id="check-message" class="hint" role="status" aria-live="polite"></p>
       <section id="check-result" class="check-result" hidden aria-labelledby="result-heading">
-        <h2 id="result-heading"></h2><p id="result-note" class="hint"></p>
+        <h2 id="result-heading" tabindex="-1"></h2><p id="result-note" class="hint"></p>
         <ul id="finding-list"></ul>
-        <label for="redacted-text">Reviewed version</label><textarea id="redacted-text" rows="3" readonly></textarea>
-        <button class="secondary" id="copy-result" type="button">Copy reviewed text</button>
+        <label for="redacted-text" data-i18n="redactedLabel">Redacted version</label><textarea id="redacted-text" rows="3" readonly></textarea>
+        <button class="secondary" id="copy-result" type="button" data-i18n="copyResult">Copy redacted text</button>
       </section>
       <aside id="pro-benefits" class="upgrade">
-        <div><span class="pro">PRO</span><strong>Make it part of your workflow</strong></div>
-        <p>Protected terms for your clients and projects, team policies that warn, redact or block, and deeper reviews of public GitHub repositories, including Git history, in the Windows app.</p>
-        <button class="secondary" id="compare-plans" type="button">Compare Pro plans →</button>
+        <div><span class="pro">PRO</span><strong data-i18n="proTitle">Make it part of your workflow</strong></div>
+        <p data-i18n="proBody">Protected terms for your clients and projects, team policies that warn, redact or block, and deeper reviews of public GitHub repositories, including Git history, in the Windows app.</p>
+        <button class="secondary" id="compare-plans" type="button" data-i18n="comparePlans">Compare Pro plans</button>
       </aside>
-      <details id="account-details" class="account-details"><summary id="account-summary">Already have an account? Sign in</summary>
+      <details id="account-details" class="account-details"><summary id="account-summary" data-i18n="signInSummary">Already have an account? Sign in</summary>
       <div class="status" id="status" hidden>
-        <div class="account-card"><span class="pill" id="status-pill"><i></i><span id="status-pill-text">Checking plan</span></span><strong id="status-email"></strong><span id="status-plan"></span></div>
-        <p class="hint">Look for the Redaxa button on ChatGPT, Claude, Gemini and Perplexity.</p>
-        <button class="primary" id="open-dashboard" type="button">Open workspace <span aria-hidden="true">↗</span></button>
-        <button class="link-btn signout" id="sign-out" type="button">Sign out</button>
+        <div class="account-card"><span class="pill" id="status-pill"><i></i><span id="status-pill-text" data-i18n="statusChecking">Checking plan</span></span><strong id="status-email"></strong><span id="status-plan"></span></div>
+        <p class="hint" data-i18n="lookForButton">Look for the Redaxa button on ChatGPT, Claude, Gemini and Perplexity.</p>
+        <button class="primary" id="open-dashboard" type="button" data-i18n="openWorkspace">Open workspace</button>
+        <button class="link-btn signout" id="sign-out" type="button" data-i18n="signOut">Sign out</button>
       </div>
       <form id="form" hidden>
-        <label for="email">Email</label><input id="email" type="email" autocomplete="username" placeholder="you@company.com" required />
-        <div class="label-row"><label for="password">Password</label><button type="button" class="link-btn" id="forgot-password">Forgot password?</button></div>
-        <div class="password-field"><input id="password" type="password" autocomplete="current-password" required /><button id="show-password" type="button" aria-label="Show password">Show</button></div>
-        <button class="primary" id="sign-in" type="submit">Sign in to Redaxa <span>→</span></button>
-        <div class="signup">New to Redaxa? <button type="button" class="link-btn" id="create-account">Create an account</button></div>
+        <label for="email" data-i18n="emailLabel">Email</label><input id="email" type="email" autocomplete="username" placeholder="you@company.com" required />
+        <div class="label-row"><label for="password" data-i18n="passwordLabel">Password</label><button type="button" class="link-btn" id="forgot-password" data-i18n="forgotPassword">Forgot password?</button></div>
+        <div class="password-field"><input id="password" type="password" autocomplete="current-password" required /><button id="show-password" type="button" aria-label="Show password" data-i18n="showPassword" data-i18n-label="showPasswordLabel">Show</button></div>
+        <button class="primary" id="sign-in" type="submit" data-i18n="signIn">Sign in to Redaxa</button>
+        <div class="signup"><span data-i18n="newToRedaxa">New to Redaxa?</span> <button type="button" class="link-btn" id="create-account" data-i18n="createAccount">Create an account</button></div>
       </form>
       </details>
     </section>
-    <section id="repository-panel" aria-labelledby="repository-heading" hidden>
-      <h1 id="repository-heading">Repository check</h1>
-      <p class="intro">Paste a public GitHub link to find exposed keys, tokens and personal data, plus dependencies with known vulnerabilities.</p>
-      <form id="repository-form"><label for="repository-url">Public GitHub repository</label><input id="repository-url" type="url" placeholder="https://github.com/owner/repository" spellcheck="false" autocomplete="off" required /><p class="hint" id="repository-access">3 free checks a day on the web. Values always stay hidden.</p><button class="primary" id="open-repository" type="submit">Check repository <span>→</span></button></form>
-      <button class="secondary" id="repository-plans" type="button">See what Pro includes</button>
-      <div class="repo-benefits"><h2>Go deeper with Pro</h2><ul><li>60 repository checks a day on the web</li><li>Git history and archives in the Windows app</li><li>Revealed values and a prioritized report</li></ul></div>
-    </section>
+    <aside id="review-ask" class="review" hidden>
+      <p data-i18n="reviewAsk">Has Redaxa caught something for you? A short review helps other people find it.</p>
+      <div class="review-actions"><a id="review-rate" class="link-btn" target="_blank" rel="noopener" data-i18n="reviewRate">Rate Redaxa</a><button type="button" class="link-btn" id="review-share" data-i18n="reviewShare">Copy link to share</button><button type="button" class="link-btn quiet" id="review-later" data-i18n="reviewLater">Not now</button></div>
+    </aside>
     <p class="msg" id="msg" role="status" aria-live="polite"></p>
   </main>
-  <footer>Redaxa for Chrome <span aria-hidden="true">·</span> Review before sharing</footer>
-  <script src="config.js"></script><script src="popup.js"></script>
+  <footer><a id="link-privacy" target="_blank" rel="noopener" data-i18n="footerPrivacy">Privacy</a><span aria-hidden="true">·</span><a id="link-website" target="_blank" rel="noopener" data-i18n="footerWebsite">Website</a><span aria-hidden="true">·</span><a id="link-windows" target="_blank" rel="noopener" data-i18n="footerWindows">Windows app</a></footer>
+  <script src="config.js"></script><script src="shared.js"></script><script src="popup.js"></script>
 </body>
 </html>
