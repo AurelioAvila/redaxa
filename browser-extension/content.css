@@ -61,6 +61,8 @@
   background: var(--rx-inset); font-size: 12.5px; white-space: pre-wrap; overflow-wrap: anywhere;
 }
 .ps-preview mark { background: var(--rx-mark); color: var(--rx-accent); font-weight: 600; border-radius: 3px; padding: 0 2px; }
+/* The actions stay in view however long the list is (small windows, open details). */
+.ps-actions { position: sticky; bottom: 0; margin: 4px -16px 0; padding: 2px 16px 12px; background: var(--rx-bg); box-shadow: 0 -12px 12px -12px rgba(27, 23, 36, 0.25); }
 .ps-explain { margin: 10px 0 0; color: var(--rx-muted); font-size: 12px; }
 .ps-use-redacted, .ps-int-secondary {
   display: block; width: 100%; margin-top: 10px; border-radius: 8px; padding: 9px 12px; font: 600 13px/1.4 "Segoe UI", system-ui, sans-serif; cursor: pointer;

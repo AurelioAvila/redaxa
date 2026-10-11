@@ -220,7 +220,7 @@ function renderFindings(body, result, composer, onHandled) {
     ${decisionReason(result)}
     ${findingList(result.findings)}
     ${redactedPreview(result)}
-    <button type="button" class="ps-use-redacted" id="redaxa-use-redacted">${escapeHtml(t("replaceRedacted"))}</button>
+    <div class="ps-actions"><button type="button" class="ps-use-redacted" id="redaxa-use-redacted">${escapeHtml(t("replaceRedacted"))}</button></div>
     ${whereChecked(result)}
   `;
   body.querySelector("#redaxa-use-redacted")?.addEventListener("click", () => {
@@ -430,8 +430,10 @@ async function gate(composer, resend) {
       ${findingList(result.findings)}
       ${redactedPreview(result)}
       <p class="ps-explain">${escapeHtml(t("fixExplain"))}</p>
-      <button type="button" class="ps-use-redacted" id="ps-int-fix">${escapeHtml(t("replaceRedacted"))}</button>
-      ${blocked ? "" : `<button type="button" class="ps-int-secondary" id="ps-int-send-anyway">${escapeHtml(t("sendAnyway"))}</button>`}
+      <div class="ps-actions">
+        <button type="button" class="ps-use-redacted" id="ps-int-fix">${escapeHtml(t("replaceRedacted"))}</button>
+        ${blocked ? "" : `<button type="button" class="ps-int-secondary" id="ps-int-send-anyway">${escapeHtml(t("sendAnyway"))}</button>`}
+      </div>
     </div>
   `, composer);
   modalEl.querySelector("#ps-int-fix")?.addEventListener("click", () => {
