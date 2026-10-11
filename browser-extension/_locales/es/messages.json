@@ -107,6 +107,7 @@
   "editorBlocked": {"message": "Este editor ha bloqueado el cambio. Pega tu prompt en la ventana de Redaxa y copia la versión protegida."},
   "kind_email": {"message": "Dirección de correo"},
   "kind_ssn": {"message": "Número de la Seguridad Social de EE. UU. (SSN)"},
+  "kind_niNumber": {"message": "Número de la Seguridad Social británica (NI)"},
   "kind_name": {"message": "Nombre de persona"},
   "kind_address": {"message": "Dirección postal"},
   "kind_secret": {"message": "Clave API o token"},

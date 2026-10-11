@@ -1,9 +1,10 @@
 # Changelog
 
-## Unreleased
+## v0.5.4 — 2026-10-11
 
 - Detection: AWS secret access keys (found beside an `aws_secret_access_key` assignment, never as a bare 40-character string; AWS's documented example key and filler values are ignored), UK National Insurance numbers (unissued prefixes such as QQ and BG, and placeholder digits like 123456, are ignored), and a check-letter test for Italian fiscal codes, so a mistyped code no longer counts as one.
 - API: preflight responses carry `Access-Control-Max-Age: 600`, so browsers and the extension stop repeating the OPTIONS request for ten minutes.
+- UK National Insurance numbers have their own finding type, shown as "NI number" in the app and "UK National Insurance number" in the extension, instead of sharing the US Social Security number label.
 
 ## v0.5.3 — 2026-10-11
 

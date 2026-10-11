@@ -46,7 +46,7 @@ for (const file of ['shared.js', 'popup.js', 'content.js', 'background.js']) {
 }
 for (const [, key] of read('popup.html').matchAll(/data-i18n(?:-placeholder|-label)?="([^"]+)"/g)) used.add(key);
 for (const [, key] of read('manifest.json').matchAll(/__MSG_(\w+)__/g)) used.add(key);
-for (const kind of ['email', 'ssn', 'name', 'address', 'secret', 'privateKey', 'card', 'crypto', 'iban', 'fiscalCode', 'phone', 'ip', 'credential', 'custom']) used.add(`kind_${kind}`);
+for (const kind of ['email', 'ssn', 'niNumber', 'name', 'address', 'secret', 'privateKey', 'card', 'crypto', 'iban', 'fiscalCode', 'phone', 'ip', 'credential', 'custom']) used.add(`kind_${kind}`);
 for (const key of used) assert.ok(bundles.en[key], `Missing message: ${key}`);
 assert.ok(used.size > 100);
 if (process.argv[1]?.endsWith("messages.test.mjs")) console.log(`Locales: ${locales.length} languages, ${english.length} messages each, placeholders, store limits and ${used.size} used keys passed.`);

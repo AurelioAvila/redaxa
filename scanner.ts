@@ -1,5 +1,5 @@
 import {credentialContext,credentialValue,jwtClaims,supabaseIssuer,type CredentialContext} from './credential-context.js';
-export type FindingKind = "email" | "phone" | "secret" | "card" | "ip" | "iban" | "fiscalCode" | "credential" | "ssn" | "crypto" | "privateKey" | "name" | "address" | "custom";
+export type FindingKind = "email" | "phone" | "secret" | "card" | "ip" | "iban" | "fiscalCode" | "credential" | "ssn" | "niNumber" | "crypto" | "privateKey" | "name" | "address" | "custom";
 
 // The four detection categories. This is the vocabulary the (future) policy
 // layer speaks: policies match on categories and kinds, never on regexes.
@@ -182,7 +182,7 @@ const rules: Rule[] = [
     pattern: /(?<=\baws_secret_access_key["']?[ \t]*[:=][ \t]*["']?|\bsecret_access_key["']?[ \t]*[:=][ \t]*["']?)[A-Za-z0-9/+]{40}(?![A-Za-z0-9/+=])/gi
   },
   { kind: "privateKey", category: "credentials", severity: "critical",  label: "Private key", replacement: "[PRIVATE KEY]", pattern: /-----(BEGIN|END) ([A-Z ]{0,64}PRIVATE KEY)-----/g },
-  { kind: "ssn", category: "personal", severity: "high", label: "UK National Insurance number", replacement: "[NI NUMBER]", pattern: /\b[A-CEGHJ-PR-TW-Z][A-CEGHJ-NPR-TW-Z](?:[ ]?\d{2}){3}[ ]?[A-D]\b/g, validate: niValid },
+  { kind: "niNumber", category: "personal", severity: "high", label: "UK National Insurance number", replacement: "[NI NUMBER]", pattern: /\b[A-CEGHJ-PR-TW-Z][A-CEGHJ-NPR-TW-Z](?:[ ]?\d{2}){3}[ ]?[A-D]\b/g, validate: niValid },
   { kind: "card", category: "financial", severity: "high",  label: "Card number", replacement: "[CARD]", pattern: /\b(?:\d[ -]*?){13,16}\b/g, validate: luhnValid },
   { kind: "crypto", category: "financial", severity: "high",  label: "Crypto wallet address", replacement: "[WALLET ADDRESS]", pattern: /\b(?:0x[a-fA-F0-9]{40}|bc1[ac-hj-np-z02-9]{25,59}|[13][a-km-zA-HJ-NP-Z1-9]{25,34})\b/g },
   { kind: "iban", category: "financial", severity: "high",  label: "IBAN", replacement: "[IBAN]", pattern: /\b[A-Z]{2}\d{2}(?:[ ]?[A-Z0-9]){11,30}\b/g, validate: ibanValid },
@@ -214,7 +214,7 @@ export function inspectPrompt(text: string, options: ScanOptions = { includePers
   let redactedText = text;
   for (const rule of rules) {
     const enabled =
-      (rule.kind === "email" || rule.kind === "phone" || rule.kind === "ip" || rule.kind === "fiscalCode" || rule.kind === "ssn" || rule.kind === "name" || rule.kind === "address") ? options.includePersonalData :
+      (rule.kind === "email" || rule.kind === "phone" || rule.kind === "ip" || rule.kind === "fiscalCode" || rule.kind === "ssn" || rule.kind === "niNumber" || rule.kind === "name" || rule.kind === "address") ? options.includePersonalData :
       (rule.kind === "card" || rule.kind === "iban" || rule.kind === "crypto") ? options.includeFinancialData : options.includeCredentials;
     if (!enabled) continue;
     if (rule.kind === "privateKey") {
