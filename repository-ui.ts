@@ -47,7 +47,7 @@ async function scan(demo=false){
  await bootConfig;
  resetApiNotice();
  if(hostedRepository){
-  if(demo){$('empty').hidden=true;$('results').replaceChildren();render(repositoryExample());$('status').textContent='Illustrative example — no live scan';$('results').scrollIntoView({block:'start'});return;}
+  if(demo){$('empty').hidden=true;$('results').replaceChildren();render(repositoryExample());$('status').textContent='Example — no live scan';$('results').scrollIntoView({block:'start'});return;}
   const repository=$<HTMLInputElement>('repo-url').value.trim();
   if(!/^https:\/\/github\.com\/[A-Za-z0-9_-]+\/[A-Za-z0-9_.-]+\/?$/.test(repository)){$('status').textContent='Use the public repository home URL on https://github.com.';return;}
   setScanBusy(true);$('results').replaceChildren();$('empty').hidden=true;
@@ -79,7 +79,7 @@ async function scan(demo=false){
 }
 function render(r:RepoReport){
  const {summary:s,groups}=aggregateRepositoryReport(r);const root=$('results');
- const summary=text('section','','result-summary');summary.append(text('span',r.demo?'Illustrative example · synthetic data':r.partial?'Partial coverage · review skipped content below':'Review complete',r.partial?'review-state partial':'review-state'),text('h2',s.actionable?`${s.actionable} distinct ${s.actionable===1?'finding':'findings'} to review`:'No actionable matches found'));
+ const summary=text('section','','result-summary');summary.append(text('span',r.demo?'Example · synthetic data':r.partial?'Partial coverage · review skipped content below':'Review complete',r.partial?'review-state partial':'review-state'),text('h2',s.actionable?`${s.actionable} distinct ${s.actionable===1?'finding':'findings'} to review`:'No actionable matches found'));
  const apiKeys=apiKeyCandidates(groups);
  notifyApiKeys(apiKeys.length,r.demo,true);
  if(apiKeys.length){const alert=text('div','','api-key-alert');alert.setAttribute('role','status');alert.append(text('strong',`${apiKeys.length} potential API ${apiKeys.length===1?'key or token':'keys or tokens'} found`),text('p',`${apiKeys.filter(g=>!g.historyOnly).length} in current files · ${apiKeys.filter(g=>g.historyOnly).length} only in history. Review these first; validity has not been tested.`));summary.prepend(alert);}

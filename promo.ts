@@ -1,5 +1,5 @@
 import { isTauri, usesDesktopPreviewTransport } from "./desktop.js";
-import { HALLOWEEN_DECOR_LEFT, HALLOWEEN_DECOR_RIGHT } from "./halloween-decor.js";
+import { HALLOWEEN_DECOR_LEFT, HALLOWEEN_DECOR_RIGHT, HALLOWEEN_MARK_EMBER, HALLOWEEN_MARK_INK } from "./halloween-decor.js";
 
 /** A time-limited offer as published by GET /api/billing?action=promo. Display
  *  only: the server decides the discount at checkout, from its own clock. */
@@ -172,7 +172,7 @@ function clockBanner(banner: HTMLElement, remaining: number, words: PromoWords):
  *  keeps it in step with the offer, and calls `onChange` when the offer first
  *  becomes known, starts or stops. `relabel` re-reads the words after a
  *  language change. */
-export function mountPromo(place: (banner: HTMLElement) => void, words: () => PromoWords, lang: () => string, onChange: (view: PromoView) => void): { relabel(): void } {
+export function mountPromo(place: (banner: HTMLElement) => void, words: () => PromoWords, lang: () => string, onChange: (view: PromoView) => void, onRender?: (view: PromoView) => void): { relabel(): void } {
   const banner = bannerElement();
   let view: PromoView | null = null;
   // Room is kept only for someone who last saw the offer running: while it is
@@ -202,6 +202,7 @@ export function mountPromo(place: (banner: HTMLElement) => void, words: () => Pr
       onChange(next);
     }
     if (next.promo) clockBanner(banner, next.remaining, words());
+    onRender?.(next);
   });
   return {
     relabel() {
@@ -235,3 +236,132 @@ export const PROMO_WORDS_EN: PromoWords = {
   thenUserYear: "First year, then {price} per user a year",
   perMonth: "/ month", perYear: "/ year", perUserMonth: "/ user / month", perUserYear: "/ user / year",
 };
+
+/* ---------- Top strip and headline card (landing page) ---------- */
+
+export type OfferWords = {
+  /** "{percent}" is replaced by the real percentage, e.g. "50%". */
+  strip: string; stripShort: string; endsIn: string; cta: string; close: string;
+  tag: string;
+  /** "{price}" is replaced by the regular price that follows the first period. */
+  plan: string;
+  planMonth: string;
+  /** "{date}" is replaced by the last minute on sale in the reader's zone. */
+  ends: string;
+};
+
+export const OFFER_WORDS_EN: OfferWords = {
+  strip: "Halloween offer · {percent} off",
+  stripShort: "Halloween · −{percent}",
+  endsIn: "Ends in",
+  cta: "See the offer",
+  close: "Dismiss the Halloween offer banner",
+  tag: "HALLOWEEN",
+  plan: "Pro · first year, then {price} / year",
+  planMonth: "Pro · first month, then {price} / month",
+  ends: "Ends {date}",
+};
+
+const ARROW = '<svg viewBox="0 0 14 10" width="14" height="10" aria-hidden="true" focusable="false"><path d="M1 5h11M8 1l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const CROSS = '<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" focusable="false"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+
+/** "27d 13h 05m 12s": the compact countdown of the strip. */
+function stripClock(remaining: number): string {
+  const [d, h, m, s] = promoClock(remaining);
+  return `${Number(d)}d ${h}h ${m}m ${s}s`;
+}
+
+/** The strip and the card as plain DOM. Only static markup is written as HTML;
+ *  every word and number reaches the page through textContent. */
+function stripElement(): HTMLElement {
+  const strip = document.createElement("div");
+  strip.className = "rx-strip";
+  strip.innerHTML = `<div class="rx-strip-inner"><span class="rx-strip-pumpkin" aria-hidden="true">${HALLOWEEN_MARK_INK}</span>`
+    + `<strong class="rx-strip-label"><span class="rx-strip-full"></span><span class="rx-strip-short"></span></strong>`
+    + `<span class="rx-strip-timer" role="timer" aria-live="off"><span class="rx-strip-ends" aria-hidden="true"></span> <span class="rx-strip-digits" aria-hidden="true"></span></span>`
+    + `<a class="rx-strip-cta" href="#pricing"></a><button type="button" class="rx-strip-close">${CROSS}</button></div>`;
+  return strip;
+}
+
+function cardElement(): HTMLElement {
+  const card = document.createElement("aside");
+  card.className = "rx-hw-card";
+  card.innerHTML = `<span class="rx-hw-card-mark" aria-hidden="true">${HALLOWEEN_MARK_EMBER}</span><span class="rx-hw-card-tag"></span>`
+    + `<div class="rx-hw-card-row"><span class="rx-hw-card-now"></span><s class="rx-hw-card-was"></s><span class="rx-hw-card-pct"></span></div>`
+    + `<span class="rx-hw-card-plan"></span><div class="rx-hw-card-foot"><span class="rx-hw-card-note"></span><a class="rx-hw-card-cta" href="#pricing"><span></span>${ARROW}</a></div>`;
+  return card;
+}
+
+/** Puts a Halloween strip above the page and an offer card where `placeCard`
+ *  says, from the offer the server published: Pro's first year, the same
+ *  numbers as the plans below. Pass the returned function to mountPromo as its
+ *  `onRender`. Nothing is drawn without a live offer; for someone who last
+ *  saw the offer running, both keep their room (invisible) while the server
+ *  answers, so the page does not jump. */
+export function mountOfferExtras(words: OfferWords, lang: string, placeStrip: (strip: HTMLElement) => void, placeCard: (card: HTMLElement) => void): (view: PromoView) => void {
+  const strip = stripElement();
+  const card = cardElement();
+  const label = (el: Element, selector: string, text: string) => { el.querySelector(selector)!.textContent = text; };
+  const reserve = (el: HTMLElement) => { el.classList.add("rx-reserved"); el.setAttribute("aria-hidden", "true"); };
+  const reveal = (el: HTMLElement) => { el.classList.remove("rx-reserved"); el.removeAttribute("aria-hidden"); };
+  let lastSeen = false;
+  try { lastSeen = localStorage.getItem("redaxa.promo.last-seen") === "active"; } catch { /* storage blocked: no reservation */ }
+  if (lastSeen && Date.now() < PROMO_LAYOUT_UNTIL) {
+    for (const el of [strip, card]) reserve(el);
+    label(strip, ".rx-strip-full", words.strip.replace("{percent}", "50%"));
+    label(strip, ".rx-strip-digits", "00d 00h 00m 00s");
+    label(strip, ".rx-strip-cta", words.cta);
+    label(card, ".rx-hw-card-now", "€00");
+    label(card, ".rx-hw-card-was", "€00");
+    label(card, ".rx-hw-card-plan", words.plan.replace("{price}", "€00"));
+    label(card, ".rx-hw-card-note", words.ends.replace("{date}", "00"));
+    label(card, ".rx-hw-card-cta span", words.cta);
+    placeStrip(strip);
+    placeCard(card);
+  }
+  let closedKey = "";
+  let closed = false;
+  strip.querySelector(".rx-strip-close")!.addEventListener("click", () => {
+    closed = true;
+    strip.remove();
+    try { localStorage.setItem(closedKey, "1"); } catch { /* ignore */ }
+  });
+  strip.querySelector(".rx-strip-close")!.setAttribute("aria-label", words.close);
+  let shownId = "";
+  return (view) => {
+    const promo = view.promo;
+    const pro = view.offer("personal", "yearly") ?? view.offer("personal", "monthly");
+    if (!promo || !pro) {
+      strip.remove();
+      card.remove();
+      shownId = "";
+      return;
+    }
+    if (shownId !== promo.id) {
+      shownId = promo.id;
+      closedKey = `redaxa.strip.${promo.id}`;
+      try { closed = localStorage.getItem(closedKey) === "1"; } catch { closed = false; }
+      if (closed) strip.remove();
+      const percent = percentLabel(Math.min(...promo.offers.map(promoPercent)), lang);
+      label(strip, ".rx-strip-full", words.strip.replace("{percent}", percent));
+      label(strip, ".rx-strip-short", words.stripShort.replace("{percent}", percent));
+      label(strip, ".rx-strip-ends", words.endsIn);
+      label(strip, ".rx-strip-cta", words.cta);
+      const yearly = pro.interval === "yearly";
+      label(card, ".rx-hw-card-tag", words.tag);
+      label(card, ".rx-hw-card-now", euro(pro.price, lang));
+      label(card, ".rx-hw-card-was", euro(pro.reference, lang));
+      label(card, ".rx-hw-card-pct", `−${percentLabel(promoPercent(pro), lang)}`);
+      label(card, ".rx-hw-card-plan", (yearly ? words.plan : words.planMonth).replace("{price}", euro(pro.regular, lang)));
+      label(card, ".rx-hw-card-note", words.ends.replace("{date}", promoEndLabel(promo, lang)));
+      label(card, ".rx-hw-card-cta span", words.cta);
+      card.setAttribute("aria-label", `${words.tag} ${percent}`);
+      reveal(strip);
+      reveal(card);
+    }
+    if (!card.isConnected) placeCard(card);
+    if (!closed && !strip.isConnected) placeStrip(strip);
+    label(strip, ".rx-strip-digits", stripClock(view.remaining));
+    strip.querySelector(".rx-strip-timer")!.setAttribute("aria-label", `${words.endsIn} ${promoClock(view.remaining).slice(0, 3).map((v, i) => `${Number(v)} ${PROMO_WORDS_EN.units[i]}`).join(", ")}`);
+  };
+}

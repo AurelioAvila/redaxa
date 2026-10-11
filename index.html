@@ -178,7 +178,7 @@
       .sc-live { font-size: 12px; font-weight: 700; letter-spacing: 0.1em; color: var(--dim); border: 1px solid var(--line-2); border-radius: 999px; padding: 3px 8px; }
       .sc-status { margin-left: auto; position: relative; font-size: 12.5px; font-weight: 750; letter-spacing: 0.08em; height: 16px; min-width: 96px; text-align: right; }
       .sc-status .scanning, .sc-status .protected { position: absolute; inset: 0; white-space: nowrap; text-align: right; }
-      .sc-status .scanning { color: var(--warn); animation: swap-out 200ms var(--ease) 1500ms both; }
+      .sc-status .scanning { color: var(--mut); animation: swap-out 200ms var(--ease) 1500ms both; }
       .sc-status .protected { color: var(--acid); opacity: 0; animation: swap-in 260ms var(--ease) 1500ms both; }
       @keyframes swap-out { to { opacity: 0; } }
       @keyframes swap-in { to { opacity: 1; } }
@@ -398,7 +398,7 @@
             <span class="label">Safe prompt</span>
             <code>&ldquo;Send a payment reminder to <b>[email]</b> about invoice IBAN <b>[iban]</b>, due Friday.&rdquo;</code>
           </div>
-          <div class="sc-foot"><span class="pulse"></span> Illustrative preview · review before sharing</div>
+          <div class="sc-foot"><span class="pulse"></span> Example preview · review before sharing</div>
         </aside>
       </header>
 
@@ -437,8 +437,8 @@
           <ul class="rx-benefits"><li><strong>Start with credentials.</strong> Repeated values are grouped; common examples, emails and public identifiers are excluded.</li><li><strong>Vulnerable dependencies.</strong> npm, yarn, pnpm, Cargo, Python, Go, PHP and Ruby lockfiles are checked against the public OSV database.</li><li><strong>Act with context.</strong> Review rotation guidance and export a report with values hidden.</li></ul>
           <a class="btn-primary" href="/github.html">Check a repository free →</a><p class="rx-preview-note">3 free checks a day on the default branch of public repositories. Git history, archives and revealed values run on your PC in the Windows app with Pro or Business. Private repositories are not supported. Results identify possible exposures, not verified working keys or every code vulnerability.</p>
         </div>
-        <div class="rx-repo-visual" aria-label="Illustrative repository review workflow"><div class="rx-repo-visual-label"><span>Repository check</span><span class="rx-pro-badge">EXAMPLE</span></div><h3>Less noise. A useful review.</h3>
-          <div class="rx-repo-example is-priority"><span>Likely keys &amp; access tokens</span><span>Review first</span></div><div class="rx-repo-example"><span>Probable service &amp; evidence</span><span>Understand</span></div><div class="rx-repo-example"><span>Rotation guidance</span><span>Take action</span></div><div class="rx-repo-example"><span>Checked &amp; skipped files</span><span>See coverage</span></div><p class="rx-preview-note">Illustrative workflow. Values stay hidden until you reveal them. Key validity is never tested.</p>
+        <div class="rx-repo-visual" aria-label="Example repository review workflow"><div class="rx-repo-visual-label"><span>Repository check</span><span class="rx-pro-badge">EXAMPLE</span></div><h3>Less noise. A useful review.</h3>
+          <div class="rx-repo-example is-priority"><span>Likely keys &amp; access tokens</span><span>Review first</span></div><div class="rx-repo-example"><span>Probable service &amp; evidence</span><span>Understand</span></div><div class="rx-repo-example"><span>Rotation guidance</span><span>Take action</span></div><div class="rx-repo-example"><span>Checked &amp; skipped files</span><span>See coverage</span></div><p class="rx-preview-note">Example workflow. Values stay hidden until you reveal them. Key validity is never tested.</p>
         </div>
       </section><hr class="rule" />
 
@@ -452,7 +452,7 @@
         <div class="scanner-head"><h3 id="scanner-title">Private prompt check</h3><div class="local"><span>●</span> Encrypted in transit — never stored</div></div>
         <div class="scanner-grid">
           <div class="scan-area"><label for="prompt">Paste a prompt to inspect</label><textarea id="prompt" placeholder="Example: Draft a reply to my client…"></textarea><div class="actions"><button class="sample" id="sample" type="button">See a free example</button><button class="primary" id="scan" type="button">Scan prompt →</button></div></div>
-          <aside class="results" aria-live="polite"><h3 id="result-title">Ready when you are</h3><p class="results-copy" id="result-copy">We look for common personal details and credentials, then discard your prompt immediately.</p><div id="findings" class="empty">Choose “See a free example” for an immediate before-and-after. The example is illustrative, not a live scan.</div><div class="safe-output" id="safe-output"><h3>Safer version</h3><pre id="redacted"></pre><button class="copy" id="copy" type="button">Copy safer prompt</button></div></aside>
+          <aside class="results" aria-live="polite"><h3 id="result-title">Ready when you are</h3><p class="results-copy" id="result-copy">We look for common personal details and credentials, then discard your prompt immediately.</p><div id="findings" class="empty">Choose “See a free example” for an immediate before-and-after. The example uses made-up data, not a live scan.</div><div class="safe-output" id="safe-output"><h3>Safer version</h3><pre id="redacted"></pre><button class="copy" id="copy" type="button">Copy safer prompt</button></div></aside>
         </div>
       </section>
 

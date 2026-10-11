@@ -22,6 +22,9 @@ mkdirSync(resolve(output, 'dist'), {recursive:true});
 for(const module of ['themes','auth','dashboard','desktop','pwa','landing','growth','promo','halloween-decor','repository-ui','repository-report','repository-example']) {
   cpSync(resolve(root,'dist',module+'.js'),resolve(output,'dist',module+'.js'));
 }
+// RFC 9116: where to report a vulnerability, at the standard path.
+mkdirSync(resolve(output, ".well-known"), { recursive: true });
+cpSync(resolve(root, ".well-known", "security.txt"), resolve(output, ".well-known", "security.txt"));
 mkdirSync(resolve(output, "outputs"), { recursive: true });
 cpSync(resolve(root, "outputs", "redaxa-mark.svg"), resolve(output, "outputs", "redaxa-mark.svg"));
 // og-image.png is the 1200x630 social card, not the 1024x1024 app mark: link

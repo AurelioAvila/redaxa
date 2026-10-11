@@ -17,10 +17,11 @@ let showPromo=null;const placed=[];
 elements.set('#pricing .billing-switch',{before:node=>placed.push(node)});
 // The real price formatting, with the network and the banner stubbed: the
 // harness turns the offer on and off by hand.
-const promo={...realPromo,mountPromo:(place,words,lang,onChange)=>{place({});assert.equal(words().kicker,'Halloween offer');assert.equal(lang(),'en');showPromo=onChange;return {relabel(){}};}};
+// The strip and card need a real DOM; their own test (promo-ui.test.mjs) covers the numbers they show.
+const promo={...realPromo,mountOfferExtras:()=>()=>{},mountPromo:(place,words,lang,onChange)=>{place({});assert.equal(words().kicker,'Halloween offer');assert.equal(lang(),'en');showPromo=onChange;return {relabel(){}};}};
 const script=readFileSync(new URL('../dist/landing.js',import.meta.url),'utf8')
   .replace(/import \{ track \} from ['"]\.\/growth.js['"];?/, 'const track=()=>{};')
-  .replace(/import \{[^}]*\} from ['"]\.\/promo.js['"];?/, 'const { PROMO_WORDS_EN, mountPromo, promoPriceHtml } = promo;');
+  .replace(/import \{[^}]*\} from ['"]\.\/promo.js['"];?/, 'const { OFFER_WORDS_EN, PROMO_WORDS_EN, mountOfferExtras, mountPromo, promoPriceHtml } = promo;');
 new Function('document','window','promo',script)(document,window,promo);
 
 for (const [index,interval,personal,business] of [[0,'monthly','€7.99','€14.99'],[1,'yearly','€79.90','€149.90']]) {
@@ -53,7 +54,7 @@ elements.get('#sample').handlers.click();
 assert.equal(authCalls,0);
 assert.equal(scans,0);
 assert.equal(elements.get('#safe-output').style.display,'block');
-assert.match(elements.get('#result-copy').textContent,/Illustrative demo/);
+assert.match(elements.get('#result-copy').textContent,/Demo with fictional data/);
 assert.doesNotMatch(elements.get('#redacted').textContent,/maria\.rossi|192\.168|demo-secret/);
 elements.get('#prompt').value='A different prompt with fictional details';
 elements.get('#prompt').handlers.input();
