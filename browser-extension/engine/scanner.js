@@ -39,6 +39,32 @@ function ibanValid(raw) {
     }
     return mod === 1;
 }
+// Italian fiscal code: the 16th character is a check letter computed from the
+// first 15 (odd positions use a lookup table, even positions their value).
+const cfOdd = [1, 0, 5, 7, 9, 13, 15, 17, 19, 21, 2, 4, 18, 20, 11, 3, 6, 8, 12, 14, 16, 10, 22, 25, 24, 23];
+function fiscalCodeValid(raw) {
+    const code = raw.toUpperCase();
+    let sum = 0;
+    for (let i = 0; i < 15; i++) {
+        const c = code.charCodeAt(i);
+        const index = c >= 65 ? c - 65 : c - 48;
+        sum += i % 2 === 0 ? cfOdd[index] : index;
+    }
+    return code.charCodeAt(15) === 65 + (sum % 26);
+}
+// UK National Insurance number: HMRC never issues prefixes with D, F, I, Q, U
+// or V, a second letter O, or the BG, GB, KN, NK, NT, TN, ZZ pairs. That also
+// excludes the documented QQ 12 34 56 C example. Placeholder digit runs skip.
+function niValid(raw) {
+    const value = raw.replace(/\s/g, "").toUpperCase();
+    return !/^(?:BG|GB|KN|NK|NT|TN|ZZ)/.test(value) && !/^..(\d)\1{5}|^..123456/.test(value);
+}
+// AWS secret keys are 40 random base64 characters with no prefix, so they are
+// only trusted next to their assignment name. AWS's documented example key and
+// repeated-character fillers are not real secrets.
+function awsSecretValid(raw) {
+    return !/example/i.test(raw) && new Set(raw).size > 10;
+}
 function phoneValid(raw) {
     const digits = raw.replace(/\D/g, "");
     return digits.length >= 7 && digits.length <= 15;
@@ -124,11 +150,17 @@ const rules = [
         validate: value => !apiCredentialReference(value),
         pattern: /(?<![A-Za-z0-9_-])(?:sk-[A-Za-z0-9_-]{16,}|[spr]k_(?:live|test)_[A-Za-z0-9]{10,}|sb_(?:secret|publishable)_[A-Za-z0-9_-]{20,}|github_pat_[A-Za-z0-9_]{82}|gh[pousr]_[A-Za-z0-9_]{20,}|AIza[\w-]{20,}|(?:AKIA|ASIA)[0-9A-Z]{16}|(?:xox[baprs]|xapp)-[A-Za-z0-9-]{10,}|npm_[A-Za-z0-9]{36}|pypi-AgEIcHlwaS5vcmc[A-Za-z0-9_-]{50,}|glpat-[A-Za-z0-9_-]{20,}|hf_[A-Za-z0-9]{34}|eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}|[Bb][Ee][Aa][Rr][Ee][Rr][ \t]+[A-Za-z0-9._-]{15,}[A-Za-z0-9_-])(?![A-Za-z0-9_-])/g
     },
+    {
+        kind: "secret", category: "credentials", severity: "critical", label: "AWS secret access key", replacement: "[SECRET]",
+        validate: awsSecretValid,
+        pattern: /(?<=\baws_secret_access_key["']?[ \t]*[:=][ \t]*["']?|\bsecret_access_key["']?[ \t]*[:=][ \t]*["']?)[A-Za-z0-9/+]{40}(?![A-Za-z0-9/+=])/gi
+    },
     { kind: "privateKey", category: "credentials", severity: "critical", label: "Private key", replacement: "[PRIVATE KEY]", pattern: /-----(BEGIN|END) ([A-Z ]{0,64}PRIVATE KEY)-----/g },
+    { kind: "ssn", category: "personal", severity: "high", label: "UK National Insurance number", replacement: "[NI NUMBER]", pattern: /\b[A-CEGHJ-PR-TW-Z][A-CEGHJ-NPR-TW-Z](?:[ ]?\d{2}){3}[ ]?[A-D]\b/g, validate: niValid },
     { kind: "card", category: "financial", severity: "high", label: "Card number", replacement: "[CARD]", pattern: /\b(?:\d[ -]*?){13,16}\b/g, validate: luhnValid },
     { kind: "crypto", category: "financial", severity: "high", label: "Crypto wallet address", replacement: "[WALLET ADDRESS]", pattern: /\b(?:0x[a-fA-F0-9]{40}|bc1[ac-hj-np-z02-9]{25,59}|[13][a-km-zA-HJ-NP-Z1-9]{25,34})\b/g },
     { kind: "iban", category: "financial", severity: "high", label: "IBAN", replacement: "[IBAN]", pattern: /\b[A-Z]{2}\d{2}(?:[ ]?[A-Z0-9]){11,30}\b/g, validate: ibanValid },
-    { kind: "fiscalCode", category: "personal", severity: "high", label: "Italian fiscal code", replacement: "[FISCAL CODE]", pattern: /\b[A-Z]{6}\d{2}[A-Z]\d{2}[A-Z]\d{3}[A-Z]\b/gi },
+    { kind: "fiscalCode", category: "personal", severity: "high", label: "Italian fiscal code", replacement: "[FISCAL CODE]", pattern: /\b[A-Z]{6}\d{2}[A-Z]\d{2}[A-Z]\d{3}[A-Z]\b/gi, validate: fiscalCodeValid },
     // Deliberately runs after every more specific/structured numeric pattern
     // (SSN, cards, IBANs...): phone's loose "digits, separator, digits" shape
     // will happily match a fragment inside a longer identifier if it runs

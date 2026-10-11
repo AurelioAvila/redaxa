@@ -61,8 +61,8 @@ a redacted version for you to review before sending.
 | Category | Detected |
 | --- | --- |
 | **Personal data** | Email addresses, phone numbers, IPv4 addresses, names right after a greeting ("Dear John Smith,"), street addresses |
-| **Credentials** | API keys and tokens (OpenAI, Stripe, AWS, Google, GitHub, Slack), JWTs, private key blocks, passwords/secrets after `key: value` |
-| **Financial data** | Card numbers (Luhn-checksum validated), IBANs (mod-97 checksum validated), crypto wallet addresses, Italian fiscal codes, US SSNs (reserved-range filtered) |
+| **Credentials** | API keys and tokens (OpenAI, Stripe, AWS access key IDs and secret access keys, Google, GitHub, Slack), JWTs, private key blocks, passwords/secrets after `key: value` |
+| **Financial data** | Card numbers (Luhn-checksum validated), IBANs (mod-97 checksum validated), crypto wallet addresses, Italian fiscal codes (check letter validated), US SSNs (reserved-range filtered), UK National Insurance numbers (unissued prefixes and placeholder examples filtered) |
 | **Custom terms** | Your own project codenames, client names, anything you want flagged that isn't generic PII |
 
 Detection combines patterns, known credential prefixes and category-specific

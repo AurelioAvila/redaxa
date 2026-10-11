@@ -109,6 +109,7 @@ function classify(f:Finding,path:string,text:string,offset:number):{disposition:
       return {disposition:'review',severity:exampleFile?'medium':'high',confidence:exampleFile?'low':'medium',reason:exampleFile?'Password-like literal in test/example code. It may be a deliberately invalid test input or a temporary test-account password; check whether it is reused outside tests. No account validity is tested.':'Possible hard-coded password assignment. Confirm its context before treating it as a credential; no login or validity test is performed.'};
     }
     if(f.kind==='secret'&&/^AIza/.test(credentialValue(f.value)))return {disposition:'review',severity:'medium',confidence:'medium',reason:'Google API key pattern. Some browser keys are intentionally public; verify application/API restrictions and billing scope before deciding whether rotation is needed.'};
+    if(f.kind==='secret'&&f.label==='AWS secret access key')return {disposition:'review',severity:'high',confidence:'medium',reason:'Forty characters beside an AWS secret-access-key assignment. Validity is not tested; rotate it in AWS if genuine.'};
     if(f.kind==='secret'&&/^(?:AKIA|ASIA)/.test(credentialValue(f.value)))return {disposition:'review',severity:'medium',confidence:'high',reason:'AWS access key identifier only. Check whether its paired secret and any session token are exposed before treating this as usable account access.'};
     if(f.kind==='secret') {
       const token=credentialValue(f.value);

@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Detection: AWS secret access keys (found beside an `aws_secret_access_key` assignment, never as a bare 40-character string; AWS's documented example key and filler values are ignored), UK National Insurance numbers (unissued prefixes such as QQ and BG, and placeholder digits like 123456, are ignored), and a check-letter test for Italian fiscal codes, so a mistyped code no longer counts as one.
+- API: preflight responses carry `Access-Control-Max-Age: 600`, so browsers and the extension stop repeating the OPTIONS request for ten minutes.
+
 ## v0.5.3 — 2026-10-11
 
 - Repository check: test, fixture and example values (for example `wh-secret-test` in a test fixture) are no longer listed as exposures. A finding is a test value when its file is in a test, spec, fixture, mock, snapshot, testdata, e2e, example, sample or demo folder or has a test name (`*.test.*`, `*.spec.*`, `*_test.*`, `test_*.*`, `conftest.py`, `*.snap`), or, anywhere else, when a credential's value or variable name carries an explicit test or placeholder marker and the value is not a random-looking provider token.

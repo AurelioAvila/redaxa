@@ -44,6 +44,7 @@ assert.equal(desktop.headers.get("Access-Control-Allow-Origin"), "https://tauri.
 
 const extension = invoke("GET", "chrome-extension://test-extension-id");
 assert.equal(extension.headers.get("Access-Control-Allow-Origin"), "chrome-extension://test-extension-id");
+assert.equal(extension.headers.get("Access-Control-Max-Age"), "600", "preflight answers are cached");
 
 const preflight = invoke("OPTIONS", appOrigin);
 assert.equal(preflight.statusCode, 204);

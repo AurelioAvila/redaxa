@@ -73,4 +73,26 @@ for (const [name, text] of Object.entries({
   const ms = performance.now() - start;
   assert.ok(ms < 250, `${name}: ${ms.toFixed(1)} ms for 20,000 characters`);
 }
+// AWS secret access keys are only trusted beside their assignment name.
+const awsSecret = 'Zk3Qf9Lm2Xv8Rt5Yp1Nc7Bd4Hs6Jw0Ua+Ge/TiOq';
+assert.equal(awsSecret.length, 40);
+found('aws_secret_access_key = ' + awsSecret, 'secret', 'AWS secret access key');
+found('AWS_SECRET_ACCESS_KEY="' + awsSecret + '"', 'secret', 'AWS secret access key, quoted env style');
+assert.equal(service('aws_secret_access_key: ' + awsSecret), 'AWS');
+assert.ok(!inspectPrompt('aws_secret_access_key = ' + awsSecret).redactedText.includes(awsSecret), 'secret is redacted');
+clean('checksum ' + awsSecret, 'bare 40-character string is not flagged');
+clean('aws_secret_access_key = wJalrXUtnFEMI/K7MDENG/bPxRfiCY' + 'EXAMPLEKEY', 'AWS documentation example');
+clean('aws_secret_access_key = ' + 'A'.repeat(40), 'filler value');
+
+// UK National Insurance numbers: valid prefixes only, no documented examples.
+found('NI number JG 10 37 59 A', 'ssn', 'UK National Insurance number with spaces');
+found('NINO JG103759A', 'ssn', 'UK National Insurance number without spaces');
+clean('NI QQ 12 34 56 C', 'HMRC example prefix QQ is never issued');
+clean('ref BG123456C', 'BG prefix is never issued');
+clean('NI AB 12 34 56 C', 'placeholder digits 123456');
+clean('NI JG 10 37 59 E', 'suffix must be A to D');
+
+// Checksums: fiscal codes with a wrong check letter are not flagged.
+clean('codice fiscale RSSMRA85T10A562T', 'fiscal code with a wrong check letter');
+
 console.log('Detection: credentials with service, checksummed cards and IBANs, personal data, non-findings and 20,000-character timing passed.');

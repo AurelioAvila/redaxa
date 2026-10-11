@@ -226,6 +226,7 @@ export function corsHeaders(request: { headers?: Record<string, string | string[
     "Access-Control-Allow-Origin": origin && (allowedOrigins().has(origin) || isExtensionOrigin(origin)) ? origin : appUrl(),
     "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Refresh-Token",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Max-Age": "600",
     Vary: "Origin"
   };
 }
