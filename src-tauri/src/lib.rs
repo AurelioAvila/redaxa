@@ -52,7 +52,22 @@ fn secure_store_delete() -> Result<(), String> {
 async fn check_for_updates(app: tauri::AppHandle) {
     use tauri_plugin_dialog::{DialogExt, MessageDialogButtons};
     use tauri_plugin_updater::UpdaterExt;
-    let Ok(updater) = app.updater() else { return };
+    // The plugin starts the installer and then ends this process at once. Just
+    // before that, stop a running repository check (its scanner would keep its
+    // program files open) and remove the tray icon; the installer closes
+    // anything still running from this installation before replacing files.
+    let exit_handle = app.clone();
+    let Ok(updater) = app
+        .updater_builder()
+        .on_before_exit(move || {
+            use tauri::Manager;
+            repository::cancel(exit_handle.state::<repository::RepositoryState>().inner());
+            exit_handle.cleanup_before_exit();
+        })
+        .build()
+    else {
+        return;
+    };
     let Ok(Some(update)) = updater.check().await else { return };
     let version = update.version.clone();
     let app_for_install = app.clone();

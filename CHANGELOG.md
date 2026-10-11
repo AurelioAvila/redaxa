@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.2 — 2026-10-11
+
+- Updates no longer stop with "Error opening file for writing". The updater starts the installer and ends the app straight away, and the installer could reach the program file while the process was still exiting (or while a repository check kept the bundled scanner open). The installer now closes Redaxa, `node.exe` and Git from `repository-runtime` by their exact paths through Restart Manager (asking first, stopping only an app that does not respond), then waits up to 20 seconds for each file to be replaceable. The same applies when a downloaded installer is run with Redaxa open.
+- Before the updater ends the app, a running repository check is cancelled and the tray icon removed.
+- `scripts/installer-hooks.test.mjs` keeps the hook in place and forbids name-based or blanket process termination.
+
 ## v0.5.1 — 2026-10-11
 
 - Paper is the starting palette on every page: the app, the website, the guides and the policy pages (the site was still starting in Ink & Copper).
