@@ -5,15 +5,16 @@ import { applyTheme, restoreTheme, themes } from '../dist/themes.js';
 globalThis.document = { documentElement: { dataset: {} } };
 let saved = null;
 globalThis.localStorage = { getItem: () => saved, setItem: () => assert.fail('Restoring a theme must not overwrite preferences') };
-// Paper is the default only for people who never chose a palette; the earlier
-// default, Petrol & Copper, stays for everyone who has it saved.
-for (const [value, expected] of [[null, 'paper'], ['{}', 'paper'], ['null', 'paper'], ['invalid json', 'paper'], ['{"theme":"missing"}', 'paper'], ['{"theme":"ocean"}', 'ocean'], ['{"theme":"graphite"}', 'graphite']]) {
+// Paper for everyone who never chose a palette. Before 0.5.1 the default of
+// the time, Petrol & Copper, was saved for people who never chose it: without
+// themeChosen it migrates to Paper. A real choice, dark or not, is kept.
+for (const [value, expected] of [[null, 'paper'], ['{}', 'paper'], ['null', 'paper'], ['invalid json', 'paper'], ['{"theme":"missing"}', 'paper'], ['{"theme":"ocean"}', 'ocean'], ['{"theme":"graphite"}', 'paper'], ['{"theme":"graphite","themeChosen":true}', 'graphite'], ['{"theme":"ink","themeChosen":true}', 'ink'], ['{"theme":"violet"}', 'paper']]) {
   saved = value;
   restoreTheme();
   assert.equal(document.documentElement.dataset.theme, expected);
 }
 for (const { code } of themes) {
-  saved = JSON.stringify({ theme: code });
+  saved = JSON.stringify({ theme: code, themeChosen: true });
   restoreTheme();
   assert.equal(document.documentElement.dataset.theme, code);
 }

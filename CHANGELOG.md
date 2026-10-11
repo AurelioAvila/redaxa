@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.5.1 — 2026-10-11
+
+- Paper is the starting palette on every page: the app, the website, the guides and the policy pages (the site was still starting in Ink & Copper).
+- Before this release every saved preference carried the theme, so the default of the time, Petrol & Copper, was stored for people who never chose it. A theme click now records `themeChosen`; without it, that old default is treated as "never chose" and becomes Paper. Any other saved palette is kept.
+- The first frame, the desktop window background and the web app manifest start in Paper; dark palettes declare a dark colour scheme only when chosen.
+- Sign-in and account dialogs on the website use the same themed styles as the app (`dialogs.css`).
+- The repository page's main button uses the accent's text colour in every palette.
+
 ## v0.5.0 — 2026-10-10
 
 A redesign of the Windows app and the web workspace. Detection, accounts, billing and the browser extension are unchanged.

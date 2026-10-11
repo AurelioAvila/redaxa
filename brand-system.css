@@ -9,7 +9,7 @@
   --rx-bg:var(--rx-void); --rx-surface:var(--rx-panel); --rx-text:var(--rx-white);
   --rx-muted:var(--rx-gray); --rx-action:var(--rx-violet); --rx-action-ink:var(--rx-violet-dark);
   --rx-radius:16px; --rx-button-radius:9px; --rx-space:24px;
-  color-scheme:dark;
+  color-scheme:inherit;
 }
 .redaxa-landing {
   --bg:var(--rx-bg); --surface-1:var(--rx-surface); --surface-2:var(--rx-panel-raised);

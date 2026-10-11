@@ -1,0 +1,59 @@
+/* Dialogs, sheets and the account menu built by auth.ts, on the workspace
+   pages and on the site. Every colour comes from the active theme, so Paper
+   gets a light dialog with light fields and the dark palettes get dark ones.
+   On the workspace pages the older styles sit in a lower cascade layer; on
+   the site they are plain stylesheets, so the few rules they mark !important
+   are answered here with a more specific !important. */
+.redaxa-landing {
+  --card: var(--theme-surface);
+  --field: var(--theme-inset);
+  --field-border: color-mix(in srgb, var(--theme-strong) 62%, var(--theme-text));
+  --sev-critical: #b4233a;
+  --font-display: "Bahnschrift", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  --font-text: "Redaxa Inter", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+html[data-theme]:not([data-theme="paper"]) .redaxa-landing { --sev-critical: #ff7a8a; }
+:is(.rx-shell, .redaxa-landing) .ps-auth-backdrop { background: color-mix(in srgb, #1b1724 34%, transparent); backdrop-filter: blur(3px); }
+html[data-theme]:not([data-theme="paper"]) :is(.rx-shell, .redaxa-landing) .ps-auth-backdrop { background: color-mix(in srgb, #0b0910 55%, transparent); }
+:is(.rx-shell, .redaxa-landing) .ps-auth-dialog { padding: 26px; border: 1px solid var(--theme-line); border-radius: 16px; background: var(--card); color: var(--theme-text); box-shadow: 0 24px 70px color-mix(in srgb, #000 28%, transparent); }
+:is(.rx-shell, .redaxa-landing) .ps-auth-dialog h2 { margin: 0 0 8px; color: var(--theme-text); font: 600 24px/1.2 var(--font-display); letter-spacing: -.01em; }
+:is(.rx-shell, .redaxa-landing) .ps-auth-dialog p { color: var(--theme-muted); font-size: 13.5px; line-height: 1.55; }
+:is(.rx-shell, .redaxa-landing) .ps-auth-field { display: grid; gap: 7px; margin: 14px 0; color: var(--theme-text); font-size: 13px; font-weight: 600; }
+:is(.rx-shell, .redaxa-landing) .ps-auth-field input, .rx-shell .ps-auth-pw-wrap input {
+  width: 100%; min-height: 44px; padding: 10px 12px;
+  border: 1px solid var(--field-border); border-radius: 8px;
+  background: var(--field); color: var(--theme-text); font: 500 14px/1.3 var(--font-text);
+}
+:is(.rx-shell, .redaxa-landing) .ps-auth-field input::placeholder { color: var(--theme-muted); opacity: 1; }
+:is(.rx-shell, .redaxa-landing) .ps-auth-field input:focus { border-color: var(--theme-accent); outline: 2px solid color-mix(in srgb, var(--theme-accent) 35%, transparent); outline-offset: 1px; }
+:is(.rx-shell, .redaxa-landing) .ps-auth-field input[aria-invalid="true"] { border-color: var(--sev-critical); }
+:is(.rx-shell, .redaxa-landing) .ps-auth-field input:disabled { opacity: .6; cursor: not-allowed; }
+:is(.rx-shell, .redaxa-landing) .ps-auth-submit { min-height: 44px; border: 0; border-radius: 8px; background: var(--theme-accent); color: var(--theme-ink); font: 650 14px/1 var(--font-text); }
+:is(.rx-shell, .redaxa-landing) .ps-auth-submit:hover:not(:disabled) { filter: brightness(1.08); }
+:is(.rx-shell, .redaxa-landing) .ps-auth-submit:disabled { opacity: .6; }
+:is(.rx-shell, .redaxa-landing) :is(.ps-auth-close, .ps-auth-toggle-pw, [data-sheet-close], [data-invite-cancel][aria-label]) { color: var(--theme-muted); background: transparent; }
+:is(.rx-shell, .redaxa-landing) :is(.ps-auth-close, .ps-auth-toggle-pw, [data-sheet-close]):hover { color: var(--theme-text); }
+:is(.rx-shell, .redaxa-landing) .ps-auth-toggle-pw { border-radius: 6px; }
+:is(.rx-shell, .redaxa-landing) .ps-auth-toggle-pw:focus-visible { outline: 2px solid var(--theme-accent); }
+:is(.rx-shell, .redaxa-landing) :is(.ps-auth-link, .ps-auth-forgot, .ps-auth-legal a) { color: var(--theme-accent); text-decoration: underline; text-underline-offset: 3px; }
+:is(.rx-shell, .redaxa-landing) .ps-auth-remember { color: var(--theme-text); }
+:is(.rx-shell, .redaxa-landing) .ps-auth-remember input { accent-color: var(--theme-accent); }
+:is(.rx-shell, .redaxa-landing) .ps-account-sheet { border: 1px solid var(--theme-line); background: var(--card); color: var(--theme-text); box-shadow: 0 24px 70px color-mix(in srgb, #000 28%, transparent); }
+:is(.rx-shell, .redaxa-landing) .ps-account-sheet::backdrop { background: color-mix(in srgb, #1b1724 34%, transparent); }
+html[data-theme]:not([data-theme="paper"]) :is(.rx-shell, .redaxa-landing) .ps-account-sheet::backdrop { background: color-mix(in srgb, #0b0910 55%, transparent); }
+:is(.rx-shell, .redaxa-landing) .ps-account-sheet :is(h2, dd) { color: var(--theme-text); }
+:is(.rx-shell, .redaxa-landing) .ps-account-sheet :is(header p, dt, .ps-account-message) { color: var(--theme-muted); }
+:is(.rx-shell, .redaxa-landing) .ps-account-actions button { min-height: 38px; padding: 0 14px; border: 1px solid var(--theme-strong); border-radius: 8px; background: transparent; color: var(--theme-text); font: 600 13px/1 var(--font-text); cursor: pointer; }
+:is(.rx-shell, .redaxa-landing) .ps-account-actions button:first-child { border-color: var(--theme-accent); background: var(--theme-accent); color: var(--theme-ink); }
+:is(.rx-shell, .redaxa-landing) .ps-account-actions button:hover:not(:disabled) { filter: brightness(1.06); }
+:is(.rx-shell, .redaxa-landing) .ps-account-menu { border: 1px solid var(--theme-line); background: var(--card); color: var(--theme-text); box-shadow: 0 18px 44px color-mix(in srgb, #000 22%, transparent); }
+:is(.rx-shell, .redaxa-landing) .ps-account-menu-head { border-bottom-color: var(--theme-line); }
+:is(.rx-shell, .redaxa-landing) :is(.ps-account-email, .ps-menu-link) { color: var(--theme-text); }
+:is(.rx-shell, .redaxa-landing) .ps-signout { border: 0; background: transparent; color: var(--sev-critical); }
+:is(.rx-shell, .redaxa-landing) .ps-signout:hover { background: color-mix(in srgb, var(--sev-critical) 12%, transparent); color: var(--sev-critical); }
+:is(.rx-shell, .redaxa-landing) .ps-avatar-btn { border-color: var(--theme-strong); background: var(--card); }
+:is(.rx-shell, .redaxa-landing) .ps-avatar { background: var(--theme-accent); color: var(--theme-ink); }
+
+:is(.rx-shell, .redaxa-landing) .ps-auth-legal { color: var(--theme-muted) !important; }
+:is(.rx-shell, .redaxa-landing) .ps-auth-message { color: var(--theme-muted) !important; }
+:is(.rx-shell, .redaxa-landing) .ps-auth-message.error { color: var(--sev-critical) !important; }
