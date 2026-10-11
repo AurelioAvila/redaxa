@@ -7,15 +7,15 @@ import { PROMO_WORDS_EN, euro, mountPromo, promoPriceHtml, type PromoView, type 
 
 type HistoryEntry = { id: string; createdAt: string; findings: number; preview: string; byKind: Record<string, number> };
 type Language = "en" | "it" | "es" | "fr" | "de";
-import { themes, restoreTheme, applyTheme, defaultTheme, type ThemeName } from "./themes.js";
-type Preferences = ScanOptions & { language: Language; theme: ThemeName; scanMode: "standard" | "strict"; saveHistory: boolean; autoClearAfterCopy: boolean; showRawValues: boolean; customTerms: string[] };
+import { themes, restoreTheme, applyTheme, chosenTheme, type ThemeName } from "./themes.js";
+type Preferences = ScanOptions & { language: Language; theme: ThemeName; themeChosen: boolean; scanMode: "standard" | "strict"; saveHistory: boolean; autoClearAfterCopy: boolean; showRawValues: boolean; customTerms: string[] };
 type RiskLevel = "none" | "medium" | "high";
 
 const storageKey = "redaxa.personal-history.v1";
 const preferencesKey = "redaxa.personal-preferences.v1";
 const maxPromptLength = 10_000;
 
-const defaultPreferences: Preferences = { language: "en", theme: "paper", scanMode: "standard", includePersonalData: true, includeCredentials: true, includeFinancialData: true, saveHistory: true, autoClearAfterCopy: false, showRawValues: true, customTerms: [] };
+const defaultPreferences: Preferences = { language: "en", theme: "paper", themeChosen: false, scanMode: "standard", includePersonalData: true, includeCredentials: true, includeFinancialData: true, saveHistory: true, autoClearAfterCopy: false, showRawValues: true, customTerms: [] };
 
 const languageNames: Record<Language, string> = { en: "English", it: "Italiano", es: "Español", fr: "Français", de: "Deutsch" };
 // Halloween offer copy. Units and renewal lines are spelled out per language
@@ -500,7 +500,8 @@ function readPreferences(): Preferences {
       return {
         ...defaultPreferences,
         language: ["en", "it", "es", "fr", "de"].includes(String(candidate.language)) ? candidate.language as Language : "en",
-        theme: themes.some((t) => t.code === candidate.theme) ? candidate.theme as ThemeName : defaultTheme,
+        theme: chosenTheme(candidate),
+        themeChosen: candidate.themeChosen === true,
         scanMode: candidate.scanMode === "strict" ? "strict" : "standard",
         includePersonalData: candidate.includePersonalData !== false,
         includeCredentials: candidate.includeCredentials !== false,
@@ -679,6 +680,7 @@ export function mountDashboard(): void {
     const code = button?.dataset.theme as ThemeName | undefined;
     if (!code) return;
     preferences.theme = code;
+    preferences.themeChosen = true;
     applyTheme(code);
     savePreferences(preferences);
     themeRow.querySelectorAll(".theme-swatch").forEach((swatch) => { swatch.classList.toggle("active", swatch === button); swatch.setAttribute("aria-pressed", String(swatch === button)); });
@@ -1181,7 +1183,7 @@ export function mountDashboard(): void {
     const tasks: Record<string, boolean> = {
       check: readHistory().length > 0,
       terms: preferences.customTerms.length > 0,
-      theme: preferences.theme !== defaultPreferences.theme
+      theme: preferences.themeChosen
     };
     // Completed steps are removed rather than struck through: a checklist that
     // keeps showing "Run your first check" after the first check is just noise.

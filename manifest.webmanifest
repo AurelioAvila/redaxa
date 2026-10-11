@@ -6,7 +6,7 @@
   "start_url": "/dashboard.html",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#090a08",
-  "theme_color": "#b9ff00",
+  "background_color": "#f7f6f2",
+  "theme_color": "#f7f6f2",
   "icons": [{ "src": "/outputs/redaxa-mark.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
 }
