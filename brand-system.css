@@ -1036,9 +1036,9 @@ html.rx-native .repository-page .download-app{display:none}
   line-height: 1;
   animation: rx-strip-in 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+/* Opacity only: a height animation would push the whole page down, frame by frame. */
 @keyframes rx-strip-in {
   from {
-    max-height: 0;
     opacity: 0;
   }
 }

@@ -38,8 +38,13 @@ function mountLanding(): void {
   }));
   // The strip above the page and the card under the hero buttons show the same offer, from the same answer.
   const offerExtras = mountOfferExtras(OFFER_WORDS_EN, 'en', strip => required('.nav').before(strip), card => required('.hero .cta-row').after(card));
-  mountPromo(banner => required('#pricing .billing-switch').before(banner), () => PROMO_WORDS_EN, () => 'en', next => {
+  // No banner low on the page: the strip and the card above carry the offer, and the
+  // plans keep the struck prices with the note that explains them.
+  const promoFine = required<HTMLElement>('#promo-fine');
+  promoFine.textContent = PROMO_WORDS_EN.fine;
+  mountPromo(null, () => PROMO_WORDS_EN, () => 'en', next => {
     view = next;
+    promoFine.hidden = !next.promo;
     renderPrices();
   }, offerExtras);
   const prompt = required<HTMLTextAreaElement>("#prompt");

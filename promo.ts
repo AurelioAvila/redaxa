@@ -171,8 +171,9 @@ function clockBanner(banner: HTMLElement, remaining: number, words: PromoWords):
 /** Puts the banner where `place` says, reserved until the server answers,
  *  keeps it in step with the offer, and calls `onChange` when the offer first
  *  becomes known, starts or stops. `relabel` re-reads the words after a
- *  language change. */
-export function mountPromo(place: (banner: HTMLElement) => void, words: () => PromoWords, lang: () => string, onChange: (view: PromoView) => void, onRender?: (view: PromoView) => void): { relabel(): void } {
+ *  language change. A null `place` (the landing page, where the strip and the
+ *  card carry the offer at the top) follows the offer without a banner. */
+export function mountPromo(place: ((banner: HTMLElement) => void) | null, words: () => PromoWords, lang: () => string, onChange: (view: PromoView) => void, onRender?: (view: PromoView) => void): { relabel(): void } {
   const banner = bannerElement();
   let view: PromoView | null = null;
   // Room is kept only for someone who last saw the offer running: while it is
@@ -180,7 +181,7 @@ export function mountPromo(place: (banner: HTMLElement) => void, words: () => Pr
   const KEY = "redaxa.promo.last-seen";
   let lastSeen = false;
   try { lastSeen = localStorage.getItem(KEY) === "active"; } catch { /* storage blocked: no reservation */ }
-  if (lastSeen && Date.now() < PROMO_LAYOUT_UNTIL) {
+  if (place && lastSeen && Date.now() < PROMO_LAYOUT_UNTIL) {
     fillBanner(banner, null, words(), lang());
     place(banner);
   }
@@ -189,7 +190,7 @@ export function mountPromo(place: (banner: HTMLElement) => void, words: () => Pr
     view = next;
     if (changed) {
       try { localStorage.setItem(KEY, next.promo ? "active" : "off"); } catch { /* best effort */ }
-      if (next.promo) {
+      if (place && next.promo) {
         fillBanner(banner, next.promo, words(), lang());
         banner.style.removeProperty("visibility");
         banner.classList.remove("hw-offer-reserved");
@@ -201,7 +202,7 @@ export function mountPromo(place: (banner: HTMLElement) => void, words: () => Pr
       }
       onChange(next);
     }
-    if (next.promo) clockBanner(banner, next.remaining, words());
+    if (place && next.promo) clockBanner(banner, next.remaining, words());
     onRender?.(next);
   });
   return {
@@ -295,18 +296,31 @@ function cardElement(): HTMLElement {
 /** Puts a Halloween strip above the page and an offer card where `placeCard`
  *  says, from the offer the server published: Pro's first year, the same
  *  numbers as the plans below. Pass the returned function to mountPromo as its
- *  `onRender`. Nothing is drawn without a live offer; for someone who last
- *  saw the offer running, both keep their room (invisible) while the server
- *  answers, so the page does not jump. */
+ *  `onRender`. Nothing is drawn without a live offer; during the offer window
+ *  both keep their room (invisible) while the server answers, so the page
+ *  does not jump. */
 export function mountOfferExtras(words: OfferWords, lang: string, placeStrip: (strip: HTMLElement) => void, placeCard: (card: HTMLElement) => void): (view: PromoView) => void {
-  const strip = stripElement();
-  const card = cardElement();
+  // A page that ships its own reserved copies (the landing) has their room from the first paint.
+  const adopt = (selector: string, make: () => HTMLElement, markSelector: string, mark: string): HTMLElement => {
+    const own = document.querySelector<HTMLElement>(selector);
+    const markSlot = own?.querySelector(markSelector);
+    if (markSlot && !markSlot.firstChild) markSlot.innerHTML = mark;
+    return own ?? make();
+  };
+  const strip = adopt(".rx-strip", stripElement, ".rx-strip-pumpkin", HALLOWEEN_MARK_INK);
+  const card = adopt(".rx-hw-card", cardElement, ".rx-hw-card-mark", HALLOWEEN_MARK_EMBER);
   const label = (el: Element, selector: string, text: string) => { el.querySelector(selector)!.textContent = text; };
   const reserve = (el: HTMLElement) => { el.classList.add("rx-reserved"); el.setAttribute("aria-hidden", "true"); };
   const reveal = (el: HTMLElement) => { el.classList.remove("rx-reserved"); el.removeAttribute("aria-hidden"); };
-  let lastSeen = false;
-  try { lastSeen = localStorage.getItem("redaxa.promo.last-seen") === "active"; } catch { /* storage blocked: no reservation */ }
-  if (lastSeen && Date.now() < PROMO_LAYOUT_UNTIL) {
+  // During the offer window both keep their room, so first visits do not jump either;
+  // only someone who last saw the offer stopped early gets no reservation.
+  let lastSeen: string | null = null;
+  let dismissed = false;
+  try {
+    lastSeen = localStorage.getItem("redaxa.promo.last-seen");
+    dismissed = Object.keys(localStorage).some((key) => key.startsWith("redaxa.strip.") && localStorage.getItem(key) === "1");
+  } catch { /* storage blocked: room is kept */ }
+  if (lastSeen !== "off" && Date.now() < PROMO_LAYOUT_UNTIL) {
     for (const el of [strip, card]) reserve(el);
     label(strip, ".rx-strip-full", words.strip.replace("{percent}", "50%"));
     label(strip, ".rx-strip-digits", "00d 00h 00m 00s");
@@ -314,10 +328,14 @@ export function mountOfferExtras(words: OfferWords, lang: string, placeStrip: (s
     label(card, ".rx-hw-card-now", "€00");
     label(card, ".rx-hw-card-was", "€00");
     label(card, ".rx-hw-card-plan", words.plan.replace("{price}", "€00"));
-    label(card, ".rx-hw-card-note", words.ends.replace("{date}", "00"));
+    label(card, ".rx-hw-card-note", words.ends.replace("{date}", promoEndLabel({ endsAt: new Date(PROMO_LAYOUT_UNTIL).toISOString() }, lang)));
     label(card, ".rx-hw-card-cta span", words.cta);
-    placeStrip(strip);
-    placeCard(card);
+    if (dismissed) strip.remove();
+    else if (!strip.isConnected) placeStrip(strip);
+    if (!card.isConnected) placeCard(card);
+  } else {
+    strip.remove();
+    card.remove();
   }
   let closedKey = "";
   let closed = false;
