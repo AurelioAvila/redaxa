@@ -1,15 +1,19 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import { getMessage } from './messages.test.mjs';
 
 let scanResult;
 const sandbox=vm.createContext({
-  document:{body:null,addEventListener(){}},window:{setInterval(){}},
-  chrome:{runtime:{id:'test-extension',sendMessage(message,callback){callback({ok:true,result:message.type==='SCAN'?scanResult:{signedIn:true,active:true}});}}}
+  document:{body:null,addEventListener(){}},window:{setInterval(){},setTimeout(){},clearTimeout(){}},
+  chrome:{i18n:{getMessage},runtime:{id:'test-extension',sendMessage(message,callback){callback({ok:true,result:message.type==='SCAN'?scanResult:{signedIn:true,active:true}});}}}
 });
+vm.runInContext(fs.readFileSync(new URL('shared.js',import.meta.url),'utf8'),sandbox);
 vm.runInContext(fs.readFileSync(new URL('content.js',import.meta.url),'utf8'),sandbox);
 const warning=vm.runInContext('apiWarning',sandbox);
 const sorted=vm.runInContext('findingPriority',sandbox);
+const list=vm.runInContext('findingList',sandbox);
+const preview=vm.runInContext('redactedPreview',sandbox);
 const render=vm.runInContext('renderFindings',sandbox);
 const token='ghp_SYNTHETIC_DO_NOT_USE_1234567890';
 const findings=[{kind:'email',label:'Email address',severity:'medium',value:'person@company.com'}, {kind:'privateKey',label:'Private key',severity:'critical',value:'SYNTHETIC PEM'}, {kind:'secret',label:'API key or token',severity:'medium',value:token},{kind:'secret',label:'API key or token',severity:'medium',value:token}];
@@ -27,6 +31,19 @@ assert.ok(body.innerHTML.indexOf('API key or token</b>')<body.innerHTML.indexOf(
 assert.ok(body.innerHTML.includes('Policy &lt;script&gt;'));
 assert.ok(!body.innerHTML.includes(token));
 assert.ok(!body.innerHTML.includes('person@company.com'));
+
+// Grouped rows, credentials first; the redacted preview is escaped and marks placeholders only.
+const grouped = list(findings);
+assert.ok(grouped.indexOf('API key or token</b> <span class="ps-times">× 2</span>') >= 0, 'Duplicate keys are grouped');
+assert.ok(grouped.indexOf('API key or token') < grouped.indexOf('Private key') && grouped.indexOf('Private key') < grouped.indexOf('Email address'));
+const shown = preview({ redactedText: 'Mail [EMAIL] <img src=x onerror=alert(1)> key [SECRET]' });
+assert.ok(shown.includes('<mark>[EMAIL]</mark>') && shown.includes('<mark>[SECRET]</mark>'));
+assert.ok(!shown.includes('<img'), 'Prompt text is escaped in the preview');
+sandbox.chrome.i18n.getMessage = (key, subs) => getMessage(key, subs, 'it');
+assert.ok(list([{ kind: 'iban', label: 'IBAN' }, { kind: 'card', label: 'Card number' }]).includes('Numero di carta'), 'Labels follow the interface language');
+const italianKey = list([{ kind: 'secret', label: 'API key or token', credential: { service: 'OpenAI (probable)', type: 'Project API key', response: 'Revoke or rotate if genuine', evidence: 'x', guidance: 'y' } }]);
+assert.ok(italianKey.includes('OpenAI · Chiave API o token') && italianKey.includes('Revocala o ruotala se è autentica'), 'Credential advice is translated');
+sandbox.chrome.i18n.getMessage = getMessage;
 let currentModal;
 sandbox.document.createElement=()=>({innerHTML:'',remove(){},querySelector(){return {addEventListener(){}};}});
 sandbox.document.body={append(modal){currentModal=modal;}};
@@ -81,7 +98,7 @@ assert.equal(vm.runInContext('sameCheckedPrompt',sandbox)({value:'checked',isCon
 console.log('Extension: API alert, deduplication, priority, escaping and secret-free markup passed.');
 // Manual checks run straight away and say where they ran.
 const ui = new Map();
-const uiNode = () => ({ innerHTML: '', handlers: {}, classList: { add() {}, remove() {} },
+const uiNode = () => ({ innerHTML: '', handlers: {}, classList: { add() {}, remove() {} }, setAttribute() {},
   addEventListener(event, handler) { this.handlers[event] = handler; },
   querySelector(selector) { if (!ui.has(selector)) ui.set(selector, uiNode()); return ui.get(selector); }
 });

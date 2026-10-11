@@ -6,11 +6,13 @@
 import "./config.js";
 import { inspectPrompt } from "./engine/scanner.js";
 import { defaultPersonalPolicy, evaluatePolicy } from "./engine/policy.js";
-// Account and plan services. Unchanged host: the extension already holds this
-// permission, and switching it would ask every user to approve a new site.
-const API_BASE = "https://promptshield-beta.vercel.app";
+// Account and plan services live on the workspace origin. No host permission:
+// the API answers extension origins over CORS, and free checks never call it.
 const REDAXA_WORKSPACE_URL = globalThis.REDAXA_WORKSPACE_URL;
+const API_BASE = REDAXA_WORKSPACE_URL;
+const t = (key) => chrome.i18n.getMessage(key);
 const SESSION_KEY = "redaxa_session";
+const HELPFUL_KEY = "redaxa_helpful_checks";
 
 function repositoryEntitlement(account) {
   // Personal is the existing billing ID for Pro. Business includes Pro.
@@ -18,19 +20,6 @@ function repositoryEntitlement(account) {
   if (typeof account?.repositoryAccess === "boolean") return account.active === true && account.repositoryAccess;
   return account?.active === true && ["active", "trialing"].includes(account.status)
     && ["personal", "pro", "business"].includes(account.plan);
-}
-
-function repositoryURL(input) {
-  let url;
-  try { url = new URL(input); } catch { throw new Error("Enter a public GitHub repository URL."); }
-  const parts = url.pathname.replace(/\/$/, "").split("/").filter(Boolean);
-  if (url.protocol !== "https:" || url.hostname !== "github.com" || url.port || url.username || url.password || url.search || url.hash
-    || parts.length !== 2 || !parts.every(part => /^[A-Za-z0-9_.-]+$/.test(part)) || parts.some(part => part === "." || part === "..")) {
-    throw new Error("Use a repository URL like https://github.com/owner/repository, without a file or branch path.");
-  }
-  const repo = parts[1].replace(/\.git$/, "");
-  if (!repo || repo === "." || repo === "..") throw new Error("Enter a valid repository name.");
-  return `https://github.com/${parts[0]}/${repo}`;
 }
 
 async function readSession() {
@@ -54,15 +43,15 @@ async function accessToken() {
     headers: { Authorization: `Bearer ${session.access_token}`, "X-Refresh-Token": session.refresh_token },
     signal: AbortSignal.timeout(15_000)
   });
-  if (!response.ok && response.status !== 401 && response.status !== 403) throw new Error("Account service is temporarily unavailable. Please retry.");
+  if (!response.ok && response.status !== 401 && response.status !== 403) throw new Error(t("errAccountUnavailable"));
   const payload = await response.json().catch(() => ({}));
   if (response.status === 401 || response.status === 403 || payload.email === null) {
     await clearSession();
     return null;
   }
-  if (!payload.email) throw new Error("Account service returned an incomplete response. Please retry.");
+  if (!payload.email) throw new Error(t("errAccountIncomplete"));
   if (!payload.access_token && !payload.refresh_token) return session.access_token;
-  if (!payload.access_token || !payload.refresh_token) throw new Error("Account service returned an incomplete session. Please retry.");
+  if (!payload.access_token || !payload.refresh_token) throw new Error(t("errAccountIncomplete"));
   await saveSession({
     email: payload.email,
     access_token: payload.access_token,
@@ -75,7 +64,7 @@ async function accessToken() {
 async function apiRequest(path, body, method = "POST", { timeoutMs = 15_000, retries = 1, requireAccount = false } = {}) {
   const headers = { "Content-Type": "application/json" };
   const token = await accessToken();
-  if (requireAccount && !token) throw new Error("Sign in again before checking this prompt.");
+  if (requireAccount && !token) throw new Error(t("errSignInAgain"));
   if (token) headers.Authorization = `Bearer ${token}`;
   // A hung request would leave the user staring at "Checking…" forever, and a
   // single transient network blip shouldn't read as "Redaxa is broken":
@@ -92,11 +81,11 @@ async function apiRequest(path, body, method = "POST", { timeoutMs = 15_000, ret
         signal: abort.signal
       });
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw Object.assign(new Error(payload.error ?? "Request failed."), { httpStatus: response.status });
+      if (!response.ok) throw Object.assign(new Error(payload.error ?? t("errRequestFailed")), { httpStatus: response.status });
       return payload;
     } catch (error) {
       if (error.httpStatus || attempt >= retries) {
-        throw error.name === "AbortError" ? new Error("The check timed out. Please try again.") : error;
+        throw error.name === "AbortError" ? new Error(t("errTimeout")) : error;
       }
     } finally {
       clearTimeout(timer);
@@ -116,9 +105,10 @@ function scanOptions(options) {
 }
 
 async function handleMessage(message, sender) {
-  if (["SIGN_IN", "SIGN_OUT", "OPEN_REPOSITORY"].includes(message.type)
-    && sender?.url !== chrome.runtime.getURL("popup.html")) {
-    throw new Error("Use the Redaxa popup for this account action.");
+  // Account actions only from the popup (also opened as the welcome tab).
+  if (["SIGN_IN", "SIGN_OUT"].includes(message.type)
+    && sender?.url?.split(/[?#]/)[0] !== chrome.runtime.getURL("popup.html")) {
+    throw new Error(t("errPopupOnly"));
   }
   switch (message.type) {
     case "SIGN_IN": {
@@ -150,42 +140,30 @@ async function handleMessage(message, sender) {
         return { signedIn: true, email: session.email, active: false, repositoryAccess: false, unavailable: true };
       }
     }
-    case "OPEN_REPOSITORY": {
-      // Navigation remains popup-only. The web check of public repositories is
-      // free; the page itself applies the daily allowance and plan limits.
-      if (sender?.url !== chrome.runtime.getURL("popup.html")) throw new Error("Open Repository check from the Redaxa popup.");
-      const repository = repositoryURL(message.repository);
-      const url = new URL("/github.html", REDAXA_WORKSPACE_URL);
-      url.searchParams.set("repo", repository);
-      url.searchParams.set("source", "extension");
-      // Do not put access tokens in URLs or bridge them into page storage.
-      await chrome.tabs.create({ url: url.href });
-      return { opened: true };
-    }
     case "SCAN": {
       if (typeof message.text !== "string" || !message.text.trim() || message.text.length > 20_000) {
-        throw new Error("Enter between 1 and 20,000 characters to check.");
+        throw new Error(t("errTextLength"));
       }
       // Audit metadata only: which AI app the prompt was headed to. Derived
       // from the sender tab's host here (trusted context), never from the
       // page itself.
       const host = sender?.tab?.url ? new URL(sender.tab.url).hostname : "";
       const application =
-        host.includes("chatgpt") || host.includes("chat.openai") ? "chatgpt" :
-        host.includes("claude") ? "claude" :
-        host.includes("gemini") ? "gemini" :
-        host.includes("copilot") ? "copilot" :
-        host.includes("perplexity") ? "perplexity" : "extension";
+        host === "chatgpt.com" ? "chatgpt" :
+        host === "claude.ai" ? "claude" :
+        host === "gemini.google.com" ? "gemini" :
+        host === "www.perplexity.ai" ? "perplexity" : "extension";
       // Free use is checked on this device: the text never leaves the browser.
       // An active plan uses the account service, where workspace protected
       // terms, team policies and the activity record live.
       if (message.requireAccount !== true) {
         const local = inspectPrompt(message.text, scanOptions(message.options));
+        if (local.findings.length && application !== "extension") void countHelpfulCheck();
         return { findings: local.findings, redactedText: local.redactedText, decision: evaluatePolicy(local.findings, defaultPersonalPolicy), engine: "local" };
       }
       const result = await apiRequest("/api/scan", { text: message.text, application, options: message.options ?? {} }, "POST", { requireAccount: true });
       if (!Array.isArray(result.findings) || typeof result.redactedText !== "string") {
-        throw new Error("The check returned an incomplete result. Please try again.");
+        throw new Error(t("errIncompleteResult"));
       }
       // The decision (which policy rule fired, why, and whether the send is
       // blocked) must survive this hop — the content script's modal depends
@@ -197,6 +175,18 @@ async function handleMessage(message, sender) {
   }
 }
 
+// A number only, kept on this device: after a few checks on an AI site that
+// found something, the popup offers a link to the store reviews once.
+async function countHelpfulCheck() {
+  const stored = await chrome.storage.local.get(HELPFUL_KEY).catch(() => ({}));
+  await chrome.storage.local.set({ [HELPFUL_KEY]: (Number(stored?.[HELPFUL_KEY]) || 0) + 1 }).catch(() => undefined);
+}
+
+// First install: open the popup as a welcome tab (try an example, see the result).
+chrome.runtime.onInstalled.addListener(({ reason }) => {
+  if (reason === "install") void chrome.tabs.create({ url: chrome.runtime.getURL("popup.html?welcome") });
+});
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // No externally_connectable is declared, so only this extension's own
   // content scripts/popup can reach onMessage -- but check the sender id
@@ -205,6 +195,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (sender.id !== chrome.runtime.id) return false;
   handleMessage(message, sender)
     .then((result) => sendResponse({ ok: true, result }))
-    .catch((error) => sendResponse({ ok: false, error: error instanceof Error ? error.message : "Unexpected error.", httpStatus: error.httpStatus }));
+    .catch((error) => sendResponse({ ok: false, error: error instanceof Error ? error.message : t("errRequestFailed"), httpStatus: error.httpStatus }));
   return true; // keep the message channel open for the async response
 });

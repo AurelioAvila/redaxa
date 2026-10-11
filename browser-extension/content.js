@@ -97,9 +97,9 @@ function setComposerText(el, text) {
     navigator.clipboard.writeText(text).then(() => {
       el.focus();
       document.execCommand("selectAll");
-      psToast("Safe version copied — press Ctrl+V to replace your prompt.");
+      psToast(t("pasteToast"));
     }).catch(() => {
-      psToast("This editor blocks automatic replacing. Copy the safe version from the Redaxa panel.");
+      psToast(t("editorBlocked"));
     });
   }, 400);
 }
@@ -108,6 +108,7 @@ function psToast(message) {
   document.getElementById("redaxa-toast")?.remove();
   const toast = document.createElement("div");
   toast.id = "redaxa-toast";
+  toast.setAttribute("role", "status");
   toast.textContent = message;
   document.body.append(toast);
   setTimeout(() => toast.remove(), 7000);
@@ -116,7 +117,7 @@ function psToast(message) {
 function send(message) {
   return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage(message, (response) => {
-      if (!response) { reject(new Error("Redaxa extension is unavailable.")); return; }
+      if (!response) { reject(new Error(t("extensionUnavailable"))); return; }
       if (!response.ok) { reject(Object.assign(new Error(response.error), { httpStatus: response.httpStatus })); return; }
       resolve(response.result);
     });
@@ -135,14 +136,17 @@ function buildUI() {
   const button = document.createElement("button");
   button.id = "redaxa-check-btn";
   button.type = "button";
-  button.textContent = "🛡 Check";
+  button.textContent = t("pageCheck");
+  button.setAttribute("aria-label", t("pageCheckLabel"));
   document.body.append(button);
 
   const panel = document.createElement("div");
   panel.id = "redaxa-panel";
+  panel.setAttribute("role", "region");
+  panel.setAttribute("aria-label", "Redaxa");
   panel.innerHTML = `
-    <div class="ps-panel-head">Redaxa<button type="button" id="redaxa-close">×</button></div>
-    <div class="ps-panel-body" id="redaxa-body"></div>
+    <div class="ps-panel-head">Redaxa<button type="button" id="redaxa-close" aria-label="${escapeHtml(t("close"))}">×</button></div>
+    <div class="ps-panel-body" id="redaxa-body" aria-live="polite"></div>
   `;
   document.body.append(panel);
 
@@ -155,56 +159,69 @@ function buildUI() {
     const text = composerText(composer).trim();
     panel.classList.add("open");
     if (!text) {
-      body.innerHTML = `<p class="ps-empty">Type a prompt first, then check it.</p>`;
+      body.innerHTML = `<p class="ps-empty">${escapeHtml(t("typeFirst"))}</p>`;
       return;
     }
-    body.innerHTML = `<p class="ps-loading">Checking…</p>`;
+    body.innerHTML = `<p class="ps-loading">${escapeHtml(t("checking"))}</p>`;
     try {
       const status = await send({ type: "STATUS" }).catch(() => ({ signedIn: false }));
       const result = await runScan(text, status.signedIn === true && status.active === true);
       renderFindings(body, result, composer, () => panel.classList.remove("open"));
     } catch (error) {
-      body.innerHTML = `<p class="ps-empty">${escapeHtml(error.message || "Check failed.")}</p>`;
+      body.innerHTML = `<p class="ps-empty">${escapeHtml(error.message || t("checkFailedShort"))}</p>`;
     }
   });
 }
 
-// The policy decision explains WHY the scan flagged something: the server
-// returns the winning rule's human-written reason alongside the findings.
+// The policy decision explains WHY the scan flagged something: the winning
+// rule's reason, translated for the built-in rules.
 function decisionReason(result) {
-  const reason = result.decision?.decidedBy?.reason;
+  const reason = policyReason(result.decision);
   return reason ? `<p class="ps-reason">${escapeHtml(reason)}</p>` : "";
 }
 
-function findingPriority(findings) {
-  const severity = { critical: 4, high: 3, medium: 2, low: 1 };
-  const credential = f => f.category === 'credentials' || ['secret', 'privateKey', 'credential'].includes(f.kind);
-  return [...findings].sort((a, b) => Number(b.kind === 'secret') - Number(a.kind === 'secret') || Number(credential(b)) - Number(credential(a)) || (severity[b.severity] || 0) - (severity[a.severity] || 0));
-}
 function apiWarning(findings) {
   const matches = findings.filter(f => f.kind === 'secret');
   if (!matches.length) return '';
   // No raw values, excerpts or file paths in notifications or their markup.
   const count = new Set(matches.map((f, i) => f.value || `match-${i}`)).size;
-  return `<div class="ps-api-warning" role="alert"><strong>API key or token found · ${count} potential ${count === 1 ? 'match' : 'matches'}</strong><p>Review these first. Validity has not been tested. Replace with the safer version before sharing.</p></div>`;
+  const title = count === 1 ? t("apiWarnOne") : t("apiWarnMany", [String(count)]);
+  return `<div class="ps-api-warning" role="alert"><strong>${escapeHtml(title)}</strong><p>${escapeHtml(t("apiWarnBody"))}</p></div>`;
 }
 
 function whereChecked(result) {
-  return result.engine === "local" ? `<p class="ps-where">Checked on this device. Nothing was sent.</p>` : "";
+  return result.engine === "local" ? `<p class="ps-where">${escapeHtml(t("whereLocal"))}</p>` : "";
+}
+
+// Grouped findings: "Email address × 2", credentials first, with advice.
+function findingList(findings) {
+  return groupFindings(findings).map(({ title, count, credential }) => {
+    const advice = credential ? credentialAdvice(credential) : null;
+    return `<div class="ps-finding"><b>${escapeHtml(title)}</b>${count > 1 ? ` <span class="ps-times">× ${count}</span>` : ""}${advice ? `<details><summary>${escapeHtml(advice.summary)}</summary><p>${escapeHtml(advice.body)}</p></details>` : ""}</div>`;
+  }).join("");
+}
+
+// What "Replace" will put in the composer, placeholders highlighted. The
+// redacted text holds no detected values, so showing it exposes nothing new.
+function redactedPreview(result) {
+  if (typeof result.redactedText !== "string" || !result.redactedText) return "";
+  const marked = escapeHtml(result.redactedText).replace(/\[[A-Z][A-Z ]{1,20}\]/g, "<mark>$&</mark>");
+  return `<p class="ps-preview-label">${escapeHtml(t("redactedLabel"))}</p><div class="ps-preview">${marked}</div>`;
 }
 
 function renderFindings(body, result, composer, onHandled) {
   if (!result.findings.length) {
-    body.innerHTML = `<p class="ps-empty">Nothing obvious found. This is a helpful signal, not a guarantee.</p>${whereChecked(result)}`;
+    body.innerHTML = `<p class="ps-empty">${escapeHtml(t("nothingFound"))}</p>${whereChecked(result)}`;
     return;
   }
-  const list = findingPriority(result.findings).map((f) => `<div class="ps-finding"><b>${escapeHtml(f.credential ? f.credential.service+' · '+f.credential.type : f.label)}</b>${f.credential?`<details><summary>${escapeHtml(f.credential.response)}</summary><p>${escapeHtml(f.credential.evidence+' '+f.credential.guidance)}</p></details>`:''}</div>`).join("");
+  const found = result.findings.length;
   body.innerHTML = `
     ${apiWarning(result.findings)}
-    <p class="ps-count">${result.findings.length} item${result.findings.length === 1 ? "" : "s"} to review</p>
+    <p class="ps-count">${escapeHtml(found === 1 ? t("resultOne") : t("resultMany", [String(found)]))}</p>
     ${decisionReason(result)}
-    ${list}
-    <button type="button" class="ps-use-redacted" id="redaxa-use-redacted">Replace with safer version</button>
+    ${findingList(result.findings)}
+    ${redactedPreview(result)}
+    <button type="button" class="ps-use-redacted" id="redaxa-use-redacted">${escapeHtml(t("replaceRedacted"))}</button>
     ${whereChecked(result)}
   `;
   body.querySelector("#redaxa-use-redacted")?.addEventListener("click", () => {
@@ -222,7 +239,7 @@ async function runScan(text, requireAccount = false) {
 function sameCheckedPrompt(composer, checkedText) {
   if (composer?.isConnected !== false && composerText(composer).trim() === checkedText) return true;
   closeModal();
-  psToast("Your prompt changed. Check it again before sending or replacing it.");
+  psToast(t("promptChanged"));
   return false;
 }
 
@@ -232,7 +249,7 @@ function sameCheckedPrompt(composer, checkedText) {
 // (Enter key and the Send button) at the document capture phase -- the
 // earliest point in the DOM event chain, ahead of the site's own React/Vue
 // handlers -- and puts up a blocking modal before anything leaves the
-// browser. The user must explicitly pick "Send anyway" or "Fix it first";
+// browser. The user must explicitly pick "Send anyway" or the redacted version;
 // closing/cancelling leaves the message sitting unsent in the composer.
 //
 // A prior attempt at this (see git history) intercepted Enter only, attached
@@ -282,11 +299,18 @@ function closeModal() {
   modalEl = null;
 }
 
-function showModal(html) {
+// A labelled dialog: Escape closes it and focus goes back to the composer.
+function showModal(html, composer) {
   closeModal();
   modalEl = document.createElement("div");
   modalEl.id = "redaxa-intercept";
-  modalEl.innerHTML = `<div class="ps-intercept-card">${html}</div>`;
+  modalEl.innerHTML = `<div class="ps-intercept-card" role="dialog" aria-modal="true" aria-labelledby="ps-int-title">${html}</div>`;
+  modalEl.addEventListener?.("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    event.stopPropagation();
+    closeModal();
+    composer?.focus?.();
+  });
   document.body.append(modalEl);
   return modalEl;
 }
@@ -314,28 +338,34 @@ async function gate(composer, resend) {
   gatePending = true;
   const text = composerText(composer).trim();
   const sendChecked = () => { if (sameCheckedPrompt(composer, text)) { closeModal(); resend(); } };
-  showModal(`
-    <div class="ps-int-head">Redaxa</div>
-    <div class="ps-int-body"><p class="ps-loading">Checking before this sends…</p></div>
-  `);
+  const closeButton = `<button type="button" class="ps-int-x" id="ps-int-close" aria-label="${escapeHtml(t("close"))}">×</button>`;
+  // A clean local check takes milliseconds: the "Checking" notice only
+  // appears when a check is slow, so ordinary sends do not flash a dialog.
+  const loading = window.setTimeout(() => showModal(`
+    <div class="ps-int-head"><span id="ps-int-title">Redaxa</span></div>
+    <div class="ps-int-body"><p class="ps-loading">${escapeHtml(t("checkingBeforeSend"))}</p></div>
+  `, composer), 300);
   let result;
   try {
     const status = await currentStatus();
     // A signed-in account whose plan cannot be confirmed may carry team
     // policies that block sending, so it waits rather than guessing.
-    if (status.unavailable) throw new Error("Redaxa could not verify your account. Retry when the service is available.");
+    if (status.unavailable) throw new Error(t("couldNotVerify"));
     result = await runScan(text, status.signedIn === true && status.active === true);
   } catch (error) {
+    window.clearTimeout(loading);
     showModal(`
-      <div class="ps-int-head">Redaxa<button type="button" class="ps-int-x" id="ps-int-close">×</button></div>
+      <div class="ps-int-head"><span id="ps-int-title">Redaxa</span>${closeButton}</div>
       <div class="ps-int-body">
-        <p class="ps-empty">${escapeHtml(error.message || "Check failed.")}</p>
-        <p class="ps-empty">Your prompt has not been sent. Close this notice and retry the check.</p>
+        <p class="ps-empty">${escapeHtml(error.message || t("checkFailedShort"))}</p>
+        <p class="ps-empty">${escapeHtml(t("notSent"))}</p>
       </div>
-    `);
+    `, composer);
     modalEl.querySelector("#ps-int-close")?.addEventListener("click", closeModal);
+    modalEl.querySelector("#ps-int-close")?.focus?.();
     return;
   } finally {
+    window.clearTimeout(loading);
     gatePending = false;
   }
 
@@ -344,29 +374,34 @@ async function gate(composer, resend) {
     return;
   }
 
-  const list = findingPriority(result.findings).map((f) => `<div class="ps-finding"><b>${escapeHtml(f.label)}</b></div>`).join("");
   // Enforcement follows the policy decision: when the winning rule says
   // "block" there is no "Send anyway" -- the prompt stays unsent until fixed.
   // (The default personal policy never blocks; this path exists for
   // organization rules.)
   const blocked = result.decision?.action === "block";
+  const found = result.findings.length;
+  const title = blocked ? t("blockedTitle") : found === 1 ? t("foundOne") : t("foundMany", [String(found)]);
   showModal(`
-    <div class="ps-int-head">${blocked ? "Blocked by your organization's policy" : `Found ${result.findings.length} item${result.findings.length === 1 ? "" : "s"} before sending`}<button type="button" class="ps-int-x" id="ps-int-close">×</button></div>
+    <div class="ps-int-head"><span id="ps-int-title">${escapeHtml(title)}</span>${closeButton}</div>
     <div class="ps-int-body">
       ${apiWarning(result.findings)}
       ${decisionReason(result)}
-      ${list}
-      <button type="button" class="ps-use-redacted" id="ps-int-fix">Fix it first</button>
-      ${blocked ? "" : `<button type="button" class="ps-int-secondary" id="ps-int-send-anyway">Send anyway</button>`}
+      ${findingList(result.findings)}
+      ${redactedPreview(result)}
+      <p class="ps-explain">${escapeHtml(t("fixExplain"))}</p>
+      <button type="button" class="ps-use-redacted" id="ps-int-fix">${escapeHtml(t("replaceRedacted"))}</button>
+      ${blocked ? "" : `<button type="button" class="ps-int-secondary" id="ps-int-send-anyway">${escapeHtml(t("sendAnyway"))}</button>`}
     </div>
-  `);
-  modalEl.querySelector("#ps-int-close")?.addEventListener("click", closeModal);
+  `, composer);
+  modalEl.querySelector("#ps-int-close")?.addEventListener("click", () => { closeModal(); composer?.focus?.(); });
   modalEl.querySelector("#ps-int-fix")?.addEventListener("click", () => {
     if (!sameCheckedPrompt(composer, text)) return;
     setComposerText(composer, result.redactedText);
     closeModal();
+    psToast(t("replacedToast"));
   });
   modalEl.querySelector("#ps-int-send-anyway")?.addEventListener("click", sendChecked);
+  modalEl.querySelector("#ps-int-fix")?.focus?.();
 }
 
 // After the extension updates, scripts already running in open tabs lose

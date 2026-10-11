@@ -1,92 +1,95 @@
-#redaxa-check-btn {
-  position: fixed;
-  right: 22px;
-  bottom: 88px;
-  z-index: 2147483000;
-  border: 1px solid #44536a;
-  border-radius: 999px;
-  padding: 10px 16px;
-  background: #141a22;
-  color: #edf1f7;
-  font: 600 13px "Segoe UI", system-ui, sans-serif;
-  cursor: pointer;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+/* Redaxa Paper on the AI sites; Ink & Copper when the system is dark. Every
+   rule is scoped to Redaxa's own elements so the host page is untouched. */
+#redaxa-check-btn, #redaxa-panel, #redaxa-intercept, #redaxa-toast {
+  --rx-bg: #ffffff; --rx-inset: #f7f6f2; --rx-text: #1b1724; --rx-muted: #5a5466; --rx-line: #e3dfd5;
+  --rx-strong: #8a8478; --rx-accent: #a3471d; --rx-on-accent: #ffffff; --rx-alert: #a8261b; --rx-alert-bg: #fbeae6;
+  --rx-mark: #f6e3d7;
+  font: 13px/1.5 "Segoe UI", system-ui, -apple-system, sans-serif;
+  color: var(--rx-text);
+  letter-spacing: normal;
+  text-align: left;
+  box-sizing: border-box;
 }
-#redaxa-check-btn:hover { border-color: #b6cfff; color: #b6cfff; }
+@media (prefers-color-scheme: dark) {
+  #redaxa-check-btn, #redaxa-panel, #redaxa-intercept, #redaxa-toast {
+    --rx-bg: #1c1a21; --rx-inset: #141218; --rx-text: #f4f1ec; --rx-muted: #b8b1bf; --rx-line: #2e2b35;
+    --rx-strong: #6f6878; --rx-accent: #e8956a; --rx-on-accent: #2a1407; --rx-alert: #ff9c8a; --rx-alert-bg: #3a1d1a;
+    --rx-mark: #4a2a1a;
+  }
+}
+#redaxa-panel *, #redaxa-intercept * { box-sizing: border-box; }
+
+#redaxa-check-btn {
+  position: fixed; right: 22px; bottom: 88px; z-index: 2147483000;
+  display: inline-flex; align-items: center; gap: 8px;
+  border: 1px solid var(--rx-strong); border-radius: 999px; padding: 8px 14px;
+  background: var(--rx-bg); font-weight: 600; cursor: pointer;
+  box-shadow: 0 8px 24px rgba(27, 23, 36, 0.18);
+}
+#redaxa-check-btn::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--rx-accent); }
+#redaxa-check-btn:hover { border-color: var(--rx-accent); }
+#redaxa-check-btn:focus-visible, #redaxa-panel :focus-visible, #redaxa-intercept :focus-visible { outline: 2px solid var(--rx-accent); outline-offset: 2px; }
 
 #redaxa-panel {
-  position: fixed;
-  right: 22px;
-  bottom: 138px;
-  z-index: 2147483000;
-  width: 300px;
-  max-height: 60vh;
-  overflow: auto;
-  background: #141a22;
-  color: #edf1f7;
-  border: 1px solid #2a3544;
-  border-radius: 14px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
-  display: none;
-  font: 13px/1.5 "Segoe UI", system-ui, sans-serif;
+  position: fixed; right: 22px; bottom: 136px; z-index: 2147483000;
+  width: 320px; max-height: 64vh; overflow: auto; display: none;
+  background: var(--rx-bg); border: 1px solid var(--rx-line); border-radius: 12px;
+  box-shadow: 0 20px 56px rgba(27, 23, 36, 0.28);
 }
 #redaxa-panel.open { display: block; }
-.ps-panel-head {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 12px 14px; border-bottom: 1px solid #2a3544; font-weight: 700;
+.ps-panel-head, .ps-int-head {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  padding: 12px 16px; border-bottom: 1px solid var(--rx-line); font-weight: 700;
 }
-.ps-panel-head button { border: 0; background: transparent; color: #abb8cb; font-size: 18px; cursor: pointer; }
-.ps-panel-body { padding: 12px 14px; }
-.ps-empty { color: #abb8cb; margin: 0; }
-.ps-loading { color: #abb8cb; margin: 0; }
+.ps-panel-head button, .ps-int-x {
+  border: 0; background: transparent; color: var(--rx-muted); font-size: 20px; line-height: 1; padding: 2px 6px; cursor: pointer; border-radius: 6px;
+}
+.ps-panel-head button:hover, .ps-int-x:hover { background: var(--rx-inset); color: var(--rx-text); }
+.ps-panel-body, .ps-int-body { padding: 12px 16px 16px; }
+.ps-empty, .ps-loading { color: var(--rx-muted); margin: 0 0 6px; }
 .ps-count { margin: 0 0 8px; font-weight: 700; }
-.ps-reason { margin: 0 0 8px; padding: 7px 9px; border-left: 3px solid #b6cfff; background: rgba(182, 207, 255, 0.08); font-size: 12px; color: inherit; border-radius: 0 6px 6px 0; }
-.ps-finding { padding: 8px 0; border-top: 1px solid #2a3544; }
-.ps-finding b { font-size: 12.5px; }
-.ps-use-redacted {
-  margin-top: 12px; width: 100%; border: 0; border-radius: 8px; padding: 9px;
-  background: #b6cfff; color: #16243b; font-weight: 700; cursor: pointer;
+.ps-reason { margin: 0 0 10px; padding: 8px 10px; border-left: 3px solid var(--rx-accent); background: var(--rx-inset); font-size: 12px; border-radius: 0 6px 6px 0; }
+.ps-finding { padding: 8px 0; border-top: 1px solid var(--rx-line); }
+.ps-finding b { font-size: 13px; }
+.ps-times { color: var(--rx-muted); }
+.ps-finding details { margin-top: 4px; color: var(--rx-muted); font-size: 12px; }
+.ps-finding summary { cursor: pointer; }
+.ps-finding details p { margin: 4px 0 0; }
+.ps-preview-label { margin: 12px 0 4px; font-size: 12px; font-weight: 600; color: var(--rx-muted); }
+.ps-preview {
+  max-height: 120px; overflow: auto; padding: 8px 10px; border: 1px solid var(--rx-line); border-radius: 8px;
+  background: var(--rx-inset); font-size: 12.5px; white-space: pre-wrap; overflow-wrap: anywhere;
 }
+.ps-preview mark { background: var(--rx-mark); color: var(--rx-accent); font-weight: 600; border-radius: 3px; padding: 0 2px; }
+.ps-explain { margin: 10px 0 0; color: var(--rx-muted); font-size: 12px; }
+.ps-use-redacted, .ps-int-secondary {
+  display: block; width: 100%; margin-top: 10px; border-radius: 8px; padding: 9px 12px; font: 600 13px/1.4 "Segoe UI", system-ui, sans-serif; cursor: pointer;
+}
+.ps-use-redacted { border: 1px solid var(--rx-accent); background: var(--rx-accent); color: var(--rx-on-accent); }
+.ps-use-redacted:hover { filter: brightness(1.08); }
+.ps-int-secondary { border: 1px solid var(--rx-strong); background: transparent; color: var(--rx-text); }
+.ps-int-secondary:hover { border-color: var(--rx-accent); }
+.ps-where { margin: 10px 0 0; color: var(--rx-muted); font-size: 12px; }
+.ps-api-warning { padding: 12px; margin: 0 0 12px; border: 1px solid var(--rx-alert); border-radius: 8px; background: var(--rx-alert-bg); color: var(--rx-text); }
+.ps-api-warning strong { color: var(--rx-alert); }
+.ps-api-warning p { margin: 6px 0 0; font-size: 12px; }
 
 #redaxa-intercept {
   position: fixed; inset: 0; z-index: 2147483647;
-  background: rgba(0, 0, 0, 0.55);
   display: flex; align-items: center; justify-content: center;
+  background: rgba(20, 18, 24, 0.5);
 }
 .ps-intercept-card {
-  width: 340px; max-height: 80vh; overflow: auto;
-  background: #141a22; color: #edf1f7;
-  border: 1px solid #2a3544; border-radius: 14px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-  font: 13px/1.5 "Segoe UI", system-ui, sans-serif;
+  width: min(380px, calc(100vw - 32px)); max-height: 84vh; overflow: auto;
+  background: var(--rx-bg); border: 1px solid var(--rx-line); border-radius: 14px;
+  box-shadow: 0 24px 64px rgba(20, 18, 24, 0.4);
 }
-.ps-int-secondary {
-  margin-top: 8px; width: 100%; border: 1px solid #2a3544; border-radius: 8px; padding: 9px;
-  background: transparent; color: #edf1f7; font-weight: 600; cursor: pointer;
-}
-.ps-int-secondary:hover { border-color: #b6cfff; color: #b6cfff; }
-.ps-int-head {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 14px 16px; border-bottom: 1px solid #2a3544; font-weight: 700;
-}
-.ps-int-x { border: 0; background: transparent; color: #abb8cb; font-size: 20px; cursor: pointer; }
-.ps-int-body { padding: 14px 16px; }
-.ps-int-body .ps-use-redacted { margin-top: 4px; }
 
 #redaxa-toast {
-  position: fixed;
-  left: 50%;
-  bottom: 26px;
-  transform: translateX(-50%);
-  z-index: 2147483647;
-  background: #141a22;
-  color: #edf1f7;
-  border: 1px solid #b6cfff;
-  border-radius: 999px;
-  padding: 11px 18px;
-  font: 600 13px "Segoe UI", system-ui, sans-serif;
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45);
+  position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%); z-index: 2147483647;
+  max-width: calc(100vw - 32px);
+  background: var(--rx-bg); border: 1px solid var(--rx-accent); border-radius: 999px;
+  padding: 10px 18px; font-weight: 600;
+  box-shadow: 0 14px 40px rgba(20, 18, 24, 0.3);
 }
-.ps-api-warning{padding:14px;margin:0 0 14px;border:1px solid #e18c9e;border-radius:10px;background:#351b28;color:#fff0f3;font:600 14px/1.5 "Segoe UI",system-ui,sans-serif}.ps-api-warning p{margin:8px 0 0;color:#efcbd5;font-size:12px;font-weight:400}
-
-.ps-where { margin: 10px 0 0; color: #abb8cb; font-size: 12px; }
+@media (prefers-reduced-motion: reduce) { #redaxa-check-btn, .ps-use-redacted { transition: none; } }
