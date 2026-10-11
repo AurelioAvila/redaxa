@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.5.3 — 2026-10-11
+
+- Repository check: test, fixture and example values (for example `wh-secret-test` in a test fixture) are no longer listed as exposures. A finding is a test value when its file is in a test, spec, fixture, mock, snapshot, testdata, e2e, example, sample or demo folder or has a test name (`*.test.*`, `*.spec.*`, `*_test.*`, `test_*.*`, `conftest.py`, `*.snap`), or, anywhere else, when a credential's value or variable name carries an explicit test or placeholder marker and the value is not a random-looking provider token.
+- Test values are kept out of the counts and lists in the app, the web check and the text export, and counted as "N test or example values not reported", without values, credential context or paths.
+- A value in a test location shaped like a real key is still listed at low priority as "found in a test file": live Stripe keys, real-format AWS key IDs and GitHub tokens, other provider tokens with high-entropy bodies (no test markers, no 1234/abcd runs), privileged-role JWTs and complete private keys. Card numbers in test files stay listed unless they repeat only a few digits like documented test cards.
+- A value found both in a test file and elsewhere is listed from the other location, with the test file as one more occurrence. The web check returns listed findings before test values when its result cap applies.
+- Scope texts on the repository page, the repository guide and the README describe the separation and its limits. The guide's malformed "Ready to look?" FAQ entry is now a plain link.
+- Repository results on Paper: the priority numbers, the partial-coverage label, the API-key alert and danger labels kept colours made for the dark palettes (as low as 1.5:1). They now use darker inks on Paper (5.6:1 or more); the dark palettes are unchanged.
+
 ## v0.5.2 — 2026-10-11
 
 - Updates no longer stop with "Error opening file for writing". The updater starts the installer and ends the app straight away, and the installer could reach the program file while the process was still exiting (or while a repository check kept the bundled scanner open). The installer now closes Redaxa, `node.exe` and Git from `repository-runtime` by their exact paths through Restart Manager (asking first, stopping only an app that does not respond), then waits up to 20 seconds for each file to be replaceable. The same applies when a downloaded installer is run with Redaxa open.

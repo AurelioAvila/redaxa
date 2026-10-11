@@ -4,7 +4,7 @@ export type FindingOccurrence = {path:string;line:number;url?:string;location?:s
 export type FindingGroup = RepoFinding & {id:string;occurrences:FindingOccurrence[];occurrenceCount:number;currentCount:number;historyCount:number;historyOnly:boolean};
 export type RepositoryAssessment = {
   groups:FindingGroup[];
-  summary:{rawMatches:number;uniqueFindings:number;actionable:number;reference:number;current:number;historyOnly:number;critical:number;high:number;medium:number;low:number;duplicatesCollapsed:number};
+  summary:{rawMatches:number;uniqueFindings:number;actionable:number;reference:number;testValues:number;current:number;historyOnly:number;critical:number;high:number;medium:number;low:number;duplicatesCollapsed:number};
 };
 
 const isHistorical=(path:string)=>/\[(?:history |historical submodule |commit message |tag message )/.test(path);
@@ -18,8 +18,15 @@ export function apiKeyCandidates(groups:FindingGroup[]):FindingGroup[] { return 
  * Raw values and keyed fingerprints are excluded from text exports. */
 export function aggregateRepositoryReport(report:RepoReport):RepositoryAssessment {
   const grouped=new Map<string,FindingGroup>();
-  for(const [index,f] of report.findings.entries()) {
-    const identity=f.fingerprint??(f.value!==undefined?`${f.kind??f.label}\0${f.value}`:`unidentified-${index}`);
+  const identityOf=(f:RepoFinding,index:number)=>f.fingerprint??(f.value!==undefined?`${f.kind??f.label}\0${f.value}`:`unidentified-${index}`);
+  // Test values are counted, never listed. The same value found anywhere else
+  // is listed as usual, with the test file as one more occurrence.
+  const elsewhere=new Set(report.findings.flatMap((f,index)=>f.testValue?[]:[identityOf(f,index)]));
+  const testValues=new Set<string>();let unlisted=0;
+  const ordered=[...report.findings.entries()].sort(([a,x],[b,y])=>Number(!!x.testValue)-Number(!!y.testValue)||a-b);
+  for(const [index,f] of ordered) {
+    const identity=identityOf(f,index);
+    if(f.testValue&&!elsewhere.has(identity)){testValues.add(identity);unlisted++;continue;}
     const occurrence:FindingOccurrence={path:f.path,line:f.line,historical:isHistorical(f.path),...(f.url?{url:f.url}:{}),...(f.location?{location:f.location}:{})};
     let group=grouped.get(identity);
     if(!group){group={...f,id:'finding-'+(grouped.size+1),occurrences:[],occurrenceCount:0,currentCount:0,historyCount:0,historyOnly:true};grouped.set(identity,group);}
@@ -27,7 +34,7 @@ export function aggregateRepositoryReport(report:RepoReport):RepositoryAssessmen
     // candidate elsewhere. Prefer the highest priority representative, then HEAD.
     const promotes=f.disposition==='review'&&group.disposition==='reference';
     const sameDisposition=f.disposition===group.disposition;
-    if(promotes||(sameDisposition&&(rank[f.severity]>rank[group.severity]||rank[f.severity]===rank[group.severity]&&!occurrence.historical&&isHistorical(group.path)))){
+    if(!f.testValue&&(promotes||(sameDisposition&&(rank[f.severity]>rank[group.severity]||rank[f.severity]===rank[group.severity]&&!occurrence.historical&&isHistorical(group.path))))){
       Object.assign(group,f);
     }
     if(!group.occurrences.some(o=>o.path===occurrence.path&&o.line===occurrence.line&&o.location===occurrence.location))group.occurrences.push(occurrence);
@@ -38,7 +45,7 @@ export function aggregateRepositoryReport(report:RepoReport):RepositoryAssessmen
   const groups=[...grouped.values()].sort((a,b)=>Number(a.disposition==='reference')-Number(b.disposition==='reference')||(rank[b.severity]??0)-(rank[a.severity]??0)||Number(b.category==='credentials')-Number(a.category==='credentials')||Number(a.historyOnly)-Number(b.historyOnly)||a.path.localeCompare(b.path)||a.line-b.line);
   const review=groups.filter(g=>g.disposition==='review');
   const count=(severity:string)=>review.filter(g=>g.severity===severity).length;
-  return {groups,summary:{rawMatches:report.findings.length,uniqueFindings:groups.length,actionable:review.length,reference:groups.length-review.length,current:review.filter(g=>!g.historyOnly).length,historyOnly:review.filter(g=>g.historyOnly).length,critical:count('critical'),high:count('high'),medium:count('medium'),low:count('low'),duplicatesCollapsed:report.findings.length-groups.length}};
+  return {groups,summary:{rawMatches:report.findings.length-unlisted,uniqueFindings:groups.length,actionable:review.length,reference:groups.length-review.length,testValues:testValues.size,current:review.filter(g=>!g.historyOnly).length,historyOnly:review.filter(g=>g.historyOnly).length,critical:count('critical'),high:count('high'),medium:count('medium'),low:count('low'),duplicatesCollapsed:report.findings.length-unlisted-groups.length}};
 }
 
 /** A shareable report is redacted regardless of the screen's Show/Hide state. */
@@ -52,6 +59,7 @@ export function reportToText(report:RepoReport):string {
     `${apiKeyCandidates(groups).length} potential API keys or tokens — review these first; validity is not tested.`,
     `${s.current} present in the current snapshot; ${s.historyOnly} found only in history.`,
     `${s.rawMatches} raw matches; ${s.duplicatesCollapsed} repeated matches grouped; ${s.reference} unique informational/reference values.`,
+    `${s.testValues} test or example values not reported (values not included). Real-looking keys in test files are reported as found in a test file.`,
     'Priority describes potential impact, not a confirmed vulnerability. No credential was tested against a provider.',
     'All matched values are redacted in this export. File paths may themselves be sensitive; review before sharing.',
     ''

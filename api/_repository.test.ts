@@ -7,6 +7,7 @@ const secret = "sk_live_" + "51HtestOnlyNotARealKey0123456789abcd";
 const sha = "d".repeat(40);
 const tar = pack(); const chunks: Buffer[] = []; const collect = (async () => { for await (const c of tar) chunks.push(c); })();
 tar.entry({ name: `repo-${sha}/server.env` }, "STRIPE_SECRET_KEY=" + secret);
+tar.entry({ name: `repo-${sha}/tests/fixtures/webhook.ts` }, 'const secret = "wh-secret-test";');
 tar.entry({ name: `repo-${sha}/package-lock.json` }, JSON.stringify({ lockfileVersion: 3, packages: { "": {}, "node_modules/minimist": { version: "1.2.0" } } }));
 tar.finalize(); await collect; const archive = gzipSync(Buffer.concat(chunks));
 
@@ -33,6 +34,10 @@ assert.equal(ok.body.commit, sha);
 assert.ok(!JSON.stringify(ok.body).includes(secret), "values are never returned by the web check");
 assert.ok(ok.body.findings.some((f: any) => f.credential?.service === "Stripe" && f.url.includes(`/blob/${sha}/server.env`)));
 assert.ok(ok.body.findings.every((f: any) => !("value" in f)));
+const fixture = ok.body.findings.filter((f: any) => f.path === "tests/fixtures/webhook.ts");
+assert.ok(fixture.length === 1 && fixture[0].testValue && !fixture[0].credential, "a fixture value is returned only to be counted");
+assert.ok(!JSON.stringify(ok.body).includes("wh-secret-test"), "test values are never returned either");
+assert.equal(ok.body.findings.at(-1).testValue, true, "listed findings come before test values");
 assert.ok(ok.body.coverage.every((c: any) => c.status !== "scanned"));
 assert.equal(ok.body.dependencies.advisories[0].fixed, "1.2.6");
 assert.ok(!calls.some(u => u.startsWith("https://api.github.com/")), "no GitHub API quota is used");

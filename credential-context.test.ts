@@ -66,6 +66,8 @@ for(const value of ['sk-'+suffix,'Bearer opaqueUnattributedCredential12345']) {
 const explicit=inspectFile('.env','OPENAI_API_KEY="sk-'+suffix+'"')[0];
 assert.equal(explicit.confidence,'medium');
 assert.equal(explicit.severity,'high');
-assert.equal(inspectFile('fixtures/example.env','TOKEN=ghp_'+suffix)[0].severity,'critical','An example filename must not suppress a provider-specific credential');
+const fixtureKey=inspectFile('fixtures/example.env','TOKEN=ghp_'+suffix)[0];
+assert.equal(fixtureKey.disposition,'review','A real-looking provider key in a test folder is still listed');
+assert.equal(fixtureKey.severity,'low');assert.match(fixtureKey.label,/found in a test file$/);
 assert.equal(inspectFile('token.txt',jwt({sub:'example'}, {alg:'none'}),false,true).length,0,'Unsigned data is not presented as a signed access token');
 console.log('Precision regressions: explicit placeholders, generic signals, assignment evidence and unsigned JWTs passed.');

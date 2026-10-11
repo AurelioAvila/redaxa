@@ -377,6 +377,13 @@ html.rx-native .rx-shell .brand { display: none; }
 
 /* Dialogs, sheets and the account menu: dialogs.css, shared with the site. */
 .rx-shell.repository-page #scan { border-color: var(--theme-accent); background: var(--theme-accent); color: var(--theme-ink); }
+/* repository.css colours priorities for the dark palettes; Paper needs darker inks to keep them readable. */
+html:is(:not([data-theme]), [data-theme="paper"]) .rx-shell :is(.triage-tile.critical strong, .danger) { color: #b4232f; }
+html:is(:not([data-theme]), [data-theme="paper"]) .rx-shell :is(.triage-tile.high strong, .review-state.partial) { color: #9a4300; }
+html:is(:not([data-theme]), [data-theme="paper"]) .rx-shell .triage-tile.medium strong { color: #7a5c00; }
+html:is(:not([data-theme]), [data-theme="paper"]) .rx-shell .triage-tile.low strong { color: #3f5f7a; }
+html:is(:not([data-theme]), [data-theme="paper"]) .rx-shell .api-key-alert { border-color: #e3b4b8; background: #fbeced; }
+html:is(:not([data-theme]), [data-theme="paper"]) .rx-shell .api-key-alert :is(strong, p) { color: #8e1c27; }
 
 /* Floating install and clipboard pills sit under the page, not over it. */
 .rx-shell #pwa-install, .rx-shell #inspect-clipboard { border-color: var(--theme-strong); background: var(--card); color: var(--theme-text); }

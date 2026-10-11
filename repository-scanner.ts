@@ -7,7 +7,7 @@ import { createHmac, randomBytes } from 'node:crypto';
 import {auditDependencies,parseLockfile,LOCKFILE,type Dependency,type DependencyReport} from './repository-deps.js';
 import {credentialContext,credentialValue,jwtClaims,supabaseIssuer,type CredentialContext} from './credential-context.js';
 
-export type RepoFinding = { path:string; line:number; label:string; severity:string; category:string; masked:string; value?:string; action:string; url?:string; disposition:'review'|'reference'; reason:string; location?:string; kind?:string; fingerprint?:string; confidence?:'high'|'medium'|'low'; credential?:CredentialContext };
+export type RepoFinding = { path:string; line:number; label:string; severity:string; category:string; masked:string; value?:string; action:string; url?:string; disposition:'review'|'reference'; testValue?:true; reason:string; location?:string; kind?:string; fingerprint?:string; confidence?:'high'|'medium'|'low'; credential?:CredentialContext };
 export type FileCoverage = {path:string; status:'scanned'|'skipped'; reason:string};
 export type RepoReport = { repository:string; commit:string; scanned:number; total:number; skipped:number; partial:boolean; findings:RepoFinding[]; warnings:string[]; durationMs:number; demo:boolean; coverage:FileCoverage[]; inventoryComplete:boolean; folders:number; findingsTruncated:boolean; dependencies?:DependencyReport; deep?:{refs:number;historyVersions:number;binaryFiles:number;lfsObjects:number;submodules:number;archiveEntries:number} };
 const MAX_FILE = 10 * 1024 * 1024;
@@ -130,6 +130,65 @@ function classify(f:Finding,path:string,text:string,offset:number):{disposition:
   return {disposition:'review',reason:'Potential sensitive data. Context and authorization must be reviewed; this is not a confirmed vulnerability.'};
 }
 
+// Test, fixture and example values. In a test location (a test, spec, fixture,
+// mock, snapshot, example, sample or demo folder, or a test-named file) a match
+// is a test value unless it has the shape of a real key. Elsewhere only an
+// explicit test or placeholder marker in the value or its variable name makes
+// a credential a test value, and never for a random-looking provider token.
+// Test values are counted in the report, never listed and never carry a value.
+const TEST_DIR=/(?:^|\/)(?:tests?|__tests__|specs?|fixtures?|__fixtures__|mocks?|__mocks__|testdata|test-data|e2e|cypress|__snapshots__|snapshots|examples?|samples?|demos?)\//i;
+const TEST_FILE=/(?:^|\/)(?:[^/]+(?:\.test|\.spec|_test|-test|\.e2e)\.[a-z0-9]+|test_[^/]+\.[a-z0-9]+|conftest\.py|[^/]+\.snap)$/i;
+const TEST_MARKER=/(?:^|[^a-z0-9])(?:tests?|testing|dummy|fakes?|samples?|examples?|mock(?:ed)?|placeholder|changeme|fixtures?|foobar|x{3,})\d*(?:[^a-z0-9]|$)/i;
+// Inside a key body markers have no word boundary: sk_live_TESTabc…, …1234abcd….
+const FAKE_BODY=/test|dummy|fake|sample|example|mock|placeholder|changeme|xxxx/i;
+const words=(s:string)=>s.replace(/([a-z\d])([A-Z])/g,'$1 $2').replace(/_/g,' ');
+export function isTestPath(path:string):boolean { const p=path.replace(/^\[[^\]]*\]\/?\s*/,''); return TEST_DIR.test(p)||TEST_FILE.test(p); }
+function entropy(value:string):number {
+  const counts=new Map<string,number>();for(const c of value)counts.set(c,(counts.get(c)??0)+1);
+  let bits=0;for(const n of counts.values()){const p=n/value.length;bits-=p*Math.log2(p);}return bits;
+}
+/** Four characters in a row such as 1234 or abcd: typed, not generated. */
+function sequential(body:string):boolean {
+  const s=body.toLowerCase();let run=1;
+  for(let i=1;i<s.length;i++){run=s.charCodeAt(i)===s.charCodeAt(i-1)+1?run+1:1;if(run>=4)return true;}
+  return false;
+}
+const randomLooking=(body:string|undefined,min:number)=>!!body&&body.length>=min&&entropy(body)>=3.5&&!FAKE_BODY.test(body)&&!sequential(body)&&!/(.)\1{5,}/.test(body);
+/** A live key or a complete private key: reported even inside a test file. */
+export function liveKeyShaped(f:Pick<Finding,'kind'|'value'>):boolean {
+  if(f.kind==='privateKey')return /-----BEGIN [A-Z ]*PRIVATE KEY-----/.test(f.value)&&f.value.replace(/-----[^-]+-----|\s/g,'').length>=200;
+  if(f.kind!=='secret'&&f.kind!=='credential')return false;
+  const token=credentialValue(f.value.replace(/^(?:password|passwd|pwd|secret)\s*[:=]\s*/i,'').replace(/^["'`]|["'`]$/g,''));
+  if(randomLooking(/^(?:sk|rk)_live_([A-Za-z0-9]+)$/.exec(token)?.[1],20))return true;
+  if(/^(?:AKIA|ASIA)[A-Z0-9]{16}$/.test(token)&&!FAKE_BODY.test(token)&&!sequential(token.slice(4))&&entropy(token.slice(4))>=3)return true;
+  if(randomLooking(/^gh[pousr]_([A-Za-z0-9]{36,})$/.exec(token)?.[1],36)||randomLooking(/^github_pat_([A-Za-z0-9_]{50,})$/.exec(token)?.[1],50))return true;
+  return randomLooking(/^(?:sk-(?:proj|ant)-|xox[baprs]-|glpat-|npm_|hf_|pypi-)([A-Za-z0-9_-]+)$/.exec(token)?.[1],20);
+}
+/** A provider token format with a random-looking body, test mode included. */
+function providerShaped(f:Pick<Finding,'value'>):boolean {
+  const m=/^(?:sk-(?:proj-|ant-)|[sr]k_(?:live|test)_|sb_secret_|github_pat_|gh[pousr]_|xox[baprs]-|xapp-|npm_|pypi-|glpat-|hf_|AKIA|ASIA)(.+)$/.exec(credentialValue(f.value));
+  return !!m&&m[1].length>=16&&entropy(m[1])>=3.5;
+}
+type Classification=ReturnType<typeof classify>&{testValue?:true};
+function testValue(f:Finding,path:string,before:string,c:ReturnType<typeof classify>):Classification {
+  if(c.disposition!=='review')return c;
+  const notReported={disposition:'reference' as const,testValue:true as const,confidence:'high' as const,reason:'Test or example value, counted but not listed. Real-looking keys in test files are still reported.'};
+  if(isTestPath(path)){
+    // A privileged-role JWT is listed too: its claims, not a prefix, make it dangerous.
+    if(f.category==='credentials'&&(liveKeyShaped(f)||c.severity==='critical'))return {...c,severity:'low',label:`${c.label??f.label} · found in a test file`,reason:'Found in a test file, but shaped like a real key rather than a placeholder. '+c.reason};
+    // Documented test cards repeat a few digits (4242…, 4111…, 5555…4444); any
+    // other card number in a test file is still listed. Bank account numbers
+    // are routinely shared on invoices; in a test file they are test values.
+    if(f.kind==='card'&&new Set(f.value.replace(/\D/g,'')).size>4)return {...c,severity:'low',reason:'Found in a test file. '+c.reason};
+    return notReported;
+  }
+  if(f.category!=='credentials'||providerShaped(f)||liveKeyShaped(f))return c;
+  const value=f.value.replace(/^(?:password|passwd|pwd|secret)\s*[:=]\s*/i,'').replace(/^["'`]|["'`]$/g,'');
+  // The variable it is assigned to, e.g. TEST_DB_PASSWORD or mockSecret.
+  const name=(/([A-Za-z_][\w.-]*)["'`]?\s*[:=]?\s*["'`]?$/.exec(before)?.[1]??'')+' '+(/^([A-Za-z_][\w.-]*)\s*[:=]/.exec(f.value)?.[1]??'');
+  return TEST_MARKER.test(f.kind==='credential'?words(value):value)||TEST_MARKER.test(words(name))?notReported:c;
+}
+
 export function inspectFile(path:string,text:string,allowReveal=false,credentialsOnly=false,limit=Infinity):RepoFinding[] {
   const {findings}=inspectPrompt(text,credentialsOnly?{includePersonalData:false,includeFinancialData:false,includeCredentials:true}:undefined,true);const offsets=new Map<string,number>();
   // Line numbers by binary search over newline positions. Splitting the text
@@ -149,13 +208,14 @@ export function inspectFile(path:string,text:string,allowReveal=false,credential
     // its generated markers; those strings never appeared in the source file.
     if(offset<0)continue;
     offsets.set(f.kind,offset+f.value.length);
-    const c=classify(f,path,text,offset);
-    if(credentialsOnly&&(c.disposition==='reference'||c.label==='JWT · unsubscribe-link token'))continue;
+    const c:Classification=testValue(f,path,text.slice(Math.max(0,offset-100),offset),classify(f,path,text,offset));
+    // Test values stay in the results to be counted, even in a credentials-only check.
+    if(credentialsOnly&&!c.testValue&&(c.disposition==='reference'||c.label==='JWT · unsubscribe-link token'))continue;
     const assignment=text.slice(Math.max(0,offset-100),offset).match(/\b(OPENAI_API_KEY)["']?\s*[:=]\s*["']?$/)?.[1]??'';
     const credential=f.category==='credentials'?credentialContext(f.kind,f.value,c.label??f.label,c.disposition==='reference',assignment):undefined;
     const identity=f.kind==='credential'?f.value.replace(/^(?:password|passwd|pwd|secret)\s*[:=]\s*/i,'').replace(/^["']|["']$/g,''):f.kind==='email'?f.value.toLowerCase():f.kind==='secret'?credentialValue(f.value):f.value;
     const fingerprint=createHmac('sha256',fingerprintKey).update(f.kind+'\0'+identity).digest('hex');
-    out.push({path,line:lineOf(offset),label:f.label,category:f.category,masked:'[REDACTED]',kind:f.kind,fingerprint,...(credential?{credential}:{}),...(allowReveal?{value:f.value}:{}),...c,severity:c.disposition==='reference'?'info':c.severity??f.severity,
+    out.push({path,line:lineOf(offset),label:f.label,category:f.category,masked:'[REDACTED]',kind:f.kind,fingerprint,...(credential&&!c.testValue?{credential}:{}),...(allowReveal&&!c.testValue?{value:f.value}:{}),...c,severity:c.disposition==='reference'?'info':c.severity??f.severity,
       action:credential?.guidance??(c.disposition==='reference'?'Informational or recognized reference. Kept for transparency; excluded from the review count.':'Check whether this data is intentional and authorized for public sharing. Remove or anonymize it if needed.')});
   }
   return out;
