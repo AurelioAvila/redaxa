@@ -186,7 +186,8 @@ html.rx-native .rx-shell .brand { display: none; }
   border: 1px solid var(--field-border); border-radius: var(--r-sm);
   background: var(--field); color: var(--theme-text); font-size: 13.5px;
 }
-.rx-shell select:focus-visible, .rx-shell input:focus-visible, .rx-shell textarea:focus-visible { outline: 2px solid var(--theme-accent); outline-offset: 1px; }
+.rx-shell input:not([type="checkbox"], [type="radio"], [type="range"]):focus-visible, .rx-shell select:focus-visible, .rx-shell textarea:focus-visible { border-color: var(--theme-accent); outline: none; box-shadow: 0 0 0 1px var(--theme-accent); }
+.rx-shell input[type="checkbox"]:focus-visible, .rx-shell input[type="radio"]:focus-visible { outline: 2px solid var(--theme-accent); outline-offset: 1px; }
 .rx-shell .term-editor { display: block; width: 100%; min-height: 150px; resize: vertical; font: 13.5px/1.7 var(--font-mono); }
 .rx-shell .field-label { display: block; margin: 0 0 8px; color: var(--theme-muted); font-size: 13px; }
 .rx-shell .empty { margin: 0; padding: 16px; border: 1px dashed var(--theme-strong); border-radius: var(--r); background: transparent; color: var(--theme-muted); font-size: 13.5px; line-height: 1.55; }
