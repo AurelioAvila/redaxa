@@ -21,7 +21,7 @@
   "checking": {"message": "Wird geprüft…"},
   "accessFree": {"message": "Kostenlos und unbegrenzt. Kein Konto nötig."},
   "accessAccount": {"message": "Mit den geschützten Begriffen und Teamregeln Ihres Workspace."},
-  "autoCheck": {"message": "Vor dem Senden automatisch prüfen auf ChatGPT, Claude, Gemini und Perplexity"},
+  "autoCheck": {"message": "Auf ChatGPT, Claude, Gemini und Perplexity vor dem Senden automatisch prüfen"},
   "redactedLabel": {"message": "Geschwärzte Fassung"},
   "copyResult": {"message": "Geschwärzten Text kopieren"},
   "proTitle": {"message": "Machen Sie es zum Teil Ihrer Arbeit"},
@@ -36,7 +36,7 @@
   "planBusiness": {"message": "Business · Pro-Funktionen inklusive"},
   "planPro": {"message": "Pro-Workspace"},
   "planManage": {"message": "Plan im Workspace verwalten"},
-  "lookForButton": {"message": "Achten Sie auf die Redaxa-Schaltfläche auf ChatGPT, Claude, Gemini und Perplexity."},
+  "lookForButton": {"message": "Die Redaxa-Schaltfläche finden Sie auf ChatGPT, Claude, Gemini und Perplexity."},
   "openWorkspace": {"message": "Workspace öffnen"},
   "signOut": {"message": "Abmelden"},
   "emailLabel": {"message": "E-Mail"},
@@ -102,7 +102,7 @@
   "fixExplain": {"message": "Jeder Treffer wird zu einem Platzhalter wie [EMAIL]. Nichts wird gesendet, bis Sie erneut senden."},
   "sendAnyway": {"message": "Trotzdem senden"},
   "promptChanged": {"message": "Ihr Prompt hat sich geändert. Prüfen Sie ihn erneut, bevor Sie ihn senden oder ersetzen."},
-  "replacedToast": {"message": "Geschwärzte Fassung eingesetzt. Prüfen Sie sie, dann senden."},
+  "replacedToast": {"message": "Geschwärzte Fassung eingesetzt. Prüfen Sie sie und senden Sie dann."},
   "pasteToast": {"message": "Geschwärzte Fassung kopiert. Fügen Sie sie (Strg+V oder ⌘V) anstelle Ihres Prompts ein."},
   "editorBlocked": {"message": "Dieser Editor hat die Änderung blockiert. Fügen Sie Ihren Prompt im Redaxa-Popup ein und kopieren Sie die geschwärzte Fassung."},
   "kind_email": {"message": "E-Mail-Adresse"},
@@ -148,5 +148,6 @@
   "tooLongTitle": {"message": "Zu lang für eine Prüfung"},
   "tooLongBody": {"message": "Diese Nachricht ist länger als 20.000 Zeichen, deshalb hat Redaxa sie nicht geprüft. Teilen Sie sie auf oder senden Sie sie ohne Prüfung."},
   "tooLongAccount": {"message": "Diese Nachricht ist länger als 20.000 Zeichen, deshalb hat Redaxa sie nicht geprüft. Teilen Sie sie auf und senden Sie die Teile einzeln."},
-  "sendUnchecked": {"message": "Ohne Prüfung senden"}
+  "sendUnchecked": {"message": "Ohne Prüfung senden"},
+  "reloadAfterUpdate": {"message": "Redaxa wurde aktualisiert und prüft diesen Tab nicht mehr. Laden Sie die Seite neu, um die Prüfungen wieder einzuschalten."}
 }

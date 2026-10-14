@@ -85,7 +85,7 @@
   "pageCheck": {"message": "Check with Redaxa"},
   "close": {"message": "Close"},
   "typeFirst": {"message": "Type a prompt first, then check it."},
-  "checkingBeforeSend": {"message": "Checking before this sends…"},
+  "checkingBeforeSend": {"message": "Checking before sending…"},
   "checkFailedShort": {"message": "Check failed."},
   "notSent": {"message": "Your prompt has not been sent. Close this notice and retry the check."},
   "couldNotVerify": {"message": "Redaxa could not verify your account. Retry when the service is available."},
@@ -148,5 +148,6 @@
   "tooLongTitle": {"message": "Too long to check"},
   "tooLongBody": {"message": "This message is longer than 20,000 characters, so Redaxa did not check it. Split it into parts, or send it without a check."},
   "tooLongAccount": {"message": "This message is longer than 20,000 characters, so Redaxa did not check it. Split it into parts, then send each one."},
-  "sendUnchecked": {"message": "Send without checking"}
+  "sendUnchecked": {"message": "Send without checking"},
+  "reloadAfterUpdate": {"message": "Redaxa was updated, so this tab is no longer checked. Reload the page to turn checks back on."}
 }

@@ -27,7 +27,8 @@ assert.equal(inspectPrompt('npm_'+'aB3dE5gH7jK9mN1pQ3sT5vW7yZ9bC1dF3h').findings
 assert.equal(inspectPrompt('secret = '+pat).findings.filter(f=>f.category==='credentials').length,1,'No second finding for generated redaction marker');
 
 const fullScan = inspectPrompt("Contact maria@example.com, call +39 333 123 4567, server 192.168.1.20, password=demo-secret-123.");
-assert.deepEqual(fullScan.findings.map((finding) => finding.kind), ["email", "phone", "ip", "credential"]);
+// Findings come back in rule order: the configuration-secret rule runs before phone and IP.
+assert.deepEqual(fullScan.findings.map((finding) => finding.kind), ["email", "credential", "phone", "ip"]);
 assert.match(fullScan.redactedText, /\[EMAIL\]/);
 assert.match(fullScan.redactedText, /\[IP ADDRESS\]/);
 assert.match(fullScan.redactedText, /password=\[REDACTED\]/);

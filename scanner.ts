@@ -30,7 +30,7 @@ export interface ScanOptions {
   customTerms?: string[];
 }
 
-type Rule = Omit<Finding, "value"> & { pattern: RegExp; validate?: (value: string, groups?: string[]) => boolean };
+type Rule = Omit<Finding, "value"> & { pattern: RegExp; validate?: (value: string, groups?: string[], keepReferences?: boolean) => boolean };
 
 function luhnValid(raw: string): boolean {
   const digits = raw.replace(/[ -]/g, "");
@@ -103,7 +103,8 @@ function phoneValid(raw: string): boolean {
 
 function emailValid(raw: string): boolean {
   const [local, domain] = raw.split('@');
-  return raw.length <= 254 && local.length <= 64 && domain.length <= 253 &&
+  // git@github.com and the like are SSH remotes, not mailboxes.
+  return local.toLowerCase() !== 'git' && raw.length <= 254 && local.length <= 64 && domain.length <= 253 &&
     domain.split('.').every(label => label.length <= 63);
 }
 
@@ -132,12 +133,34 @@ function nameValid(raw: string): boolean {
 // trusted when the following token actually looks credential-shaped -- has a
 // digit, or mixes case -- so ordinary sentences like "password reset" or
 // "password is required" aren't misread as a leaked secret.
-function credentialValid(_value: string, groups: string[] = []): boolean {
+// Repository checks keep references ("password: string") to count them as such;
+// a prompt check drops them.
+function credentialValid(_value: string, groups: string[] = [], keepReferences = false): boolean {
   const [, separator, token] = groups;
   if (!token) return false;
-  if (/^\[(?:SECRET|PRIVATE KEY|EMAIL|REDACTED)\]/.test(token)) return false;
+  if (/^\[(?:SECRET|PRIVATE KEY|EMAIL|REDACTED)\]/.test(token) || (!keepReferences && notALiteral(token))) return false;
   if (separator && /[:=]/.test(separator)) return true;
   return /\d/.test(token) || (/[a-z]/.test(token) && /[A-Z]/.test(token));
+}
+
+// Values that name, type or point to a secret instead of containing one:
+// "password: string", "${DB_PASSWORD}", "process.env.API_KEY", "<token>", "****".
+function notALiteral(value: string): boolean {
+  return /^(?:string|number|boolean|bool|str|int|any|object|null|none|nil|undefined|true|false|required|optional|hidden|await|new|function|lambda|self|this)\b/i.test(value) ||
+    /^[A-Za-z_$][\w$]*(?:\??\.[A-Za-z_$]|\(|\[|::)/.test(value) ||
+    /^[$%<{[(*]|process\.env|import\.meta|os\.environ|getenv|\.\.\.|your[_-]|example|changeme|placeholder|redacted/i.test(value);
+}
+
+// "DB_PASSWORD=...", "JWT_SECRET: ...", "apiKey": "...": the name says the value is
+// a secret. Only literal values with a letter and a digit count, never code
+// (calls, indexing, templates) or a URL, whose password has its own rule.
+function configSecretValid(value: string): boolean {
+  return value.length <= 512 && /[A-Za-z]/.test(value) && /\d/.test(value) && !/[()[\]{}<>]/.test(value) &&
+    !/^[a-z][a-z0-9+.-]*:\/\//i.test(value) && !/^#[0-9a-f]{3,8}$/i.test(value) && !notALiteral(value);
+}
+
+function urlPasswordValid(value: string): boolean {
+  return !notALiteral(value) && !/^(?:pass(?:word)?|pwd|secret)$/i.test(value);
 }
 
 export function apiCredentialReference(value: string): string | undefined {
@@ -150,12 +173,19 @@ export function apiCredentialReference(value: string): string | undefined {
     if(claims.payload.role==='anon'&&supabaseIssuer(claims.payload.iss))return 'Claims match a public Supabase anon token. Signature and database policies are not verified.';
   }
   if (/^pk_(?:live|test)_/.test(value)) return 'Publishable-key prefix: a public client identifier, not a secret API key.';
-  const payload = value.replace(/^(?:sk-(?:proj-|ant-api\d+-)?|[spr]k_(?:live|test)_|sb_(?:secret|publishable)_|github_pat_|gh[pousr]_|AIza|AKIA|ASIA|xox[baprs]-|xapp-|npm_|pypi-AgEIcHlwaS5vcmc|glpat-|hf_)/, '');
-  if (/^(?:x{8,}|your[_-](?:api[_-])?(?:key|token|secret)(?:[_-]here)?|replace[_-]?me|placeholder)$/i.test(payload.replace(/(?<=x)_(?=x)/gi, ''))) return 'Explicit credential placeholder. Example filenames alone do not dismiss credentials.';
+  const payload = value.replace(/^(?:sk-(?:proj-|ant-api\d+-)?|[spr]k_(?:live|test)_|sb_(?:secret|publishable)_|github_pat_|gh[pousr]_|AIza|AKIA|ASIA|xox[baprs]-|xapp-|npm_|pypi-AgEIcHlwaS5vcmc|glpat-|hf_|whsec_|SG\.|https:\/\/hooks\.slack\.com\/services\/\w+\/\w+\/)/, '');
+  if (/^(?:x{8,}|your[_-](?:api[_-])?(?:key|token|secret)(?:[_-]here)?|replace[_-]?me|placeholder)$/i.test(payload.replace(/(?<=x)[_.](?=x)/gi, ''))) return 'Explicit credential placeholder. Example filenames alone do not dismiss credentials.';
   return undefined;
 }
 
 const rules: Rule[] = [
+  // A password inside a URL ("postgres://app:Xk82jf@db.internal/main"). Runs
+  // before email, which would otherwise read "Xk82jf@db.example.com" as an
+  // address. Only the password is replaced; scheme, user and host stay readable.
+  {
+    kind: "credential", category: "credentials", severity: "critical", label: "Password in a URL", replacement: "[REDACTED]",
+    pattern: /(?<=\b[a-z][a-z0-9+.-]{1,30}:\/\/[^\s:@\/?#]{1,128}:)[^\s@\/?#]{1,256}(?=@)/gi, validate: urlPasswordValid
+  },
   // Match complete dot-atom addresses, not fragments of malformed tokens.
   // A lone @, consecutive dots, invalid domain labels and npm versions are not email.
   // No new start right after an apostrophe inside a local part: each restart
@@ -174,16 +204,24 @@ const rules: Rule[] = [
   {
     kind: "secret", category: "credentials", severity: "critical", label: "API key or token", replacement: "[SECRET]",
     validate: value => !apiCredentialReference(value),
-    pattern: /(?<![A-Za-z0-9_-])(?:sk-[A-Za-z0-9_-]{16,}|[spr]k_(?:live|test)_[A-Za-z0-9]{10,}|sb_(?:secret|publishable)_[A-Za-z0-9_-]{20,}|github_pat_[A-Za-z0-9_]{82}|gh[pousr]_[A-Za-z0-9_]{20,}|AIza[\w-]{20,}|(?:AKIA|ASIA)[0-9A-Z]{16}|(?:xox[baprs]|xapp)-[A-Za-z0-9-]{10,}|npm_[A-Za-z0-9]{36}|pypi-AgEIcHlwaS5vcmc[A-Za-z0-9_-]{50,}|glpat-[A-Za-z0-9_-]{20,}|hf_[A-Za-z0-9]{34}|eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}|[Bb][Ee][Aa][Rr][Ee][Rr][ \t]+[A-Za-z0-9._-]{15,}[A-Za-z0-9_-])(?![A-Za-z0-9_-])/g
+    pattern: /(?<![A-Za-z0-9_-])(?:sk-[A-Za-z0-9_-]{16,}|[spr]k_(?:live|test)_[A-Za-z0-9]{10,}|sb_(?:secret|publishable)_[A-Za-z0-9_-]{20,}|github_pat_[A-Za-z0-9_]{82}|gh[pousr]_[A-Za-z0-9_]{20,}|AIza[\w-]{20,}|(?:AKIA|ASIA)[0-9A-Z]{16}|(?:xox[baprs]|xapp)-[A-Za-z0-9-]{10,}|npm_[A-Za-z0-9]{36}|pypi-AgEIcHlwaS5vcmc[A-Za-z0-9_-]{50,}|glpat-[A-Za-z0-9_-]{20,}|hf_[A-Za-z0-9]{34}|whsec_[A-Za-z0-9]{32,}|SG\.[A-Za-z0-9_-]{22}\.[A-Za-z0-9_-]{43}|https:\/\/hooks\.slack\.com\/services\/T[A-Z0-9]{8,}\/B[A-Z0-9]{8,}\/[A-Za-z0-9]{24}|eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}|[Bb][Ee][Aa][Rr][Ee][Rr][ \t]+[A-Za-z0-9._-]{15,}[A-Za-z0-9_-])(?![A-Za-z0-9_-])/g
   },
   {
     kind: "secret", category: "credentials", severity: "critical", label: "AWS secret access key", replacement: "[SECRET]",
     validate: awsSecretValid,
-    pattern: /(?<=\baws_secret_access_key["']?[ \t]*[:=][ \t]*["']?|\bsecret_access_key["']?[ \t]*[:=][ \t]*["']?)[A-Za-z0-9/+]{40}(?![A-Za-z0-9/+=])/gi
+    // aws_secret_access_key, AWS_SECRET_KEY, SecretAccessKey (CLI and STS JSON), secretAccessKey (SDK config).
+    pattern: /(?<=\b(?:aws_?)?secret_?access_?key["']?[ \t]*[:=][ \t]*["']?|\baws_?secret_?key["']?[ \t]*[:=][ \t]*["']?)[A-Za-z0-9/+]{40}(?![A-Za-z0-9/+=])/gi
+  },
+  // Secrets assigned by name in .env files and config: DB_PASSWORD=..., JWT_SECRET: ...,
+  // "apiKey": "...". Known key formats above keep their service; this catches the rest.
+  {
+    kind: "credential", category: "credentials", severity: "critical", label: "Secret in a configuration value", replacement: "[REDACTED]",
+    pattern: /(?<=\b[A-Za-z0-9_.-]*(?:secret|token|passw(?:or)?d|pwd|[_-]pass|api[_-]?key|secret[_-]?key|access[_-]?key|private[_-]?key|auth[_-]?key)["']?[ \t]*[:=][ \t]*["']?)[^\s"'`,;&]{8,}/gi,
+    validate: configSecretValid
   },
   { kind: "privateKey", category: "credentials", severity: "critical",  label: "Private key", replacement: "[PRIVATE KEY]", pattern: /-----(BEGIN|END) ([A-Z ]{0,64}PRIVATE KEY)-----/g },
   { kind: "niNumber", category: "personal", severity: "high", label: "UK National Insurance number", replacement: "[NI NUMBER]", pattern: /\b[A-CEGHJ-PR-TW-Z][A-CEGHJ-NPR-TW-Z](?:[ ]?\d{2}){3}[ ]?[A-D]\b/g, validate: niValid },
-  { kind: "card", category: "financial", severity: "high",  label: "Card number", replacement: "[CARD]", pattern: /\b(?:\d[ -]*?){13,16}\b/g, validate: luhnValid },
+  { kind: "card", category: "financial", severity: "high",  label: "Card number", replacement: "[CARD]", pattern: /\b[2-6](?:[ -]*?\d){12,15}\b/g, validate: luhnValid }, // card numbers start with 2-6; 13-digit millisecond timestamps start with 1
   { kind: "crypto", category: "financial", severity: "high",  label: "Crypto wallet address", replacement: "[WALLET ADDRESS]", pattern: /\b(?:0x[a-fA-F0-9]{40}|bc1[ac-hj-np-z02-9]{25,59}|[13][a-km-zA-HJ-NP-Z1-9]{25,34})\b/g },
   { kind: "iban", category: "financial", severity: "high",  label: "IBAN", replacement: "[IBAN]", pattern: /\b[A-Z]{2}\d{2}(?:[ ]?[A-Z0-9]){11,30}\b/g, validate: ibanValid },
   { kind: "fiscalCode", category: "personal", severity: "high",  label: "Italian fiscal code", replacement: "[FISCAL CODE]", pattern: /\b[A-Z]{6}\d{2}[A-Z]\d{2}[A-Z]\d{3}[A-Z]\b/gi, validate: fiscalCodeValid },
@@ -204,7 +242,7 @@ const rules: Rule[] = [
   { kind: "ip", category: "personal", severity: "low",  label: "IPv4 address", replacement: "[IP ADDRESS]", pattern: /\b(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)\b/g },
   {
     kind: "credential", category: "credentials", severity: "critical", label: "Password or credential", replacement: "$1$2[REDACTED]",
-    pattern: /\b(password|passwd|pwd|secret)\b(\s*[:=]\s*|\s+)([^\s,;]{4,})/gi,
+    pattern: /\b(password|passwd|pwd|secret)\b(\s*[:=]\s*|\s+(?:is\s+|was\s+)?)([^\s,;]{4,})/gi,
     validate: credentialValid
   }
 ];
@@ -238,16 +276,23 @@ export function inspectPrompt(text: string, options: ScanOptions = { includePers
     } else if (rule.validate) {
       const validate = rule.validate;
       redactedText = redactedText.replace(rule.pattern, (...args: unknown[]) => {
-        const value = args[0] as string;
+        let value = args[0] as string;
         // String#replace passes (match, ...capture groups, offset, fullString)
         // to the callback -- drop the trailing offset/fullString to leave just
         // the capture groups, so rules can validate/substitute using them.
         const groups = args.slice(1, -2) as string[];
-        if (!(retainCredentialReferences && rule.kind === 'secret') && !validate(value, groups)) return value;
+        // A greedy IBAN match runs into the next upper-case word ("... 0130 00 BIC
+        // COBADEFF"): drop trailing letter-only words until the checksum holds.
+        let rest = "";
+        if (rule.kind === "iban") for (let word: RegExpExecArray | null; !validate(value) && (word = / [A-Z]+$/.exec(value));) {
+          rest = word[0] + rest;
+          value = value.slice(0, word.index);
+        }
+        if (!(retainCredentialReferences && rule.kind === 'secret') && !validate(value, groups, retainCredentialReferences)) return value + rest;
         findings.push({ kind: rule.kind, category: rule.category, severity: rule.severity, label: rule.label, value, replacement: rule.replacement });
-        return rule.replacement.includes("$")
+        return (rule.replacement.includes("$")
           ? rule.replacement.replace(/\$(\d)/g, (_, i) => groups[Number(i) - 1] ?? "")
-          : rule.replacement;
+          : rule.replacement) + rest;
       });
     } else {
       const found = [...redactedText.matchAll(rule.pattern)].map((match) => match[0]);
@@ -264,11 +309,12 @@ export function inspectPrompt(text: string, options: ScanOptions = { includePers
     });
   }
   // One rule's matches arrive in text order, so each search resumes where that
-  // kind's previous match ended instead of rescanning from the start.
+  // rule's previous match ended instead of rescanning from the start. Labels are
+  // unique per rule; several rules share a kind.
   const cursors=new Map<string,number>();
   for(const f of findings)if(f.category==='credentials'){
-    const at=text.indexOf(f.value,cursors.get(f.kind)??0);
-    if(at>=0)cursors.set(f.kind,at+f.value.length);
+    const at=text.indexOf(f.value,cursors.get(f.label)??0);
+    if(at>=0)cursors.set(f.label,at+f.value.length);
     const before=at<0?'':text.slice(Math.max(0,at-100),at);
     const assignment=before.match(/\b(OPENAI_API_KEY)["']?\s*[:=]\s*["']?$/)?.[1]??'';
     f.credential=credentialContext(f.kind,f.value,f.label,!!apiCredentialReference(f.value),assignment);

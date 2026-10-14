@@ -92,6 +92,37 @@ clean('ref BG123456C', 'BG prefix is never issued');
 clean('NI AB 12 34 56 C', 'placeholder digits 123456');
 clean('NI JG 10 37 59 E', 'suffix must be A to D');
 
+// AWS secret keys under the names the CLI, STS and SDKs print.
+found('"SecretAccessKey": "' + awsSecret + '"', 'secret', 'AWS CLI / STS JSON');
+found('credentials: { secretAccessKey: "' + awsSecret + '" }', 'secret', 'AWS SDK config');
+found('aws_secret_key=' + awsSecret, 'secret', 'aws_secret_key');
+
+// Secrets named by their setting in .env files and config, and passwords in URLs.
+const redacted = text => inspectPrompt(text).redactedText;
+for (const [text, safe] of [
+  ['DB_PASSWORD=Xk82jf' + 'Lq0', 'DB_PASSWORD=[REDACTED]'],
+  ['JWT_SECRET: 4f9a8b7c' + '6d5e3f2a1b0c', 'JWT_SECRET: [REDACTED]'],
+  ['"apiKey": "a1b2c3d4' + 'e5f6g7h8"', '"apiKey": "[REDACTED]"'],
+  ['TWILIO_AUTH_TOKEN=5f4dcc3b5aa7' + '65d61d8327deb882cf99', 'TWILIO_AUTH_TOKEN=[REDACTED]'],
+  ['postgres://app:pa55' + 'word@localhost/db', 'postgres://app:[REDACTED]@localhost/db'],
+  ['mysql://admin:S3cret' + 'Pass@db.example.com:3306/app', 'mysql://admin:[REDACTED]@db.example.com:3306/app'],
+  ['The password is Summer' + '2024!', 'The password is [REDACTED]'],
+  ['GET /v1/items?api_key=abc123' + 'def456&page=2', 'GET /v1/items?api_key=[REDACTED]&page=2']
+]) assert.equal(redacted(text), safe, text);
+assert.equal(service('STRIPE_WEBHOOK_SECRET=whsec_' + 'a1B2c3D4e5F6g7H8i9J0k1L2m3N4o5P6'), 'Stripe');
+assert.equal(service('SENDGRID_API_KEY=SG.' + 'aBcDeFgHiJkLmNoPqRsTuV.aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789abcdefg'), 'SendGrid');
+assert.equal(service('https://hooks.slack.com/services/' + 'T024BE7LD/B01234ABCDE/a1B2c3D4e5F6g7H8i9J0k1L2'), 'Slack');
+for (const text of ['interface User { email: string; password: string }', 'const apiKey = process.env.OPENAI_API_KEY;',
+  "SECRET_KEY = os.environ['SECRET_KEY']", "password = request.form['password']", 'const password = await bcrypt.hash(input, 10)',
+  'max_tokens=4096', "tokenizer = AutoTokenizer.from_pretrained('gpt2')", 'TOKEN_URL=https://oauth2.googleapis.com/token',
+  'DB_PASSWORD=${DB_PASSWORD}', 'api_key: <your-api-key>', 'PASSWORD_MIN_LENGTH=12', 'postgres://user:password@localhost/db',
+  'git clone git@github.com:owner/repo.git', '--accent-token: #a1b2c3d4;', 'https://hooks.slack.com/services/T00000000/B00000000/' + 'X'.repeat(24)]) clean(text, text);
+
+// An IBAN followed by its BIC, and numbers that only look like cards.
+found('IBAN DE89 3704 0044 0532 0130 00 BIC COBADEFFXXX', 'iban', 'IBAN followed by BIC');
+assert.equal(redacted('Pay to IT60 X054 2811 1010 0000 0123 456 ASAP'), 'Pay to [IBAN] ASAP');
+clean('createdAt: 1728912345670', 'millisecond timestamp that passes Luhn');
+
 // Checksums: fiscal codes with a wrong check letter are not flagged.
 clean('codice fiscale RSSMRA85T10A562T', 'fiscal code with a wrong check letter');
 

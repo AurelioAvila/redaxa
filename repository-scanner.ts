@@ -91,6 +91,8 @@ function classify(f:Finding,path:string,text:string,offset:number):{disposition:
       if(/^(?:<[^<>]{1,40}>|\{\{[^{}]{1,40}\}\}|secret|password|passwd|pass|pwd|some[-_ ]?password|my[-_ ]?password|mypassword|test|qwerty|letmein)$/i.test(value))return reference('Placeholder or dictionary-word value used in documentation, not a usable credential.');
       // Inside a documentation comment of a source file (JSDoc @example, //, #).
       if(/\.(?:[cm]?[jt]sx?|py|rs|go|java|kt|rb|php|cs|swift)$/i.test(path)&&/^\s*(?:\*|\/\/|#(?!!))/.test(line))return {disposition:'review',severity:'low',confidence:'low',reason:'Password-like value inside a code comment or documentation example. Usually a placeholder; confirm it is not a real credential.'};
+      // These two rules match the value alone, already checked to be a literal.
+      if(f.label==='Password in a URL'||f.label==='Secret in a configuration value')return {disposition:'review',severity:exampleFile?'medium':'high',confidence:exampleFile?'low':'medium',reason:f.label==='Password in a URL'?'Password inside a connection or service URL. Confirm it is not a working credential; no login or validity test is performed.':'Literal value assigned to a secret, token, key or password setting. Confirm its context; validity is not tested.'};
       const match=/^(?:password|passwd|pwd|secret)(\s*[:=]\s*|\s+)(.*)$/i.exec(f.value);
       const token=match?.[2]??value;
       const unquoted=token.replace(/^["'`]/,'').replace(/["'`)}\]]+$/,'');
@@ -186,7 +188,8 @@ function testValue(f:Finding,path:string,before:string,c:ReturnType<typeof class
   if(f.category!=='credentials'||providerShaped(f)||liveKeyShaped(f))return c;
   const value=f.value.replace(/^(?:password|passwd|pwd|secret)\s*[:=]\s*/i,'').replace(/^["'`]|["'`]$/g,'');
   // The variable it is assigned to, e.g. TEST_DB_PASSWORD or mockSecret.
-  const name=(/([A-Za-z_][\w.-]*)["'`]?\s*[:=]?\s*["'`]?$/.exec(before)?.[1]??'')+' '+(/^([A-Za-z_][\w.-]*)\s*[:=]/.exec(f.value)?.[1]??'');
+  // A value-only match inside a nested assignment (mockSecret = "secret = …") also counts the outer name.
+  const name=(/([A-Za-z_][\w.-]*)["'`]?\s*[:=]?\s*["'`]?$/.exec(before)?.[1]??'')+' '+(/^([A-Za-z_][\w.-]*)\s*[:=]/.exec(f.value)?.[1]??'')+' '+(/([A-Za-z_][\w.-]*)["'`]?\s*[:=]\s*["'`]?[A-Za-z_][\w.-]*["'`]?\s*[:=]\s*["'`]?$/.exec(before)?.[1]??'');
   return TEST_MARKER.test(f.kind==='credential'?words(value):value)||TEST_MARKER.test(words(name))?notReported:c;
 }
 
@@ -203,12 +206,12 @@ export function inspectFile(path:string,text:string,allowReveal=false,credential
   for(const f of ordered){
     if(out.length>=limit)break;
     // One rule's matches arrive in text order: resume after the previous match
-    // of the same kind rather than searching from the start each time.
-    const offset=text.indexOf(f.value,offsets.get(f.kind)??0);
+    // of the same rule (labels are unique per rule; kinds are shared).
+    const offset=text.indexOf(f.value,offsets.get(f.label)??0);
     // inspectPrompt progressively redacts text. A later generic rule can match
     // its generated markers; those strings never appeared in the source file.
     if(offset<0)continue;
-    offsets.set(f.kind,offset+f.value.length);
+    offsets.set(f.label,offset+f.value.length);
     const c:Classification=testValue(f,path,text.slice(Math.max(0,offset-100),offset),classify(f,path,text,offset));
     // Test values stay in the results to be counted, even in a credentials-only check.
     if(credentialsOnly&&!c.testValue&&(c.disposition==='reference'||c.label==='JWT · unsubscribe-link token'))continue;

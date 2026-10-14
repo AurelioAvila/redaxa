@@ -1,4 +1,18 @@
-# Extension 0.4.11
+# Extension 0.4.12
+
+Catches more of what people actually paste. Checks now find secrets assigned by name in `.env` files and configuration (`DB_PASSWORD=…`, `JWT_SECRET: …`, `"apiKey": "…"`), passwords inside connection URLs such as `postgres://app:…@db.internal/main` (only the password is replaced, so the host stays readable), Stripe webhook secrets, SendGrid API keys, Slack webhook URLs, and AWS secret access keys under the names the AWS CLI and SDKs print (`SecretAccessKey`, `secretAccessKey`, `aws_secret_key`). "The password is …" is caught as well as "password: …". An IBAN followed by its BIC or another word in capitals is no longer missed; before, part of it could be read as a phone number and the rest left in the text.
+
+Fewer false alarms in code: type names and expressions such as `password: string`, `process.env.API_KEY`, `request.form['password']` or `await …`, millisecond timestamps that happen to pass the card checksum, and `git@github.com` remotes are no longer flagged.
+
+Sign-in kept out of reach of web pages. The scripts that run on the AI sites can no longer read the extension's storage, where a signed-in session lives; they receive only what they need, the automatic-check switch and the plan status, without the account email. Turning automatic checks on or off in the popup now applies at once to tabs that are already open.
+
+Ctrl+Enter and ⌘+Enter are kept when Redaxa sends a checked message on, so a site set to send with Ctrl+Enter no longer receives a plain Enter, which it would read as a new line. After an update, a tab that was already open says once that it needs a reload to be checked again, instead of letting messages through without a word.
+
+Includes the 0.4.11 changes, which were not submitted on their own. No new permissions, telemetry or dependencies. Free checks still run inside the browser and send nothing.
+
+Verification: `npm test`, then `python scripts/qa/extension-e2e.py` on the staged package in a temporary Brave profile, three consecutive clean runs. The end-to-end check now also confirms in the browser that the content script cannot read extension storage and that the off switch reaches a tab that is already open. Its earlier intermittent failures had two causes, both fixed: it waited for any dialog, so on a busy machine it read the "Checking…" notice shown for a check slower than 300 ms as the result (the Italian dialog-title failures), and it looked for the welcome tab only among Playwright's pages, which can miss a tab the extension opens while Playwright is still attaching; the browser's own target list is now the evidence.
+
+## Previous extension 0.4.11 (not submitted on its own)
 
 The bundled detection engine matches Redaxa 0.5.4. Checks now find AWS secret access keys next to an `aws_secret_access_key` or `secret_access_key` assignment (a bare 40-character string, AWS's documented example key and filler values are not flagged) and UK National Insurance numbers, shown as "UK National Insurance number" (prefixes that are never issued, such as QQ and BG, and placeholder digits like 123456 are ignored). An Italian fiscal code needs a correct check letter, so a mistyped or invented code is no longer reported. Free checks still run inside the browser and send nothing. No new permissions, telemetry or dependencies. This version includes the 0.4.10 changes.
 
