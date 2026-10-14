@@ -124,7 +124,9 @@ for (const template of redaxa) {
   const target = join(folder, template.file);
   if (check) { if (!existsSync(target) || lf(readFileSync(target, "utf8")) !== html) { console.error(`stale: ${template.file}`); stale++; } }
   else writeFileSync(target, html);
-  subjects.push(`| \`${template.file}\` | ${template.dashboard} | \`${subject.replace(/\|/g, "\\|")}\` |`);
+  // A subject with a pipe would break the table; none has one, so refuse rather than escape.
+  if (subject.includes("|") || subject.includes("`")) throw new Error(`${template.file}: subject cannot go in the table`);
+  subjects.push(`| \`${template.file}\` | ${template.dashboard} | \`${subject}\` |`);
 }
 const table = join(folder, "SUBJECTS.md");
 const tableText = `# Subject fields\n\nPaste each value into the Subject field of the matching dashboard template.\n\n${subjects.join("\n")}\n`;
