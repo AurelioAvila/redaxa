@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.5.5 — 2026-10-14
+
+- Detection in the Windows app's local repository check now matches the service: secrets assigned by name in `.env` and configuration files ("Secret in a configuration value"), passwords inside connection URLs ("Password in a URL", only the password is masked), Stripe webhook signing secrets, SendGrid API keys, Slack incoming webhook URLs, and AWS secret access keys under the CLI and SDK names (`SecretAccessKey`, `secretAccessKey`, `aws_secret_key`). Both new kinds are listed for review at high priority (medium in example files) and are never tested for validity.
+- Fewer false alarms: type names and expressions (`password: string`, `process.env.API_KEY`), `git@github.com` remotes and 13-digit millisecond timestamps are no longer reported. "The password is …" is caught, and an IBAN followed by its BIC is no longer missed. Code-comment passwords read "Usually a placeholder".
+- Sign-in: a 401 from the API on a token the local clock still considers valid triggers one server-side session check and a single retry with the refreshed token, instead of signing the user out (desktop app; the extension part ships with its next store submission).
+- Text fields draw one focus ring (accent border and a 1px shadow) instead of a border plus an offset outline.
+
 ## v0.5.4 — 2026-10-11
 
 - Detection: AWS secret access keys (found beside an `aws_secret_access_key` assignment, never as a bare 40-character string; AWS's documented example key and filler values are ignored), UK National Insurance numbers (unissued prefixes such as QQ and BG, and placeholder digits like 123456, are ignored), and a check-letter test for Italian fiscal codes, so a mistyped code no longer counts as one.
