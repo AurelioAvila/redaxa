@@ -204,14 +204,14 @@ async function announceSubscription(userId: string, subscription: Stripe.Subscri
 
 /** Invoice outcomes move the subscription (trial converted, renewal failed,
  *  retry succeeded): re-read it and apply the same rules, then say what
- *  happened to trials sold under the one-per-person rule. */
+ *  happened: a trial's first charge, or any failed renewal. */
 async function handleInvoice(type: string, invoice: Stripe.Invoice): Promise<void> {
   const subscriptionId = invoiceSubscriptionId(invoice);
   if (!subscriptionId) return;
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
   const userId = await syncSubscription(subscription);
-  if (!userId || !isOurTrial(subscription)) return;
-  if (type === "invoice.paid" && endsTrial(invoice, subscription)) {
+  if (!userId) return;
+  if (type === "invoice.paid" && isOurTrial(subscription) && endsTrial(invoice, subscription)) {
     const period = invoice.lines.data.find((line) => line.period?.start === subscription.trial_end)?.period;
     await mail("trial_paid", userId, subscription, `redaxa-trial-paid/${invoice.id}`, {
       charge: { amount: invoice.amount_paid, currency: invoice.currency },
@@ -219,7 +219,10 @@ async function handleInvoice(type: string, invoice: Stripe.Invoice): Promise<voi
     });
   }
   // Once per invoice: Stripe retries a failed charge and reports each attempt.
-  if (type === "invoice.payment_failed" && (invoice.attempt_count ?? 1) <= 1 && !["active", "trialing"].includes(subscription.status)) {
+  // Every failed renewal, not only a trial's first charge: past_due already
+  // turns Pro off (hasActiveEntitlement), so the customer must hear why.
+  const renewal = isOurTrial(subscription) || invoice.billing_reason === "subscription_cycle";
+  if (type === "invoice.payment_failed" && renewal && (invoice.attempt_count ?? 1) <= 1 && !["active", "trialing"].includes(subscription.status)) {
     await mail("payment_failed", userId, subscription, `redaxa-payment-failed/${invoice.id}`, {
       charge: { amount: invoice.amount_due, currency: invoice.currency },
       failure: await failureOf(invoice),

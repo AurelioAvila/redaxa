@@ -25,7 +25,7 @@ const sql = value => new Promise((ok, reject) => {
 let startupAttempted = false;
 try {
   console.log('Initializing disposable PostgreSQL cluster.');
-  await exec(binary('initdb'), ['-D', data, '-U', 'postgres', '-A', 'trust', '--no-locale', '-E', 'UTF8'], {windowsHide:true,timeout:30_000});
+  await exec(binary('initdb'), ['-D', data, '-U', 'postgres', '-A', 'trust', '--no-locale', '-E', 'UTF8', '--no-sync'], {windowsHide:true,timeout:30_000});
   startupAttempted = true;
   try {
     // pg_ctl supplies the restricted Windows token required by PostgreSQL.
