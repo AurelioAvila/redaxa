@@ -25,7 +25,7 @@ html[data-theme]:not([data-theme="paper"]) :is(.rx-shell, .redaxa-landing) .ps-a
   background: var(--field); color: var(--theme-text); font: 500 14px/1.3 var(--font-text);
 }
 :is(.rx-shell, .redaxa-landing) .ps-auth-field input::placeholder { color: var(--theme-muted); opacity: 1; }
-:is(.rx-shell, .redaxa-landing) .ps-auth-field input:focus { border-color: var(--theme-accent); outline: 2px solid color-mix(in srgb, var(--theme-accent) 35%, transparent); outline-offset: 1px; }
+:is(.rx-shell, .redaxa-landing) .ps-auth-field input:focus { border-color: var(--theme-accent); outline: 0; box-shadow: 0 0 0 1px var(--theme-accent); }
 :is(.rx-shell, .redaxa-landing) .ps-auth-field input[aria-invalid="true"] { border-color: var(--sev-critical); }
 :is(.rx-shell, .redaxa-landing) .ps-auth-field input:disabled { opacity: .6; cursor: not-allowed; }
 :is(.rx-shell, .redaxa-landing) .ps-auth-submit { min-height: 44px; border: 0; border-radius: 8px; background: var(--theme-accent); color: var(--theme-ink); font: 650 14px/1 var(--font-text); }

@@ -50,7 +50,7 @@
 .redaxa-landing .sc-safe code,.redaxa-landing .safe-output pre {background:var(--theme-bg);color:var(--theme-text);border-color:var(--theme-strong);font-size:13px}
 .redaxa-landing .scanner textarea {background:var(--theme-bg);border-color:var(--theme-muted);color:var(--theme-text);caret-color:var(--theme-accent);font-size:16px;line-height:1.7}
 .redaxa-landing .scanner textarea::placeholder,.redaxa-workspace .editor::placeholder {color:var(--theme-muted);opacity:1}
-.redaxa-landing .scanner textarea:focus,.redaxa-workspace .editor:focus {border-color:var(--theme-accent);outline:2px solid var(--theme-accent);outline-offset:3px}
+.redaxa-landing .scanner textarea:focus,.redaxa-workspace .editor:focus {border-color:var(--theme-accent);outline:0;box-shadow:0 0 0 1px var(--theme-accent)}
 .redaxa-landing .scan-area label {color:var(--theme-text);font-size:14px}
 .redaxa-landing .protect {background:var(--theme-inset)}
 .redaxa-landing .protect-item h2 {font-weight:650}
@@ -277,7 +277,7 @@
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-account-actions button:hover{filter:brightness(1.1)}
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-account-message{font-size:13px;color:var(--theme-muted);line-height:1.5}
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-account-message:empty{display:none}
-:is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-auth-field input:focus{outline:2px solid var(--theme-accent);outline-offset:2px;border-color:var(--theme-accent)}
+:is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-auth-field input:focus{outline:0;box-shadow:0 0 0 1px var(--theme-accent);border-color:var(--theme-accent)}
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-auth-remember input{accent-color:var(--theme-accent)}
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-auth-toggle-pw{color:var(--theme-muted)}
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-auth-toggle-pw:hover{color:var(--theme-text)}
@@ -429,6 +429,7 @@
 /* Keep the operating surfaces coherent through drawers, results and native chrome. */
 :is(.repository-page,.redaxa-workspace) :is(.ps-account-sheet,.ps-account-menu,.drawer){background:var(--theme-surface)}
 :is(.repository-page,.redaxa-workspace) :is(button,a,input,textarea,select):focus-visible{outline:2px solid var(--theme-accent);outline-offset:3px}
+:is(.repository-page,.redaxa-workspace) :is(input:not([type=checkbox],[type=radio],[type=range]),textarea,select):focus-visible{outline:0;border-color:var(--theme-accent);box-shadow:0 0 0 1px var(--theme-accent)}
 .redaxa-workspace .drawer h2{font-weight:570;letter-spacing:-.03em}
 .redaxa-workspace .plan-card h3{font-size:22px;font-weight:570;letter-spacing:-.025em}
 .redaxa-workspace .plans-drawer .plan-card{border-radius:12px;background:var(--theme-inset)}
