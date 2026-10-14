@@ -41,10 +41,13 @@ async function clearSession() {
   await chrome.storage.local.remove(SESSION_KEY);
 }
 
-async function accessToken() {
+// `force` skips the local expiry check: the API refused a token this computer's
+// clock still considers valid (clock set back after sign-in, or a session
+// revoked elsewhere), so the server decides instead of the clock.
+async function accessToken(force = false) {
   const session = await readSession();
   if (!session) return null;
-  if (session.expires_at > Date.now() + 30_000) return session.access_token;
+  if (!force && session.expires_at > Date.now() + 30_000) return session.access_token;
   const response = await fetch(`${API_BASE}/api/auth/session`, {
     headers: { Authorization: `Bearer ${session.access_token}`, "X-Refresh-Token": session.refresh_token },
     signal: AbortSignal.timeout(15_000)
@@ -69,9 +72,10 @@ async function accessToken() {
 
 async function apiRequest(path, body, method = "POST", { timeoutMs = 15_000, retries = 1, requireAccount = false } = {}) {
   const headers = { "Content-Type": "application/json" };
-  const token = await accessToken();
+  let token = await accessToken();
   if (requireAccount && !token) throw new Error(t("errSignInAgain"));
   if (token) headers.Authorization = `Bearer ${token}`;
+  let renewed = false;
   // A hung request would leave the user staring at "Checking…" forever, and a
   // single transient network blip shouldn't read as "Redaxa is broken":
   // hard timeout + one retry on pure network failures (never on HTTP errors,
@@ -90,6 +94,13 @@ async function apiRequest(path, body, method = "POST", { timeoutMs = 15_000, ret
       if (!response.ok) throw Object.assign(new Error(payload.error ?? t("errRequestFailed")), { httpStatus: response.status });
       return payload;
     } catch (error) {
+      // One retry with a token the server just confirmed or refreshed; a 401
+      // means nothing was processed, so sending again is safe.
+      if (error.httpStatus === 401 && token && !renewed) {
+        renewed = true;
+        const fresh = await accessToken(true).catch(() => null);
+        if (fresh && fresh !== token) { token = fresh; headers.Authorization = `Bearer ${fresh}`; attempt--; continue; }
+      }
       if (error.httpStatus || attempt >= retries) {
         throw error.name === "AbortError" ? new Error(t("errTimeout")) : error;
       }
