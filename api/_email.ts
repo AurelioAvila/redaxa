@@ -335,8 +335,8 @@ function subscriptionEmail(input: SubscriptionEmailInput): { subject: string; ht
       { h2: "Three things to try first" },
       { list: firstSteps, numbered: true },
       { note: trialing
-          ? `Cancel before ${renewsOn ?? "the trial ends"} from Your account, under Subscription & invoices, and nothing is charged. Stripe emails a receipt when the first payment is taken.`
-          : "Change or cancel the plan from Your account, under Subscription & invoices. Stripe sends the payment receipt separately.",
+          ? `Cancel before ${renewsOn ?? "the trial ends"} from Your account, under Subscription & invoices, and nothing is charged.`
+          : "Change or cancel the plan from Your account, under Subscription & invoices.",
         title: "Managing the plan" },
     ],
   });
