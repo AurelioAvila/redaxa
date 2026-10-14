@@ -38,4 +38,46 @@ for (const surface of ['desktop', 'extension']) {
     if(test.expected==='new-access') assert.equal(session.refresh_token,'new-refresh');
   }
 }
-console.log('Desktop and extension: near-expiry sessions, rotated tokens, transient failures, malformed responses and invalid sessions passed.');
+// A clock moved back after sign-in makes a dead token look alive: after the API
+// answers 401, `force` asks the server instead of trusting the local expiry.
+for (const surface of ['desktop', 'extension']) {
+  for (const force of [false, true]) {
+    let session={email:'fixture@example.test',access_token:'old-access',refresh_token:'old-refresh',expires_at:Date.now()+3_600_000};
+    let calls=0;
+    const fetcher=async () => { calls++; return {ok:true,status:200,json:async()=>({email:'fixture@example.test',access_token:'new-access',refresh_token:'new-refresh',expires_in:3600})}; };
+    const context=vm.createContext({AbortSignal,AbortController,URL,setTimeout,clearTimeout,console,
+      fetch:fetcher,authFetch:fetcher,apiBase:'',importScripts(){},
+      readDesktopSession:async()=>session,saveDesktopSession:async value=>{session=value;},clearDesktopSession:async()=>{},
+      chrome:{storage:{local:{get:async()=>({redaxa_session:session}),set:async value=>{session=value.redaxa_session;},remove:async()=>{}}},runtime:{onMessage:{addListener(){}},onInstalled:{addListener(){}}},i18n:{getMessage:key=>key}}
+    });
+    vm.runInContext(surface==='desktop'?desktopCode:extensionCode,context);
+    const token=await vm.runInContext(`${surface==='desktop'?'desktopAccessToken':'accessToken'}(${force})`,context);
+    assert.equal(token,force?'new-access':'old-access',`${surface}: force=${force}`);
+    assert.equal(calls,force?1:0,`${surface}: a token the clock considers valid is only re-checked when forced`);
+  }
+}
+// A request refused with 401 is sent once more with the server-confirmed token, never twice with the same one.
+const retryFunction = desktop.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === 'authorizedFetch');
+const retryCode = ts.transpileModule(retryFunction.getText(desktop), {compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
+for (const surface of ['desktop', 'extension']) {
+  for (const refreshed of [true, false]) {
+    let session={email:'fixture@example.test',access_token:'old-access',refresh_token:'old-refresh',expires_at:Date.now()+3_600_000};
+    const sent=[];
+    const fetcher=async (url,init) => {
+      if (String(url).endsWith('/api/auth/session')) return {ok:true,status:200,json:async()=>refreshed
+        ? {email:'fixture@example.test',access_token:'new-access',refresh_token:'new-refresh',expires_in:3600} : {email:'fixture@example.test'}};
+      const auth=(init.headers.Authorization ?? init.headers.authorization);sent.push(auth);
+      return auth==='Bearer new-access' ? {ok:true,status:200,json:async()=>({ok:true})} : {ok:false,status:401,json:async()=>({error:'UNAUTHORIZED'})};
+    };
+    const context=vm.createContext({AbortSignal,AbortController,URL,setTimeout,clearTimeout,console,
+      fetch:fetcher,authFetch:fetcher,apiBase:'',importScripts(){},isTauri:()=>true,
+      readDesktopSession:async()=>session,saveDesktopSession:async value=>{session=value;},clearDesktopSession:async()=>{},
+      chrome:{storage:{local:{get:async()=>({redaxa_session:session}),set:async value=>{session=value.redaxa_session;},remove:async()=>{}}},runtime:{onMessage:{addListener(){}},onInstalled:{addListener(){}}},i18n:{getMessage:key=>key}}
+    });
+    vm.runInContext(surface==='desktop'?desktopCode+retryCode:extensionCode,context);
+    const call=surface==='desktop'?"authorizedFetch('/api/account',{method:'GET',headers:{}}).then(r=>r.status)":"apiRequest('/api/account',undefined,'GET').then(()=>200,e=>e.httpStatus)";
+    assert.equal(await vm.runInContext(call,context),refreshed?200:401,`${surface}: refreshed=${refreshed}`);
+    assert.deepEqual(sent,refreshed?['Bearer old-access','Bearer new-access']:['Bearer old-access'],`${surface}: no blind resend`);
+  }
+}
+console.log('Desktop and extension: near-expiry sessions, rotated tokens, transient failures, malformed responses, invalid sessions, forced re-checks and the single retry after a 401 passed.');

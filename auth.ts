@@ -95,11 +95,14 @@ async function clearDesktopSession(): Promise<void> {
 function cachedDesktopSession(): DesktopSession | null { return sessionCache ?? null; }
 
 // Recheck tokens near expiry; the server may confirm the existing token before
-// it expires, or return a refreshed pair after expiry.
-async function desktopAccessToken(): Promise<string | null> {
+// it expires, or return a refreshed pair after expiry. `force` skips the local
+// expiry check: the API refused a token this computer's clock still considers
+// valid (a clock set back after sign-in, or a session revoked elsewhere), so
+// the server decides instead of the clock.
+async function desktopAccessToken(force = false): Promise<string | null> {
   const session = await readDesktopSession();
   if (!session) return null;
-  if (session.expires_at > Date.now() + 30_000) return session.access_token;
+  if (!force && session.expires_at > Date.now() + 30_000) return session.access_token;
   const response = await authFetch(`${apiBase}/api/auth/session`, {
     headers: { Authorization: `Bearer ${session.access_token}`, "X-Refresh-Token": session.refresh_token },
     signal: AbortSignal.timeout(15_000)
@@ -142,13 +145,26 @@ export async function repositoryProgress(scanId:string,signal:AbortSignal):Promi
   return fetch('/api/repository-progress',{headers:{'X-Redaxa-Preview':'1','X-Redaxa-Scan':scanId},signal}).then(r=>r.json());
 }
 
+/**
+ * One authenticated request. In the desktop app a 401 gets one more try with a
+ * token the server has just confirmed or refreshed: the saved expiry is measured
+ * on this computer's clock, and a clock moved back after sign-in made a dead
+ * token look alive, so the app signed people out although their session could
+ * still be refreshed. A 401 means nothing was processed, so the retry is safe.
+ */
+async function authorizedFetch(path: string, init: RequestInit & { headers: Record<string, string> }): Promise<Response> {
+  const token = isTauri() ? await desktopAccessToken() : null;
+  if (token) init.headers.Authorization = `Bearer ${token}`;
+  const response = await authFetch(`${apiBase}${path}`, init);
+  if (response.status !== 401 || !token) return response;
+  const fresh = await desktopAccessToken(true).catch(() => null);
+  if (!fresh || fresh === token) return response;
+  init.headers.Authorization = `Bearer ${fresh}`;
+  return authFetch(`${apiBase}${path}`, init);
+}
+
 async function apiRequest(path: string, body?: Record<string, unknown>, method: "GET" | "POST" = "POST"): Promise<Record<string, unknown>> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (isTauri()) {
-    const token = await desktopAccessToken();
-    if (token) headers.Authorization = `Bearer ${token}`;
-  }
-  const response = await authFetch(`${apiBase}${path}`, { method, headers, body: method === "GET" ? undefined : JSON.stringify(body ?? {}) });
+  const response = await authorizedFetch(path, { method, headers: { "Content-Type": "application/json" }, body: method === "GET" ? undefined : JSON.stringify(body ?? {}) });
   const payload: unknown = await response.json().catch(() => ({}));
   if (!response.ok) {
     const message = typeof payload === "object" && payload !== null && "error" in payload ? String((payload as { error?: unknown }).error) : "We could not complete that request.";
@@ -167,12 +183,7 @@ async function apiRequest(path: string, body?: Record<string, unknown>, method: 
  * quietly fail in the other.
  */
 async function apiDownload(path: string): Promise<Blob> {
-  const headers: Record<string, string> = {};
-  if (isTauri()) {
-    const token = await desktopAccessToken();
-    if (token) headers.Authorization = `Bearer ${token}`;
-  }
-  const response = await authFetch(`${apiBase}${path}`, { method: "GET", headers });
+  const response = await authorizedFetch(path, { method: "GET", headers: {} });
   if (!response.ok) {
     const payload: unknown = await response.json().catch(() => ({}));
     const message = typeof payload === "object" && payload !== null && "error" in payload ? String((payload as { error?: unknown }).error) : "We could not prepare that download.";
@@ -458,13 +469,8 @@ function publishAccountState(state: AccountState | null): void {
 async function refreshEntitlement(): Promise<void> {
   if (!currentEmail) { accountActive = false; publishAccountState(null); return; }
   try {
-    const headers: Record<string, string> = {};
-    if (isTauri()) {
-      const token = await desktopAccessToken();
-      if (!token) { accountActive = false; publishAccountState(null); return; }
-      headers.Authorization = `Bearer ${token}`;
-    }
-    const response = await authFetch(`${apiBase}/api/account`, { headers, cache: "no-store", signal: AbortSignal.timeout(15_000) });
+    if (isTauri() && !(await desktopAccessToken())) { accountActive = false; publishAccountState(null); return; }
+    const response = await authorizedFetch("/api/account", { headers: {}, cache: "no-store", signal: AbortSignal.timeout(15_000) });
     if (!response.ok) { accountActive = false; publishAccountState(null); return; }
     const payload = await response.json() as { active?: boolean; status?: string | null; currentPeriodEnd?: string | null; plan?: string | null; repositoryAccess?: boolean; settings?: SyncedSettings | null };
     accountActive = Boolean(payload.active);
