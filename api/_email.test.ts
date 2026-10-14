@@ -85,7 +85,7 @@ assert.equal(formatChargedAmount(null, "eur", "month"), null);
   const html = welcomeHtml("Giulia", "https://redaxa.example");
   const text = welcomeText("Giulia", "https://redaxa.example");
   assert.ok(html.startsWith("<!doctype html>"));
-  assert.ok(html.includes('<html lang="en" dir="ltr">'));
+  assert.ok(html.includes('<html lang="en" dir="ltr"'));
   assert.ok(html.includes('<table lang="en" dir="ltr" role="presentation"'));
   assert.ok(html.includes("Your account is confirmed, Giulia."));
   assert.ok(html.includes("display:none"), "an inbox preview line, or clients invent one");
