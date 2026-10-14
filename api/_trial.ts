@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import type Stripe from "stripe";
 import { stripe, supabaseService, type BillingAccount } from "./_billing.js";
 
@@ -60,8 +59,9 @@ export function normalizeEmail(raw: string): string {
 }
 
 /** Only this hash of the address is kept for the trial rule, never the address. */
-export function emailHash(email: string): string {
-  return createHash("sha256").update(normalizeEmail(email)).digest("hex");
+export async function emailHash(email: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(normalizeEmail(email)));
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 type SubscriptionLike = { status: string; metadata?: Record<string, string> | null; cancellation_details?: { comment?: string | null } | null };
@@ -113,7 +113,7 @@ async function rpc<T>(name: string, body: Record<string, unknown>): Promise<T> {
 
 /** Nobody with this account or this mailbox has had the trial yet. */
 export async function trialAvailable(userId: string, email: string): Promise<boolean> {
-  return (await rpc<boolean>("redaxa_trial_available", { p_user_id: userId, p_email_hash: emailHash(email) })) === true;
+  return (await rpc<boolean>("redaxa_trial_available", { p_user_id: userId, p_email_hash: await emailHash(email) })) === true;
 }
 
 /** Whether a new checkout may carry the trial. The account must never have
@@ -131,7 +131,7 @@ export async function claimTrial(claim: { subscriptionId: string; userId: string
   return (await rpc<boolean>("claim_redaxa_trial", {
     p_subscription_id: claim.subscriptionId,
     p_user_id: claim.userId,
-    p_email_hash: emailHash(claim.email),
+    p_email_hash: await emailHash(claim.email),
     p_card_fingerprint: claim.fingerprint,
     p_trial_end: claim.trialEnd ? new Date(claim.trialEnd * 1000).toISOString() : null,
   })) === true;

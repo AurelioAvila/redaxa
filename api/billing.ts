@@ -138,7 +138,23 @@ export default async function handler(request: RequestLike, response: ResponseLi
       return;
     }
 
-    const account = await reserveCheckout(user.id);
+    let account;
+    try {
+      account = await reserveCheckout(user.id);
+    } catch (error) {
+      // Changing one's mind (Subscribe now, back, Start trial) is the normal
+      // path for clients that offer the choice: the checkout still open is
+      // closed and replaced, so only the latest one can be paid. Clients from
+      // before the choice keep the ten-minute wait they know.
+      if (!(error instanceof Error && error.message === "CHECKOUT_IN_PROGRESS") || startTrial === undefined) throw error;
+      const held = await accountFor(user.id);
+      if (held?.stripe_customer_id) {
+        const open = await stripe.checkout.sessions.list({ customer: held.stripe_customer_id, status: "open", limit: 10 });
+        for (const session of open.data) if (session.metadata?.redaxa_user_id === user.id) await stripe.checkout.sessions.expire(session.id);
+      }
+      await releaseCheckout(user.id);
+      account = await reserveCheckout(user.id);
+    }
     let customerId = account.stripe_customer_id;
     try {
       if (!customerId) {

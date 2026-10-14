@@ -32,8 +32,8 @@ const { default: account } = await import("./account.js");
 // --- One trial per mailbox: the same Gmail inbox written differently is one person.
 assert.equal(trial.normalizeEmail("  Mario.Rossi+redaxa@GoogleMail.com "), "mariorossi@gmail.com");
 assert.equal(trial.normalizeEmail("ann.lee+x@example.com"), "ann.lee@example.com", "dots count outside Gmail");
-assert.equal(trial.emailHash("m.ario.rossi@gmail.com"), trial.emailHash("mariorossi+again@googlemail.com"));
-assert.match(trial.emailHash("a@b.c"), /^[0-9a-f]{64}$/);
+assert.equal(await trial.emailHash("m.ario.rossi@gmail.com"), await trial.emailHash("mariorossi+again@googlemail.com"));
+assert.match(await trial.emailHash("a@b.c"), /^[0-9a-f]{64}$/);
 
 // --- States the apps draw; anything unknown reads as blocked, never as Pro.
 assert.deepEqual(trial.stateOf("trialing"), { state: "trialing", blockedReason: "none" });
@@ -57,6 +57,7 @@ const db = {
   claims: [] as Row[],
   users: new Map<string, string>(),
   calls: [] as Array<{ method: string; url: string; body?: Row }>,
+  locked: false,
 };
 function resetDb(): void { db.accounts.clear(); db.claims = []; db.users.clear(); db.calls = []; }
 const json = (value: unknown, status = 200) => new Response(JSON.stringify(value), { status, headers: { "Content-Type": "application/json" } });
@@ -75,6 +76,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
   if (url.includes("/rpc/claim_stripe_event")) return json("claimed");
   if (url.includes("/rpc/complete_stripe_event")) return json(null);
   if (url.includes("/rpc/reserve_billing_checkout")) {
+    if (db.locked) { db.locked = false; return json({ message: "A checkout session is already being prepared" }, 400); }
     const id = String(body?.p_user_id);
     const row = db.accounts.get(id) ?? { user_id: id, stripe_customer_id: "cus_fixture", has_used_trial: false, subscription_status: null };
     db.accounts.set(id, row);
@@ -113,11 +115,14 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
 }) as typeof fetch;
 
 const sessions: Row[] = [];
+const expired: string[] = [];
 const cancelled: Array<{ id: string; comment?: string }> = [];
 const subscriptions = new Map<string, Row>();
 const s = stripe as any;
 s.checkout.sessions.create = async (params: Row) => { sessions.push(params); return { url: "https://checkout.stripe.test/fixture" }; };
 s.customers.create = async () => ({ id: "cus_fixture" });
+s.checkout.sessions.list = async () => ({ data: [{ id: "cs_mine", metadata: { redaxa_user_id: "user-a" } }, { id: "cs_other", metadata: { redaxa_user_id: "someone-else" } }] });
+s.checkout.sessions.expire = async (id: string) => { expired.push(id); return {}; };
 s.customers.retrieve = async () => ({ id: "cus_fixture", email: "giulia@example.test", name: "Giulia Rossi" });
 s.paymentMethods.retrieve = async (id: string) => ({ id, card: { fingerprint: `fp_${id}` } });
 s.subscriptions.retrieve = async (id: string) => subscriptions.get(id);
@@ -198,12 +203,20 @@ resetDb();
   assert.equal(direct.params.subscription_data.metadata.trial, undefined);
   assert.equal(direct.params.payment_method_collection, undefined, "Subscribe now: an ordinary subscription, charged at once");
   assert.equal(direct.res.body.trial, false);
+  // Changing one's mind with a checkout still open replaces it; old clients keep the wait.
+  db.locked = true;
+  const again = await checkout(id, { plan: "personal", interval: "monthly", start_trial: true });
+  assert.equal(again.params.subscription_data.trial_period_days, 3);
+  assert.deepEqual(expired, ["cs_mine"], "only this account's open checkout is closed");
+  db.locked = true;
+  await checkout(id, { plan: "personal", interval: "monthly" }, 429);
+  db.locked = false;
   // Windows app 0.5.5 and older: seven days, under the same rule.
   const legacy = await checkout(id, { plan: "personal", interval: "monthly" });
   assert.equal(legacy.params.subscription_data.trial_period_days, 7);
   assert.equal(legacy.params.subscription_data.metadata.trial, "7d");
   // Another account on the same Gmail inbox, once the first trial is claimed.
-  db.claims.push({ subscription_id: "sub_a", user_id: id, email_hash: trial.emailHash("giulia.rossi@gmail.com"), card_fingerprint: "fp_x", trial_end: null, reminded_for: null });
+  db.claims.push({ subscription_id: "sub_a", user_id: id, email_hash: await trial.emailHash("giulia.rossi@gmail.com"), card_fingerprint: "fp_x", trial_end: null, reminded_for: null });
   const twin = newUser("user-a-twin", "GiuliaRossi+2@googlemail.com");
   assert.equal((await checkout(twin, { plan: "personal", interval: "monthly", start_trial: true }, 409)).res.body.code, "trial_unavailable");
   assert.equal((await checkout(twin, { plan: "personal", interval: "monthly" })).params.subscription_data.trial_period_days, undefined, "no trial for an old client either");
@@ -295,7 +308,7 @@ resetDb(); clearMails(); cancelled.length = 0;
   assert.equal(db.accounts.get("user-c")!.subscription_status, "trialing");
   assert.equal(db.claims.length, 1);
   assert.equal(db.claims[0].card_fingerprint, "fp_pm_user-c");
-  assert.equal(db.claims[0].email_hash, trial.emailHash("c@example.test"));
+  assert.equal(db.claims[0].email_hash, await trial.emailHash("c@example.test"));
   assert.equal(await syncSubscription(sub), "user-c", "a replayed event keeps its own claim");
   await deliver("customer.subscription.created", sub);
   const started = mails().find((m) => m.startsWith("Pro is on for 3 days, Giulia."));
