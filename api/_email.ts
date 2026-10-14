@@ -1,7 +1,7 @@
 /**
  * Every email Redaxa sends itself, in one layout: the Paper palette with its
- * copper accent (the site's default), and Ink & Copper for readers whose mail
- * app is dark. The Supabase Auth templates are generated from the same
+ * copper accent, the site's own identity, pinned so a dark mail app does not
+ * invert it. The Supabase Auth templates are generated from the same
  * renderer (scripts/build-auth-email-templates.ts), so a confirmation link and
  * a subscription receipt look like they came from the same product.
  *
@@ -76,52 +76,52 @@ export function subscriptionSubject(trialing: boolean): string {
   return trialing ? "Your Redaxa trial has started" : "Your Redaxa subscription is confirmed";
 }
 
-// Redaxa emails, design kit v3: one continuous graphite-teal composition, no white anywhere. A teal
-// hero carries the mark, the kind of message, the title and the intro; three 6 px bands step it down
-// into the body; sections alternate two teal tints; steps and facts sit on raised panels; a teal
-// "moment" band states the number that matters next to a block of redaction bars (the signature);
-// the footer closes near-black with the bars again. The palette is already dark, so dark mode pins it
-// rather than inverting it. Contrast: ink on card 12.9:1, muted on card 8.4:1, copper ink on copper 8.6:1.
-const P = { page: "#10252d", card: "#193740", alt: "#142e37", panel: "#1e424d", line: "#34525b", ink: "#eef5f4", muted: "#b6cccd", soft: "#d7e4e4", copper: "#ffb184", copperInk: "#3c2119", night: "#0b1a20", hero: "#1b4450", foot: "#8fa9ab" };
-const D = P;
-const SANS = "font-family:Inter,Bahnschrift,'Segoe UI',Helvetica,Arial,sans-serif;";
-const MONO = "font-family:Consolas,'SFMono-Regular',Menlo,'Courier New',monospace;";
+// Redaxa emails, design kit v4 "Paper & copper": the product's own identity, with the tokens of the
+// live site's CSS. A 4 px copper rule; an ink header with the mark, the wordmark, one small-caps
+// eyebrow, the title and the intro; paper sections where facts sit in white cards on a fixed label
+// grid and steps are hairline rows; one copper band (the moment); a help panel on a copper rule; the
+// footer outside the card, on the page colour. Nothing is a gradient or a decoration. The scheme is
+// declared light and every surface is pinned for Apple Mail and Outlook.com, so no client inverts the
+// paper. Contrast: copper on paper 5.6:1, muted on paper 6.8:1, white on copper 6.0:1.
+const P = { page: "#f2f0ea", card: "#f7f6f2", white: "#ffffff", line: "#e3dfd5", rule: "#d9d4c8", ink: "#1b1724", muted: "#5a5466", copper: "#a3471d", paper: "#f7f6f2", headMuted: "#c5bfcf", headText: "#e4e0ea", onCopper: "#f8e8df" };
+const SANS = "font-family:'Segoe UI','Helvetica Neue',Helvetica,Arial,sans-serif;";
+const MONO = "font-family:Consolas,Menlo,'Courier New',monospace;";
 
 export type EmailKind = "account" | "security" | "billing" | "welcome" | "internal";
 const KIND_LABEL: Record<EmailKind, string> = { account: "Account", security: "Security notice", billing: "Billing", welcome: "Welcome", internal: "Team notice" };
 
-/** The signature: redaction bars, the wink of the Lock Pup mark, as a line of blacked-out text. */
-function redactionBars(widths: number[], colours: string[], height = 8): string {
-  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>${widths.map((width, i) =>
-    `<td style="padding:0 ${i === widths.length - 1 ? 0 : 7}px 0 0;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td width="${width}" height="${height}" bgcolor="${colours[i % colours.length]}" style="width:${width}px;height:${height}px;font-size:0;line-height:0;border-radius:${height / 2}px;background:${colours[i % colours.length]};">&nbsp;</td></tr></table></td>`).join("")}</tr></table>`;
-}
-
-/** A content block. Strings are plain text; the renderer escapes them. The first kicker, h1 and p
- *  open the message in the hero; the rest fill the sections below it. */
-export type Block =
+/** A content block. Strings are plain text; the renderer escapes them. The kicker, the h1 and the
+ *  first p open the message in the header; the rest fill the sections below it. `text` replaces the
+ *  block's line in the plain-text part ("" leaves it out). */
+export type Block = (
   | { kicker: string }
   | { h1: string }
-  | { h2: string }
+  /** A section label; it opens a new section, on the darker paper when `alt`. */
+  | { h2: string; alt?: boolean }
   | { p: string; muted?: boolean }
   | { note: string; title?: string }
-  | { rows: Array<[string, string]>; /** The last row is the total: printed on copper. */ total?: boolean }
+  /** Label, value and, optionally, the value as the text part should read it. */
+  | { rows: Array<[string, string, string?]>; /** The last row is the key row: copper, on the darker paper. */ total?: boolean }
   | { list: string[]; numbered?: boolean }
-  | { button: { href: string; label: string; secondary?: boolean } }
+  | { button: { href: string; label: string } }
   | { code: string }
   | { link: { label: string; href: string } }
   | { security: [string, string] }
-  | { moment: { kicker: string; big: string; text: string } };
+  /** A sample prompt as Redaxa shows it: plain text, and values flagged as copper bars of the given length. */
+  | { checked: Array<[string, number?]> }
+  | { moment: { kicker: string; big: string; text: string } }
+) & { text?: string };
 
 export type EmailInput = {
   subject: string;
-  /** Sets the label in the hero. */
+  /** Sets the header eyebrow when no kicker does. */
   kind?: EmailKind;
   /** The line an inbox shows next to the subject. */
   preheader: string;
   blocks: Block[];
   /** Why the reader got this message. */
   footer: string;
-  /** The help block at the bottom: a question the reader may have, and what to send. */
+  /** The help panel at the bottom: a question the reader may have, and what to send. */
   help?: [string, string];
   /** Security notices carry nothing clickable at all: whoever reads one is
    *  not necessarily the person who acted, and a link there is the exact
@@ -129,192 +129,217 @@ export type EmailInput = {
   noLinks?: boolean;
 };
 
-/** The kit's bulletproof button: VML for Outlook's Word engine, a padded link everywhere else. */
-function button(href: string, label: string): string {
-  const width = Math.min(520, Math.round(label.length * 9) + 64);
-  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" class="btn" style="margin:6px 0 24px;"><tr><td class="btn-cell" align="center" bgcolor="${P.copper}" style="border-radius:10px;background:${P.copper};">` +
-    `<!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${escapeHtml(href)}" style="height:50px;v-text-anchor:middle;width:${width}px;" arcsize="20%" stroke="f" fillcolor="${P.copper}"><w:anchorlock/><center style="color:${P.copperInk};font-family:Arial,sans-serif;font-size:16px;font-weight:700;">${escapeHtml(label)}</center></v:roundrect><![endif]-->` +
-    `<!--[if !mso]><!--><a class="btn-a" href="${escapeHtml(href)}" style="display:inline-block;padding:15px 30px;${SANS}font-size:16px;line-height:20px;font-weight:700;color:${P.copperInk};text-decoration:none;border-radius:10px;background:${P.copper};">${escapeHtml(label)}</a><!--<![endif]--></td></tr></table>`;
+const cap = (value: string): string => value.charAt(0).toUpperCase() + value.slice(1);
+
+/** The bulletproof button: VML for Outlook's Word engine, a padded link everywhere else. */
+function button(href: string, label: string, top: number): string {
+  const e = escapeHtml;
+  const width = Math.min(520, Math.max(180, Math.round(label.length * 10) + 30));
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" class="btn" style="margin:${top}px 0 0;"><tr><td align="center" class="acc" bgcolor="${P.copper}" style="border-radius:6px;background:${P.copper};">` +
+    `<!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${e(href)}" style="height:48px;v-text-anchor:middle;width:${width}px;" arcsize="12%" stroke="f" fillcolor="${P.copper}"><w:anchorlock/><center style="color:#ffffff;font-family:Arial,sans-serif;font-size:16px;font-weight:700;">${e(label)}</center></v:roundrect><![endif]-->` +
+    `<!--[if !mso]><!--><a href="${e(href)}" class="accink" style="display:inline-block;padding:14px 32px;${SANS}font-size:16px;line-height:20px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:6px;background:${P.copper};">${e(label)}</a><!--<![endif]--></td></tr></table>`;
 }
+
+type Item = { kind: string; html: (top: number) => string };
+type Section = { alt: boolean; items: Item[] } | { moment: { kicker: string; big: string; text: string } } | { help: true };
 
 /** Renders one message as HTML and plain text from the same blocks, so the two cannot disagree. */
 export function renderEmail(input: EmailInput): { subject: string; html: string; text: string } {
   const e = escapeHtml;
   const hero: { kicker?: string; h1?: string; p?: string } = {};
-  type Section = string[] | { moment: { kicker: string; big: string; text: string } };
-  const sections: Section[] = [[]];
+  const sections: Section[] = [];
   const text: string[] = [];
-  const html = (): string[] => {
-    const last = sections[sections.length - 1];
-    if (Array.isArray(last)) return last;
-    const fresh: string[] = [];
-    sections.push(fresh);
-    return fresh;
+  // A section label is printed on the line above the next block's text, not as a paragraph of its own.
+  let heading: string | null = null;
+  const say = (chunk: string): void => {
+    if (heading !== null) { chunk = chunk ? `${heading}\n${chunk}` : heading; heading = null; }
+    if (chunk) text.push(chunk);
   };
-  const panel = (inner: string): string =>
-    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="panel" bgcolor="${P.panel}" style="background:${P.panel};border:1px solid ${P.line};border-radius:12px;margin:0 0 24px;"><tr><td style="padding:16px 20px;">${inner}</td></tr></table>`;
-  // A step or an included feature: a raised panel with a dark chip, "01" for steps, a copper bar for features.
-  const chipRow = (chip: string, item: string, chipBg = P.night, chipInk = P.copper): string =>
-    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="panel" bgcolor="${P.panel}" style="background:${P.panel};border:1px solid ${P.line};border-radius:12px;margin:0 0 10px;"><tr><td width="62" valign="top" style="padding:16px 0 14px 14px;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" width="44" height="22" bgcolor="${chipBg}" style="width:44px;height:22px;border-radius:11px;background:${chipBg};font-family:Arial,sans-serif;font-size:12px;line-height:22px;font-weight:700;color:${chipInk};">${chip}</td></tr></table></td><td class="ink" valign="top" style="padding:14px 16px 14px 6px;${SANS}font-size:15px;line-height:22px;color:${P.ink};">${item}</td></tr></table>`;
-  const featureChip = `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td width="16" height="10" bgcolor="${P.copper}" style="width:16px;height:10px;border-radius:3px;background:${P.copper};font-size:0;line-height:0;">&nbsp;</td></tr></table>`;
+  const open = (alt: boolean): { alt: boolean; items: Item[] } => { const section = { alt, items: [] as Item[] }; sections.push(section); return section; };
+  const add = (kind: string, html: (top: number) => string): void => {
+    const last = sections[sections.length - 1];
+    (last && "items" in last ? last : open(false)).items.push({ kind, html });
+  };
+  const white = (inner: string, top: number, border = P.line, padding = "4px 24px"): string =>
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="white" bgcolor="${P.white}" style="margin:${top}px 0 0;background:${P.white};border:1px solid ${border};border-radius:8px;"><tr><td style="padding:${padding};">${inner}</td></tr></table>`;
+  const grid = (rows: Array<[string, string]>, strong: boolean): string =>
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rows.map(([key, value], i) => {
+      const rule = i ? `border-top:1px solid ${P.line};` : "";
+      return strong
+        ? `<tr><td class="ink lbl" width="176" valign="top" style="width:176px;padding:12px 16px 12px 0;${rule}${SANS}font-size:14px;line-height:22px;font-weight:700;color:${P.ink};">${e(key)}</td><td class="ink" valign="top" style="padding:12px 0;${rule}${SANS}font-size:15px;line-height:22px;color:${P.ink};">${e(value)}</td></tr>`
+        : `<tr><td class="muted lbl" width="176" valign="top" style="width:176px;padding:12px 16px 12px 0;${rule}${SANS}font-size:14px;line-height:20px;color:${P.muted};">${e(key)}</td><td class="ink" valign="top" style="padding:12px 0;${rule}${SANS}font-size:15px;line-height:20px;font-weight:600;color:${P.ink};word-break:break-word;">${e(value)}</td></tr>`;
+    }).join("")}</table>`;
+  const muted = (value: string, top: number, size = "14px;line-height:21px"): string =>
+    `<p class="muted" style="margin:${top}px 0 0;${SANS}font-size:${size};color:${P.muted};">${value}</p>`;
+
   for (const block of input.blocks) {
-    if ("kicker" in block) { hero.kicker = block.kicker; }
-    else if ("h1" in block) { hero.h1 = block.h1; text.push(block.h1); }
-    else if ("p" in block && !block.muted && hero.p === undefined && html().length === 0) { hero.p = block.p; text.push(block.p); }
+    if ("kicker" in block) hero.kicker = block.kicker;
+    else if ("h1" in block) { hero.h1 = block.h1; say(block.text ?? block.h1); }
+    else if ("p" in block && !block.muted && hero.p === undefined && sections.length === 0) { hero.p = block.p; say(block.text ?? block.p); }
     else if ("h2" in block) {
-      if (html().length) sections.push([]);
-      html().push(`<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 14px;"><tr><td class="eyebrow" style="padding:0 12px 0 0;${SANS}font-size:12px;line-height:16px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:${P.copper};">${e(block.h2)}</td><td width="60" style="font-size:0;line-height:0;border-top:2px dashed ${P.copper};">&nbsp;</td></tr></table>`);
-      text.push(block.h2);
+      const last = sections[sections.length - 1];
+      if (!last || !("items" in last) || last.items.length || last.alt !== Boolean(block.alt)) open(Boolean(block.alt));
+      add("h2", top => `<p class="muted" style="margin:${top}px 0 0;${SANS}font-size:12px;line-height:16px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:${P.muted};">${e(block.h2)}</p>`);
+      heading = block.text ?? block.h2;
     } else if ("p" in block) {
-      html().push(block.muted
-        ? `<p class="muted" style="margin:0 0 20px;${SANS}font-size:13px;line-height:19px;color:${P.muted};">${e(block.p)}</p>`
-        : `<p class="ink" style="margin:0 0 22px;${SANS}font-size:16px;line-height:25px;color:${P.ink};">${e(block.p)}</p>`);
-      text.push(block.p);
+      add(block.muted ? "muted" : "p", top => block.muted ? muted(e(block.p), top)
+        : `<p class="ink" style="margin:${top}px 0 0;${SANS}font-size:16px;line-height:24px;color:${P.ink};">${e(block.p)}</p>`);
+      say(block.text ?? block.p);
     } else if ("note" in block) {
-      html().push(panel((block.title ? `<p class="ink" style="margin:0 0 8px;${SANS}font-size:15px;line-height:22px;font-weight:700;color:${P.ink};">${e(block.title)}</p>` : "") +
-        `<p class="ink" style="margin:0;${SANS}font-size:14px;line-height:21px;color:${P.ink};">${e(block.note)}</p>`));
-      text.push(block.title ? `${block.title}\n${block.note}` : block.note);
+      add("note", top => white((block.title ? `<p class="ink" style="margin:0 0 4px;${SANS}font-size:15px;line-height:22px;font-weight:700;color:${P.ink};">${e(block.title)}</p>` : "") +
+        `<p class="ink" style="margin:0;${SANS}font-size:14px;line-height:21px;color:${P.ink};">${e(block.note)}</p>`, top, P.line, "16px 24px"));
+      say(block.text ?? (block.title ? `${block.title}\n${block.note}` : block.note));
     } else if ("rows" in block) {
-      const last = block.rows.length - 1;
-      html().push(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="panel" bgcolor="${P.panel}" style="background:${P.panel};border:1px solid ${P.line};border-left:4px solid ${P.copper};border-radius:10px;margin:0 0 24px;"><tr><td style="padding:${block.total ? "6px 0 0" : "6px 0"};"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">` +
-        block.rows.map(([key, value], i) => {
-          const rule = i > 0 ? `border-top:1px solid ${P.line};` : "";
-          if (block.total && i === last) {
-            return `<tr><td width="38%" valign="top" bgcolor="${P.copper}" style="padding:12px 12px 12px 20px;background:${P.copper};${SANS}font-size:13px;line-height:20px;font-weight:700;color:${P.copperInk};">${e(key)}</td><td valign="top" bgcolor="${P.copper}" style="padding:12px 20px 12px 0;background:${P.copper};${SANS}font-size:16px;line-height:20px;font-weight:800;color:${P.copperInk};word-break:break-word;">${e(value)}</td></tr>`;
-          }
-          return `<tr><td class="muted rule" width="38%" valign="top" style="padding:10px 12px 10px 20px;${rule}${SANS}font-size:13px;line-height:20px;color:${P.muted};">${e(key)}</td><td class="ink rule" valign="top" style="padding:10px 20px 10px 0;${rule}${SANS}font-size:15px;line-height:20px;font-weight:700;color:${P.ink};word-break:break-word;">${e(value)}</td></tr>`;
-        }).join("") + "</table></td></tr></table>");
-      text.push(block.rows.map(([key, value]) => `${key}: ${value}`).join("\n"));
+      const rows = block.rows.map(([key, value]): [string, string] => [key, value]);
+      const key = block.total ? rows.pop() : undefined;
+      add("rows", top => `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="white" bgcolor="${P.white}" style="margin:${top}px 0 0;background:${P.white};border:1px solid ${P.line};border-radius:8px;">` +
+        (rows.length ? `<tr><td style="padding:${key ? "4px 24px 0" : "4px 24px"};">${grid(rows, false)}</td></tr>` : "") +
+        (key ? `<tr><td class="alt" bgcolor="${P.page}" style="background:${P.page};padding:12px 24px;${rows.length ? `border-top:1px solid ${P.line};` : ""}border-radius:${rows.length ? "0 0 7px 7px" : "7px"};"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td class="ink lbl" width="176" valign="middle" style="width:176px;padding:0 16px 0 0;${SANS}font-size:14px;line-height:24px;font-weight:600;color:${P.ink};">${e(key[0])}</td><td class="cop" valign="middle" style="${SANS}font-size:18px;line-height:24px;font-weight:700;color:${P.copper};">${e(key[1])}</td></tr></table></td></tr>` : "") +
+        "</table>");
+      say(block.text ?? block.rows.map(([label, value, plain]) => `${label}: ${plain ?? value}`).join("\n"));
     } else if ("list" in block) {
-      html().push(block.list.map((item, i) => chipRow(block.numbered ? String(i + 1).padStart(2, "0") : featureChip, e(item))).join("") + `<div style="height:14px;font-size:0;line-height:0;">&nbsp;</div>`);
-      text.push(block.list.map((item, i) => `${block.numbered ? `${i + 1}.` : "-"} ${item}`).join("\n"));
+      add("list", top => `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:${top}px 0 0;">${block.list.map((item, i) => {
+        const edge = `border-top:1px solid ${P.rule};${i === block.list.length - 1 ? `border-bottom:1px solid ${P.rule};` : ""}`;
+        return `<tr><td width="40" valign="top" style="width:40px;padding:16px 0;${edge}${MONO}font-size:14px;line-height:24px;font-weight:700;color:${P.copper};">${block.numbered ? String(i + 1).padStart(2, "0") : "&#8212;"}</td><td class="ink" valign="top" style="padding:16px 0;${edge}${SANS}font-size:16px;line-height:24px;color:${P.ink};">${e(item)}</td></tr>`;
+      }).join("")}</table>`);
+      say(block.text ?? block.list.map((item, i) => `${block.numbered ? `${i + 1}.` : "-"} ${item}`).join("\n"));
     } else if ("button" in block) {
-      html().push(button(block.button.href, block.button.label));
-      text.push(`${block.button.label}: ${block.button.href}`);
+      add("button", top => button(block.button.href, block.button.label, top));
+      say(block.text ?? `${block.button.label}: ${block.button.href}`);
     } else if ("code" in block) {
-      html().push(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${P.night}" style="background:${P.night};border:1px solid ${P.line};border-radius:12px;margin:0 0 22px;"><tr><td align="center" style="padding:18px 16px 4px;">${redactionBars([30, 14, 44, 18], [P.line, P.copper, P.line, P.line], 6)}</td></tr><tr><td align="center" class="otp" style="padding:12px 16px 20px;${MONO}font-size:32px;line-height:38px;font-weight:700;letter-spacing:8px;color:#ffffff;">${e(block.code)}</td></tr></table>`);
-      text.push(block.code);
+      add("code", top => white(`<p class="ink otp" style="margin:0;padding-left:6px;${MONO}font-size:32px;line-height:40px;font-weight:700;letter-spacing:6px;color:${P.ink};text-align:center;">${e(block.code)}</p>`, top, P.copper, "24px"));
+      say(block.text ?? block.code);
     } else if ("link" in block) {
-      html().push(`<p class="muted" style="margin:-10px 0 24px;${SANS}font-size:13px;line-height:19px;color:${P.muted};">${e(block.link.label)}<br><a class="link" href="${e(block.link.href)}" style="color:${P.copper};word-break:break-all;">${e(block.link.href)}</a></p>`);
-      text.push(`${block.link.label}\n${block.link.href}`);
+      // The button's line in the text part already carries the address.
+      add("link", top => muted(`${e(block.link.label)}<br><a href="${e(block.link.href)}" style="color:${P.copper};word-break:break-all;">${e(block.link.href)}</a>`, top, "13px;line-height:20px"));
+      say(block.text ?? "");
     } else if ("security" in block) {
-      html().push(chipRow("&#10003;", `<strong>If this was you:</strong> ${e(block.security[0])}`, P.copper, P.copperInk) +
-        chipRow("&#10007;", `<strong>If it was not:</strong> ${e(block.security[1])}`) + `<div style="height:14px;font-size:0;line-height:0;">&nbsp;</div>`);
-      text.push(`If this was you: ${block.security[0]}\nIf it was not: ${block.security[1]}`);
+      add("rows", top => white(grid([["If this was you", cap(block.security[0])], ["If it was not", cap(block.security[1])]], true), top));
+      say(block.text ?? `If this was you: ${block.security[0]}\n\nIf it was not: ${block.security[1]}`);
+    } else if ("checked" in block) {
+      const bars = (count: number): string => `<span style="color:${P.copper};letter-spacing:-1px;">${"&#9608;".repeat(count)}</span> <span class="muted" style="font-size:12px;color:${P.muted};">flagged</span>`;
+      add("checked", top => `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="white" bgcolor="${P.white}" style="margin:${top}px 0 0;background:${P.white};border:1px solid ${P.rule};border-radius:8px;"><tr><td class="ink" style="padding:20px 24px;${MONO}font-size:15px;line-height:28px;color:${P.ink};">` +
+        block.checked.map(([line, flagged]) => e(line) + (flagged ? bars(flagged) : "")).join("<br>") + "</td></tr></table>");
+      say(block.text ?? block.checked.map(([line, flagged]) => `  ${line}${flagged ? `${"#".repeat(flagged)} (flagged)` : ""}`).join("\n"));
     } else if ("moment" in block) {
       sections.push({ moment: block.moment });
-      text.push(`${block.moment.kicker}: ${block.moment.big}. ${block.moment.text}`);
+      say(block.text ?? `${block.moment.kicker}: ${block.moment.big}. ${block.moment.text}`);
     }
   }
+  sections.push({ help: true });
 
   const site = SITE_URL;
-  const kind = input.kind ?? "account";
-  // Notices about a change that already happened (they carry no links) keep the composition but warm
-  // the hero, the bands and the moment towards oxblood. A reset or confirmation link the reader asked
-  // for is routine mail and stays teal.
-  const tone = kind === "security" && input.noLinks
-    ? { hero: "#3a2a2e", heroImage: "linear-gradient(160deg,#2a1f25 0%,#4a3038 100%)", moment: "linear-gradient(135deg,#4a3038 0%,#2a1f25 100%)", bands: ["#42323a", "#2E3038", "#1C333B"] }
-    : { hero: P.hero, heroImage: `linear-gradient(160deg,${P.alt} 0%,#245864 100%)`, moment: `linear-gradient(135deg,#245864 0%,${P.alt} 100%)`, bands: ["#1F4B57", "#1A3C46", "#163440"] };
-  const logo = `<img src="${site}/outputs/redaxa-mark-128.png" width="56" height="56" alt="Redaxa" style="display:block;width:56px;height:56px;border-radius:14px;">`;
-  const smallLogo = `<img src="${site}/outputs/redaxa-mark-128.png" width="32" height="32" alt="" style="display:block;width:32px;height:32px;border-radius:8px;">`;
-  const wordmark = `${SANS}font-size:14px;line-height:18px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:#cfe0e0;`;
-  const brand = input.noLinks
-    ? `<td width="56" valign="middle" style="padding:0 14px 0 0;">${logo}</td><td valign="middle" style="${wordmark}">Redaxa</td>`
-    : `<td width="56" valign="middle" style="padding:0 14px 0 0;"><a href="${site}/" style="text-decoration:none;">${logo}</a></td><td valign="middle" style="${wordmark}"><a href="${site}/" style="color:#cfe0e0;text-decoration:none;">Redaxa</a></td>`;
-  // The signature block of the moment band: three lines of redaction bars, one segment in copper on each.
-  const bar = (width: number, colour: string, span = 1): string => `<td${span > 1 ? ` colspan="${span}"` : ""} width="${width}" height="8" bgcolor="${colour}" style="width:${width}px;height:8px;background:${colour};border-radius:4px;font-size:0;line-height:0;">&nbsp;</td>`;
-  const space = `<td width="4" style="font-size:0;line-height:0;">&nbsp;</td>`;
-  const gap = `<tr><td colspan="5" height="6" style="font-size:0;line-height:0;">&nbsp;</td></tr>`;
-  const barBlock = `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>${bar(22, P.night)}${space}${bar(10, P.copper)}${space}${bar(36, P.night)}</tr>${gap}<tr>${bar(22, P.night)}${space}${bar(50, P.night, 3)}</tr>${gap}<tr>${bar(36, P.copper, 3)}${space}${bar(36, P.night)}</tr></table>`;
+  const logo = (size: number, alt: string): string => `<img src="${site}/outputs/redaxa-mark-128.png" width="${size}" height="${size}" alt="${alt}" style="display:block;width:${size}px;height:${size}px;border-radius:${size / 4}px;">`;
+  const linked = (inner: string, style = "text-decoration:none;"): string => input.noLinks ? inner : `<a href="${site}/" style="${style}">${inner}</a>`;
   const [helpTitle, helpText] = input.help ?? ["Something not as described?", "Reply to this email with what you were doing and what you saw."];
   const write = /^Reply/.test(helpText) ? "Or write to" : "Write to";
-  const support = input.noLinks ? SUPPORT_ADDRESS : `<a class="link" href="mailto:${SUPPORT_ADDRESS}" style="color:${P.copper};">${SUPPORT_ADDRESS}</a>`;
-  const footLink = `color:${P.soft};`;
+  const support = input.noLinks ? SUPPORT_ADDRESS : `<a href="mailto:${SUPPORT_ADDRESS}" style="color:${P.copper};">${SUPPORT_ADDRESS}</a>`;
+  const footLink = (href: string, label: string): string => `<a href="${href}" style="color:${P.muted};">${label}</a>`;
   const links = input.noLinks
     ? "redaxa.getcertsprint.com"
-    : `<a href="${site}/" style="${footLink}">redaxa.getcertsprint.com</a> &middot; <a href="${site}/privacy.html" style="${footLink}">Privacy</a> &middot; <a href="${site}/terms.html" style="${footLink}">Terms</a> &middot; <a href="mailto:${SUPPORT_ADDRESS}" style="${footLink}">Support</a>`;
-  let alternate = false;
-  const body = sections.map(section => {
-    if (!Array.isArray(section)) {
-      alternate = false;
-      return `<tr><td class="pad" bgcolor="${tone.hero}" style="background:${tone.hero};background-image:${tone.moment};padding:22px 36px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td valign="middle"><p style="margin:0 0 4px;${SANS}font-size:12px;line-height:16px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:${P.copper};">${e(section.moment.kicker)}</p><p class="big" style="margin:0 0 4px;${SANS}font-size:32px;line-height:38px;font-weight:800;letter-spacing:-0.6px;color:#ffffff;">${e(section.moment.big)}</p><p style="margin:0;${SANS}font-size:14px;line-height:20px;color:${P.soft};">${e(section.moment.text)}</p></td><td class="hide-sm" width="92" align="right" valign="middle">${barBlock}</td></tr></table></td></tr>`;
+    : [footLink(`${site}/`, "redaxa.getcertsprint.com"), footLink(`${site}/privacy.html`, "Privacy"), footLink(`${site}/terms.html`, "Terms"), footLink(`mailto:${SUPPORT_ADDRESS}`, "Support")].join(" &nbsp;&middot;&nbsp; ");
+
+  // Spacing on the 8 px grid: 32 px above the first section; 24 px between sections of different
+  // paper; two sections of the same paper read as one, so they meet on 32 px (40 px after a button).
+  const kindOf = (section: Section | undefined): string => !section ? "end" : "moment" in section ? "moment" : "help" in section ? "card" : section.alt ? "alt" : "card";
+  const endsWithButton = (section: Section | undefined): boolean => Boolean(section && "items" in section && section.items[section.items.length - 1]?.kind === "button");
+  const gap = (previous: string | undefined, kind: string): number =>
+    !previous ? 0 : previous === "h2" ? 8 : kind === "link" && previous === "button" ? 16 : kind === "muted" ? (previous === "checked" ? 12 : 16) : 24;
+  const body = sections.map((section, i) => {
+    const before = sections[i - 1];
+    const sameBefore = before !== undefined && kindOf(before) === kindOf(section);
+    const top = i === 0 ? 32 : sameBefore ? (endsWithButton(before) ? 16 : 24) : 24;
+    if ("moment" in section) {
+      const long = section.moment.big.length > 26;
+      return `  <tr><td class="acc pad" bgcolor="${P.copper}" style="background:${P.copper};padding:24px 40px;">
+    <p class="acc2" style="margin:0 0 4px;${SANS}font-size:12px;line-height:16px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:${P.onCopper};">${e(section.moment.kicker)}</p>
+    <p class="${long ? "bigs" : "big"} accink" style="margin:0 0 8px;${SANS}font-size:${long ? "26px;line-height:32px;font-weight:700;letter-spacing:-0.3px" : "32px;line-height:40px;font-weight:700;letter-spacing:-0.4px"};color:#ffffff;">${e(section.moment.big)}</p>
+    <p class="acc2" style="margin:0;${SANS}font-size:14px;line-height:21px;color:${P.onCopper};">${e(section.moment.text)}</p>
+  </td></tr>`;
     }
-    if (!section.length) return "";
-    const shade = alternate ? { cls: "alt", bg: P.alt } : { cls: "card", bg: P.card };
-    alternate = !alternate;
-    return `<tr><td class="${shade.cls} pad" bgcolor="${shade.bg}" style="background:${shade.bg};padding:28px 36px 6px;">\n${section.join("\n")}\n</td></tr>`;
-  }).join("\n");
-  // The help block takes the tint the next section would have had, so no seam appears above the footer.
-  const helpTone = alternate ? { cls: "alt", bg: P.alt } : { cls: "card", bg: P.card };
-  const dark = `.bg{background:${D.page}!important}.card{background:${D.card}!important}.alt{background:${D.alt}!important}.panel{background:${D.panel}!important}.ink{color:${D.ink}!important}.muted{color:${D.muted}!important}.rule{border-color:${D.line}!important}.link,.eyebrow{color:${D.copper}!important}`;
-  const ogsc = dark.replace(/(^|\}|,)\./g, "$1[data-ogsc] .");
+    if ("help" in section) {
+      return `  <tr><td class="card pad" bgcolor="${P.card}" style="background:${P.card};padding:${top}px 40px 32px;border-radius:0 0 8px 8px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="white" bgcolor="${P.white}" style="background:${P.white};border:1px solid ${P.line};border-left:3px solid ${P.copper};border-radius:0 8px 8px 0;"><tr><td style="padding:16px 24px;">
+      <p class="ink" style="margin:0 0 4px;${SANS}font-size:15px;line-height:22px;font-weight:700;color:${P.ink};">${e(helpTitle)}</p>
+      <p class="muted" style="margin:0;${SANS}font-size:14px;line-height:21px;color:${P.muted};">${e(helpText)} ${write} ${support}. Never send a password or an API key by email.</p>
+    </td></tr></table>
+  </td></tr>`;
+    }
+    const after = sections[i + 1];
+    const sameAfter = kindOf(after) === kindOf(section);
+    const bottom = sameAfter ? (endsWithButton(section) ? 24 : 8) : endsWithButton(section) ? 32 : 24;
+    const shade = section.alt ? { cls: "alt", bg: P.page } : { cls: "card", bg: P.card };
+    return `  <tr><td class="${shade.cls} pad" bgcolor="${shade.bg}" style="background:${shade.bg};padding:${top}px 40px ${bottom}px;">
+    ${section.items.map((item, j) => item.html(gap(section.items[j - 1]?.kind, item.kind))).join("\n    ")}
+  </td></tr>`;
+  }).join("\n\n");
+
+  const pins = `.bg{background:${P.page}!important}.card{background:${P.card}!important}.white{background:${P.white}!important}.alt{background:${P.page}!important}.head{background:${P.ink}!important}.acc{background:${P.copper}!important}.ink{color:${P.ink}!important}.muted{color:${P.muted}!important}.paper{color:${P.paper}!important}.hm{color:${P.headMuted}!important}.hi{color:${P.headText}!important}.accink{color:#ffffff!important}.acc2{color:${P.onCopper}!important}.cop{color:${P.copper}!important}`;
+  const ogsc = pins.replace(/(^|\})\./g, "$1[data-ogsc] .");
 
   const document = `<!doctype html>
-<html lang="en" dir="ltr">
+<html lang="en" dir="ltr" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="x-apple-disable-message-reformatting">
-<meta name="color-scheme" content="light dark">
-<meta name="supported-color-schemes" content="light dark">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
 <meta name="format-detection" content="telephone=no,date=no,address=no,email=no">
 <title>${e(input.subject)}</title>
+<!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]-->
 <style>
-  body,table,td,p,a,li{-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%}
+  body,table,td,p,a{-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%}
   table,td{mso-table-lspace:0;mso-table-rspace:0;border-collapse:collapse}
   img{border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic;display:block}
   body{margin:0;padding:0;width:100%!important}
   a[x-apple-data-detectors]{color:inherit!important;text-decoration:none!important}
   @media only screen and (max-width:620px){
-    .wrap{padding:10px 6px!important}.pad{padding-left:20px!important;padding-right:20px!important}
-    .hero{padding-top:24px!important;padding-bottom:22px!important}.h1{font-size:26px!important;line-height:32px!important}
-    .big{font-size:28px!important;line-height:34px!important}.otp{font-size:24px!important;letter-spacing:5px!important}
-    .btn,.btn td,.btn a{width:100%!important;display:block!important;text-align:center!important;box-sizing:border-box!important}
-    .hide-sm{display:none!important}
+    .wrap{padding:16px 8px!important}.pad{padding-left:24px!important;padding-right:24px!important}
+    .h1{font-size:26px!important;line-height:32px!important}.big{font-size:28px!important;line-height:34px!important}.bigs{font-size:22px!important;line-height:28px!important}
+    .btn a{display:block!important;text-align:center!important}.lbl{width:112px!important}.otp{font-size:24px!important;letter-spacing:4px!important}
   }
-  @media (prefers-color-scheme:dark){${dark}}
+  @media (prefers-color-scheme:dark){${pins}}
   ${ogsc}
 </style>
 </head>
 <body class="bg" style="margin:0;padding:0;background:${P.page};">
 <div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;color:${P.page};">${e(input.preheader)}${"&#8199;&#847;".repeat(60)}</div>
+
 <table lang="en" dir="ltr" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="bg" bgcolor="${P.page}" style="background:${P.page};">
-<tr><td align="center" class="wrap" style="padding:28px 14px;">
+<tr><td align="center" class="wrap" style="padding:32px 16px;">
 <!--[if mso]><table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td><![endif]-->
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:600px;margin:0 auto;">
-  <tr><td bgcolor="${P.copper}" style="height:6px;font-size:0;line-height:0;background:${P.copper};border-radius:16px 16px 0 0;">&nbsp;</td></tr>
-  <tr><td class="hero pad" bgcolor="${tone.hero}" style="background:${tone.hero};background-image:${tone.heroImage};padding:28px 36px 26px;">
+
+  <tr><td class="acc" bgcolor="${P.copper}" style="height:4px;font-size:0;line-height:0;background:${P.copper};border-radius:8px 8px 0 0;">&nbsp;</td></tr>
+  <tr><td class="head pad" bgcolor="${P.ink}" style="background:${P.ink};padding:32px 40px;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-      ${brand}
-      <td class="hide-sm" align="right" valign="middle" style="${SANS}font-size:12px;line-height:16px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:${P.copper};">${e(KIND_LABEL[kind])}</td>
+      <td width="40" valign="middle" style="width:40px;padding:0 12px 0 0;">${linked(logo(40, "Redaxa"))}</td>
+      <td valign="middle" class="paper" style="${SANS}font-size:18px;line-height:24px;font-weight:700;letter-spacing:-0.2px;color:${P.paper};">${linked("Redaxa", `color:${P.paper};text-decoration:none;`)}</td>
+      <td align="right" valign="middle" class="hm" style="${SANS}font-size:12px;line-height:16px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:${P.headMuted};">${e(hero.kicker ?? KIND_LABEL[input.kind ?? "account"])}</td>
     </tr></table>
-    ${hero.kicker ? `<p style="margin:24px 0 8px;${SANS}font-size:12px;line-height:16px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:${P.copper};">${e(hero.kicker)}</p>` : ""}
-    <h1 class="h1" style="margin:${hero.kicker ? 0 : 22}px 0 10px;${SANS}font-size:30px;line-height:36px;font-weight:800;letter-spacing:-0.6px;color:#ffffff;">${e(hero.h1 ?? input.subject)}</h1>
-    ${hero.p ? `<p style="margin:0;${SANS}font-size:16px;line-height:25px;color:${P.soft};">${e(hero.p)}</p>` : ""}
+    <h1 class="h1 paper" style="margin:40px 0 ${hero.p ? 12 : 0}px;${SANS}font-size:30px;line-height:36px;font-weight:700;letter-spacing:-0.4px;color:${P.paper};">${e(hero.h1 ?? input.subject)}</h1>
+    ${hero.p ? `<p class="hi" style="margin:0;${SANS}font-size:16px;line-height:25px;font-weight:400;color:${P.headText};">${e(hero.p)}</p>` : ""}
   </td></tr>
-  ${tone.bands.map(band => `<tr><td bgcolor="${band}" style="height:6px;font-size:0;line-height:0;background:${band};">&nbsp;</td></tr>`).join("")}
-  ${body}
-  <tr><td class="${helpTone.cls} pad" bgcolor="${helpTone.bg}" style="background:${helpTone.bg};padding:8px 36px 28px;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="panel" bgcolor="${P.panel}" style="background:${P.panel};border-left:4px solid ${P.copper};border-radius:0 12px 12px 0;"><tr><td style="padding:14px 20px;">
-      <p class="ink" style="margin:0 0 4px;${SANS}font-size:14px;line-height:21px;font-weight:700;color:${P.ink};">${e(helpTitle)}</p>
-      <p class="muted" style="margin:0;${SANS}font-size:14px;line-height:21px;color:${P.muted};">${e(helpText)} ${write} ${support}. Never send a password or an API key by email.</p>
-    </td></tr></table>
-  </td></tr>
-  <tr><td class="pad" bgcolor="${P.night}" style="background:${P.night};padding:20px 36px 22px;border-radius:0 0 16px 16px;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-      <td valign="middle"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td valign="middle" style="padding:0 10px 0 0;">${smallLogo}</td><td valign="middle" style="${SANS}font-size:15px;line-height:20px;font-weight:800;color:${P.soft};">Redaxa<br><span style="font-size:12px;line-height:18px;font-weight:400;color:${P.foot};">Share the work. Keep the secrets.</span></td></tr></table></td>
-      <td class="hide-sm" align="right" valign="middle">${redactionBars([18, 8, 28, 12], [P.line, P.copper, P.line, P.line], 6)}</td>
+
+${body}
+
+  <tr><td class="pad" style="padding:24px 40px 0;">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+      <td width="24" valign="middle" style="width:24px;padding:0 8px 0 0;">${logo(24, "")}</td>
+      <td valign="middle" class="ink" style="${SANS}font-size:14px;line-height:20px;font-weight:700;color:${P.ink};">Redaxa <span class="muted" style="font-weight:400;color:${P.muted};">&nbsp;Share the work. Keep the secrets.</span></td>
     </tr></table>
-    <p style="margin:14px 0 6px;${SANS}font-size:12px;line-height:18px;color:${P.foot};">${e(input.footer)}</p>
-    <p style="margin:0;${SANS}font-size:12px;line-height:18px;color:${P.soft};">${links}</p>
+    <p class="muted" style="margin:12px 0 8px;${SANS}font-size:12px;line-height:18px;color:${P.muted};">${e(input.footer)}</p>
+    <p class="muted" style="margin:0;${SANS}font-size:12px;line-height:18px;color:${P.muted};">${links}</p>
   </td></tr>
+
 </table>
 <!--[if mso]></td></tr></table><![endif]-->
 </td></tr>
 </table>
 </body>
 </html>`;
-  const footerText = `${helpTitle}\n${helpText} ${write} ${SUPPORT_ADDRESS}. Never send a password or an API key by email.\n\n--\n${input.footer}\n${input.noLinks ? "Redaxa · redaxa.getcertsprint.com" : `Redaxa · ${site}/ · Privacy: ${site}/privacy.html · Terms: ${site}/terms.html`}`;
+  const footerText = `${helpTitle} ${helpText} ${write} ${SUPPORT_ADDRESS}. Never send a password or an API key by email.\n\n--\n${input.footer}\n${input.noLinks ? "Redaxa · redaxa.getcertsprint.com" : `Redaxa · ${site}/ · Privacy: ${site}/privacy.html · Terms: ${site}/terms.html · Support: ${SUPPORT_ADDRESS}`}`;
   return { subject: input.subject, html: document, text: `${text.join("\n\n")}\n\n${footerText}\n` };
 }
 
@@ -330,9 +355,11 @@ function subscriptionEmail(input: SubscriptionEmailInput): { subject: string; ht
     : `Your Redaxa ${tier} subscription is active on this account, on the web, in the Windows app and in the Chrome extension. There is nothing else to set up.`;
   // "Renews on" is wrong during a trial: nothing has been paid yet, so the
   // date is when the first charge happens, not a renewal.
-  const rows: Array<[string, string]> = [["Plan", planLabel(plan, interval)]];
+  const rows: Array<[string, string, string?]> = [["Plan", planLabel(plan, interval)]];
   if (priceLabel) rows.push(["Price", priceLabel]);
+  rows.push(trialing ? ["Charged so far", "Nothing", "nothing"] : ["Works in", "The web, the Windows app and the Chrome extension", "the web, the Windows app and the Chrome extension"]);
   if (renewsOn) rows.push([trialing ? "First charge" : "Renews on", renewsOn]);
+  const until = renewsOn ?? "the trial ends";
   const firstSteps = business
     ? ["Add the client and project names your team must never paste into a chat under Protected terms. They apply to every member.",
       "Choose a policy per category (warn, redact or block sending in the Chrome extension) so everyone follows the same rule.",
@@ -343,7 +370,7 @@ function subscriptionEmail(input: SubscriptionEmailInput): { subject: string; ht
   return renderEmail({
     subject: subscriptionSubject(trialing),
     kind: "billing",
-    preheader: trialing ? `Nothing is charged before ${renewsOn ?? "the trial ends"}. Three things to try first.` : `Plan ${planLabel(plan, interval)}${renewsOn ? `, renews on ${renewsOn}` : ""}. Three things to try first.`,
+    preheader: trialing ? `Nothing is charged before ${until}. Three things to try first.` : `Plan ${planLabel(plan, interval)}${renewsOn ? `, renews on ${renewsOn}` : ""}. Three things to try first.`,
     footer: trialing ? "You received this email because you started a Redaxa trial with this address." : "You received this email because you subscribed to Redaxa with this address.",
     help: ["Billing question, or something not working?", "Reply to this email from the address on the account."],
     blocks: [
@@ -352,13 +379,14 @@ function subscriptionEmail(input: SubscriptionEmailInput): { subject: string; ht
       { p: intro },
       { rows, total: Boolean(renewsOn) },
       { button: { href: appUrl, label: "Open Redaxa" } },
-      ...(trialing ? [{ moment: { kicker: "Trial", big: "Seven days, every feature", text: `Nothing is charged before ${renewsOn ?? "the trial ends"}, and you can cancel before then.` } }] : []),
       { h2: "Three things to try first" },
       { list: firstSteps, numbered: true },
-      { note: trialing
-          ? `Cancel before ${renewsOn ?? "the trial ends"} from Your account, under Subscription & invoices, and nothing is charged.`
-          : "Change or cancel the plan from Your account, under Subscription & invoices.",
-        title: "Managing the plan" },
+      ...(trialing
+        ? [{ p: `Cancel before ${until} from Your account, under Subscription & invoices, and nothing is charged.`, muted: true },
+          { moment: { kicker: "Trial", big: "Seven days, every feature", text: `Nothing is charged before ${until}, and you can cancel before then.` },
+            text: `Trial: seven days, every feature. Nothing is charged before ${until}, and you can cancel before then.` }]
+        : [{ moment: { kicker: "Managing the plan", big: "Your account", text: "Change or cancel the plan from Your account, under Subscription & invoices." },
+          text: "Managing the plan: change or cancel the plan from Your account, under Subscription & invoices." }]),
     ],
   });
 }
@@ -456,9 +484,16 @@ function welcomeEmail(firstName: string | null | undefined, appUrl: string): { s
         "Paste something with a key or an address in it and see what Redaxa flags before it sends",
       ], numbered: true },
       { button: { href: appUrl, label: "Open Redaxa" } },
-      { moment: { kicker: "Chrome extension", big: "No daily limit", text: "Free checks in the extension run in your browser, on ChatGPT, Claude, Gemini and Perplexity." } },
-      { note: "On the web and in the Windows app, the free plan includes 5 prompt checks a day, plus 3 public repository checks a day on the web. Pro removes the daily limit on prompt checks.", title: "Free plan on the web and in Windows" },
+      // A made-up sample, said so in the caption: no real key or host is quoted anywhere.
+      { h2: "A checked prompt", alt: true, text: "A checked prompt (the values are made up)" },
+      { checked: [["Deploy fails on staging. Config is:"], ["api_key = ", 12], ["host = ", 9], ["What should I check first?"]],
+        text: "  Deploy fails on staging. Config is:\n  api_key = ############ (flagged)\n  host = ######### (flagged)\n  What should I check first?\nThe key and the host are flagged before the prompt is sent; the question itself still reads the same." },
+      { p: "The key and the host are flagged before the prompt is sent; the question itself still reads the same. The values above are made up.", muted: true, text: "" },
+      { h2: "Free plan on the web and in Windows" },
+      { rows: [["Prompt checks", "5 a day, on the web and in the Windows app"], ["Public repository checks", "3 a day, on the web"], ["Pro", "Removes the daily limit on prompt checks", "removes the daily limit on prompt checks"]] },
       { p: "We will never ask you for a password or an API key by email.", muted: true },
+      { moment: { kicker: "Chrome extension", big: "No daily limit", text: "Free checks in the extension run in your browser, on ChatGPT, Claude, Gemini and Perplexity." },
+        text: "Chrome extension: no daily limit. Free checks in the extension run in your browser, on ChatGPT, Claude, Gemini and Perplexity." },
     ],
   });
 }
@@ -485,6 +520,7 @@ function passwordChangedEmail(firstName: string | null | undefined, when: string
       { p: `The password on your Redaxa account was changed on ${when}. Every device that was signed in to the account has been signed out.` },
       { security: ["nothing else is needed. Sign in again on the web, in the Windows app and in the extension with the new password.", "reply to this message straight away. Somebody else set that password, and we will help you take the account back."] },
       { p: "We will never ask you for your password by email.", muted: true },
+      { moment: { kicker: "Changed on", big: when, text: "Every device that was signed in to the account has been signed out." }, text: `Changed on: ${when}` },
     ],
   });
 }

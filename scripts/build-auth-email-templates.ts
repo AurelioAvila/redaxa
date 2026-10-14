@@ -34,9 +34,11 @@ const redaxa: Template[] = [
       { p: "Select the button: it opens Redaxa, where Confirm email finishes creating your account. Opening the link alone changes nothing, so a mail scanner cannot use it up." },
       { button: { href: confirmLink, label: "Confirm email address" } },
       { link: { label: "If the button does not open, copy this address into your browser:", href: confirmLink } },
+      { rows: [["The link", "Works once"], ["Opens", "Redaxa, where Confirm email finishes the account"], ["Until then", "Nothing is created"]] },
       { h2: "Then" },
       { list: ["Sign in with the email and password you chose.", "Paste a prompt with a key or a client name into the checker and see what Redaxa flags.", "Install the Chrome extension or the Windows app to check prompts where you write them."], numbered: true },
       { p: "The link works once. We will never ask you to send us your password or this link.", muted: true },
+      { moment: { kicker: "Did not create this account?", big: "Ignore this email", text: "Nothing is created without the link." } },
     ],
   }) },
   { file: "reset-password.html", dashboard: "Reset password", ...renderEmail({
@@ -51,7 +53,9 @@ const redaxa: Template[] = [
       { p: "Use the button to set a new password for your Redaxa account. Your current password keeps working until you do, and the new one signs out every device, including the Windows app and the extension." },
       { button: { href: recoveryLink, label: "Choose a new password" } },
       { link: { label: "If the button does not open, copy this address into your browser:", href: recoveryLink } },
-      { p: "The link works once and expires soon. Use at least 12 characters; a passphrase or a password manager works best.", muted: true },
+      { rows: [["The link", "Works once and expires soon"], ["New password", "At least 12 characters"], ["Until then", "Your current password keeps working"]] },
+      { p: "A passphrase or a password manager works best.", muted: true },
+      { moment: { kicker: "After the reset", big: "Every device signs out", text: "Including the Windows app and the extension. Sign in again with the new password." } },
     ],
   }) },
   { file: "magic-link.html", dashboard: "Magic link", frameWitness: "magic-link", ...renderEmail({
@@ -81,7 +85,7 @@ const redaxa: Template[] = [
       { rows: [["Current address", "{{ .Email }}"], ["New address", "{{ .NewEmail }}"]] },
       { button: { href: "{{ .ConfirmationURL }}", label: "Confirm the change" } },
       { link: { label: "If the button does not open, copy this address into your browser:", href: "{{ .ConfirmationURL }}" } },
-      { p: "Until the change is confirmed, the current address keeps working.", muted: true },
+      { moment: { kicker: "Until the change is confirmed", big: "The current address keeps working", text: "Nothing moves until you confirm. Your plan, protected terms and history stay with the account." } },
     ],
   }) },
   { file: "invite.html", dashboard: "Invite user", ...renderEmail({
