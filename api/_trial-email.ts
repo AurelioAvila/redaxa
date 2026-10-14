@@ -54,7 +54,7 @@ type Words = {
 const W = `${SITE_URL}/dashboard.html`;
 const OPEN: [string, string] = ["", W];
 const PLANS: [string, string] = ["", `${W}#plans`];
-const ACCOUNT: [string, string] = ["", `${W}#account`];
+const ACCOUNT: [string, string] = ["", `${W}#workspace`];
 const b = (label: string, target: [string, string]): [string, string] => [label, target[1]];
 
 const EN: Words = {
