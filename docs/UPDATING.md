@@ -11,3 +11,13 @@ Redaxa checks for updates when the desktop app starts. When an update is availab
 For a manual upgrade, close the app, download the signed Windows installer from [the official latest release](https://github.com/AurelioAvila/redaxa/releases/latest), and run it. Use the MSI if the existing app was installed through MSI; otherwise use the EXE setup. Sign in with the existing account if requested. The 0.4.0 installation contains the current updater key for future updates. Older PromptShield installations use a different application identity and may remain installed separately.
 
 Do not disable signature verification to work around the older key. This check protects the update channel. A static manifest cannot provide different signatures for clients sharing the same endpoint and target; changing the manifest to the older key would break newer clients instead.
+
+## Verify-download block and llms.txt
+
+The landing page shows the SHA-256 and Authenticode status of the published installer, and `/llms.txt` repeats them. Both come from `release-trust.json`, written by `scripts/release-trust.mjs` from the real release asset (it re-downloads the file and stops if the hash differs from GitHub's digest or the signature is not Valid). After a release is published and copied to dl.pctweaker.app, refresh it, commit the file and deploy:
+
+```powershell
+node scripts/release-trust.mjs --repo AurelioAvila/redaxa --key redaxa --asset '^Redaxa_.*_x64-setup\.exe$' --out release-trust.json --url https://dl.pctweaker.app/redaxa/vX.Y.Z/Redaxa_X.Y.Z_x64-setup.exe
+```
+
+`softwareVersion` in the structured data is filled from `package.json` at build time; prices are read from the same JSON-LD, which `npm test` (`scripts/seo.test.mjs`) checks against the prices shown on the page.

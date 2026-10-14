@@ -1,0 +1,18 @@
+{
+  "redaxa": {
+    "version": "0.6.0",
+    "tag": "v0.6.0",
+    "published": "2026-10-14T19:48:37Z",
+    "file": "Redaxa_0.6.0_x64-setup.exe",
+    "size": 34618008,
+    "sha256": "c4f3b84834ae4f945c219e1c89ac6083d39c0dc93762d4290ef284c535816acc",
+    "download": "https://dl.pctweaker.app/redaxa/v0.6.0/Redaxa_0.6.0_x64-setup.exe",
+    "releasePage": "https://github.com/AurelioAvila/redaxa/releases/tag/v0.6.0",
+    "signature": {
+      "status": "Valid",
+      "signer": "Aurelio Avila",
+      "thumbprint": "4F8341A74D16077AE1849DC8B8CAC99F22606754",
+      "timestamped": true
+    }
+  }
+}
