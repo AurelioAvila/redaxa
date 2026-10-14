@@ -87,7 +87,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const clash = db.claims.find((c) => c.subscription_id !== body?.p_subscription_id
       && (c.user_id === body?.p_user_id || c.email_hash === body?.p_email_hash || (body?.p_card_fingerprint && c.card_fingerprint === body?.p_card_fingerprint)));
     if (!clash && !db.claims.some((c) => c.subscription_id === body?.p_subscription_id)) {
-      db.claims.push({ subscription_id: body?.p_subscription_id, user_id: body?.p_user_id, email_hash: body?.p_email_hash, card_fingerprint: body?.p_card_fingerprint, trial_end: body?.p_trial_end, reminded_for: null });
+      db.claims.push({ subscription_id: body?.p_subscription_id, user_id: body?.p_user_id, email_hash: body?.p_email_hash, card_fingerprint: body?.p_card_fingerprint, trial_end: body?.p_trial_end, reminded_for: null, created_at: new Date((Number(new Date(String(body?.p_trial_end))) - 3 * 86_400_000)).toISOString() });
     }
     return json(db.claims.some((c) => c.subscription_id === body?.p_subscription_id));
   }
@@ -97,6 +97,8 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
       Object.assign(db.claims.find((c) => c.subscription_id === id)!, body);
       return new Response(null, { status: 204 });
     }
+    const byUser = /user_id=eq.([^&]+)/.exec(url);
+    if (byUser) return json(db.claims.filter((c) => c.user_id === decodeURIComponent(byUser[1])));
     return json(db.claims.filter((c) => c.reminded_for === null));
   }
   if (url.includes("/rest/v1/billing_accounts")) {
@@ -252,7 +254,7 @@ resetDb();
   assert.equal(res.body.active, true);
   assert.equal(res.body.status, "trialing", "old clients read the same fields as before");
   assert.deepEqual({ ...res.body.billing }, {
-    trialEnabled: true, trialDays: 3, state: "trialing", blockedReason: "none", plan: "personal", interval: "month",
+    trialEnabled: true, trialDays: 3, trialLength: 7, state: "trialing", blockedReason: "none", plan: "personal", interval: "month",
     trialEndsAt: "2026-10-17T10:00:00.000Z", currentPeriodEnd: "2026-10-17T10:00:00.000Z", cancelAtPeriodEnd: false,
     canStartTrial: false, trialUsed: true, portalAvailable: true,
   });
@@ -310,6 +312,9 @@ resetDb(); clearMails(); cancelled.length = 0;
   assert.equal(db.claims[0].card_fingerprint, "fp_pm_user-c");
   assert.equal(db.claims[0].email_hash, await trial.emailHash("c@example.test"));
   assert.equal(await syncSubscription(sub), "user-c", "a replayed event keeps its own claim");
+  const own = response();
+  await account({ method: "GET", headers: { authorization: "Bearer user-c" } }, own as any);
+  assert.equal(own.body.billing.trialLength, 3, "the running trial's own length, for the progress in the sidebar");
   await deliver("customer.subscription.created", sub);
   const started = mails().find((m) => m.startsWith("Pro is on for 3 days, Giulia."));
   assert.ok(started, mails().join("\n----\n"));

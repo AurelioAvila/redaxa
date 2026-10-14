@@ -215,10 +215,25 @@ export type BillingView = {
   currentPeriodEnd: string | null;
   cancelAtPeriodEnd: boolean;
   canStartTrial: boolean;
+  /** Length in days of the trial that is running (7 for trials sold before the rule), else null. */
+  trialLength: number | null;
   /** The trial has been used on this account (or refused to it). */
   trialUsed: boolean;
   portalAvailable: boolean;
 };
+
+/** Days of the running trial, from its claim; trials without one are the seven-day kind. */
+async function runningTrialLength(userId: string, trialEnd: string | null, environment: NodeJS.ProcessEnv): Promise<number> {
+  if (!trialEnabled(environment) || !trialEnd) return LEGACY_TRIAL_DAYS;
+  try {
+    const response = await supabaseService(`/rest/v1/redaxa_trial_claims?user_id=eq.${encodeURIComponent(userId)}&select=created_at,trial_end`, { method: "GET" });
+    const claim = response.ok ? (await response.json() as Array<{ created_at: string; trial_end: string | null }>)[0] : undefined;
+    if (!claim?.trial_end || !claim.created_at || Date.parse(claim.trial_end) !== Date.parse(trialEnd)) return LEGACY_TRIAL_DAYS;
+    return Math.max(1, Math.round((Date.parse(claim.trial_end) - Date.parse(claim.created_at)) / 86_400_000));
+  } catch {
+    return LEGACY_TRIAL_DAYS;
+  }
+}
 
 export async function billingView(user: { id: string; email: string }, account: (BillingAccount & { cancel_at_period_end?: boolean | null; billing_interval?: string | null }) | null, environment: NodeJS.ProcessEnv = process.env): Promise<BillingView> {
   const { state, blockedReason } = stateOf(account?.subscription_status);
@@ -231,6 +246,7 @@ export async function billingView(user: { id: string; email: string }, account: 
   return {
     trialEnabled: trialEnabled(environment),
     trialDays: TRIAL_DAYS,
+    trialLength: state === "trialing" ? await runningTrialLength(user.id, account?.current_period_end ?? null, environment) : null,
     state,
     blockedReason,
     plan: account?.plan ?? null,
