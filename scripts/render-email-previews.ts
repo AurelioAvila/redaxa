@@ -14,7 +14,7 @@ const pages: Record<string, string> = {
   "welcome": welcomeHtml("Giulia", app),
   "trial-started": subscriptionHtml(sub),
   "subscription-confirmed-business": subscriptionHtml({ ...sub, plan: "business", priceLabel: "€449.70 / year", renewsOn: "14 October 2027", trialing: false }),
-  "password-changed": passwordChangedHtml("Giulia", "Wed, 14 Oct 2026 09:41:00 GMT"),
+  "password-changed": passwordChangedHtml("Giulia", "14 October 2026 at 09:41 UTC"),
   "owner-sale-notice": renderEmail({ subject: "New Redaxa subscription — Pro — Yearly", preheader: "x", footer: "Internal notice for the Redaxa team. Stripe holds the payment record.", blocks: [{ kicker: "New subscription" }, { h1: "New Redaxa subscription" }, { rows: [["Plan", "Pro — Yearly"], ["Account", "giulia@example.com"]] }] }).html,
 };
 // The Redaxa branch of each Supabase template, with sample values for its placeholders.
