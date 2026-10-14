@@ -20,7 +20,7 @@ which a generic wait mistook for the result on a busy machine. Timing limits
 leave room for a loaded machine; the engine's own budget is asserted in
 browser-extension/detection.test.mjs.
 """
-import argparse, json, pathlib, sys, tempfile, time
+import argparse, atexit, json, pathlib, shutil, sys, tempfile, time
 from playwright.sync_api import sync_playwright
 
 parser = argparse.ArgumentParser()
@@ -81,6 +81,7 @@ def sent(page):
 
 def run(lang):
     profile = tempfile.mkdtemp(prefix="rdx-e2e-")
+    atexit.register(shutil.rmtree, profile, ignore_errors=True)  # the browser holds it until it closes
     with sync_playwright() as p:
         context = p.chromium.launch_persistent_context(profile, executable_path=args.browser, headless=True,
             args=[f"--disable-extensions-except={ext}", f"--load-extension={ext}", f"--lang={lang}",
