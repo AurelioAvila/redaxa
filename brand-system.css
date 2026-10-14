@@ -1289,3 +1289,18 @@ html.rx-native .repository-page .download-app{display:none}
     transform: none;
   }
 }
+
+/* Polish pass, 14 Oct 2026. Spacing and type only: the landing's trust cards stood edge to edge,
+   the repository call to action ran into its footnote, the pricing intro sat on the billing switch,
+   and the hero's fine print was 12.5px dense. No colour, copy or behaviour change. */
+.redaxa-landing .hero h1 {font-size:clamp(42px,4.6vw,64px);text-wrap:balance}
+.redaxa-landing .hero-meta {font-size:13.5px;line-height:1.7;max-width:540px}
+.redaxa-landing .rx-benefits + .btn-primary {margin-top:6px}
+.redaxa-landing .btn-primary + .rx-preview-note {margin-top:18px}
+.redaxa-landing .trust {gap:14px;border-top:0}
+.redaxa-landing .trust-item {border:1px solid var(--theme-strong);border-radius:14px;padding:24px 24px 22px;background:var(--theme-surface)}
+.redaxa-landing .trust-item:last-child {border-right:1px solid var(--theme-strong)}
+.redaxa-landing .trust-item h3 {margin-top:22px}
+.redaxa-landing .plans-page .lede {margin-bottom:22px}
+.redaxa-landing .billing-switch {margin-top:0}
+@media(max-width:740px){.redaxa-landing .trust{grid-template-columns:1fr}}
