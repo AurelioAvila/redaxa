@@ -74,15 +74,15 @@ export function subscriptionSubject(trialing: boolean): string {
   return trialing ? "Your Redaxa trial has started" : "Your Redaxa subscription is confirmed";
 }
 
-// Redaxa emails, after the revised design kit: the brand runs from top to bottom. An Ink hero (the
-// colour of the Lock Pup's face, Redaxa's "Ink & Copper") carries the mark, the kind of message, the
-// title and the intro; a line of redaction bars under it is the signature; the body alternates cream
-// and copper-tinted Paper sections; an optional copper "moment" band states the number that matters;
-// the footer closes on Ink with the bars again. Contrast: white on ink 17:1, ink on cream 16.9:1,
-// muted 6.9:1, white on copper 6.4:1.
-const P = { page: "#ece3d6", card: "#fffcf7", alt: "#f7efe4", panel: "#f1e6d7", line: "#e6d8c5", ink: "#1b1724", muted: "#5a5466", copper: "#a3471d", copperInk: "#ffffff", night: "#1b1724", nightHi: "#2c2735", chrome: "#bdb5c4", glow: "#e8956a" };
-const D = { page: "#0f0d12", card: "#1c1a21", alt: "#221f28", panel: "#2a2631", line: "#353140", ink: "#f4f1ec", muted: "#b8b1bf", copper: "#e8956a" };
-const SANS = "font-family:Inter,'Segoe UI',Bahnschrift,Helvetica,Arial,sans-serif;";
+// Redaxa emails, design kit v3: one continuous graphite-teal composition, no white anywhere. A teal
+// hero carries the mark, the kind of message, the title and the intro; three 6 px bands step it down
+// into the body; sections alternate two teal tints; steps and facts sit on raised panels; a teal
+// "moment" band states the number that matters next to a block of redaction bars (the signature);
+// the footer closes near-black with the bars again. The palette is already dark, so dark mode pins it
+// rather than inverting it. Contrast: ink on card 12.9:1, muted on card 8.4:1, copper ink on copper 8.6:1.
+const P = { page: "#10252d", card: "#193740", alt: "#142e37", panel: "#1e424d", line: "#34525b", ink: "#eef5f4", muted: "#b6cccd", soft: "#d7e4e4", copper: "#ffb184", copperInk: "#3c2119", night: "#0b1a20", hero: "#1b4450", foot: "#8fa9ab" };
+const D = P;
+const SANS = "font-family:Inter,Bahnschrift,'Segoe UI',Helvetica,Arial,sans-serif;";
 const MONO = "font-family:Consolas,'SFMono-Regular',Menlo,'Courier New',monospace;";
 
 export type EmailKind = "account" | "security" | "billing" | "welcome" | "internal";
@@ -102,7 +102,7 @@ export type Block =
   | { h2: string }
   | { p: string; muted?: boolean }
   | { note: string; title?: string }
-  | { rows: Array<[string, string]> }
+  | { rows: Array<[string, string]>; /** The last row is the total: printed on copper. */ total?: boolean }
   | { list: string[]; numbered?: boolean }
   | { button: { href: string; label: string; secondary?: boolean } }
   | { code: string }
@@ -150,14 +150,18 @@ export function renderEmail(input: EmailInput): { subject: string; html: string;
     return fresh;
   };
   const panel = (inner: string): string =>
-    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="panel" bgcolor="${P.panel}" style="background:${P.panel};border-radius:10px;margin:0 0 24px;"><tr><td style="padding:17px 19px;">${inner}</td></tr></table>`;
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="panel" bgcolor="${P.panel}" style="background:${P.panel};border:1px solid ${P.line};border-radius:12px;margin:0 0 24px;"><tr><td style="padding:16px 20px;">${inner}</td></tr></table>`;
+  // A step or an included feature: a raised panel with a dark chip, "01" for steps, a copper bar for features.
+  const chipRow = (chip: string, item: string, chipBg = P.night, chipInk = P.copper): string =>
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="panel" bgcolor="${P.panel}" style="background:${P.panel};border:1px solid ${P.line};border-radius:12px;margin:0 0 10px;"><tr><td width="62" valign="top" style="padding:16px 0 14px 14px;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" width="44" height="22" bgcolor="${chipBg}" style="width:44px;height:22px;border-radius:11px;background:${chipBg};font-family:Arial,sans-serif;font-size:12px;line-height:22px;font-weight:700;color:${chipInk};">${chip}</td></tr></table></td><td class="ink" valign="top" style="padding:14px 16px 14px 6px;${SANS}font-size:15px;line-height:22px;color:${P.ink};">${item}</td></tr></table>`;
+  const featureChip = `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td width="16" height="10" bgcolor="${P.copper}" style="width:16px;height:10px;border-radius:3px;background:${P.copper};font-size:0;line-height:0;">&nbsp;</td></tr></table>`;
   for (const block of input.blocks) {
     if ("kicker" in block) { hero.kicker = block.kicker; }
     else if ("h1" in block) { hero.h1 = block.h1; text.push(block.h1); }
     else if ("p" in block && !block.muted && hero.p === undefined && html().length === 0) { hero.p = block.p; text.push(block.p); }
     else if ("h2" in block) {
       if (html().length) sections.push([]);
-      html().push(`<p class="eyebrow" style="margin:0 0 16px;${SANS}font-size:12px;line-height:16px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:${P.copper};">${e(block.h2)}</p>`);
+      html().push(`<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 14px;"><tr><td class="eyebrow" style="padding:0 12px 0 0;${SANS}font-size:12px;line-height:16px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:${P.copper};">${e(block.h2)}</td><td width="60" style="font-size:0;line-height:0;border-top:2px dashed ${P.copper};">&nbsp;</td></tr></table>`);
       text.push(block.h2);
     } else if ("p" in block) {
       html().push(block.muted
@@ -170,27 +174,30 @@ export function renderEmail(input: EmailInput): { subject: string; html: string;
       text.push(block.title ? `${block.title}\n${block.note}` : block.note);
     } else if ("rows" in block) {
       const last = block.rows.length - 1;
-      html().push(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="panel" bgcolor="${P.panel}" style="background:${P.panel};border-left:4px solid ${P.copper};border-radius:6px;margin:0 0 24px;"><tr><td style="padding:4px 18px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">` +
+      html().push(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="panel" bgcolor="${P.panel}" style="background:${P.panel};border:1px solid ${P.line};border-left:4px solid ${P.copper};border-radius:10px;margin:0 0 24px;"><tr><td style="padding:${block.total ? "6px 0 0" : "6px 0"};"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">` +
         block.rows.map(([key, value], i) => {
-          const rule = i < last ? `border-bottom:1px solid ${P.line};` : "";
-          return `<tr><td class="muted rule" width="38%" valign="top" style="padding:11px 12px 11px 0;${rule}${SANS}font-size:13px;line-height:20px;color:${P.muted};">${e(key)}</td><td class="ink rule" valign="top" style="padding:11px 0;${rule}${SANS}font-size:15px;line-height:20px;font-weight:700;color:${P.ink};word-break:break-word;">${e(value)}</td></tr>`;
+          const rule = i > 0 ? `border-top:1px solid ${P.line};` : "";
+          if (block.total && i === last) {
+            return `<tr><td width="38%" valign="top" bgcolor="${P.copper}" style="padding:12px 12px 12px 20px;background:${P.copper};${SANS}font-size:13px;line-height:20px;font-weight:700;color:${P.copperInk};">${e(key)}</td><td valign="top" bgcolor="${P.copper}" style="padding:12px 20px 12px 0;background:${P.copper};${SANS}font-size:16px;line-height:20px;font-weight:800;color:${P.copperInk};word-break:break-word;">${e(value)}</td></tr>`;
+          }
+          return `<tr><td class="muted rule" width="38%" valign="top" style="padding:10px 12px 10px 20px;${rule}${SANS}font-size:13px;line-height:20px;color:${P.muted};">${e(key)}</td><td class="ink rule" valign="top" style="padding:10px 20px 10px 0;${rule}${SANS}font-size:15px;line-height:20px;font-weight:700;color:${P.ink};word-break:break-word;">${e(value)}</td></tr>`;
         }).join("") + "</table></td></tr></table>");
       text.push(block.rows.map(([key, value]) => `${key}: ${value}`).join("\n"));
     } else if ("list" in block) {
-      html().push(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 8px;">` +
-        block.list.map((item, i) => `<tr><td width="30" valign="top" style="padding:0 14px 0 0;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td class="btn-cell" align="center" width="30" height="30" bgcolor="${P.copper}" style="width:30px;height:30px;border-radius:15px;background:${P.copper};font-family:Arial,sans-serif;font-size:14px;line-height:30px;font-weight:700;color:${P.copperInk};">${block.numbered ? i + 1 : "&#10003;"}</td></tr></table></td><td class="ink" valign="top" style="padding:4px 0 16px;${SANS}font-size:15px;line-height:22px;color:${P.ink};">${e(item)}</td></tr>`).join("") + "</table>");
+      html().push(block.list.map((item, i) => chipRow(block.numbered ? String(i + 1).padStart(2, "0") : featureChip, e(item))).join("") + `<div style="height:14px;font-size:0;line-height:0;">&nbsp;</div>`);
       text.push(block.list.map((item, i) => `${block.numbered ? `${i + 1}.` : "-"} ${item}`).join("\n"));
     } else if ("button" in block) {
       html().push(button(block.button.href, block.button.label));
       text.push(`${block.button.label}: ${block.button.href}`);
     } else if ("code" in block) {
-      html().push(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${P.night}" style="background:${P.night};border-radius:12px;margin:0 0 22px;"><tr><td align="center" style="padding:18px 16px 4px;">${redactionBars([30, 14, 44, 18], ["#4a4552", P.glow, "#4a4552", "#4a4552"], 6)}</td></tr><tr><td align="center" class="otp" style="padding:12px 16px 20px;${MONO}font-size:32px;line-height:38px;font-weight:700;letter-spacing:8px;color:#ffffff;">${e(block.code)}</td></tr></table>`);
+      html().push(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${P.night}" style="background:${P.night};border:1px solid ${P.line};border-radius:12px;margin:0 0 22px;"><tr><td align="center" style="padding:18px 16px 4px;">${redactionBars([30, 14, 44, 18], [P.line, P.copper, P.line, P.line], 6)}</td></tr><tr><td align="center" class="otp" style="padding:12px 16px 20px;${MONO}font-size:32px;line-height:38px;font-weight:700;letter-spacing:8px;color:#ffffff;">${e(block.code)}</td></tr></table>`);
       text.push(block.code);
     } else if ("link" in block) {
-      html().push(`<p class="muted" style="margin:-10px 0 24px;${SANS}font-size:13px;line-height:19px;color:${P.muted};word-break:break-all;">${e(block.link.label)}<br><a class="link" href="${e(block.link.href)}" style="color:${P.copper};">${e(block.link.href)}</a></p>`);
+      html().push(`<p class="muted" style="margin:-10px 0 24px;${SANS}font-size:13px;line-height:19px;color:${P.muted};">${e(block.link.label)}<br><a class="link" href="${e(block.link.href)}" style="color:${P.copper};word-break:break-all;">${e(block.link.href)}</a></p>`);
       text.push(`${block.link.label}\n${block.link.href}`);
     } else if ("security" in block) {
-      html().push(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="panel" bgcolor="${P.panel}" style="background:${P.panel};border-left:4px solid ${P.ink};border-radius:6px;margin:0 0 24px;"><tr><td style="padding:16px 18px;"><p class="ink" style="margin:0 0 8px;${SANS}font-size:15px;line-height:22px;color:${P.ink};"><strong>If this was you:</strong> ${e(block.security[0])}</p><p class="ink" style="margin:0;${SANS}font-size:15px;line-height:22px;color:${P.ink};"><strong>If it was not:</strong> ${e(block.security[1])}</p></td></tr></table>`);
+      html().push(chipRow("&#10003;", `<strong>If this was you:</strong> ${e(block.security[0])}`, P.copper, P.copperInk) +
+        chipRow("&#10007;", `<strong>If it was not:</strong> ${e(block.security[1])}`) + `<div style="height:14px;font-size:0;line-height:0;">&nbsp;</div>`);
       text.push(`If this was you: ${block.security[0]}\nIf it was not: ${block.security[1]}`);
     } else if ("moment" in block) {
       sections.push({ moment: block.moment });
@@ -200,15 +207,25 @@ export function renderEmail(input: EmailInput): { subject: string; html: string;
 
   const site = SITE_URL;
   const kind = input.kind ?? "account";
+  // Security notices keep the composition but warm the hero, the bands and the moment towards oxblood.
+  const tone = kind === "security"
+    ? { hero: "#3a2a2e", heroImage: "linear-gradient(160deg,#2a1f25 0%,#4a3038 100%)", moment: "linear-gradient(135deg,#4a3038 0%,#2a1f25 100%)", bands: ["#42323a", "#2E3038", "#1C333B"] }
+    : { hero: P.hero, heroImage: `linear-gradient(160deg,${P.alt} 0%,#245864 100%)`, moment: `linear-gradient(135deg,#245864 0%,${P.alt} 100%)`, bands: ["#1F4B57", "#1A3C46", "#163440"] };
   const logo = `<img src="${site}/outputs/redaxa-mark-128.png" width="56" height="56" alt="Redaxa" style="display:block;width:56px;height:56px;border-radius:14px;">`;
-  const smallLogo = `<img src="${site}/outputs/redaxa-mark-128.png" width="28" height="28" alt="" style="display:block;width:28px;height:28px;border-radius:7px;">`;
+  const smallLogo = `<img src="${site}/outputs/redaxa-mark-128.png" width="32" height="32" alt="" style="display:block;width:32px;height:32px;border-radius:8px;">`;
+  const wordmark = `${SANS}font-size:14px;line-height:18px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:#cfe0e0;`;
   const brand = input.noLinks
-    ? `<td width="56" valign="middle" style="padding:0 14px 0 0;">${logo}</td><td valign="middle" style="${SANS}font-size:15px;line-height:20px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:#f4f1ec;">Redaxa</td>`
-    : `<td width="56" valign="middle" style="padding:0 14px 0 0;"><a href="${site}/" style="text-decoration:none;">${logo}</a></td><td valign="middle" style="${SANS}font-size:15px;line-height:20px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;"><a href="${site}/" style="color:#f4f1ec;text-decoration:none;">Redaxa</a></td>`;
+    ? `<td width="56" valign="middle" style="padding:0 14px 0 0;">${logo}</td><td valign="middle" style="${wordmark}">Redaxa</td>`
+    : `<td width="56" valign="middle" style="padding:0 14px 0 0;"><a href="${site}/" style="text-decoration:none;">${logo}</a></td><td valign="middle" style="${wordmark}"><a href="${site}/" style="color:#cfe0e0;text-decoration:none;">Redaxa</a></td>`;
+  // The signature block of the moment band: three lines of redaction bars, one segment in copper on each.
+  const bar = (width: number, colour: string, span = 1): string => `<td${span > 1 ? ` colspan="${span}"` : ""} width="${width}" height="8" bgcolor="${colour}" style="width:${width}px;height:8px;background:${colour};border-radius:4px;font-size:0;line-height:0;">&nbsp;</td>`;
+  const space = `<td width="4" style="font-size:0;line-height:0;">&nbsp;</td>`;
+  const gap = `<tr><td colspan="5" height="6" style="font-size:0;line-height:0;">&nbsp;</td></tr>`;
+  const barBlock = `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>${bar(22, P.night)}${space}${bar(10, P.copper)}${space}${bar(36, P.night)}</tr>${gap}<tr>${bar(22, P.night)}${space}${bar(50, P.night, 3)}</tr>${gap}<tr>${bar(36, P.copper, 3)}${space}${bar(36, P.night)}</tr></table>`;
   const [helpTitle, helpText] = input.help ?? ["Something not as described?", "Reply to this email with what you were doing and what you saw."];
   const write = /^Reply/.test(helpText) ? "Or write to" : "Write to";
   const support = input.noLinks ? SUPPORT_ADDRESS : `<a class="link" href="mailto:${SUPPORT_ADDRESS}" style="color:${P.copper};">${SUPPORT_ADDRESS}</a>`;
-  const footLink = "color:#f0c9ad;";
+  const footLink = `color:${P.soft};`;
   const links = input.noLinks
     ? "redaxa.getcertsprint.com"
     : `<a href="${site}/" style="${footLink}">redaxa.getcertsprint.com</a> &middot; <a href="${site}/privacy.html" style="${footLink}">Privacy</a> &middot; <a href="${site}/terms.html" style="${footLink}">Terms</a> &middot; <a href="mailto:${SUPPORT_ADDRESS}" style="${footLink}">Support</a>`;
@@ -216,13 +233,15 @@ export function renderEmail(input: EmailInput): { subject: string; html: string;
   const body = sections.map(section => {
     if (!Array.isArray(section)) {
       alternate = false;
-      return `<tr><td class="pad" bgcolor="${P.copper}" style="background:${P.copper};background-image:linear-gradient(120deg,#8c3a16 0%,#b4562b 100%);padding:24px 36px;"><p style="margin:0 0 6px;${SANS}font-size:12px;line-height:16px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:#ffe2cf;">${e(section.moment.kicker)}</p><p class="big" style="margin:0 0 6px;${SANS}font-size:32px;line-height:38px;font-weight:700;letter-spacing:-0.6px;color:#ffffff;">${e(section.moment.big)}</p><p style="margin:0;${SANS}font-size:14px;line-height:21px;color:#fde9dc;">${e(section.moment.text)}</p></td></tr>`;
+      return `<tr><td class="pad" bgcolor="${tone.hero}" style="background:${tone.hero};background-image:${tone.moment};padding:22px 36px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td valign="middle"><p style="margin:0 0 4px;${SANS}font-size:12px;line-height:16px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:${P.copper};">${e(section.moment.kicker)}</p><p class="big" style="margin:0 0 4px;${SANS}font-size:32px;line-height:38px;font-weight:800;letter-spacing:-0.6px;color:#ffffff;">${e(section.moment.big)}</p><p style="margin:0;${SANS}font-size:14px;line-height:20px;color:${P.soft};">${e(section.moment.text)}</p></td><td class="hide-sm" width="92" align="right" valign="middle">${barBlock}</td></tr></table></td></tr>`;
     }
     if (!section.length) return "";
-    const tone = alternate ? { cls: "alt", bg: P.alt } : { cls: "card", bg: P.card };
+    const shade = alternate ? { cls: "alt", bg: P.alt } : { cls: "card", bg: P.card };
     alternate = !alternate;
-    return `<tr><td class="${tone.cls} pad" bgcolor="${tone.bg}" style="background:${tone.bg};padding:30px 36px 8px;">\n${section.join("\n")}\n</td></tr>`;
+    return `<tr><td class="${shade.cls} pad" bgcolor="${shade.bg}" style="background:${shade.bg};padding:28px 36px 6px;">\n${section.join("\n")}\n</td></tr>`;
   }).join("\n");
+  // The help block takes the tint the next section would have had, so no seam appears above the footer.
+  const helpTone = alternate ? { cls: "alt", bg: P.alt } : { cls: "card", bg: P.card };
   const dark = `.bg{background:${D.page}!important}.card{background:${D.card}!important}.alt{background:${D.alt}!important}.panel{background:${D.panel}!important}.ink{color:${D.ink}!important}.muted{color:${D.muted}!important}.rule{border-color:${D.line}!important}.link,.eyebrow{color:${D.copper}!important}`;
   const ogsc = dark.replace(/(^|\}|,)\./g, "$1[data-ogsc] .");
 
@@ -260,32 +279,30 @@ export function renderEmail(input: EmailInput): { subject: string; html: string;
 <!--[if mso]><table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td><![endif]-->
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:600px;margin:0 auto;">
   <tr><td bgcolor="${P.copper}" style="height:6px;font-size:0;line-height:0;background:${P.copper};border-radius:16px 16px 0 0;">&nbsp;</td></tr>
-  <tr><td class="hero pad" bgcolor="${P.night}" style="background:${P.night};background-image:linear-gradient(160deg,#141118 0%,#2c2537 100%);padding:28px 36px 24px;">
+  <tr><td class="hero pad" bgcolor="${tone.hero}" style="background:${tone.hero};background-image:${tone.heroImage};padding:28px 36px 26px;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
       ${brand}
-      <td class="hide-sm" align="right" valign="middle" style="${SANS}font-size:12px;line-height:16px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:${P.glow};">${e(KIND_LABEL[kind])}</td>
+      <td class="hide-sm" align="right" valign="middle" style="${SANS}font-size:12px;line-height:16px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:${P.copper};">${e(KIND_LABEL[kind])}</td>
     </tr></table>
-    ${hero.kicker ? `<p style="margin:24px 0 8px;${SANS}font-size:12px;line-height:16px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:${P.glow};">${e(hero.kicker)}</p>` : ""}
-    <h1 class="h1" style="margin:${hero.kicker ? 0 : 22}px 0 10px;${SANS}font-size:30px;line-height:36px;font-weight:700;letter-spacing:-0.6px;color:#ffffff;">${e(hero.h1 ?? input.subject)}</h1>
-    ${hero.p ? `<p style="margin:0 0 20px;${SANS}font-size:16px;line-height:25px;color:#e6e0ea;">${e(hero.p)}</p>` : `<div style="height:8px;font-size:0;line-height:0;">&nbsp;</div>`}
-    ${redactionBars([46, 22, 70, 16, 34], ["#4a4552", "#4a4552", P.glow, "#4a4552", "#4a4552"])}
+    ${hero.kicker ? `<p style="margin:24px 0 8px;${SANS}font-size:12px;line-height:16px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:${P.copper};">${e(hero.kicker)}</p>` : ""}
+    <h1 class="h1" style="margin:${hero.kicker ? 0 : 22}px 0 10px;${SANS}font-size:30px;line-height:36px;font-weight:800;letter-spacing:-0.6px;color:#ffffff;">${e(hero.h1 ?? input.subject)}</h1>
+    ${hero.p ? `<p style="margin:0;${SANS}font-size:16px;line-height:25px;color:${P.soft};">${e(hero.p)}</p>` : ""}
   </td></tr>
-  <tr><td bgcolor="#c46a3e" style="height:4px;font-size:0;line-height:0;background:#c46a3e;">&nbsp;</td></tr>
-  <tr><td bgcolor="#e2a582" style="height:4px;font-size:0;line-height:0;background:#e2a582;">&nbsp;</td></tr>
+  ${tone.bands.map(band => `<tr><td bgcolor="${band}" style="height:6px;font-size:0;line-height:0;background:${band};">&nbsp;</td></tr>`).join("")}
   ${body}
-  <tr><td class="alt pad" bgcolor="${P.alt}" style="background:${P.alt};padding:8px 36px 28px;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="panel" bgcolor="${P.panel}" style="background:${P.panel};border-left:4px solid ${P.copper};border-radius:6px;"><tr><td style="padding:16px 18px;">
+  <tr><td class="${helpTone.cls} pad" bgcolor="${helpTone.bg}" style="background:${helpTone.bg};padding:8px 36px 28px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="panel" bgcolor="${P.panel}" style="background:${P.panel};border-left:4px solid ${P.copper};border-radius:0 12px 12px 0;"><tr><td style="padding:14px 20px;">
       <p class="ink" style="margin:0 0 4px;${SANS}font-size:14px;line-height:21px;font-weight:700;color:${P.ink};">${e(helpTitle)}</p>
       <p class="muted" style="margin:0;${SANS}font-size:14px;line-height:21px;color:${P.muted};">${e(helpText)} ${write} ${support}. Never send a password or an API key by email.</p>
     </td></tr></table>
   </td></tr>
-  <tr><td class="pad" bgcolor="${P.night}" style="background:${P.night};padding:24px 36px 26px;border-radius:0 0 16px 16px;">
+  <tr><td class="pad" bgcolor="${P.night}" style="background:${P.night};padding:20px 36px 22px;border-radius:0 0 16px 16px;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-      <td valign="middle"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td valign="middle" style="padding:0 10px 0 0;">${smallLogo}</td><td valign="middle" style="${SANS}font-size:14px;line-height:18px;font-weight:700;color:#ffffff;">Redaxa<br><span style="font-size:12px;font-weight:400;color:${P.chrome};">Share the work. Keep the secrets.</span></td></tr></table></td>
-      <td class="hide-sm" align="right" valign="middle">${redactionBars([22, 12, 30], ["#4a4552", P.glow, "#4a4552"], 6)}</td>
+      <td valign="middle"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td valign="middle" style="padding:0 10px 0 0;">${smallLogo}</td><td valign="middle" style="${SANS}font-size:15px;line-height:20px;font-weight:800;color:${P.soft};">Redaxa<br><span style="font-size:12px;line-height:18px;font-weight:400;color:${P.foot};">Share the work. Keep the secrets.</span></td></tr></table></td>
+      <td class="hide-sm" align="right" valign="middle">${redactionBars([18, 8, 28, 12], [P.line, P.copper, P.line, P.line], 6)}</td>
     </tr></table>
-    <p style="margin:16px 0 6px;${SANS}font-size:12px;line-height:18px;color:${P.chrome};">${e(input.footer)}</p>
-    <p style="margin:0;${SANS}font-size:12px;line-height:18px;color:${P.chrome};">${links}</p>
+    <p style="margin:14px 0 6px;${SANS}font-size:12px;line-height:18px;color:${P.foot};">${e(input.footer)}</p>
+    <p style="margin:0;${SANS}font-size:12px;line-height:18px;color:${P.soft};">${links}</p>
   </td></tr>
 </table>
 <!--[if mso]></td></tr></table><![endif]-->
@@ -329,7 +346,7 @@ function subscriptionEmail(input: SubscriptionEmailInput): { subject: string; ht
       { kicker: trialing ? "Trial started" : "Subscription active" },
       { h1: greet(trialing ? "Your trial is running" : "You're all set", firstName) },
       { p: intro },
-      { rows },
+      { rows, total: Boolean(renewsOn) },
       { button: { href: appUrl, label: "Open Redaxa" } },
       ...(trialing ? [{ moment: { kicker: "Trial", big: "Seven days, every feature", text: `Nothing is charged before ${renewsOn ?? "the trial ends"}, and you can cancel before then.` } }] : []),
       { h2: "Three things to try first" },
