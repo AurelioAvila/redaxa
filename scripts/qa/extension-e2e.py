@@ -8,9 +8,17 @@ from their live composer and Send-button structure. Every value is fictional.
 
 Checks: welcome tab, popup example, automatic check on Enter and on Send in
 each site shape, Escape / replace / send anyway, manual check, the off
-switch, Italian interface, 20,000-character prompt timing, and that free
-checks make no network request (the worker's fetch is recorded) while the
-account API still answers the extension over CORS without host permissions.
+switch (also in a tab that is already open), Italian interface,
+20,000-character prompt timing, that the content script cannot read
+extension storage, and that free checks make no network request (the
+worker's fetch is recorded) while the account API still answers the
+extension over CORS without host permissions.
+
+Waits target the element a step produces (the result dialog's Replace button,
+not any dialog): a check slower than 300 ms first shows a "Checking" dialog,
+which a generic wait mistook for the result on a busy machine. Timing limits
+leave room for a loaded machine; the engine's own budget is asserted in
+browser-extension/detection.test.mjs.
 """
 import argparse, json, pathlib, sys, tempfile, time
 from playwright.sync_api import sync_playwright
@@ -55,6 +63,7 @@ box.addEventListener('keydown', e => {{ if (e.key === 'Enter' && !e.shiftKey) {{
 document.querySelector('button').addEventListener('click', send);
 </script></body></html>"""
 
+WAIT = 15000  # ms for one step on a busy machine
 failures = []
 def check(ok, label):
     print(("PASS " if ok else "FAIL ") + label)
@@ -88,13 +97,21 @@ def run(lang):
         for host in SHAPES:
             context.route(f"https://{host}/**", stand_in(host))
 
-        # Welcome tab on first install.
-        deadline = time.time() + 10
-        welcome = None
-        while time.time() < deadline and not welcome:
-            welcome = next((pg for pg in context.pages if "popup.html?welcome" in pg.url), None)
-            time.sleep(0.2)
-        check(welcome is not None, f"[{lang}] welcome tab opens on install")
+        # Welcome tab on first install. The extension opens it while Playwright
+        # is still attaching, so it can be missing from context.pages for good
+        # (the old flaky failure): the browser's own target list is the evidence,
+        # and the flow below runs on that page or, if unattached, a fresh copy.
+        deadline = time.time() + 30
+        opened = None
+        while time.time() < deadline and not opened:
+            cdp = context.new_cdp_session(context.pages[0])
+            opened = next((t for t in cdp.send("Target.getTargets")["targetInfos"] if t["type"] == "page" and "popup.html?welcome" in t["url"]), None)
+            cdp.detach()
+            if not opened: time.sleep(0.2)
+        check(opened is not None, f"[{lang}] welcome tab opens on install")
+        welcome = next((pg for pg in context.pages if "popup.html?welcome" in pg.url), None)
+        if welcome is None:
+            welcome = context.new_page(); welcome.goto(f"chrome-extension://{ext_id}/popup.html?welcome")
         if lang != "en":
             popup = context.new_page(); popup.goto(f"chrome-extension://{ext_id}/popup.html")
             check(popup.inner_text("#check-button").startswith("Controlla"), f"[{lang}] popup is translated")
@@ -103,7 +120,7 @@ def run(lang):
             site.wait_for_selector("#redaxa-check-btn")
             check(site.inner_text("#redaxa-check-btn") == "Controlla con Redaxa", f"[{lang}] page button is translated")
             type_into(site, EXAMPLE); site.keyboard.press("Enter")
-            site.wait_for_selector("#redaxa-intercept [role=dialog]")
+            site.wait_for_selector("#ps-int-fix", timeout=WAIT)
             title = site.inner_text("#ps-int-title")
             check(title.startswith("Trovati 3 elementi"), f"[{lang}] dialog title is Italian ({title})")
             check("Numero di carta" in site.inner_text("#redaxa-intercept"), f"[{lang}] finding labels are Italian")
@@ -132,13 +149,13 @@ def run(lang):
             # a) clean prompt: sent straight away, no dialog.
             type_into(page, CLEAN)
             start = time.perf_counter(); page.keyboard.press("Enter")
-            page.wait_for_function("() => window.__sent.length === 1", timeout=5000)
+            page.wait_for_function("() => window.__sent.length === 1", timeout=WAIT)
             elapsed = (time.perf_counter() - start) * 1000
             check(not page.is_visible("#redaxa-intercept"), f"{host}: clean prompt sent without a dialog ({elapsed:.0f} ms)")
             check(sent(page) == [CLEAN], f"{host}: clean prompt reached the site unchanged")
             # b) sensitive prompt on Enter: held, labelled dialog, focus on the safe action, Escape keeps it unsent.
             type_into(page, EXAMPLE); page.keyboard.press("Enter")
-            page.wait_for_selector("#redaxa-intercept [role=dialog][aria-modal=true]")
+            page.wait_for_selector("#redaxa-intercept [role=dialog][aria-modal=true] #ps-int-fix", timeout=WAIT)
             check(page.inner_text("#ps-int-title") == "Found 3 items before sending", f"{host}: dialog title")
             check(page.evaluate("document.activeElement?.id") == "ps-int-fix", f"{host}: focus on Replace")
             marks = page.eval_on_selector_all(".ps-preview mark", "m => m.map(x => x.textContent)")
@@ -156,7 +173,7 @@ def run(lang):
             check("[SECRET]" in text and "[EMAIL]" in text and "[CARD]" in text and "sk-proj" not in text, f"{host}: composer holds the redacted version")
             check(len(sent(page)) == 1, f"{host}: replacing does not send")
             page.focus("textarea, [contenteditable]"); page.keyboard.press("End"); page.keyboard.press("Enter")
-            page.wait_for_function("() => window.__sent.length === 2", timeout=5000)
+            page.wait_for_function("() => window.__sent.length === 2", timeout=WAIT)
             check("[SECRET]" in sent(page)[1], f"{host}: redacted version sent on the next Enter")
             # d) Send button click is held too; Send anyway sends the reviewed text.
             type_into(page, "Reach me at maria.rossi@example.org")
@@ -164,7 +181,7 @@ def run(lang):
             page.wait_for_selector("#ps-int-send-anyway")
             check(len(sent(page)) == 2, f"{host}: Send click is held")
             page.click("#ps-int-send-anyway")
-            page.wait_for_function("() => window.__sent.length === 3", timeout=5000)
+            page.wait_for_function("() => window.__sent.length === 3", timeout=WAIT)
             check(sent(page)[2] == "Reach me at maria.rossi@example.org", f"{host}: Send anyway sends the reviewed text")
             # e) manual check button.
             type_into(page, "Card 5500 0000 0000 0004")
@@ -186,9 +203,9 @@ def run(lang):
         page.focus("textarea"); start = time.perf_counter(); page.keyboard.press("Enter")
         page.wait_for_selector("#ps-int-fix")
         elapsed = (time.perf_counter() - start) * 1000
-        check(elapsed < 1500, f"20,000-character prompt checked in {elapsed:.0f} ms (dialog shown)")
+        check(elapsed < 2500, f"20,000-character prompt checked in {elapsed:.0f} ms (dialog shown)")
         typing = page.evaluate("""() => { const t0 = performance.now(); for (let i = 0; i < 200; i++) document.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true })); return performance.now() - t0; }""")
-        check(typing < 50, f"200 ordinary keystrokes handled in {typing:.1f} ms")
+        check(typing < 150, f"200 ordinary keystrokes handled in {typing:.1f} ms")
         page.keyboard.press("Escape")
         # Over the limit: said plainly, and free use can still send without a check.
         page.evaluate("t => { const b = document.querySelector('textarea'); b.value = t; }", "y" * 20100)
@@ -198,15 +215,34 @@ def run(lang):
         for _ in range(3): page.keyboard.press("Tab")
         check(page.evaluate("() => document.getElementById('redaxa-intercept').contains(document.activeElement)"), "Tab stays inside the dialog")
         before = len(sent(page)); page.click("#ps-int-send-unchecked")
-        page.wait_for_function(f"() => window.__sent.length === {before + 1}", timeout=5000)
+        page.wait_for_function(f"() => window.__sent.length === {before + 1}", timeout=WAIT)
         check(True, "free use can send an over-limit prompt without a check")
         page.close()
 
-        # Off switch, set the way the popup sets it.
+        # The content script runs in the AI site's process: it must not reach
+        # extension storage, where a signed-in session would live.
+        page = context.new_page()
+        cdp = context.new_cdp_session(page); worlds = []
+        cdp.on("Runtime.executionContextCreated", lambda e: worlds.append(e["context"]))
+        cdp.send("Runtime.enable")
+        page.goto("https://gemini.google.com/"); page.wait_for_selector("#redaxa-check-btn")
+        isolated = next((c["id"] for c in worlds if c.get("auxData", {}).get("type") == "isolated" and "Redaxa" in c.get("name", "")), None)
+        probe = cdp.send("Runtime.evaluate", {"contextId": isolated, "awaitPromise": True, "returnByValue": True,
+            "expression": "chrome.storage.local.get(null).then(v => 'read ' + Object.keys(v).join(','), e => 'blocked: ' + e.message)"}) if isolated else {}
+        result = probe.get("result", {}).get("value", "")
+        check(result.startswith("blocked"), f"content script cannot read extension storage ({result or 'no isolated world'})")
+        cdp.detach()
+
+        # Off switch, set the way the popup sets it: in a tab already open, then in a new one.
         worker.evaluate("() => chrome.storage.local.set({ redaxa_auto_check: false })")
+        page.wait_for_timeout(500)
+        type_into(page, EXAMPLE); page.keyboard.press("Enter")
+        page.wait_for_function("() => window.__sent.length === 1", timeout=WAIT)
+        check(not page.is_visible("#redaxa-intercept"), "automatic check off in an open tab: Enter sends without a check")
+        page.close()
         page = context.new_page(); page.goto("https://claude.ai/"); page.wait_for_selector("#redaxa-check-btn")
         type_into(page, EXAMPLE); page.keyboard.press("Enter")
-        page.wait_for_function("() => window.__sent.length === 1", timeout=5000)
+        page.wait_for_function("() => window.__sent.length === 1", timeout=WAIT)
         check(not page.is_visible("#redaxa-intercept"), "automatic check off: Enter sends without a check")
         worker.evaluate("() => chrome.storage.local.set({ redaxa_auto_check: true })")
         page.close()

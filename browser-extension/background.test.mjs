@@ -9,15 +9,18 @@ let account = { active: true, plan: 'personal', status: 'active' };
 let session = { email: 'fixture@example.test', access_token: 'nonworking-test-token', refresh_token: 'fixture', expires_at: Date.now() + 3600000 };
 let stored = {};
 const opened = [], requests = [];
-let installed;
+let installed, accessLevel, storageChanged;
+const pushed = [];
 let calls = 0;
 const context = vm.createContext({ URL, AbortController, AbortSignal, setTimeout, clearTimeout, console, inspectPrompt, defaultPersonalPolicy, evaluatePolicy,
   fetch: async (url) => { calls++; requests.push(url); return { ok: true, json: async () => account }; },
-  chrome: { storage: { local: {
+  chrome: { storage: { onChanged: { addListener(handler) { storageChanged = handler; } }, local: {
+      setAccessLevel: async value => { accessLevel = value.accessLevel; },
       get: async key => key === 'redaxa_session' ? { redaxa_session: session } : { [key]: stored[key] },
       set: async value => { if ('redaxa_session' in value) session = value.redaxa_session; else Object.assign(stored, value); },
       remove: async () => { session = null; } } },
-    tabs: { create: async value => { opened.push(value); } },
+    tabs: { create: async value => { opened.push(value); }, query: async () => [{ id: 1 }, { id: 2 }],
+      sendMessage: async (id, message) => { pushed.push([id, message.type]); if (id === 2) throw new Error('No content script'); } },
     i18n: { getMessage },
     runtime: { id: 'fixture-id', getURL: path => `chrome-extension://fixture-id/${path}`, onMessage: { addListener() {} }, onInstalled: { addListener(handler) { installed = handler; } } }
   }
@@ -68,6 +71,21 @@ account = { active: true, repositoryAccess: true, plan: null, status: null };
 const status = await handle({ type: 'STATUS' }, chatgpt);
 assert.equal(status.repositoryAccess, true);
 assert.equal(status.access_token, undefined);
+assert.equal(status.email, undefined, 'AI-site tabs are not told the account email');
+assert.equal(status.autoCheck, true, 'the automatic-check switch travels with the status');
+assert.equal((await handle({ type: 'STATUS' }, popup)).email, 'fixture@example.test', 'the popup shows the account');
+// Content scripts share a process with the AI site: storage, and the session in it, stays closed to them.
+assert.equal(accessLevel, 'TRUSTED_CONTEXTS');
+stored.redaxa_auto_check = false;
+assert.equal((await handle({ type: 'STATUS' }, chatgpt)).autoCheck, false);
+delete stored.redaxa_auto_check;
+storageChanged({ redaxa_auto_check: { oldValue: true, newValue: false } }, 'local');
+await new Promise(resolve => setImmediate(resolve));
+assert.deepEqual(pushed, [[1, 'SETTINGS_CHANGED'], [2, 'SETTINGS_CHANGED']], 'a changed switch is pushed to open tabs');
+storageChanged({ redaxa_session: { oldValue: { a: 1 }, newValue: { a: 2 } } }, 'local');
+storageChanged({ redaxa_helpful_checks: { newValue: 3 } }, 'local');
+await new Promise(resolve => setImmediate(resolve));
+assert.equal(pushed.length, 2, 'token refreshes and counters are not pushed');
 assert.ok(requests.every(url => url.startsWith('https://redaxa.getcertsprint.com/api/')), 'Account calls go to the Redaxa workspace API');
 
 session = null;
@@ -121,4 +139,4 @@ context.fetch = async () => ({ ok: false, status: 503 });
 const unavailable = await handle({ type: 'STATUS' }, popup);
 assert.equal(unavailable.signedIn, true, 'Transient auth failure keeps the account visible');
 assert.equal(unavailable.active, false, 'Transient auth failure cannot unlock paid features');
-console.log('Extension background: minimal permissions, no remote code, welcome tab, popup-only account actions, local checks send nothing, local review counter, authenticated account checks passed.');
+console.log('Extension background: minimal permissions, no remote code, welcome tab, popup-only account actions, storage closed to pages, no email for pages, switch pushed to tabs, local checks send nothing, local review counter, authenticated account checks passed.');

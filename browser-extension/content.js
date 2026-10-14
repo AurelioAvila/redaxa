@@ -80,15 +80,15 @@ function setComposerText(el, text) {
   caret.collapse(false);
   selection.removeAllRanges();
   selection.addRange(caret);
-  document.execCommand("selectAll");
+  selectAllNow();
   const inserted = document.execCommand("insertText", false, text);
   if (!inserted) {
     el.innerText = text;
     el.dispatchEvent(new InputEvent("input", { bubbles: true }));
   }
-  // Some editors (Lexical on Perplexity) discard scripted edits entirely, no
-  // matter which pipeline they arrive through. Verify after the editor has
-  // had time to apply the change; if it refused, fall back to the one path
+  // An editor may still refuse a scripted edit (Lexical did before its
+  // selection was announced). Verify after the editor has had time to apply
+  // the change; if it refused, fall back to the one path
   // that can never be blocked: safe text on the clipboard, everything left
   // selected, and a toast telling the user the single keystroke that
   // finishes the job.
@@ -96,12 +96,22 @@ function setComposerText(el, text) {
     if (composerText(el).trim() === text.trim()) return;
     navigator.clipboard.writeText(text).then(() => {
       el.focus();
-      document.execCommand("selectAll");
+      selectAllNow();
       psToast(t("pasteToast"));
     }).catch(() => {
       psToast(t("editorBlocked"));
     });
   }, 400);
+}
+
+// Lexical (Perplexity) learns about a new selection from the browser's
+// selectionchange event, which arrives after this code has run: without it,
+// insertText lands at the old caret and the redacted text is appended to the
+// original instead of replacing it (seen live on 14 October 2026). Announcing
+// the change at once keeps every editor's selection in step.
+function selectAllNow() {
+  document.execCommand("selectAll");
+  document.dispatchEvent(new Event("selectionchange"));
 }
 
 function psToast(message) {
@@ -260,13 +270,11 @@ function sameCheckedPrompt(composer, checkedText) {
 // ---------------------------------------------------------------------------
 let statusCache = { unavailable: true };
 // "Check automatically before sending", on unless switched off in the popup.
+// It arrives with STATUS: this script has no storage access of its own.
 let autoCheck = true;
-const AUTO_CHECK_KEY = "redaxa_auto_check";
-chrome.storage?.local?.get(AUTO_CHECK_KEY).then(stored => { autoCheck = stored?.[AUTO_CHECK_KEY] !== false; }).catch(() => undefined);
-chrome.storage?.onChanged?.addListener((changes, area) => {
-  if (area === "local" && AUTO_CHECK_KEY in changes) autoCheck = changes[AUTO_CHECK_KEY].newValue !== false;
-  // Signing in or out in the popup takes effect on the next send, not 30 s later.
-  if (area === "local" && "redaxa_session" in changes) statusCheckedAt = 0;
+// The switch or a sign-in/out changed in the popup: apply it before the next send.
+chrome.runtime.onMessage?.addListener((message, sender) => {
+  if (sender?.id === chrome.runtime.id && message?.type === "SETTINGS_CHANGED") { statusCheckedAt = 0; void refreshStatus(); }
 });
 let statusCheckedAt = 0;
 let bypassArm = false;
@@ -276,6 +284,7 @@ let gatePending = false;
 function refreshStatus() {
   if (statusRefresh) return statusRefresh;
   statusRefresh = send({ type: "STATUS" }).then(status => {
+    if (typeof status?.autoCheck === "boolean") autoCheck = status.autoCheck;
     if (typeof status?.signedIn !== "boolean" || (status.signedIn && typeof status.active !== "boolean")) {
       throw new Error("Incomplete account status.");
     }
@@ -340,13 +349,15 @@ document.addEventListener("keydown", (event) => {
 
 // Re-fires the original send action after the user explicitly approves it.
 // `bypassArm` tells this same interceptor to step aside for exactly the next
-// matching event instead of gating it again.
-function resendVia(kind, target) {
+// matching event instead of gating it again. Modifiers are kept: a site set
+// to send with Ctrl+Enter would read a bare Enter as a new line.
+function resendVia(kind, target, keys = {}) {
   bypassArm = true;
   if (kind === "key") {
     target.focus();
+    const { ctrlKey = false, metaKey = false, altKey = false } = keys;
     for (const type of ["keydown", "keypress", "keyup"]) {
-      target.dispatchEvent(new KeyboardEvent(type, { key: "Enter", code: "Enter", keyCode: 13, which: 13, bubbles: true, cancelable: true, composed: true }));
+      target.dispatchEvent(new KeyboardEvent(type, { key: "Enter", code: "Enter", keyCode: 13, which: 13, ctrlKey, metaKey, altKey, bubbles: true, cancelable: true, composed: true }));
     }
   } else {
     target.click();
@@ -372,6 +383,8 @@ async function gate(composer, resend) {
   let result;
   try {
     const status = await currentStatus();
+    // Switched off in the popup while this send waited for the status.
+    if (!autoCheck) { resend(); return; }
     // A signed-in account whose plan cannot be confirmed may carry team
     // policies that block sending, so it waits rather than guessing.
     if (status.unavailable) throw new Error(t("couldNotVerify"));
@@ -448,9 +461,14 @@ async function gate(composer, resend) {
 
 // After the extension updates, scripts already running in open tabs lose
 // their link to it for good. They can no longer check anything, so they step
-// aside rather than hold every send until the tab is reloaded.
+// aside rather than hold every send until the tab is reloaded, and say so
+// once. The notice is read now: translations are gone once orphaned.
+const reloadNotice = t("reloadAfterUpdate");
+let reloadNoticeShown = false;
 function orphaned() {
-  return !globalThis.chrome?.runtime?.id;
+  if (globalThis.chrome?.runtime?.id) return false;
+  if (!reloadNoticeShown && reloadNotice) { reloadNoticeShown = true; psToast(reloadNotice); }
+  return true;
 }
 
 function withinComposer(node, composer) {
@@ -459,27 +477,26 @@ function withinComposer(node, composer) {
 
 document.addEventListener("keydown", (event) => {
   if (bypassArm) { bypassArm = false; return; }
-  if (orphaned()) return;
   if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
   if (!autoCheck) return;
   const composer = findComposer();
   if (!withinComposer(event.target, composer)) return;
   const text = composerText(composer).trim();
-  if (!text) return;
+  if (!text || orphaned()) return;
   event.preventDefault();
   event.stopImmediatePropagation();
-  gate(composer, () => resendVia("key", composer));
+  const keys = { ctrlKey: event.ctrlKey, metaKey: event.metaKey, altKey: event.altKey };
+  gate(composer, () => resendVia("key", composer, keys));
 }, true);
 
 document.addEventListener("click", (event) => {
   if (bypassArm) { bypassArm = false; return; }
-  if (orphaned()) return;
   if (!autoCheck) return;
   const button = event.target.closest?.("button");
   if (!button || !isSendButton(button)) return;
   const composer = findComposer();
   const text = composerText(composer).trim();
-  if (!text) return;
+  if (!text || orphaned()) return;
   event.preventDefault();
   event.stopImmediatePropagation();
   gate(composer, () => resendVia("click", button));

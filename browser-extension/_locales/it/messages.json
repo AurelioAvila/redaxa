@@ -148,5 +148,6 @@
   "tooLongTitle": {"message": "Troppo lungo da controllare"},
   "tooLongBody": {"message": "Questo messaggio supera i 20.000 caratteri, quindi Redaxa non lo ha controllato. Dividilo in parti oppure invialo senza controllo."},
   "tooLongAccount": {"message": "Questo messaggio supera i 20.000 caratteri, quindi Redaxa non lo ha controllato. Dividilo in parti e invia ciascuna."},
-  "sendUnchecked": {"message": "Invia senza controllo"}
+  "sendUnchecked": {"message": "Invia senza controllo"},
+  "reloadAfterUpdate": {"message": "Redaxa è stato aggiornato e questa scheda non viene più controllata. Ricarica la pagina per riattivare i controlli."}
 }

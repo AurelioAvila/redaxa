@@ -1,8 +1,8 @@
 // Auth model mirrors the desktop app: no cookie jar of its own, so the
 // extension signs in directly against the hosted API and holds the
 // Supabase access/refresh token pair itself, sent as `Authorization: Bearer`
-// on every call. Stored in chrome.storage.local (extension-private, not
-// reachable by the pages it's injected into).
+// on every call. Stored in chrome.storage.local, closed to content scripts
+// (see below): the AI sites' tabs get only what STATUS tells them.
 import "./config.js";
 import { inspectPrompt } from "./engine/scanner.js";
 import { defaultPersonalPolicy, evaluatePolicy } from "./engine/policy.js";
@@ -13,6 +13,12 @@ const API_BASE = REDAXA_WORKSPACE_URL;
 const t = (key) => chrome.i18n.getMessage(key);
 const SESSION_KEY = "redaxa_session";
 const HELPFUL_KEY = "redaxa_helpful_checks";
+const AUTO_CHECK_KEY = "redaxa_auto_check";
+
+// Content scripts share a process with the AI site they run on, so they do not
+// get storage access: a compromised page renderer could otherwise read the
+// session tokens. Browsers without this control keep the default.
+try { chrome.storage.local.setAccessLevel?.({ accessLevel: "TRUSTED_CONTEXTS" })?.catch?.(() => undefined); } catch { /* unsupported */ }
 
 function repositoryEntitlement(account) {
   // Personal is the existing billing ID for Pro. Business includes Pro.
@@ -106,10 +112,8 @@ function scanOptions(options) {
 
 async function handleMessage(message, sender) {
   // Account actions only from the popup (also opened as the welcome tab).
-  if (["SIGN_IN", "SIGN_OUT"].includes(message.type)
-    && sender?.url?.split(/[?#]/)[0] !== chrome.runtime.getURL("popup.html")) {
-    throw new Error(t("errPopupOnly"));
-  }
+  const fromPopup = sender?.url?.split(/[?#]/)[0] === chrome.runtime.getURL("popup.html");
+  if (["SIGN_IN", "SIGN_OUT"].includes(message.type) && !fromPopup) throw new Error(t("errPopupOnly"));
   switch (message.type) {
     case "SIGN_IN": {
       const payload = await apiRequest("/api/auth/signin", { email: message.email, password: message.password });
@@ -128,16 +132,19 @@ async function handleMessage(message, sender) {
       return { ok: true };
     }
     case "STATUS": {
+      // The automatic-check switch travels with the status; pages get no email.
+      const autoCheck = (await chrome.storage.local.get(AUTO_CHECK_KEY))?.[AUTO_CHECK_KEY] !== false;
       const session = await readSession();
-      if (!session) return { signedIn: false };
+      const email = () => fromPopup ? { email: session.email } : {};
+      if (!session) return { signedIn: false, autoCheck };
       try {
         const token = await accessToken();
-        if (!token) return { signedIn: false };
+        if (!token) return { signedIn: false, autoCheck };
         const account = await apiRequest("/api/account", undefined, "GET");
-        return { signedIn: true, email: session.email, active: account.active === true, plan: account.plan,
-          repositoryAccess: repositoryEntitlement(account) };
+        return { signedIn: true, ...email(), active: account.active === true, plan: account.plan,
+          repositoryAccess: repositoryEntitlement(account), autoCheck };
       } catch {
-        return { signedIn: true, email: session.email, active: false, repositoryAccess: false, unavailable: true };
+        return { signedIn: true, ...email(), active: false, repositoryAccess: false, unavailable: true, autoCheck };
       }
     }
     case "SCAN": {
@@ -185,6 +192,17 @@ async function countHelpfulCheck() {
 // First install: open the popup as a welcome tab (try an example, see the result).
 chrome.runtime.onInstalled.addListener(({ reason }) => {
   if (reason === "install") void chrome.tabs.create({ url: chrome.runtime.getURL("popup.html?welcome") });
+});
+
+// Open AI-site tabs cannot watch storage, so the switch and sign-in/out are
+// pushed to them. Without the tabs permission, tabs come without URLs: tabs
+// without the content script simply do not answer.
+chrome.storage.onChanged?.addListener((changes, area) => {
+  const signedInOrOut = SESSION_KEY in changes && !changes[SESSION_KEY].oldValue !== !changes[SESSION_KEY].newValue;
+  if (area !== "local" || !(AUTO_CHECK_KEY in changes || signedInOrOut)) return;
+  chrome.tabs.query({}).then(tabs => {
+    for (const tab of tabs) chrome.tabs.sendMessage(tab.id, { type: "SETTINGS_CHANGED" }).catch(() => undefined);
+  }).catch(() => undefined);
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

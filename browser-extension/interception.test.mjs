@@ -3,19 +3,21 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import { getMessage } from './messages.test.mjs';
 
-const listeners = new Map(), controls = new Map(), callbacks = [];
-const composer = { value: 'Synthetic private prompt', contains: node => node === composer, focus() {}, dispatchEvent() {} };
+const listeners = new Map(), controls = new Map(), callbacks = [], dispatched = [], toasts = [];
+let onRuntimeMessage;
+const composer = { value: 'Synthetic private prompt', contains: node => node === composer, focus() {}, dispatchEvent(e) { dispatched.push(e); } };
 const button = { disabled: false, click() {}, matches: selector => selector.includes('send-button') };
 let modal, scans = 0;
 const context = vm.createContext({
-  document: { body: null, addEventListener(type, handler) { listeners.set(type, handler); },
+  setTimeout() {},
+  document: { body: null, getElementById: () => null, addEventListener(type, handler) { listeners.set(type, handler); },
     querySelector(selector) { return selector === '#prompt-textarea' ? composer : selector.includes('send-button') ? button : null; },
-    createElement() { return { innerHTML: '', remove() {}, querySelector(selector) {
+    createElement() { return { innerHTML: '', remove() {}, setAttribute() {}, querySelector(selector) {
       return { addEventListener(_type, handler) { controls.set(selector, handler); } };
     } }; } },
   window: { setInterval() {}, setTimeout() {}, clearTimeout() {} },
   KeyboardEvent: class { constructor(type, init) { Object.assign(this, init, { type }); } },
-  chrome: { i18n: { getMessage }, runtime: { id: 'test-extension', sendMessage(message, callback) {
+  chrome: { i18n: { getMessage }, runtime: { id: 'test-extension', onMessage: { addListener(handler) { onRuntimeMessage = handler; } }, sendMessage(message, callback) {
     if (message.type === 'SCAN') scans++;
     callbacks.push({ message, callback });
   } } }
@@ -75,9 +77,40 @@ const active = vm.runInContext('refreshStatus()', context);
 callbacks.shift().callback({ ok: true, result: { signedIn: true, active: true } });
 await active;
 delete context.chrome.runtime.id;
+context.document.body = { append(node) { toasts.push(node.textContent); } };
 assert.equal(event('keydown'), false, 'A script orphaned by an extension update no longer holds sends');
 assert.equal(event('click'), false);
+assert.deepEqual(toasts, [getMessage('reloadAfterUpdate')], 'An orphaned tab says once that it needs a reload');
 context.chrome.runtime.id = 'test-extension';
+context.document.body = { append(node) { modal = node; } };
+
+// The automatic-check switch arrives with STATUS (no storage access in pages),
+// and the popup's change is pushed to open tabs.
+const switched = vm.runInContext('refreshStatus()', context);
+callbacks.shift().callback({ ok: true, result: { signedIn: false, autoCheck: false } });
+await switched;
+assert.equal(event('keydown'), false, 'Switched off in the popup: ordinary send');
+onRuntimeMessage({ type: 'SETTINGS_CHANGED' }, { id: 'test-extension' });
+callbacks.shift().callback({ ok: true, result: { signedIn: false, autoCheck: true } });
+await drain();
+assert.equal(vm.runInContext('autoCheck', context), true, 'Switched back on without reloading the tab');
+onRuntimeMessage({ type: 'SETTINGS_CHANGED' }, { id: 'another-extension' });
+assert.equal(callbacks.length, 0, 'Only this extension can push a settings change');
+
+// Ctrl+Enter is re-sent as Ctrl+Enter: a site set to send with it would read a bare Enter as a new line.
+{
+  let stopped = false;
+  listeners.get('keydown')({ key: 'Enter', ctrlKey: true, target: composer, preventDefault() { stopped = true; }, stopImmediatePropagation() {} });
+  assert.equal(stopped, true);
+  await drain();
+  const scan = callbacks.shift();
+  assert.equal(scan.message.type, 'SCAN');
+  scan.callback({ ok: true, result: { findings: [], redactedText: composer.value, decision: { action: 'allow' }, engine: 'local' } });
+  await drain();
+  const resent = dispatched.filter(e => e.type === 'keydown').at(-1);
+  assert.equal(resent.ctrlKey, true, 'modifier kept on the re-sent Enter');
+  vm.runInContext('bypassArm = false', context);
+}
 // Send buttons are recognized by structure, so a translated label is still held;
 // other buttons and ChatGPT's stop state are left alone.
 const clickOn = target => {
@@ -90,4 +123,4 @@ assert.equal(clickOn({ disabled: false, click() {}, matches: () => false }), fal
 assert.equal(clickOn(submit('Interrompi generazione')), false, 'Stopping a reply is not a send');
 assert.equal(clickOn(submit('Invia messaggio', { matches: () => { throw new SyntaxError('unsupported'); } })), false, 'An unparseable selector never throws');
 assert.equal(clickOn(submit('Invia messaggio')), true, 'A send button with a translated label is still checked');
-console.log('Interception: initial status, duplicate actions, account/scan outages, free local checks, the off switch and translated send buttons passed.');
+console.log('Interception: initial status, duplicate actions, account/scan outages, free local checks, the off switch (pushed to open tabs), Ctrl+Enter, the update notice and translated send buttons passed.');

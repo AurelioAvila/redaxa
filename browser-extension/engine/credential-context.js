@@ -39,7 +39,7 @@ export function supabaseIssuer(issuer) {
 export function credentialContext(kind, value, label, reference, assignment = '') {
     value = credentialValue(value);
     const rotate = 'If genuine, revoke or rotate it at the issuing service, update the application, then remove the exposed value from code and review Git history. Deleting it from Git does not revoke access.';
-    let context = { service: 'Unknown service', type: kind === 'privateKey' ? 'Private signing key' : kind === 'credential' ? 'Password or credential' : 'Access token / secret', evidence: 'The value alone does not identify its owner or issuing service.', response: 'Identify owner, then rotate if genuine', guidance: rotate };
+    let context = { service: 'Unknown service', type: kind === 'privateKey' ? 'Private signing key' : kind === 'credential' ? (['Password in a URL', 'Secret in a configuration value'].includes(label) ? label : 'Password or credential') : 'Access token / secret', evidence: 'The value alone does not identify its owner or issuing service.', response: 'Identify owner, then rotate if genuine', guidance: rotate };
     const match = (service, type, evidence, docs) => { context = { service, type, evidence, response: 'Revoke or rotate if genuine', guidance: rotate, docs }; };
     if (/^github_pat_|^gh[pousr]_/.test(value))
         match('GitHub', value.startsWith('github_pat_') ? 'Fine-grained personal access token' : value.startsWith('ghp_') ? 'Personal access token' : 'GitHub app / OAuth token', 'GitHub-specific token prefix; account and validity are not verified.', 'https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/token-expiration-and-revocation');
@@ -61,6 +61,12 @@ export function credentialContext(kind, value, label, reference, assignment = ''
         match('GitLab', 'Personal access token', 'GitLab-specific prefix; instance, scopes and validity are not verified.', 'https://docs.gitlab.com/user/profile/personal_access_tokens/');
     else if (/^hf_/.test(value))
         match('Hugging Face', 'User access token', 'Hugging Face-specific prefix; account, role and validity are not verified.', 'https://huggingface.co/docs/hub/security-tokens');
+    else if (/^whsec_/.test(value))
+        match('Stripe', 'Webhook signing secret', 'Stripe webhook-secret prefix; endpoint and validity are not verified.', 'https://docs.stripe.com/webhooks');
+    else if (/^SG\./.test(value))
+        match('SendGrid', 'API key', 'SendGrid key format; account and permissions are not verified.', 'https://www.twilio.com/docs/sendgrid/ui/account-and-settings/api-keys');
+    else if (/^https:\/\/hooks\.slack\.com\//.test(value))
+        match('Slack', 'Incoming webhook URL', 'Anyone with this URL can post to its channel; workspace and channel are not verified.', 'https://docs.slack.dev/messaging/sending-messages-using-incoming-webhooks/');
     else if (/^AIza/.test(value))
         context = { service: 'Google APIs', type: 'API key', evidence: 'Google-style prefix does not distinguish Maps, Firebase, Gemini or another API.', response: 'Check restrictions and exposure', guidance: 'Inspect API and application restrictions in Google Cloud. If exposure allows unauthorized use, replace the key and restrict its replacement. A prefix alone cannot prove that a browser key is unsafe.', docs: 'https://docs.cloud.google.com/docs/authentication/api-keys-best-practices' };
     else if (/^(?:AKIA|ASIA)/.test(value))

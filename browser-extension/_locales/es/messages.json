@@ -148,5 +148,6 @@
   "tooLongTitle": {"message": "Demasiado largo para analizarlo"},
   "tooLongBody": {"message": "Este mensaje supera los 20.000 caracteres, así que Redaxa no lo ha analizado. Divídelo en partes o envíalo sin análisis."},
   "tooLongAccount": {"message": "Este mensaje supera los 20.000 caracteres, así que Redaxa no lo ha analizado. Divídelo en partes y envía cada una."},
-  "sendUnchecked": {"message": "Enviar sin analizar"}
+  "sendUnchecked": {"message": "Enviar sin analizar"},
+  "reloadAfterUpdate": {"message": "Redaxa se ha actualizado y ya no revisa esta pestaña. Recarga la página para volver a activar los análisis."}
 }

@@ -73,6 +73,10 @@ for(const source of ['const secret = "wh-secret-test";','password = "test1234"',
   assert.ok(found.length>0&&found.every(f=>f.testValue),source);
 }
 assert.equal(inspectFile('src/auth.ts','Bearer q8ZrTest9-x7Lm2Vb4Nc6Kd1Pf3')[0]?.disposition,'review','A token body is not split into words to find a marker');
+// Secrets named by their setting and passwords in URLs are reviewed, with the right line, in any order.
+const envFile=inspectFile('deploy/.env','DB_PASSWORD=Xk82'+'jfLq0\nDATABASE_URL=postgres://app:Zz9'+'yy8xx@db.internal/main\n',true);
+assert.deepEqual(envFile.map(f=>[f.label,f.line,f.disposition]),[['Password in a URL',2,'review'],['Secret in a configuration value',1,'review']]);
+assert.equal(inspectFile('deploy/.env','TEST_DB_PASSWORD=Xk82'+'jfLq0')[0]?.testValue,true,'a test-named setting is counted, not listed');
 for(const source of ['password = "Xq9-hunter2-prod"','secret = "latest-9Qz-real"'])assert.equal(inspectFile('src/config.ts',source)[0]?.disposition,'review',source);
 // Real-looking keys stay listed, at low priority, in a test file.
 const liveStripe='sk_live_'+'4eC39HqLyjWDarjtT1zdp7dc9Xk2Lm',liveGitHub='ghp_'+'Q7mZ2kR9vT4wX8yB1nC6dF3gH5jK0pL2sA9e';

@@ -148,5 +148,6 @@
   "tooLongTitle": {"message": "Trop long pour être vérifié"},
   "tooLongBody": {"message": "Ce message dépasse 20 000 caractères : Redaxa ne l'a pas vérifié. Découpez-le en plusieurs parties ou envoyez-le sans vérification."},
   "tooLongAccount": {"message": "Ce message dépasse 20 000 caractères : Redaxa ne l'a pas vérifié. Découpez-le en plusieurs parties, puis envoyez chacune."},
-  "sendUnchecked": {"message": "Envoyer sans vérifier"}
+  "sendUnchecked": {"message": "Envoyer sans vérifier"},
+  "reloadAfterUpdate": {"message": "Redaxa a été mis à jour : cet onglet n'est plus vérifié. Rechargez la page pour réactiver les vérifications."}
 }
