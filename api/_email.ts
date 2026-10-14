@@ -497,7 +497,8 @@ export function passwordChangedText(firstName: string | null | undefined, when: 
 
 /** Sends the notice. Never throws; the password has already changed. */
 export async function sendPasswordChangedEmail(to: string, firstName: string | null | undefined): Promise<boolean> {
-  const mail = passwordChangedEmail(firstName, new Date().toUTCString());
+  // "14 October 2026 at 09:41 UTC" rather than toUTCString()'s "Wed, 14 Oct 2026 09:41:00 GMT".
+  const mail = passwordChangedEmail(firstName, `${new Date().toLocaleString("en-GB", { dateStyle: "long", timeStyle: "short", timeZone: "UTC" })} UTC`);
   return send(to, mail.subject, mail.html, mail.text);
 }
 
