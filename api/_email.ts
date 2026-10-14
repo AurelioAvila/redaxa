@@ -74,16 +74,28 @@ export function subscriptionSubject(trialing: boolean): string {
   return trialing ? "Your Redaxa trial has started" : "Your Redaxa subscription is confirmed";
 }
 
-// The email design kit's layout (my-apps/email-design-kit/_base/layout.html) in Redaxa's own
-// palette: Paper with the copper accent, the site's default, and Ink & Copper when the reader's mail
-// app is dark. Contrast on the card: ink 16.9:1, muted 6.9:1, white on copper 6.4:1; dark: ink
-// 15.2:1, muted 8.0:1, button ink on copper 7.4:1.
-const P = { page: "#efe8dd", card: "#fffdf9", panel: "#f6eee3", line: "#e8dccb", ink: "#1b1724", muted: "#5a5466", copper: "#a3471d", copperInk: "#ffffff", night: "#1b1724" };
-const D = { page: "#141218", card: "#1c1a21", panel: "#24212a", line: "#2e2b35", ink: "#f4f1ec", muted: "#b8b1bf", copper: "#e8956a", copperInk: "#2a1407" };
+// Redaxa emails, after the revised design kit: the brand runs from top to bottom. An Ink hero (the
+// colour of the Lock Pup's face, Redaxa's "Ink & Copper") carries the mark, the kind of message, the
+// title and the intro; a line of redaction bars under it is the signature; the body alternates cream
+// and copper-tinted Paper sections; an optional copper "moment" band states the number that matters;
+// the footer closes on Ink with the bars again. Contrast: white on ink 17:1, ink on cream 16.9:1,
+// muted 6.9:1, white on copper 6.4:1.
+const P = { page: "#ece3d6", card: "#fffcf7", alt: "#f7efe4", panel: "#f1e6d7", line: "#e6d8c5", ink: "#1b1724", muted: "#5a5466", copper: "#a3471d", copperInk: "#ffffff", night: "#1b1724", nightHi: "#2c2735", chrome: "#bdb5c4", glow: "#e8956a" };
+const D = { page: "#0f0d12", card: "#1c1a21", alt: "#221f28", panel: "#2a2631", line: "#353140", ink: "#f4f1ec", muted: "#b8b1bf", copper: "#e8956a" };
 const SANS = "font-family:Inter,'Segoe UI',Bahnschrift,Helvetica,Arial,sans-serif;";
 const MONO = "font-family:Consolas,'SFMono-Regular',Menlo,'Courier New',monospace;";
 
-/** A content block. Strings are plain text; the renderer escapes them. */
+export type EmailKind = "account" | "security" | "billing" | "welcome" | "internal";
+const KIND_LABEL: Record<EmailKind, string> = { account: "Account", security: "Security notice", billing: "Billing", welcome: "Welcome", internal: "Team notice" };
+
+/** The signature: redaction bars, the wink of the Lock Pup mark, as a line of blacked-out text. */
+function redactionBars(widths: number[], colours: string[], height = 8): string {
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>${widths.map((width, i) =>
+    `<td style="padding:0 ${i === widths.length - 1 ? 0 : 7}px 0 0;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td width="${width}" height="${height}" bgcolor="${colours[i % colours.length]}" style="width:${width}px;height:${height}px;font-size:0;line-height:0;border-radius:${height / 2}px;background:${colours[i % colours.length]};">&nbsp;</td></tr></table></td>`).join("")}</tr></table>`;
+}
+
+/** A content block. Strings are plain text; the renderer escapes them. The first kicker, h1 and p
+ *  open the message in the hero; the rest fill the sections below it. */
 export type Block =
   | { kicker: string }
   | { h1: string }
@@ -95,27 +107,19 @@ export type Block =
   | { button: { href: string; label: string; secondary?: boolean } }
   | { code: string }
   | { link: { label: string; href: string } }
-  | { security: [string, string] };
-
-export type EmailKind = "account" | "security" | "billing" | "welcome" | "internal";
-const KIND_LABEL: Record<EmailKind, string> = { account: "Account", security: "Security notice", billing: "Billing", welcome: "Welcome", internal: "Team notice" };
-
-/** The signature: redaction bars, the wink of the Lock Pup mark, as a line of blacked-out text. */
-function redactionBars(widths: number[], colours: string[]): string {
-  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>${widths.map((width, i) =>
-    `<td style="padding:0 ${i === widths.length - 1 ? 0 : 6}px 0 0;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td width="${width}" height="8" bgcolor="${colours[i % colours.length]}" style="width:${width}px;height:8px;font-size:0;line-height:0;border-radius:4px;background:${colours[i % colours.length]};">&nbsp;</td></tr></table></td>`).join("")}</tr></table>`;
-}
+  | { security: [string, string] }
+  | { moment: { kicker: string; big: string; text: string } };
 
 export type EmailInput = {
   subject: string;
-  /** Sets the label in the header and the colour of the card's top edge. */
+  /** Sets the label in the hero. */
   kind?: EmailKind;
   /** The line an inbox shows next to the subject. */
   preheader: string;
   blocks: Block[];
   /** Why the reader got this message. */
   footer: string;
-  /** The help block at the bottom of the card: a question the reader may have, and what to send. */
+  /** The help block at the bottom: a question the reader may have, and what to send. */
   help?: [string, string];
   /** Security notices carry nothing clickable at all: whoever reads one is
    *  not necessarily the person who acted, and a link there is the exact
@@ -126,80 +130,102 @@ export type EmailInput = {
 /** The kit's bulletproof button: VML for Outlook's Word engine, a padded link everywhere else. */
 function button(href: string, label: string): string {
   const width = Math.min(520, Math.round(label.length * 9) + 64);
-  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" class="btn" style="margin:4px 0 24px;"><tr><td class="btn-cell" align="center" bgcolor="${P.copper}" style="border-radius:10px;background:${P.copper};">` +
-    `<!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${escapeHtml(href)}" style="height:48px;v-text-anchor:middle;width:${width}px;" arcsize="21%" stroke="f" fillcolor="${P.copper}"><w:anchorlock/><center style="color:${P.copperInk};font-family:Arial,sans-serif;font-size:16px;font-weight:700;">${escapeHtml(label)}</center></v:roundrect><![endif]-->` +
-    `<!--[if !mso]><!--><a class="btn-a" href="${escapeHtml(href)}" style="display:inline-block;padding:14px 28px;${SANS}font-size:16px;line-height:20px;font-weight:700;color:${P.copperInk};text-decoration:none;border-radius:10px;background:${P.copper};">${escapeHtml(label)}</a><!--<![endif]--></td></tr></table>`;
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" class="btn" style="margin:6px 0 24px;"><tr><td class="btn-cell" align="center" bgcolor="${P.copper}" style="border-radius:10px;background:${P.copper};">` +
+    `<!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${escapeHtml(href)}" style="height:50px;v-text-anchor:middle;width:${width}px;" arcsize="20%" stroke="f" fillcolor="${P.copper}"><w:anchorlock/><center style="color:${P.copperInk};font-family:Arial,sans-serif;font-size:16px;font-weight:700;">${escapeHtml(label)}</center></v:roundrect><![endif]-->` +
+    `<!--[if !mso]><!--><a class="btn-a" href="${escapeHtml(href)}" style="display:inline-block;padding:15px 30px;${SANS}font-size:16px;line-height:20px;font-weight:700;color:${P.copperInk};text-decoration:none;border-radius:10px;background:${P.copper};">${escapeHtml(label)}</a><!--<![endif]--></td></tr></table>`;
 }
 
 /** Renders one message as HTML and plain text from the same blocks, so the two cannot disagree. */
 export function renderEmail(input: EmailInput): { subject: string; html: string; text: string } {
-  const html: string[] = [];
-  const text: string[] = [];
   const e = escapeHtml;
-  const panel = (inner: string, margin = "0 0 24px"): string =>
-    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="panel" bgcolor="${P.panel}" style="background:${P.panel};border-radius:10px;margin:${margin};"><tr><td style="padding:16px 18px;">${inner}</td></tr></table>`;
+  const hero: { kicker?: string; h1?: string; p?: string } = {};
+  type Section = string[] | { moment: { kicker: string; big: string; text: string } };
+  const sections: Section[] = [[]];
+  const text: string[] = [];
+  const html = (): string[] => {
+    const last = sections[sections.length - 1];
+    if (Array.isArray(last)) return last;
+    const fresh: string[] = [];
+    sections.push(fresh);
+    return fresh;
+  };
+  const panel = (inner: string): string =>
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="panel" bgcolor="${P.panel}" style="background:${P.panel};border-radius:10px;margin:0 0 24px;"><tr><td style="padding:17px 19px;">${inner}</td></tr></table>`;
   for (const block of input.blocks) {
-    if ("kicker" in block) {
-      html.push(`<p class="eyebrow" style="margin:0 0 10px;${SANS}font-size:12px;line-height:16px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:${P.copper};">${e(block.kicker)}</p>`);
-    } else if ("h1" in block) {
-      html.push(`<h1 class="h1 ink" style="margin:0 0 14px;${SANS}font-size:26px;line-height:32px;font-weight:700;letter-spacing:-0.4px;color:${P.ink};">${e(block.h1)}</h1>`);
-      text.push(block.h1);
-    } else if ("h2" in block) {
-      html.push(`<p class="muted" style="margin:6px 0 10px;${SANS}font-size:12px;line-height:16px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:${P.muted};">${e(block.h2)}</p>`);
+    if ("kicker" in block) { hero.kicker = block.kicker; }
+    else if ("h1" in block) { hero.h1 = block.h1; text.push(block.h1); }
+    else if ("p" in block && !block.muted && hero.p === undefined && html().length === 0) { hero.p = block.p; text.push(block.p); }
+    else if ("h2" in block) {
+      if (html().length) sections.push([]);
+      html().push(`<p class="eyebrow" style="margin:0 0 16px;${SANS}font-size:12px;line-height:16px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:${P.copper};">${e(block.h2)}</p>`);
       text.push(block.h2);
     } else if ("p" in block) {
-      html.push(block.muted
+      html().push(block.muted
         ? `<p class="muted" style="margin:0 0 20px;${SANS}font-size:13px;line-height:19px;color:${P.muted};">${e(block.p)}</p>`
         : `<p class="ink" style="margin:0 0 22px;${SANS}font-size:16px;line-height:25px;color:${P.ink};">${e(block.p)}</p>`);
       text.push(block.p);
     } else if ("note" in block) {
-      html.push(panel((block.title ? `<p class="ink" style="margin:0 0 8px;${SANS}font-size:15px;line-height:22px;font-weight:700;color:${P.ink};">${e(block.title)}</p>` : "") +
+      html().push(panel((block.title ? `<p class="ink" style="margin:0 0 8px;${SANS}font-size:15px;line-height:22px;font-weight:700;color:${P.ink};">${e(block.title)}</p>` : "") +
         `<p class="ink" style="margin:0;${SANS}font-size:14px;line-height:21px;color:${P.ink};">${e(block.note)}</p>`));
       text.push(block.title ? `${block.title}\n${block.note}` : block.note);
     } else if ("rows" in block) {
       const last = block.rows.length - 1;
-      html.push(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="panel" bgcolor="${P.panel}" style="background:${P.panel};border-left:4px solid ${P.copper};border-radius:6px;margin:0 0 24px;"><tr><td style="padding:6px 18px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">` +
+      html().push(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="panel" bgcolor="${P.panel}" style="background:${P.panel};border-left:4px solid ${P.copper};border-radius:6px;margin:0 0 24px;"><tr><td style="padding:4px 18px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">` +
         block.rows.map(([key, value], i) => {
           const rule = i < last ? `border-bottom:1px solid ${P.line};` : "";
-          return `<tr><td class="muted rule" width="38%" valign="top" style="padding:10px 12px 10px 0;${rule}${SANS}font-size:13px;line-height:20px;color:${P.muted};">${e(key)}</td><td class="ink rule" valign="top" style="padding:10px 0;${rule}${SANS}font-size:15px;line-height:20px;font-weight:700;color:${P.ink};word-break:break-word;">${e(value)}</td></tr>`;
+          return `<tr><td class="muted rule" width="38%" valign="top" style="padding:11px 12px 11px 0;${rule}${SANS}font-size:13px;line-height:20px;color:${P.muted};">${e(key)}</td><td class="ink rule" valign="top" style="padding:11px 0;${rule}${SANS}font-size:15px;line-height:20px;font-weight:700;color:${P.ink};word-break:break-word;">${e(value)}</td></tr>`;
         }).join("") + "</table></td></tr></table>");
       text.push(block.rows.map(([key, value]) => `${key}: ${value}`).join("\n"));
     } else if ("list" in block) {
-      html.push(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 12px;">` +
-        block.list.map((item, i) => `<tr><td width="24" valign="top" style="padding:1px 12px 12px 0;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td class="btn-cell" align="center" width="24" height="24" bgcolor="${P.copper}" style="width:24px;height:24px;border-radius:12px;background:${P.copper};font-family:Arial,sans-serif;font-size:12px;line-height:24px;font-weight:700;color:${P.copperInk};">${block.numbered ? i + 1 : "&#10003;"}</td></tr></table></td><td class="ink" valign="top" style="padding:0 0 12px;${SANS}font-size:15px;line-height:22px;color:${P.ink};">${e(item)}</td></tr>`).join("") + "</table>");
+      html().push(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 8px;">` +
+        block.list.map((item, i) => `<tr><td width="30" valign="top" style="padding:0 14px 0 0;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td class="btn-cell" align="center" width="30" height="30" bgcolor="${P.copper}" style="width:30px;height:30px;border-radius:15px;background:${P.copper};font-family:Arial,sans-serif;font-size:14px;line-height:30px;font-weight:700;color:${P.copperInk};">${block.numbered ? i + 1 : "&#10003;"}</td></tr></table></td><td class="ink" valign="top" style="padding:4px 0 16px;${SANS}font-size:15px;line-height:22px;color:${P.ink};">${e(item)}</td></tr>`).join("") + "</table>");
       text.push(block.list.map((item, i) => `${block.numbered ? `${i + 1}.` : "-"} ${item}`).join("\n"));
     } else if ("button" in block) {
-      html.push(button(block.button.href, block.button.label));
+      html().push(button(block.button.href, block.button.label));
       text.push(`${block.button.label}: ${block.button.href}`);
     } else if ("code" in block) {
-      html.push(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="panel" bgcolor="${P.panel}" style="background:${P.panel};border:1px dashed ${P.copper};border-radius:10px;margin:0 0 20px;"><tr><td align="center" class="ink otp" style="padding:20px 16px;${MONO}font-size:28px;line-height:36px;font-weight:700;letter-spacing:6px;color:${P.ink};">${e(block.code)}</td></tr></table>`);
+      html().push(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${P.night}" style="background:${P.night};border-radius:12px;margin:0 0 22px;"><tr><td align="center" style="padding:18px 16px 4px;">${redactionBars([30, 14, 44, 18], ["#4a4552", P.glow, "#4a4552", "#4a4552"], 6)}</td></tr><tr><td align="center" class="otp" style="padding:12px 16px 20px;${MONO}font-size:32px;line-height:38px;font-weight:700;letter-spacing:8px;color:#ffffff;">${e(block.code)}</td></tr></table>`);
       text.push(block.code);
     } else if ("link" in block) {
-      html.push(`<p class="muted" style="margin:-8px 0 24px;${SANS}font-size:13px;line-height:19px;color:${P.muted};word-break:break-all;">${e(block.link.label)}<br><a class="link" href="${e(block.link.href)}" style="color:${P.copper};">${e(block.link.href)}</a></p>`);
+      html().push(`<p class="muted" style="margin:-10px 0 24px;${SANS}font-size:13px;line-height:19px;color:${P.muted};word-break:break-all;">${e(block.link.label)}<br><a class="link" href="${e(block.link.href)}" style="color:${P.copper};">${e(block.link.href)}</a></p>`);
       text.push(`${block.link.label}\n${block.link.href}`);
     } else if ("security" in block) {
-      html.push(panel(`<p class="ink" style="margin:0 0 8px;${SANS}font-size:15px;line-height:22px;color:${P.ink};"><strong>If this was you:</strong> ${e(block.security[0])}</p><p class="ink" style="margin:0;${SANS}font-size:15px;line-height:22px;color:${P.ink};"><strong>If it was not:</strong> ${e(block.security[1])}</p>`));
+      html().push(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="panel" bgcolor="${P.panel}" style="background:${P.panel};border-left:4px solid ${P.ink};border-radius:6px;margin:0 0 24px;"><tr><td style="padding:16px 18px;"><p class="ink" style="margin:0 0 8px;${SANS}font-size:15px;line-height:22px;color:${P.ink};"><strong>If this was you:</strong> ${e(block.security[0])}</p><p class="ink" style="margin:0;${SANS}font-size:15px;line-height:22px;color:${P.ink};"><strong>If it was not:</strong> ${e(block.security[1])}</p></td></tr></table>`);
       text.push(`If this was you: ${block.security[0]}\nIf it was not: ${block.security[1]}`);
+    } else if ("moment" in block) {
+      sections.push({ moment: block.moment });
+      text.push(`${block.moment.kicker}: ${block.moment.big}. ${block.moment.text}`);
     }
   }
 
   const site = SITE_URL;
-  const linkStyle = "color:#f0c9ad;";
-  const logo = `<img src="${site}/outputs/redaxa-mark-128.png" width="44" height="44" alt="Redaxa" style="display:block;width:44px;height:44px;border-radius:11px;">`;
+  const kind = input.kind ?? "account";
+  const logo = `<img src="${site}/outputs/redaxa-mark-128.png" width="56" height="56" alt="Redaxa" style="display:block;width:56px;height:56px;border-radius:14px;">`;
+  const smallLogo = `<img src="${site}/outputs/redaxa-mark-128.png" width="28" height="28" alt="" style="display:block;width:28px;height:28px;border-radius:7px;">`;
   const brand = input.noLinks
-    ? `<td width="44" valign="middle" style="padding:0 12px 0 0;">${logo}</td><td valign="middle" class="ink" style="${SANS}font-size:21px;line-height:24px;font-weight:700;letter-spacing:-0.4px;color:${P.ink};">Redaxa</td>`
-    : `<td width="44" valign="middle" style="padding:0 12px 0 0;"><a href="${site}/" style="text-decoration:none;">${logo}</a></td><td valign="middle" style="${SANS}font-size:21px;line-height:24px;font-weight:700;letter-spacing:-0.4px;"><a class="ink" href="${site}/" style="color:${P.ink};text-decoration:none;">Redaxa</a></td>`;
+    ? `<td width="56" valign="middle" style="padding:0 14px 0 0;">${logo}</td><td valign="middle" style="${SANS}font-size:15px;line-height:20px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:#f4f1ec;">Redaxa</td>`
+    : `<td width="56" valign="middle" style="padding:0 14px 0 0;"><a href="${site}/" style="text-decoration:none;">${logo}</a></td><td valign="middle" style="${SANS}font-size:15px;line-height:20px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;"><a href="${site}/" style="color:#f4f1ec;text-decoration:none;">Redaxa</a></td>`;
   const [helpTitle, helpText] = input.help ?? ["Something not as described?", "Reply to this email with what you were doing and what you saw."];
   const write = /^Reply/.test(helpText) ? "Or write to" : "Write to";
   const support = input.noLinks ? SUPPORT_ADDRESS : `<a class="link" href="mailto:${SUPPORT_ADDRESS}" style="color:${P.copper};">${SUPPORT_ADDRESS}</a>`;
+  const footLink = "color:#f0c9ad;";
   const links = input.noLinks
-    ? "Redaxa &middot; redaxa.getcertsprint.com"
-    : `Redaxa &middot; <a class="link" href="${site}/" style="${linkStyle}">redaxa.getcertsprint.com</a> &middot; <a class="link" href="${site}/privacy.html" style="${linkStyle}">Privacy</a> &middot; <a class="link" href="${site}/terms.html" style="${linkStyle}">Terms</a>`;
-  const dark = `.bg{background:#0f0d12!important}.card{background:${D.card}!important;border-color:${D.line}!important}.panel{background:${D.panel}!important}.ink{color:${D.ink}!important}.muted{color:${D.muted}!important}.rule{border-color:${D.line}!important}.link,.eyebrow{color:${D.copper}!important}.btn-cell{background:${D.copper}!important}.btn-a{color:${D.copperInk}!important;background:${D.copper}!important}.bar{background:${D.copper}!important}`;
+    ? "redaxa.getcertsprint.com"
+    : `<a href="${site}/" style="${footLink}">redaxa.getcertsprint.com</a> &middot; <a href="${site}/privacy.html" style="${footLink}">Privacy</a> &middot; <a href="${site}/terms.html" style="${footLink}">Terms</a> &middot; <a href="mailto:${SUPPORT_ADDRESS}" style="${footLink}">Support</a>`;
+  let alternate = false;
+  const body = sections.map(section => {
+    if (!Array.isArray(section)) {
+      alternate = false;
+      return `<tr><td class="pad" bgcolor="${P.copper}" style="background:${P.copper};background-image:linear-gradient(120deg,#8c3a16 0%,#b4562b 100%);padding:24px 36px;"><p style="margin:0 0 6px;${SANS}font-size:12px;line-height:16px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:#ffe2cf;">${e(section.moment.kicker)}</p><p class="big" style="margin:0 0 6px;${SANS}font-size:32px;line-height:38px;font-weight:700;letter-spacing:-0.6px;color:#ffffff;">${e(section.moment.big)}</p><p style="margin:0;${SANS}font-size:14px;line-height:21px;color:#fde9dc;">${e(section.moment.text)}</p></td></tr>`;
+    }
+    if (!section.length) return "";
+    const tone = alternate ? { cls: "alt", bg: P.alt } : { cls: "card", bg: P.card };
+    alternate = !alternate;
+    return `<tr><td class="${tone.cls} pad" bgcolor="${tone.bg}" style="background:${tone.bg};padding:30px 36px 8px;">\n${section.join("\n")}\n</td></tr>`;
+  }).join("\n");
+  const dark = `.bg{background:${D.page}!important}.card{background:${D.card}!important}.alt{background:${D.alt}!important}.panel{background:${D.panel}!important}.ink{color:${D.ink}!important}.muted{color:${D.muted}!important}.rule{border-color:${D.line}!important}.link,.eyebrow{color:${D.copper}!important}`;
   const ogsc = dark.replace(/(^|\}|,)\./g, "$1[data-ogsc] .");
 
-  const kind = input.kind ?? "account";
-  const edge = kind === "security" ? P.ink : P.copper;
   const document = `<!doctype html>
 <html lang="en" dir="ltr">
 <head>
@@ -217,13 +243,10 @@ export function renderEmail(input: EmailInput): { subject: string; html: string;
   body{margin:0;padding:0;width:100%!important}
   a[x-apple-data-detectors]{color:inherit!important;text-decoration:none!important}
   @media only screen and (max-width:620px){
-    .wrap{padding:18px 10px!important}
-    .card-pad{padding:28px 20px 10px!important}
-    .help{padding:18px 20px!important}
-    .foot{padding:24px 20px!important}
-    .h1{font-size:24px!important;line-height:30px!important}
+    .wrap{padding:10px 6px!important}.pad{padding-left:20px!important;padding-right:20px!important}
+    .hero{padding-top:24px!important;padding-bottom:22px!important}.h1{font-size:26px!important;line-height:32px!important}
+    .big{font-size:28px!important;line-height:34px!important}.otp{font-size:24px!important;letter-spacing:5px!important}
     .btn,.btn td,.btn a{width:100%!important;display:block!important;text-align:center!important;box-sizing:border-box!important}
-    .otp{font-size:22px!important;letter-spacing:4px!important}
     .hide-sm{display:none!important}
   }
   @media (prefers-color-scheme:dark){${dark}}
@@ -233,35 +256,36 @@ export function renderEmail(input: EmailInput): { subject: string; html: string;
 <body class="bg" style="margin:0;padding:0;background:${P.page};">
 <div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;color:${P.page};">${e(input.preheader)}${"&#8199;&#847;".repeat(60)}</div>
 <table lang="en" dir="ltr" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="bg" bgcolor="${P.page}" style="background:${P.page};">
-<tr><td align="center" class="wrap" style="padding:30px 16px 34px;">
+<tr><td align="center" class="wrap" style="padding:28px 14px;">
 <!--[if mso]><table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td><![endif]-->
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:600px;margin:0 auto;">
-  <tr><td style="padding:0 4px 18px;">
+  <tr><td bgcolor="${P.copper}" style="height:6px;font-size:0;line-height:0;background:${P.copper};border-radius:16px 16px 0 0;">&nbsp;</td></tr>
+  <tr><td class="hero pad" bgcolor="${P.night}" style="background:${P.night};background-image:linear-gradient(160deg,#141118 0%,#2c2537 100%);padding:28px 36px 24px;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-      <td valign="middle"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>${brand}</tr></table></td>
-      <td class="hide-sm" align="right" valign="middle"><table role="presentation" cellpadding="0" cellspacing="0" border="0" align="right"><tr><td class="muted" style="padding:0 0 6px;${SANS}font-size:11px;line-height:14px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:${P.muted};text-align:right;">${e(KIND_LABEL[kind])}</td></tr><tr><td align="right">${redactionBars([34, 18, 26], [P.ink, P.ink, P.copper])}</td></tr></table></td>
+      ${brand}
+      <td class="hide-sm" align="right" valign="middle" style="${SANS}font-size:12px;line-height:16px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:${P.glow};">${e(KIND_LABEL[kind])}</td>
     </tr></table>
+    ${hero.kicker ? `<p style="margin:24px 0 8px;${SANS}font-size:12px;line-height:16px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:${P.glow};">${e(hero.kicker)}</p>` : ""}
+    <h1 class="h1" style="margin:${hero.kicker ? 0 : 22}px 0 10px;${SANS}font-size:30px;line-height:36px;font-weight:700;letter-spacing:-0.6px;color:#ffffff;">${e(hero.h1 ?? input.subject)}</h1>
+    ${hero.p ? `<p style="margin:0 0 20px;${SANS}font-size:16px;line-height:25px;color:#e6e0ea;">${e(hero.p)}</p>` : `<div style="height:8px;font-size:0;line-height:0;">&nbsp;</div>`}
+    ${redactionBars([46, 22, 70, 16, 34], ["#4a4552", "#4a4552", P.glow, "#4a4552", "#4a4552"])}
   </td></tr>
-  <tr><td class="card" bgcolor="${P.card}" style="background:${P.card};border:1px solid ${P.line};border-top:5px solid ${edge};border-radius:14px;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-      <tr><td class="card-pad" style="padding:34px 34px 10px;">
-${html.join("\n")}
-      </td></tr>
-      <tr><td class="panel help" bgcolor="${P.panel}" style="background:${P.panel};padding:20px 34px 22px;border-radius:0 0 13px 13px;">
-        <p class="ink" style="margin:0 0 4px;${SANS}font-size:14px;line-height:21px;font-weight:700;color:${P.ink};">${e(helpTitle)}</p>
-        <p class="muted" style="margin:0;${SANS}font-size:14px;line-height:21px;color:${P.muted};">${e(helpText)} ${write} ${support}. Never send a password or an API key by email.</p>
-      </td></tr>
-    </table>
+  <tr><td bgcolor="#c46a3e" style="height:4px;font-size:0;line-height:0;background:#c46a3e;">&nbsp;</td></tr>
+  <tr><td bgcolor="#e2a582" style="height:4px;font-size:0;line-height:0;background:#e2a582;">&nbsp;</td></tr>
+  ${body}
+  <tr><td class="alt pad" bgcolor="${P.alt}" style="background:${P.alt};padding:8px 36px 28px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="panel" bgcolor="${P.panel}" style="background:${P.panel};border-left:4px solid ${P.copper};border-radius:6px;"><tr><td style="padding:16px 18px;">
+      <p class="ink" style="margin:0 0 4px;${SANS}font-size:14px;line-height:21px;font-weight:700;color:${P.ink};">${e(helpTitle)}</p>
+      <p class="muted" style="margin:0;${SANS}font-size:14px;line-height:21px;color:${P.muted};">${e(helpText)} ${write} ${support}. Never send a password or an API key by email.</p>
+    </td></tr></table>
   </td></tr>
-  <tr><td style="padding:14px 0 0;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${P.night}" style="background:${P.night};border-radius:14px;">
-      <tr><td class="foot" align="center" style="padding:26px 28px;">
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td align="center" style="padding:0 0 12px;">${redactionBars([42, 22, 58, 16], ["#4a4552", "#e8956a", "#4a4552", "#4a4552"])}</td></tr></table>
-        <p style="margin:0 0 4px;${SANS}font-size:15px;line-height:21px;font-weight:700;color:#f4f1ec;">Share the work. Keep the secrets.</p>
-        <p style="margin:0 0 14px;${SANS}font-size:12px;line-height:18px;color:#b8b1bf;">${e(input.footer)}</p>
-        <p style="margin:0;${SANS}font-size:12px;line-height:18px;color:#b8b1bf;">${links}</p>
-      </td></tr>
-    </table>
+  <tr><td class="pad" bgcolor="${P.night}" style="background:${P.night};padding:24px 36px 26px;border-radius:0 0 16px 16px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+      <td valign="middle"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td valign="middle" style="padding:0 10px 0 0;">${smallLogo}</td><td valign="middle" style="${SANS}font-size:14px;line-height:18px;font-weight:700;color:#ffffff;">Redaxa<br><span style="font-size:12px;font-weight:400;color:${P.chrome};">Share the work. Keep the secrets.</span></td></tr></table></td>
+      <td class="hide-sm" align="right" valign="middle">${redactionBars([22, 12, 30], ["#4a4552", P.glow, "#4a4552"], 6)}</td>
+    </tr></table>
+    <p style="margin:16px 0 6px;${SANS}font-size:12px;line-height:18px;color:${P.chrome};">${e(input.footer)}</p>
+    <p style="margin:0;${SANS}font-size:12px;line-height:18px;color:${P.chrome};">${links}</p>
   </td></tr>
 </table>
 <!--[if mso]></td></tr></table><![endif]-->
@@ -307,6 +331,7 @@ function subscriptionEmail(input: SubscriptionEmailInput): { subject: string; ht
       { p: intro },
       { rows },
       { button: { href: appUrl, label: "Open Redaxa" } },
+      ...(trialing ? [{ moment: { kicker: "Trial", big: "Seven days, every feature", text: `Nothing is charged before ${renewsOn ?? "the trial ends"}, and you can cancel before then.` } }] : []),
       { h2: "Three things to try first" },
       { list: firstSteps, numbered: true },
       { note: trialing
@@ -418,7 +443,8 @@ function welcomeEmail(firstName: string | null | undefined, appUrl: string): { s
         "Paste something with a key or an address in it and see what Redaxa flags before it sends",
       ], numbered: true },
       { button: { href: appUrl, label: "Open Redaxa" } },
-      { note: "Free checks in the Chrome extension run in your browser and have no daily limit. On the web and in the Windows app the free plan includes 5 prompt checks a day, plus 3 public repository checks a day on the web.", title: "What the free plan includes" },
+      { moment: { kicker: "Chrome extension", big: "No daily limit", text: "Free checks in the extension run in your browser, on ChatGPT, Claude, Gemini and Perplexity." } },
+      { note: "On the web and in the Windows app, the free plan includes 5 prompt checks a day, plus 3 public repository checks a day on the web. Pro removes the daily limit on prompt checks.", title: "Free plan on the web and in Windows" },
       { p: "We will never ask you for a password or an API key by email.", muted: true },
     ],
   });
