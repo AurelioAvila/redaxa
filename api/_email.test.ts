@@ -169,8 +169,9 @@ assert.equal(formatChargedAmount(null, "eur", "month"), null);
   let sends = 0;
   let marks = 0;
   globalThis.fetch = (async (url: string) => {
-    if (url === "https://api.resend.com/emails") return new Response("{}", { status: ++sends === 1 ? 503 : 200 });
-    if (url.endsWith("/auth/v1/admin/users/user-123")) { marks++; return new Response("{}", { status: 200 }); }
+    // Two 503s: the relay asks Resend once more with the same key before giving up.
+    if (url === "https://api.resend.com/emails") return new Response("{}", { status: ++sends <= 2 ? 503 : 200 });
+    if (url.endsWith("/auth/v1/admin/users/user-456")) { marks++; return new Response("{}", { status: 200 }); }
     throw new Error(`Unexpected test URL: ${url}`);
   }) as typeof globalThis.fetch;
   try {
@@ -180,11 +181,12 @@ assert.equal(formatChargedAmount(null, "eur", "month"), null);
     process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-key";
     process.env.STRIPE_SECRET_KEY = "sk_test_redaxa_email_test";
     const { welcomeOnce } = await import("./_welcome.js");
-    const user = { id: "user-123", email: "someone@example.com", emailConfirmedAt: new Date().toISOString(), createdAt: new Date().toISOString(), metadata: {} };
+    // Its own id: a key already accepted earlier in this process is never sent again.
+    const user = { id: "user-456", email: "someone@example.com", emailConfirmedAt: new Date().toISOString(), createdAt: new Date().toISOString(), metadata: {} };
     await welcomeOnce(user);
     assert.equal(marks, 0, "a failed send must not permanently suppress the welcome");
     await welcomeOnce(user);
-    assert.equal(sends, 2);
+    assert.equal(sends, 3);
     assert.equal(marks, 1, "a successful retry must record the welcome");
   } finally {
     globalThis.fetch = realFetch;
@@ -250,6 +252,31 @@ assert.equal(formatChargedAmount(null, "eur", "month"), null);
     globalThis.fetch = realFetch;
     if (saved.key === undefined) delete process.env.RESEND_API_KEY; else process.env.RESEND_API_KEY = saved.key;
     if (saved.from === undefined) delete process.env.REDAXA_MAIL_FROM; else process.env.REDAXA_MAIL_FROM = saved.from;
+  }
+}
+
+{
+  // Resend out of quota: the message goes out through SMTP2GO once its key is set, and only there.
+  const hosts: string[] = [];
+  const realFetch = globalThis.fetch;
+  const saved = { key: process.env.RESEND_API_KEY, from: process.env.REDAXA_MAIL_FROM, s2g: process.env.SMTP2GO_API_KEY };
+  globalThis.fetch = (async (url: string) => {
+    hosts.push(new URL(url).host);
+    return url.includes("resend")
+      ? new Response('{"name":"daily_quota_exceeded"}', { status: 429, headers: { "content-type": "application/json" } })
+      : new Response('{"data":{"succeeded":1,"failed":0,"email_id":"s2g"}}', { status: 200, headers: { "content-type": "application/json" } });
+  }) as typeof globalThis.fetch;
+  try {
+    process.env.RESEND_API_KEY = "re_test";
+    process.env.SMTP2GO_API_KEY = "api-test";
+    process.env.REDAXA_MAIL_FROM = "Redaxa <noreply@example.com>";
+    assert.equal(await notifyOwnerOfSale("buyer@example.com", "personal", "year", false, "redaxa-sale/sub_quota"), true);
+    assert.deepEqual(hosts, ["api.resend.com", "api.smtp2go.com"]);
+  } finally {
+    globalThis.fetch = realFetch;
+    if (saved.key === undefined) delete process.env.RESEND_API_KEY; else process.env.RESEND_API_KEY = saved.key;
+    if (saved.from === undefined) delete process.env.REDAXA_MAIL_FROM; else process.env.REDAXA_MAIL_FROM = saved.from;
+    if (saved.s2g === undefined) delete process.env.SMTP2GO_API_KEY; else process.env.SMTP2GO_API_KEY = saved.s2g;
   }
 }
 
