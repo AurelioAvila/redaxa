@@ -73,8 +73,81 @@
   !insertmacro RedaxaWaitWritable "$INSTDIR\repository-runtime\git\bin\git-remote-https.exe"
 !macroend
 
+; Up to 0.5.5 Redaxa installed for the signed-in user only, in %LocalAppData%\Redaxa,
+; as redaxa-desktop.exe. It now installs for all users in Program Files\Redaxa, as
+; Redaxa.exe. The per-user copy of the person running this setup is closed first and
+; replaced afterwards (RedaxaMigratePerUser). $LOCALAPPDATA has to be read in the
+; user's own context: in the all-users context it names ProgramData.
+Var RedaxaOldDir
+!macro RedaxaFindPerUser
+  SetShellVarContext current
+  StrCpy $RedaxaOldDir "$LOCALAPPDATA\Redaxa"
+  !insertmacro SetContext
+!macroend
+
 !macro NSIS_HOOK_PREINSTALL
   !insertmacro RedaxaCloseRunning
+  !insertmacro RedaxaFindPerUser
+  StrCmp $RedaxaOldDir $INSTDIR redaxa_old_closed
+  !insertmacro RedaxaCloseByPath "$RedaxaOldDir\redaxa-desktop.exe"
+  !insertmacro RedaxaCloseByPath "$RedaxaOldDir\repository-runtime\node.exe"
+  !insertmacro RedaxaCloseByPath "$RedaxaOldDir\repository-runtime\git\bin\git.exe"
+  !insertmacro RedaxaCloseByPath "$RedaxaOldDir\repository-runtime\git\bin\git-remote-https.exe"
+  !insertmacro RedaxaWaitWritable "$RedaxaOldDir\redaxa-desktop.exe"
+  redaxa_old_closed:
+!macroend
+
+; Removes the per-user installation this setup replaces, only when its own uninstall
+; entry says it is the standard one in %LocalAppData%\Redaxa: the program files (by name,
+; never the whole folder), its Installed apps entry, its Start menu shortcut and the
+; redaxa:// link it registered. A desktop shortcut it had moves to the all-users desktop,
+; where uninstalling removes it; a taskbar pin is pointed at the new program. Settings,
+; history and the saved sign-in are stored by identifier (com.aurelioavila.redaxa, the
+; Windows Credential Manager) and are not touched.
+!macro RedaxaMigratePerUser
+  StrCmp $RedaxaOldDir $INSTDIR redaxa_migrate_done
+  ReadRegStr $R9 HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Redaxa" "UninstallString"
+  StrCmp $R9 '"$RedaxaOldDir\uninstall.exe"' 0 redaxa_migrate_done
+  Delete "$RedaxaOldDir\redaxa-desktop.exe"
+  Delete "$RedaxaOldDir\uninstall.exe"
+  RMDir /r "$RedaxaOldDir\repository-runtime"
+  RMDir "$RedaxaOldDir"
+  DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Redaxa"
+  ; The app registers its own link again when it starts; until then the all-users one applies.
+  ReadRegStr $R9 HKCU "Software\Classes\redaxa\shell\open\command" ""
+  StrCmp $R9 '"$RedaxaOldDir\redaxa-desktop.exe" "%1"' 0 +2
+  DeleteRegKey HKCU "Software\Classes\redaxa"
+  SetShellVarContext current
+  StrCpy $R8 0
+  !insertmacro IsShortcutTarget "$SMPROGRAMS\${PRODUCTNAME}.lnk" "$RedaxaOldDir\redaxa-desktop.exe"
+  Pop $0
+  ${If} $0 = 1
+    Delete "$SMPROGRAMS\${PRODUCTNAME}.lnk"
+  ${EndIf}
+  !insertmacro IsShortcutTarget "$DESKTOP\${PRODUCTNAME}.lnk" "$RedaxaOldDir\redaxa-desktop.exe"
+  Pop $0
+  ${If} $0 = 1
+    Delete "$DESKTOP\${PRODUCTNAME}.lnk"
+    StrCpy $R8 1
+  ${EndIf}
+  StrCpy $R7 "$APPDATA\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\${PRODUCTNAME}.lnk"
+  !insertmacro IsShortcutTarget "$R7" "$RedaxaOldDir\redaxa-desktop.exe"
+  Pop $0
+  ${If} $0 = 1
+    !insertmacro SetShortcutTarget "$R7" "$INSTDIR\${MAINBINARYNAME}.exe"
+  ${EndIf}
+  !insertmacro SetContext
+  ; An update skips the shortcuts of a fresh install: these replace the ones removed above.
+  ${IfNot} ${FileExists} "$SMPROGRAMS\${PRODUCTNAME}.lnk"
+    CreateShortcut "$SMPROGRAMS\${PRODUCTNAME}.lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
+    !insertmacro SetLnkAppUserModelId "$SMPROGRAMS\${PRODUCTNAME}.lnk"
+  ${EndIf}
+  ${If} $R8 = 1
+  ${AndIfNot} ${FileExists} "$DESKTOP\${PRODUCTNAME}.lnk"
+    CreateShortcut "$DESKTOP\${PRODUCTNAME}.lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
+    !insertmacro SetLnkAppUserModelId "$DESKTOP\${PRODUCTNAME}.lnk"
+  ${EndIf}
+  redaxa_migrate_done:
 !macroend
 
 ; Redaxa was called PromptShield before 0.2.0 (identifier com.aurelioavila.promptshield).
@@ -83,6 +156,9 @@
 ; installs or updates, that broken leftover is removed. A PromptShield installation that still
 ; has its program is left as it is, and no app data is touched.
 !macro NSIS_HOOK_POSTINSTALL
+  !insertmacro RedaxaMigratePerUser
+  ; PromptShield only ever installed for one user: its paths are the user's own.
+  SetShellVarContext current
   ReadRegStr $R9 HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\PromptShield" "UninstallString"
   StrCmp $R9 '"$LOCALAPPDATA\PromptShield\uninstall.exe"' 0 promptshield_done
   IfFileExists "$LOCALAPPDATA\PromptShield\promptshield-desktop.exe" promptshield_done 0
@@ -92,4 +168,5 @@
   Delete "$SMPROGRAMS\PromptShield.lnk"
   Delete "$DESKTOP\PromptShield.lnk"
   promptshield_done:
+  !insertmacro SetContext
 !macroend

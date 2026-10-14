@@ -12,7 +12,13 @@ Copy-Item "$env:SystemRoot\System32\PING.EXE" "$work\payload.exe" -Force
 
 $nsi = @"
 Unicode true
-!define MAINBINARYNAME "redaxa-desktop"
+!define MAINBINARYNAME "Redaxa"
+!define PRODUCTNAME "Redaxa"
+!define INSTALLMODE "currentUser"
+; Stand-in for the Tauri template's macro (utils.nsh); this test installs for the current user.
+!macro SetContext
+  SetShellVarContext current
+!macroend
 !define /ifndef ERROR_MORE_DATA 234
 !include LogicLib.nsh
 !include "Win\RestartManager.nsh"
@@ -28,7 +34,7 @@ Section
   !insertmacro NSIS_HOOK_PREINSTALL
   ClearErrors
   SetOverwrite on
-  File "/oname=redaxa-desktop.exe" "$work\payload.exe"
+  File "/oname=Redaxa.exe" "$work\payload.exe"
   CreateDirectory "`$INSTDIR\repository-runtime"
   File "/oname=repository-runtime\node.exe" "$work\payload.exe"
   FileOpen `$9 "$work\result.txt" w
@@ -47,16 +53,16 @@ if (-not (Test-Path "$work\hooktest.exe")) { throw 'makensis failed' }
 function Reset-Inst {
   if (Test-Path "$work\inst") { Get-ChildItem "$work\inst" -Recurse -File | ForEach-Object { $_.IsReadOnly = $false } }
   New-Item -ItemType Directory -Force "$work\inst\repository-runtime" | Out-Null
-  Copy-Item "$work\payload.exe" "$work\inst\redaxa-desktop.exe" -Force
+  Copy-Item "$work\payload.exe" "$work\inst\Redaxa.exe" -Force
   Copy-Item "$work\payload.exe" "$work\inst\repository-runtime\node.exe" -Force
   New-Item -ItemType Directory -Force "$work\other" | Out-Null
-  Copy-Item "$work\payload.exe" "$work\other\redaxa-desktop.exe" -Force
+  Copy-Item "$work\payload.exe" "$work\other\Redaxa.exe" -Force
   Remove-Item "$work\result.txt" -ErrorAction SilentlyContinue
 }
 function Run-Case([string]$name, [scriptblock]$setup) {
   Reset-Inst
   $procs = & $setup
-  $decoy = Start-Process "$work\other\redaxa-desktop.exe" -ArgumentList '-n 120 127.0.0.1' -WindowStyle Hidden -PassThru
+  $decoy = Start-Process "$work\other\Redaxa.exe" -ArgumentList '-n 120 127.0.0.1' -WindowStyle Hidden -PassThru
   Start-Sleep -Milliseconds 800
   $sw = [Diagnostics.Stopwatch]::StartNew()
   $p = Start-Process "$work\hooktest.exe" -PassThru -Wait
@@ -71,9 +77,9 @@ function Run-Case([string]$name, [scriptblock]$setup) {
 
 Run-Case 'nothing running' { @() }
 Run-Case 'app and scanner open (manual install)' {
-  @( (Start-Process "$work\inst\redaxa-desktop.exe" -ArgumentList '-n 120 127.0.0.1' -WindowStyle Hidden -PassThru),
+  @( (Start-Process "$work\inst\Redaxa.exe" -ArgumentList '-n 120 127.0.0.1' -WindowStyle Hidden -PassThru),
      (Start-Process "$work\inst\repository-runtime\node.exe" -ArgumentList '-n 120 127.0.0.1' -WindowStyle Hidden -PassThru) )
 }
 Run-Case 'app still exiting (update)' {
-  @( (Start-Process "$work\inst\redaxa-desktop.exe" -ArgumentList '-n 4 127.0.0.1' -WindowStyle Hidden -PassThru) )
+  @( (Start-Process "$work\inst\Redaxa.exe" -ArgumentList '-n 4 127.0.0.1' -WindowStyle Hidden -PassThru) )
 }

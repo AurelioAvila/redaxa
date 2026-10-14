@@ -1,7 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Redaxa",
-  "version": "0.5.5",
+  "mainBinaryName": "Redaxa",
+  "version": "0.6.0",
   "identifier": "com.aurelioavila.redaxa",
   "build": {
     "frontendDist": "../desktop-dist",
@@ -73,6 +74,7 @@
       "digestAlgorithm": "sha256",
       "timestampUrl": "http://timestamp.digicert.com",
       "nsis": {
+        "installMode": "perMachine",
         "installerHooks": "./windows/installer-hooks.nsh"
       }
     }

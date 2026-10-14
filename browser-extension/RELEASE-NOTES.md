@@ -1,4 +1,10 @@
-# Extension 0.4.12
+# Extension 0.4.13
+
+The account panel in the popup now says when a free trial ends ("Pro trial · ends 17 October") and when a payment did not go through: the plan shows as paused, and the button opens Account & team in the Redaxa workspace to update the payment method instead of offering the plan again. In English, Italian, Spanish, French and German. Nothing else changes: free checks still run inside the browser and send nothing. No new permissions, telemetry or dependencies.
+
+Verification: `npm test`, then `python scripts/qa/extension-e2e.py` on the staged package in a temporary Brave profile.
+
+## Previous extension 0.4.12
 
 Catches more of what people actually paste. Checks now find secrets assigned by name in `.env` files and configuration (`DB_PASSWORD=…`, `JWT_SECRET: …`, `"apiKey": "…"`), passwords inside connection URLs such as `postgres://app:…@db.internal/main` (only the password is replaced, so the host stays readable), Stripe webhook secrets, SendGrid API keys, Slack webhook URLs, and AWS secret access keys under the names the AWS CLI and SDKs print (`SecretAccessKey`, `secretAccessKey`, `aws_secret_key`). "The password is …" is caught as well as "password: …". An IBAN followed by its BIC or another word in capitals is no longer missed; before, part of it could be read as a phone number and the rest left in the text.
 
