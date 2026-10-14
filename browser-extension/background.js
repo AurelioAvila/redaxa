@@ -152,8 +152,12 @@ async function handleMessage(message, sender) {
         const token = await accessToken();
         if (!token) return { signedIn: false, autoCheck };
         const account = await apiRequest("/api/account", undefined, "GET");
+        // The trial and a paused plan, for the popup; only fields the account service sends.
+        const billing = account.billing && typeof account.billing === "object" ? account.billing : null;
         return { signedIn: true, ...email(), active: account.active === true, plan: account.plan,
-          repositoryAccess: repositoryEntitlement(account), autoCheck };
+          repositoryAccess: repositoryEntitlement(account), autoCheck,
+          trialEndsAt: account.status === "trialing" && typeof account.currentPeriodEnd === "string" ? account.currentPeriodEnd : null,
+          paused: billing?.state === "blocked" && billing?.blockedReason === "payment_failed" };
       } catch {
         return { signedIn: true, ...email(), active: false, repositoryAccess: false, unavailable: true, autoCheck };
       }

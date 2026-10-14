@@ -149,5 +149,10 @@
   "tooLongBody": {"message": "Diese Nachricht ist länger als 20.000 Zeichen, deshalb hat Redaxa sie nicht geprüft. Teilen Sie sie auf oder senden Sie sie ohne Prüfung."},
   "tooLongAccount": {"message": "Diese Nachricht ist länger als 20.000 Zeichen, deshalb hat Redaxa sie nicht geprüft. Teilen Sie sie auf und senden Sie die Teile einzeln."},
   "sendUnchecked": {"message": "Ohne Prüfung senden"},
-  "reloadAfterUpdate": {"message": "Redaxa wurde aktualisiert und prüft diesen Tab nicht mehr. Laden Sie die Seite neu, um die Prüfungen wieder einzuschalten."}
+  "reloadAfterUpdate": {"message": "Redaxa wurde aktualisiert und prüft diesen Tab nicht mehr. Laden Sie die Seite neu, um die Prüfungen wieder einzuschalten."},
+  "planTrialPro": {"message": "Pro-Testphase · endet am $DATE$", "placeholders": {"date": {"content": "$1", "example": "17 October"}}},
+  "planTrialBusiness": {"message": "Business-Testphase · endet am $DATE$", "placeholders": {"date": {"content": "$1", "example": "17 October"}}},
+  "statusPaused": {"message": "Zahlung fehlgeschlagen"},
+  "planPaused": {"message": "Tarif pausiert, bis eine Zahlung erfolgt."},
+  "updatePayment": {"message": "Zahlungsmethode aktualisieren"}
 }

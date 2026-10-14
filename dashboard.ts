@@ -4,6 +4,7 @@ import { enableAppShell } from "./pwa.js";
 import { track } from "./growth.js";
 import { enableDesktopCompanion, openSupportEmail, shellCopyByLanguage } from "./desktop.js";
 import { PROMO_WORDS_EN, euro, mountPromo, promoPriceHtml, type PromoView, type PromoWords } from "./promo.js";
+import { TRIAL_UI, chargeDate, choiceCopy, fillTrial, loadPrices, longDay, priceFor, type PriceList } from "./trial.js";
 
 type HistoryEntry = { id: string; createdAt: string; findings: number; preview: string; byKind: Record<string, number> };
 type Language = "en" | "it" | "es" | "fr" | "de";
@@ -626,7 +627,14 @@ export function mountDashboard(): void {
 
   const preferences = readPreferences();
   applyTheme(preferences.theme);
-  const words = (): Record<string, string> => copyByLanguage[preferences.language];
+  // The plan prices and the trial switch, from Stripe through the server.
+  // Until they arrive (or if they cannot be read) the page shows what it did
+  // before the trial: the list prices below and one checkout button per plan.
+  let prices: PriceList | null = null;
+  let trialAccount: AccountState | null = null;
+  const trialOn = (): boolean => (trialAccount?.billing?.trialEnabled ?? prices?.trialEnabled) === true;
+  const trialWords = () => TRIAL_UI[preferences.language];
+  const words = (): Record<string, string> => trialOn() ? { ...copyByLanguage[preferences.language], ...trialWords().copy } : copyByLanguage[preferences.language];
   const labels = (): Record<string, string> => findingLabelsByLanguage[preferences.language];
   // Numbers and dates follow the language picked in Preferences, not the
   // browser's own locale: an English UI showing "10.000" (or an Italian one
@@ -773,9 +781,11 @@ export function mountDashboard(): void {
         <div class="plan-price"></div>
         <p class="plan-note"></p>
         <div class="plan-actions">
-          <button type="button" class="primary" data-plan="personal" data-interval="monthly">${w0.startTrial}</button>
-          <button type="button" class="primary" data-plan="personal" data-interval="yearly">${w0.startTrial}</button>
+          <button type="button" class="primary" data-plan="personal" data-interval="yearly" data-choice="">${w0.startTrial}</button>
+          <button type="button" class="secondary plan-now" data-plan="personal" data-interval="yearly" data-choice="now" hidden></button>
           <button type="button" class="secondary plan-manage" hidden data-i18n="manageBtn">${w0.manageBtn}</button>
+          <p class="plan-choice-line" hidden></p>
+          <p class="plan-choice-note" role="status" hidden></p>
         </div>
         ${benefits(["proB1", "proB2", "proB3", "proB4"])}
       </article>
@@ -787,9 +797,11 @@ export function mountDashboard(): void {
         <p class="plan-note"></p>
         <label class="pref-row seats-row"><span data-i18n="seatsLabel">${w0.seatsLabel}</span><select id="business-seats"><option value="1" data-i18n="seat1">${w0.seat1}</option><option value="2" data-i18n="seat2">${w0.seat2}</option><option value="3" data-i18n="seat3">${w0.seat3}</option></select></label>
         <div class="plan-actions">
-          <button type="button" class="primary" data-plan="business" data-interval="monthly">${w0.startTrial}</button>
-          <button type="button" class="primary" data-plan="business" data-interval="yearly">${w0.startTrial}</button>
+          <button type="button" class="primary" data-plan="business" data-interval="yearly" data-choice="">${w0.startTrial}</button>
+          <button type="button" class="secondary plan-now" data-plan="business" data-interval="yearly" data-choice="now" hidden></button>
           <button type="button" class="secondary plan-manage" hidden data-i18n="manageBtn">${w0.manageBtn}</button>
+          <p class="plan-choice-line" hidden></p>
+          <p class="plan-choice-note" role="status" hidden></p>
         </div>
         ${benefits(["bizB1", "bizB2", "bizB3", "bizB4"])}
       </article>
@@ -823,6 +835,7 @@ export function mountDashboard(): void {
     <section class="card billing-card" aria-labelledby="billing-title">
       <div class="card-head"><h2 id="billing-title" data-i18n="manageTitle">${w0.manageTitle}</h2><span class="rx-badge" id="account-plan-badge"></span></div>
       <p class="card-note" data-i18n="manageDesc">${w0.manageDesc}</p>
+      <p class="billing-state" id="account-billing-state" role="status" hidden></p>
       <div class="card-actions"><a class="ghost-btn" id="account-compare" href="#plans" data-i18n="seePlans">${w0.seePlans}</a><button type="button" class="primary" id="manage-billing" data-i18n="manageBtn">${w0.manageBtn}</button></div>
     </section>
     <section id="team-section" class="card team-section" hidden aria-labelledby="team-title">
@@ -856,7 +869,9 @@ export function mountDashboard(): void {
   // The Halloween offer, as last confirmed by the server. Regular prices until
   // then, and again the moment it ends or cannot be read.
   let promoView: PromoView | null = null;
-  const promo = mountPromo(banner => required("#plans-status").after(banner), () => promoWordsByLanguage[preferences.language], () => preferences.language, view => {
+  // With the trial on, the offer's fine print says the discount is the first payment after it.
+  const promoWordsFor = (): PromoWords => trialOn() ? { ...promoWordsByLanguage[preferences.language], fine: trialWords().promoFine } : promoWordsByLanguage[preferences.language];
+  const promo = mountPromo(banner => required("#plans-status").after(banner), promoWordsFor, () => preferences.language, view => {
     promoView = view;
     renderBilling();
   });
@@ -864,17 +879,21 @@ export function mountDashboard(): void {
   // Regular prices in euro cents, unchanged; only their formatting follows the language.
   const regularPrice = (cents: number, unit: string, monthlyEquivalent?: number): string =>
     `${euro(cents, preferences.language)} <small>${unit}</small>${monthlyEquivalent ? `<small class="price-equiv">${format(words().equivYearly, { price: euro(monthlyEquivalent, preferences.language) })}</small>` : ""}`;
+  // Stripe's price once the server has read it; until then the list price the page always showed.
+  const listAmount = (plan: string, fallback: number): number => priceFor(prices, plan, billingInterval)?.amount ?? fallback;
   const renderBilling = (): void => {
-    const promoWords = promoWordsByLanguage[preferences.language];
+    const promoWords = promoWordsFor();
     plansView.querySelectorAll<HTMLElement>("[data-billing]").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.billing === billingInterval)));
-    plansView.querySelectorAll<HTMLElement>("[data-plan]").forEach(button => { button.hidden = button.dataset.interval !== billingInterval; button.textContent = button.dataset.plan === "business" ? words().ctaBusiness : words().ctaPro; });
+    plansView.querySelectorAll<HTMLElement>("[data-plan]").forEach(button => { button.dataset.interval = billingInterval; });
     const yearly = billingInterval === "yearly";
     const pro = promoView?.offer("personal", billingInterval) ?? null;
     const business = promoView?.offer("business", billingInterval) ?? null;
     promo.relabel();
     required<HTMLElement>("#free-plan-price").textContent = euro(0, preferences.language);
-    planCard("personal").querySelector(".plan-price")!.innerHTML = pro ? promoPriceHtml(pro, promoWords, preferences.language) : yearly ? regularPrice(7990, promoWords.perYear, 666) : regularPrice(799, promoWords.perMonth);
-    planCard("business").querySelector(".plan-price")!.innerHTML = business ? promoPriceHtml(business, promoWords, preferences.language) : yearly ? regularPrice(14990, promoWords.perUserYear, 1249) : regularPrice(1499, promoWords.perUserMonth);
+    const proAmount = listAmount("personal", yearly ? 7990 : 799);
+    const businessAmount = listAmount("business", yearly ? 14990 : 1499);
+    planCard("personal").querySelector(".plan-price")!.innerHTML = pro ? promoPriceHtml(pro, promoWords, preferences.language) : yearly ? regularPrice(proAmount, promoWords.perYear, Math.round(proAmount / 12)) : regularPrice(proAmount, promoWords.perMonth);
+    planCard("business").querySelector(".plan-price")!.innerHTML = business ? promoPriceHtml(business, promoWords, preferences.language) : yearly ? regularPrice(businessAmount, promoWords.perUserYear, Math.round(businessAmount / 12)) : regularPrice(businessAmount, promoWords.perUserMonth);
     renderPlanChoice();
   };
   plansView.querySelectorAll<HTMLElement>("[data-billing]").forEach(button => button.addEventListener("click", () => { billingInterval = button.dataset.billing === "monthly" ? "monthly" : "yearly"; renderBilling(); }));
@@ -1207,17 +1226,27 @@ export function mountDashboard(): void {
   const planName = (plan: string | null | undefined): string => plan === "business" ? words().businessName : words().personalName;
   const renderPlanStatus = (): void => {
     const w = words();
+    const t = trialWords();
+    const billing = accountState?.billing ?? null;
     const paid = Boolean(accountState?.active);
-    required<HTMLElement>("#side-fill").hidden = paid;
-    if (accountState?.status === "trialing" && accountState.currentPeriodEnd) {
+    const paused = billing?.state === "blocked" && billing.blockedReason === "payment_failed";
+    required<HTMLElement>("#side-fill").hidden = paid || paused;
+    if (paused) {
+      planTrack.hidden = true;
+      planLabel.textContent = t.pausedBadge;
+      planValue.textContent = planName(billing?.plan);
+      planNote.textContent = fillTrial(t.sidebarPausedNote, { plan: planName(billing?.plan) });
+    } else if (accountState?.status === "trialing" && accountState.currentPeriodEnd) {
+      // The running trial's own length: three days now, seven for trials sold before.
+      const total = billing?.trialLength ?? trialLengthDays;
       const daysLeft = Math.max(0, Math.ceil((new Date(accountState.currentPeriodEnd).getTime() - Date.now()) / 86_400_000));
-      const dayNumber = Math.min(trialLengthDays, Math.max(1, trialLengthDays - daysLeft + 1));
+      const dayNumber = Math.min(total, Math.max(1, total - daysLeft + 1));
       planLabel.textContent = w.planTrial;
       planValue.textContent = daysLeft <= 0 ? w.planEndsToday : plural(w.planDaysLeft, daysLeft);
       planTrack.hidden = false;
-      planFill.style.width = `${Math.round((dayNumber / trialLengthDays) * 100)}%`;
-      planTrack.setAttribute("aria-label", format(w.planDayOf, { day: dayNumber, total: trialLengthDays }));
-      planNote.textContent = w.planTrialNote;
+      planFill.style.width = `${Math.round((dayNumber / total) * 100)}%`;
+      planTrack.setAttribute("aria-label", format(w.planDayOf, { day: dayNumber, total }));
+      planNote.textContent = billing ? fillTrial(billing.cancelAtPeriodEnd ? t.sidebarTrialCancelled : t.sidebarTrialNote, { date: longDay(accountState.currentPeriodEnd, preferences.language) }) : w.planTrialNote;
     } else {
       planTrack.hidden = true;
       if (paid) {
@@ -1236,31 +1265,101 @@ export function mountDashboard(): void {
   // buttons give way to the billing portal so nobody subscribes twice.
   const renderPlanChoice = (): void => {
     const w = words();
+    const t = trialWords();
+    const lang = preferences.language;
+    const billing = accountState?.billing ?? null;
     const held = accountState?.active ? (accountState.plan === "business" ? "business" : "personal") : "free";
+    // A failed payment pauses the plan: the server refuses a second checkout, the card can be fixed.
+    const paused = billing?.state === "blocked" && billing.blockedReason === "payment_failed";
+    const pausedPlan = paused ? (billing?.plan === "business" ? "business" : "personal") : null;
+    const refused = billing?.state === "blocked" && billing.blockedReason === "trial_already_used";
+    const trial = trialOn();
+    // Signed out, the trial is offered and the server decides at checkout; signed in, the account says.
+    const offerTrial = trial && (!accountState || billing?.canStartTrial === true);
+    const trialDays = prices?.trialDays ?? billing?.trialDays ?? 3;
+    const date = prices ? chargeDate(prices) : new Date(Date.now() + trialDays * 86_400_000);
     plansView.querySelectorAll<HTMLElement>("[data-plan-card]").forEach((card) => {
-      const mine = card.dataset.planCard === held;
+      const plan = card.dataset.planCard ?? "free";
+      const mine = plan === held;
       card.classList.toggle("is-current", mine);
       card.querySelector<HTMLElement>("[data-current]")!.hidden = !mine;
       const manage = card.querySelector<HTMLElement>(".plan-manage");
       if (!manage) return;
-      manage.hidden = !mine;
-      if (mine) card.querySelectorAll<HTMLElement>("[data-plan]").forEach((button) => { button.hidden = true; });
+      const primary = card.querySelector<HTMLButtonElement>("[data-plan]:not(.plan-now)")!;
+      const now = card.querySelector<HTMLButtonElement>(".plan-now")!;
+      const line = card.querySelector<HTMLElement>(".plan-choice-line")!;
+      const note = card.querySelector<HTMLElement>(".plan-choice-note")!;
+      const fixHere = plan === pausedPlan;
+      manage.hidden = !(mine || fixHere);
+      manage.textContent = fixHere ? t.updatePayment : w.manageBtn;
+      manage.classList.toggle("primary", fixHere);
+      manage.classList.toggle("secondary", !fixHere);
+      const checkout = held === "free" && !paused;
+      primary.hidden = !checkout;
+      // Seats only matter for a checkout this card can still start.
+      const seats = card.querySelector<HTMLElement>(".seats-row");
+      if (seats) seats.hidden = !checkout;
+      now.hidden = true;
+      line.hidden = true;
+      note.hidden = true;
+      note.classList.remove("is-error");
+      const show = (el: HTMLElement, text: string | null): void => { el.textContent = text ?? ""; el.hidden = !text; };
+      if (checkout) {
+        const copy = choiceCopy(lang, { interval: billingInterval, price: priceFor(prices, plan, billingInterval), promo: promoView?.offer(plan, billingInterval) ?? null, trialDays, date });
+        if (offerTrial) {
+          primary.dataset.choice = "trial";
+          primary.textContent = copy.trialLabel;
+          now.hidden = false;
+          now.textContent = copy.nowLabel;
+          show(line, copy.trialLine);
+          show(note, copy.nowLine);
+        } else if (trial) {
+          // No trial for this account: the one choice left is to subscribe now.
+          primary.dataset.choice = "now";
+          primary.textContent = copy.nowLabel;
+          show(note, accountState ? t.trialUsed : null);
+        } else {
+          primary.dataset.choice = "";
+          primary.textContent = plan === "business" ? w.ctaBusiness : w.ctaPro;
+        }
+      } else if (mine && billing?.state === "trialing" && billing.trialEndsAt) {
+        show(note, fillTrial(t.noteTrialEnds, { date: longDay(billing.trialEndsAt, lang) }));
+      } else if (fixHere) {
+        show(note, fillTrial(t.statusPaused, { plan: planName(plan) }));
+        note.classList.add("is-error");
+      }
     });
     required<HTMLElement>(".plan-free-status").textContent = held === "free" ? w.freeCurrent : w.includedInPlan;
     const trialing = accountState?.status === "trialing" && accountState.currentPeriodEnd;
     const left = trialing ? Math.max(0, Math.ceil((new Date(accountState!.currentPeriodEnd!).getTime() - Date.now()) / 86_400_000)) : 0;
     const label = held === "free" ? w.freeName : planName(accountState?.plan);
-    required<HTMLElement>("#plans-status-badge").textContent = trialing ? w.planTrial : label;
-    required<HTMLElement>("#plans-status-text").textContent = trialing
+    const badge = paused ? t.pausedBadge : trialing ? w.planTrial : label;
+    const trialEnd = billing?.trialEndsAt ? longDay(billing.trialEndsAt, lang) : null;
+    // What the account's own subscription is doing, when there is more to say than "free" or "active".
+    const state = paused ? fillTrial(t.statusPaused, { plan: planName(billing?.plan) })
+      : refused && held === "free" ? t.statusRefused
+      : trialing && trialEnd ? fillTrial(billing?.cancelAtPeriodEnd ? t.statusTrialCancelled : t.statusTrial, { plan: label, date: trialEnd })
+      : null;
+    required<HTMLElement>("#plans-status-badge").textContent = badge;
+    required<HTMLElement>("#plans-status-text").textContent = state ?? (trialing
       ? format(w.statusTrial, { left: left <= 0 ? w.planEndsToday : plural(w.planDaysLeft, left) })
-      : held === "free" ? w.statusFree : format(w.statusActive, { plan: label });
-    required<HTMLElement>("#plans-manage").hidden = held === "free";
+      : held === "free" ? w.statusFree : format(w.statusActive, { plan: label }));
+    const plansManage = required<HTMLElement>("#plans-manage");
+    plansManage.hidden = held === "free" && !paused;
+    plansManage.textContent = paused ? t.updatePayment : w.manageBtn;
     // Without a subscription there is nothing to manage yet: plans come first.
-    required<HTMLElement>("#manage-billing").hidden = held === "free";
-    required<HTMLElement>("#account-compare").classList.toggle("primary", held === "free");
-    required<HTMLElement>("#account-compare").classList.toggle("ghost-btn", held !== "free");
+    const manageBilling = required<HTMLElement>("#manage-billing");
+    manageBilling.hidden = held === "free" && !paused;
+    manageBilling.textContent = paused ? t.updatePayment : w.manageBtn;
+    required<HTMLElement>("#account-compare").classList.toggle("primary", held === "free" && !paused);
+    required<HTMLElement>("#account-compare").classList.toggle("ghost-btn", held !== "free" || paused);
     required<HTMLElement>("#plans-status").classList.toggle("is-paid", held !== "free");
-    required<HTMLElement>("#account-plan-badge").textContent = trialing ? w.planTrial : label;
+    required<HTMLElement>("#plans-status").classList.toggle("is-paused", paused);
+    required<HTMLElement>("#account-plan-badge").textContent = badge;
+    const billingState = required<HTMLElement>("#account-billing-state");
+    billingState.textContent = state ?? "";
+    billingState.hidden = !state;
+    billingState.classList.toggle("is-error", paused);
   };
   // Account activity: the metadata-only audit trail (kinds, counts, decision,
   // surface — never prompt content), pulled from the server so it spans every
@@ -1445,7 +1544,9 @@ export function mountDashboard(): void {
   };
   document.addEventListener("redaxa:account", (event) => {
     accountState = (event as CustomEvent<AccountState | null>).detail;
-    renderPlanStatus();
+    const wasOn = trialOn();
+    trialAccount = accountState;
+    if (trialOn() !== wasOn) applyLanguage(); else renderPlanStatus();
     if (accountState?.settings) applySyncedSettings(accountState.settings);
     void loadServerActivity();
     void loadOrgActivity();
@@ -1843,6 +1944,14 @@ export function mountDashboard(): void {
   syncScanButton();
   syncChipSelection();
   applyLanguage();
+  // Prices and the trial switch arrive after the first paint; the page redraws once they do.
+  void loadPrices().then((next) => { if (next) { prices = next; applyLanguage(); } });
+  // The server refused a trial the page offered (used elsewhere in the meantime): say so on the plan.
+  document.addEventListener("redaxa:trial-unavailable", (event) => {
+    const plan = (event as CustomEvent<{ plan?: string }>).detail?.plan === "business" ? "business" : "personal";
+    const note = planCard(plan).querySelector<HTMLElement>(".plan-choice-note");
+    if (note) { note.textContent = trialWords().trialUsed; note.hidden = false; }
+  });
   avoidCornerOverlap();
   if (!showView(location.hash, false)) showView("", false);
 }

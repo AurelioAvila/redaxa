@@ -67,6 +67,20 @@
 @keyframes plan-busy { to { transform: rotate(1turn); } }
 .plan-actions [hidden] { display: none; }
 
+/* The trial choice: "Start free trial" first, "Subscribe now" as the quiet
+   alternative, then what each one charges, from the prices Stripe holds. */
+.plans-page, .rx-shell { --rx-alert: var(--danger, #ff9ca7); }
+html:is(:not([data-theme]), [data-theme="paper"]) .plans-page, html:is(:not([data-theme]), [data-theme="paper"]) .rx-shell { --rx-alert: #b4232f; }
+.plan-card .plan-actions > .plan-now { border: 1px solid var(--theme-strong); background: transparent; color: var(--theme-text); }
+.plan-card .plan-actions > .plan-now:hover:not(:disabled) { background: var(--theme-hover); }
+.plan-choice-line, .plan-choice-note { margin: 2px 0 0; color: var(--theme-muted); font-size: 12.5px; line-height: 1.55; text-wrap: pretty; }
+.plan-choice-line { color: var(--theme-text); }
+.plan-choice-note.is-error, .billing-state.is-error { color: var(--rx-alert); font-weight: 600; }
+.plans-status.is-paused { border-color: color-mix(in srgb, var(--rx-alert) 45%, var(--theme-line)); background: color-mix(in srgb, var(--rx-alert) 6%, var(--theme-surface)); }
+.plans-status.is-paused .rx-badge { border-color: color-mix(in srgb, var(--rx-alert) 55%, var(--theme-line)); background: color-mix(in srgb, var(--rx-alert) 12%, var(--theme-inset)); color: var(--theme-text); }
+.plans-status.is-paused p { color: var(--theme-text); }
+.billing-state { margin: 6px 0 0; color: var(--theme-text); font-size: 13px; line-height: 1.55; }
+
 .plan-card .rx-benefits { display: grid; gap: 10px; margin: 6px 0 0; padding: 16px 0 0; border-top: 1px solid var(--theme-line); list-style: none; color: var(--theme-muted); font-size: 13px; line-height: 1.55; }
 .plan-card .rx-benefits li { position: relative; padding-left: 24px; }
 .plan-card .rx-benefits li::before { content: ""; position: absolute; left: 2px; top: .38em; width: 10px; height: 5px; border-left: 2px solid var(--theme-accent); border-bottom: 2px solid var(--theme-accent); transform: rotate(-45deg); }
@@ -74,6 +88,7 @@
 
 .plan-footnote { margin: 4px 0 0; color: var(--theme-muted); font-size: 12px; line-height: 1.6; }
 .seats-row { display: grid; gap: 6px; color: var(--theme-text); font-size: 13px; font-weight: 600; }
+.seats-row[hidden] { display: none; }
 .seats-row select { min-height: 38px; padding: 6px 10px; border: 1px solid var(--theme-strong); border-radius: 7px; background: var(--theme-inset); color: var(--theme-text); font: inherit; }
 /* Plan buttons on pages without the workspace's own button styles (the site). */
 .plan-card .rx-plan-cta { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 0 18px; border: 1px solid var(--theme-accent); border-radius: 8px; background: var(--theme-accent); color: var(--theme-ink); font-size: 13.5px; font-weight: 700; text-decoration: none; cursor: pointer; transition: filter .12s ease, background-color .12s ease; }

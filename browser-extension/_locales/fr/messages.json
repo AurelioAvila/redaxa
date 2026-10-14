@@ -149,5 +149,10 @@
   "tooLongBody": {"message": "Ce message dépasse 20 000 caractères : Redaxa ne l'a pas vérifié. Découpez-le en plusieurs parties ou envoyez-le sans vérification."},
   "tooLongAccount": {"message": "Ce message dépasse 20 000 caractères : Redaxa ne l'a pas vérifié. Découpez-le en plusieurs parties, puis envoyez chacune."},
   "sendUnchecked": {"message": "Envoyer sans vérifier"},
-  "reloadAfterUpdate": {"message": "Redaxa a été mis à jour : cet onglet n'est plus vérifié. Rechargez la page pour réactiver les vérifications."}
+  "reloadAfterUpdate": {"message": "Redaxa a été mis à jour : cet onglet n'est plus vérifié. Rechargez la page pour réactiver les vérifications."},
+  "planTrialPro": {"message": "Essai de Pro · se termine le $DATE$", "placeholders": {"date": {"content": "$1", "example": "17 October"}}},
+  "planTrialBusiness": {"message": "Essai de Business · se termine le $DATE$", "placeholders": {"date": {"content": "$1", "example": "17 October"}}},
+  "statusPaused": {"message": "Échec du paiement"},
+  "planPaused": {"message": "Offre suspendue jusqu’à ce qu’un paiement aboutisse."},
+  "updatePayment": {"message": "Mettre à jour le paiement"}
 }

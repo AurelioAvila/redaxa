@@ -109,4 +109,16 @@ assert.match(el('check-access').textContent, /workspace/);
 assert.match(el('check-privacy').textContent, /workspace/);
 assert.ok(nodes.has('auto-check'), 'the automatic-check switch is in the popup');
 for (const id of ['welcome', 'step-enable', 'step-example', 'step-result']) assert.ok(nodes.has(id), `welcome step ${id}`);
-console.log('Popup: links, one-time review ask, example, guest check, duplicate/stale guards, grouped credential-first results, copy, plan error, clear and plan CTA passed.');
+// The free trial and a paused plan, as the account service reports them.
+status = { signedIn: true, active: true, email: 'fixture@example.test', repositoryAccess: true, plan: 'personal', trialEndsAt: '2026-10-17T10:00:00.000Z', paused: false };
+await vm.runInContext('render()', context);
+assert.equal(el('status-plan').textContent, 'Pro trial · ends 17 October');
+assert.equal(el('open-dashboard').textContent, 'Open workspace');
+status = { signedIn: true, active: false, email: 'fixture@example.test', repositoryAccess: false, plan: 'personal', trialEndsAt: null, paused: true };
+await vm.runInContext('render()', context);
+assert.equal(el('status-pill-text').textContent, 'Payment failed');
+assert.equal(el('status-plan').textContent, 'Plan paused until a payment goes through.');
+assert.equal(el('open-dashboard').textContent, 'Update payment method');
+fire('open-dashboard');
+assert.equal(opened.at(-1).url, 'https://redaxa.getcertsprint.com/dashboard.html#workspace', 'a paused plan is fixed in Account & team');
+console.log('Popup: links, one-time review ask, example, guest check, duplicate/stale guards, grouped credential-first results, copy, plan error, clear, plan CTA, trial end and paused plan passed.');

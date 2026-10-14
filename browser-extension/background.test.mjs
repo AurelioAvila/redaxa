@@ -74,6 +74,14 @@ assert.equal(status.access_token, undefined);
 assert.equal(status.email, undefined, 'AI-site tabs are not told the account email');
 assert.equal(status.autoCheck, true, 'the automatic-check switch travels with the status');
 assert.equal((await handle({ type: 'STATUS' }, popup)).email, 'fixture@example.test', 'the popup shows the account');
+// The trial's end and a plan paused by a failed payment reach the popup; an account service without them changes nothing.
+assert.equal(status.trialEndsAt, null);
+assert.equal(status.paused, false);
+account = { active: true, repositoryAccess: true, plan: 'personal', status: 'trialing', currentPeriodEnd: '2026-10-17T10:00:00.000Z', billing: { state: 'trialing', blockedReason: 'none' } };
+assert.equal((await handle({ type: 'STATUS' }, popup)).trialEndsAt, '2026-10-17T10:00:00.000Z');
+account = { active: false, repositoryAccess: false, plan: 'personal', status: 'past_due', billing: { state: 'blocked', blockedReason: 'payment_failed' } };
+assert.equal((await handle({ type: 'STATUS' }, popup)).paused, true);
+account = { active: true, repositoryAccess: true, plan: null, status: null };
 // Content scripts share a process with the AI site: storage, and the session in it, stays closed to them.
 assert.equal(accessLevel, 'TRUSTED_CONTEXTS');
 stored.redaxa_auto_check = false;
