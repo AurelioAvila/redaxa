@@ -2,29 +2,31 @@
 
 Supabase Auth sends these emails itself, so the templates live in the
 dashboard (**Authentication > Emails > Templates**). The files here are the
-reviewable copy of what is installed. The Supabase project is shared with
-Frame Witness, so three templates carry a second, Frame Witness-branded branch
-selected by `{{ if eq .RedirectTo "https://framewitness.pages.dev/account.html" }}`.
+reviewable copy of what is installed, and they are generated: edit the
+renderer, not the HTML.
 
-| File | Dashboard template | Subject |
-|---|---|---|
-| `confirm-signup.html` | Confirm sign up (Redaxa + Frame Witness) | Confirm your email for Redaxa / Activate your Frame Witness account |
-| `invite.html` | Invite user | You are invited to join Redaxa |
-| `magic-link.html` | Magic link or OTP (Redaxa link + Frame Witness code) | Your secure Redaxa sign-in link / Your Frame Witness verification code |
-| `change-email.html` | Change email address (Redaxa + Frame Witness) | Confirm your Redaxa email change / Confirm your Frame Witness email change |
-| `reset-password.html` | Reset password | Reset your Redaxa password |
-| `reauthentication.html` | Reauthentication | Your Redaxa verification code |
+- Redaxa's branch comes from `renderEmail` in `api/_email.ts`, the renderer of
+  every other Redaxa email (Paper with the copper accent; Ink & Copper in dark
+  mode).
+- The Supabase project is shared with Frame Witness. Three templates carry a
+  Frame Witness branch selected by
+  `{{ if eq .RedirectTo "https://framewitness.pages.dev/account.html" }}`. That
+  HTML is generated in the Frame Witness repository
+  (`validation/render_supabase_templates.mjs`) and stored in `frame-witness/`.
 
-Each subject is the same Go-template conditional where a Frame Witness branch exists.
+Rebuild with `npx tsx scripts/build-auth-email-templates.ts`; `npm test` fails
+when the files are stale. Subjects are listed in `SUBJECTS.md`.
 
-## Design
+## Links
 
-Table-based HTML with inline styles, a hidden preheader, a text-built logo mark
-(no remote images in the Redaxa branch), a mobile breakpoint at 480px and a
-dark theme (Redaxa is dark by design; Frame Witness switches with
-`prefers-color-scheme`). The palette matches `api/_email.ts`. Supabase template
-variables (`{{ .ConfirmationURL }}`, `{{ .Token }}`, `{{ .TokenHash }}`,
-`{{ .RedirectTo }}`, `{{ .Email }}`, `{{ .NewEmail }}`) are untouched.
+Confirmation and password-reset emails link to
+`https://redaxa.getcertsprint.com/#confirm=…` and `#recovery=…` with
+Supabase's one-time `{{ .TokenHash }}`. The page spends the hash only when the
+reader selects Confirm email or sets the new password (`api/auth/signup.ts`
+`confirm`, `api/auth/recover.ts?action=finish` with `token_hash`), so mail
+security scanners that open every link cannot use it up. Links sent earlier
+(`{{ .ConfirmationURL }}`) keep working. The other templates use
+`{{ .ConfirmationURL }}`.
 
 ## Installing
 
@@ -32,4 +34,6 @@ Paste a file into the matching template body and its subject into the Subject
 field, then save. Re-read the template after saving. Also check:
 
 - **Sender**: point SMTP at the verified sending domain, not Supabase's shared address.
-- **Site URL / Redirect URLs**: they build the links in these emails.
+- **Site URL / Redirect URLs**: Site URL should be `https://redaxa.getcertsprint.com`
+  and both `https://redaxa.getcertsprint.com/**` and
+  `https://framewitness.pages.dev/account.html` should be allowed redirects.

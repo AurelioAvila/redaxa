@@ -27,6 +27,8 @@ mkdirSync(resolve(output, ".well-known"), { recursive: true });
 cpSync(resolve(root, ".well-known", "security.txt"), resolve(output, ".well-known", "security.txt"));
 mkdirSync(resolve(output, "outputs"), { recursive: true });
 cpSync(resolve(root, "outputs", "redaxa-mark.svg"), resolve(output, "outputs", "redaxa-mark.svg"));
+// Email clients do not render SVG: the PNG is the logo in every Redaxa email.
+cpSync(resolve(root, "outputs", "redaxa-mark-128.png"), resolve(output, "outputs", "redaxa-mark-128.png"));
 // og-image.png is the 1200x630 social card, not the 1024x1024 app mark: link
 // previews on X/LinkedIn/Slack need the wide ratio, and a square source gets
 // centre-cropped into an unreadable tile.

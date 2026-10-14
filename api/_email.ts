@@ -1,43 +1,28 @@
 /**
- * The email a customer gets when their Redaxa subscription begins.
- *
- * Until now nothing was sent at all: the webhook recorded the subscription
- * and the person heard from Stripe's receipt and nobody else. That is the
- * one moment a customer is most likely to wonder whether the payment worked,
- * and the product had no answer for them.
- *
- * The layout deliberately matches the one PC Tweaker sends — same structure,
- * same tone, Redaxa's own words and colour. Someone who buys two products
- * from the same person should not receive mail from what looks like two
- * unrelated companies.
+ * Every email Redaxa sends itself, in one layout: the Paper palette with its
+ * copper accent (the site's default), and Ink & Copper for readers whose mail
+ * app is dark. The Supabase Auth templates are generated from the same
+ * renderer (scripts/build-auth-email-templates.ts), so a confirmation link and
+ * a subscription receipt look like they came from the same product.
  *
  * Sending is best-effort by design. A failure here must never fail the
  * webhook: Stripe would retry the whole delivery and re-run everything that
  * already succeeded, and the customer's access does not depend on the mail.
  */
 
-const ACCENT = "#7c5cfc";
-// The old #5b5f66 on the #0a0a0c card was 3.1:1 — under AA for the 13px it is used at,
-// and it carries the footer line about never asking for a password. This is 5.2:1.
-const MUTED = "#7e848c";
 // Sale notices go to Redaxa's own support alias (forwarded to the owner), never
 // a personal inbox written into a public repository.
 const OWNER_INBOX = process.env.OWNER_INBOX || "redaxa@getcertsprint.com";
+/** Where replies and questions go; every message names it. */
+export const SUPPORT_ADDRESS = "redaxa@getcertsprint.com";
+/** The public site. Links, logo and footer all point here, whatever host sent the mail. */
+export const SITE_URL = "https://redaxa.getcertsprint.com";
 
 /**
- * The sending address. No default, deliberately.
- *
- * This used to fall back to `Redaxa <noreply@redaxa.app>` when the variable
- * was unset — an address on a domain this project does not send from. Resend
- * refuses to send from a domain that has not been verified on the account, so
- * the fallback did not produce wrong mail; it produced *no* mail, a 4xx, one
- * console line nobody reads, and a `false` every caller ignores because every
- * caller is deliberately best-effort. A subscription confirmation that simply
- * never arrives, with nothing anywhere reporting a fault, is the worst shape
- * a bug of this kind can take.
- *
- * Returning null instead makes the misconfiguration loud at the one moment it
- * can still be acted on, and `send` refuses rather than guessing.
+ * The sending address. No default, deliberately: an unset variable used to
+ * fall back to a domain this project does not send from, which Resend refuses
+ * — no mail, one console line nobody reads, and a `false` every best-effort
+ * caller ignores. `send` refuses rather than guessing.
  */
 function sender(): string | null {
   const from = process.env.REDAXA_MAIL_FROM?.trim();
@@ -62,25 +47,6 @@ export type SubscriptionEmailInput = {
   appUrl: string;
 };
 
-/** "Lead, Name." or just "Lead." — welcomeOnce never has a name, and
- *  "Your account is confirmed, there." read like a mail-merge slip. */
-function greet(lead: string, firstName: string | null | undefined, html: boolean): string {
-  const name = firstName?.trim();
-  return name ? `${lead}, ${html ? escapeHtml(name) : name}.` : `${lead}.`;
-}
-
-// Same metas as supabase/email-templates: the design is dark on purpose, and
-// clients that would otherwise "fix" it for dark mode are told it already is.
-// The media query only tightens the 40px gutters and 32px headings on phones.
-const HEAD_EXTRA = `<meta name="color-scheme" content="dark light">
-<meta name="supported-color-schemes" content="dark light">
-<style>
-@media only screen and (max-width:620px){
-.rx-pad{padding-left:22px!important;padding-right:22px!important}
-.rx-h1{font-size:26px!important}
-}
-</style>`;
-
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")
@@ -89,15 +55,10 @@ function escapeHtml(value: string): string {
     .replace(/"/g, "&quot;");
 }
 
-/** The bare host of the app URL, so the footer names the site the link
- *  actually goes to. Hard-coding "redaxa.app" would print a domain that is
- *  not yet where the product lives. */
-function hostOf(url: string): string {
-  try {
-    return new URL(url).host;
-  } catch {
-    return url.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
-  }
+/** "Lead, Name." or just "Lead." — "Your account is confirmed, there." read like a mail-merge slip. */
+function greet(lead: string, firstName: string | null | undefined): string {
+  const name = firstName?.trim();
+  return name ? `${lead}, ${name}.` : `${lead}.`;
 }
 
 export function planLabel(plan: string | null, interval: string | null): string {
@@ -113,146 +74,177 @@ export function subscriptionSubject(trialing: boolean): string {
   return trialing ? "Your Redaxa trial has started" : "Your Redaxa subscription is confirmed";
 }
 
-/**
- * Outlook renders with Word, which drops padding on an inline anchor: the
- * button collapses into a bare text link. VML is the one shape it draws
- * reliably, so Outlook gets the rectangle and every other client gets the
- * anchor. The width is a parameter because VML cannot size itself to its text.
- */
-function button(href: string, label: string, width: number): string {
-  const safeHref = escapeHtml(href);
-  return `<!--[if mso]>
-            <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${safeHref}" style="height:54px;v-text-anchor:middle;width:${width}px;" arcsize="22%" stroke="f" fillcolor="${ACCENT}">
-              <w:anchorlock/>
-              <center style="color:#0a0a0c;font-family:'Segoe UI',Arial,sans-serif;font-size:16px;font-weight:800;">${label}</center>
-            </v:roundrect>
-            <![endif]-->
-            <!--[if !mso]><!-->
-            <a href="${safeHref}" style="display:inline-block; background:${ACCENT}; color:#0a0a0c; font-size:16px; font-weight:800; text-decoration:none; padding:16px 36px; border-radius:12px; letter-spacing:-0.2px;">${label}</a>
-            <!--<![endif]-->`;
+// Paper (light) and Ink & Copper (dark), from themes.css. Contrast on the card:
+// ink 16.9:1, body 9.6:1, muted 6.9:1, white on copper 6.4:1; dark: text on
+// card 15.2:1, muted 8.0:1, button ink on copper 7.4:1.
+const P = { page: "#f7f6f2", card: "#ffffff", inset: "#f2f0ea", line: "#e3dfd5", ink: "#1b1724", body: "#3f3a4a", muted: "#5a5466", copper: "#a3471d" };
+const SANS = "font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Helvetica,Arial,sans-serif;";
+
+/** A content block. Strings are plain text; the renderer escapes them. */
+export type Block =
+  | { kicker: string }
+  | { h1: string }
+  | { h2: string }
+  | { p: string; muted?: boolean }
+  | { note: string }
+  | { rows: Array<[string, string]> }
+  | { list: string[]; numbered?: boolean }
+  | { button: { href: string; label: string; secondary?: boolean } }
+  | { code: string }
+  | { link: { label: string; href: string } };
+
+export type EmailInput = {
+  subject: string;
+  /** The line an inbox shows next to the subject. */
+  preheader: string;
+  blocks: Block[];
+  /** Why the reader got this message. */
+  footer: string;
+  /** Security notices carry nothing clickable at all: whoever reads one is
+   *  not necessarily the person who acted, and a link there is the exact
+   *  shape an attacker would forge on the message a worried reader clicks. */
+  noLinks?: boolean;
+};
+
+/** Outlook draws VML reliably and drops padding on links; everyone else gets the padded anchor. */
+function button(href: string, label: string, secondary = false): string {
+  const width = Math.min(520, Math.round(label.length * 8.6) + 60);
+  const fill = secondary ? P.card : P.copper;
+  const ink = secondary ? P.ink : "#ffffff";
+  const cls = secondary ? "rx-btn2" : "rx-btn";
+  return `<table role="presentation" cellpadding="0" cellspacing="0" class="rx-bt" style="margin:8px 0 22px"><tr><td class="${cls}" align="center" bgcolor="${fill}" style="border-radius:9px;background:${fill};${secondary ? `border:1px solid ${P.line};` : ""}">` +
+    `<!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${escapeHtml(href)}" style="height:46px;v-text-anchor:middle;width:${width}px" arcsize="20%" ${secondary ? `strokecolor="${P.line}"` : 'stroke="f"'} fillcolor="${fill}"><w:anchorlock/><center style="color:${ink};font-family:'Segoe UI',Arial,sans-serif;font-size:15px;font-weight:700">${escapeHtml(label)}</center></v:roundrect><![endif]-->` +
+    `<!--[if !mso]><!--><a class="${cls}-a" href="${escapeHtml(href)}" style="display:inline-block;padding:13px 26px;${SANS}font-size:15px;line-height:20px;font-weight:700;color:${ink};text-decoration:none;border-radius:9px">${escapeHtml(label)}</a><!--<![endif]--></td></tr></table>`;
 }
 
-export function subscriptionHtml(input: SubscriptionEmailInput): string {
-  const { firstName, plan, interval, priceLabel, renewsOn, trialing, appUrl } = input;
-  const headline = greet(trialing ? "Your trial is running" : "You're all set", firstName, true);
-  const intro = trialing
-    ? "Your seven-day trial of Redaxa has started. Everything below is unlocked for the whole trial, and nothing is charged until it ends."
-    : "Thanks for subscribing to Redaxa. Your account is active and everything below is unlocked — no extra setup needed.";
-  // "Renews on" is wrong during a trial: nothing has been paid yet, so the
-  // date is when the first charge happens, not a renewal.
-  const dateLabel = trialing ? "First charge" : "Renews on";
+/** Renders one message as HTML and plain text from the same blocks, so the two cannot disagree. */
+export function renderEmail(input: EmailInput): { subject: string; html: string; text: string } {
+  const html: string[] = [];
+  const text: string[] = [];
+  const e = escapeHtml;
+  for (const block of input.blocks) {
+    if ("kicker" in block) {
+      // The redaction bar from the Lock Pup mark, beside a copper label.
+      html.push(`<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 16px"><tr><td class="rx-bar" bgcolor="${P.ink}" style="width:22px;height:6px;border-radius:3px;background:${P.ink};font-size:0;line-height:0">&nbsp;</td><td class="rx-kicker" style="padding-left:10px;${SANS}font-size:12px;line-height:16px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:${P.copper}">${e(block.kicker)}</td></tr></table>`);
+    } else if ("h1" in block) {
+      html.push(`<h1 class="rx-ink rx-h1" style="margin:0 0 14px;${SANS}font-size:28px;line-height:34px;font-weight:700;letter-spacing:-0.5px;color:${P.ink}">${e(block.h1)}</h1>`);
+      text.push(block.h1);
+    } else if ("h2" in block) {
+      html.push(`<h2 class="rx-ink" style="margin:28px 0 12px;${SANS}font-size:17px;line-height:24px;font-weight:700;color:${P.ink}">${e(block.h2)}</h2>`);
+      text.push(block.h2);
+    } else if ("p" in block) {
+      html.push(`<p class="${block.muted ? "rx-muted" : "rx-body"}" style="margin:0 0 16px;${SANS}font-size:${block.muted ? 14 : 16}px;line-height:${block.muted ? 22 : 26}px;color:${block.muted ? P.muted : P.body}">${e(block.p)}</p>`);
+      text.push(block.p);
+    } else if ("note" in block) {
+      html.push(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:4px 0 22px"><tr><td class="rx-inset rx-body" bgcolor="${P.inset}" style="padding:15px 18px;background:${P.inset};border-left:3px solid ${P.copper};border-radius:4px;${SANS}font-size:14px;line-height:22px;color:${P.body}">${e(block.note)}</td></tr></table>`);
+      text.push(block.note);
+    } else if ("rows" in block) {
+      html.push(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="rx-inset" bgcolor="${P.inset}" style="margin:6px 0 24px;background:${P.inset};border-radius:10px">` +
+        block.rows.map(([key, value], i) => `<tr><td class="rx-muted rx-line" valign="top" style="padding:12px 18px;${i ? `border-top:1px solid ${P.line};` : ""}${SANS}font-size:14px;line-height:20px;color:${P.muted}">${e(key)}</td><td class="rx-ink rx-line" valign="top" align="right" style="padding:12px 18px;${i ? `border-top:1px solid ${P.line};` : ""}${SANS}font-size:14px;line-height:20px;font-weight:600;color:${P.ink};word-break:break-word">${e(value)}</td></tr>`).join("") + "</table>");
+      text.push(block.rows.map(([key, value]) => `${key}: ${value}`).join("\n"));
+    } else if ("list" in block) {
+      html.push(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px">` +
+        block.list.map((item, i) => `<tr><td valign="top" class="rx-kicker" style="width:28px;padding:0 0 12px;${SANS}font-size:15px;line-height:23px;font-weight:700;color:${P.copper}">${block.numbered ? i + 1 : "&#10003;"}</td><td valign="top" class="rx-body" style="padding:0 0 12px;${SANS}font-size:15px;line-height:23px;color:${P.body}">${e(item)}</td></tr>`).join("") + "</table>");
+      text.push(block.list.map((item, i) => `${block.numbered ? `${i + 1}.` : "-"} ${item}`).join("\n"));
+    } else if ("button" in block) {
+      html.push(button(block.button.href, block.button.label, block.button.secondary));
+      text.push(`${block.button.label}: ${block.button.href}`);
+    } else if ("code" in block) {
+      html.push(`<table role="presentation" cellpadding="0" cellspacing="0" style="margin:6px 0 22px"><tr><td class="rx-inset rx-ink" bgcolor="${P.inset}" style="padding:16px 24px;background:${P.inset};border:1px solid ${P.line};border-radius:10px;font-family:'SFMono-Regular',Consolas,Menlo,monospace;font-size:30px;line-height:36px;letter-spacing:8px;font-weight:700;color:${P.ink}">${e(block.code)}</td></tr></table>`);
+      text.push(block.code);
+    } else if ("link" in block) {
+      html.push(`<p class="rx-muted" style="margin:0 0 18px;${SANS}font-size:13px;line-height:20px;color:${P.muted}">${e(block.link.label)}<br><a class="rx-a" href="${e(block.link.href)}" style="color:${P.copper};word-break:break-all">${e(block.link.href)}</a></p>`);
+      text.push(`${block.link.label}\n${block.link.href}`);
+    }
+  }
 
-  return `<!doctype html>
+  const site = SITE_URL;
+  const linkStyle = `color:${P.copper};text-decoration:none`;
+  const logo = `<img src="${site}/outputs/redaxa-mark-128.png" width="34" height="34" alt="Redaxa" style="display:block;border:0;border-radius:9px">`;
+  const brand = input.noLinks
+    ? `<td valign="middle" style="padding-right:10px">${logo}</td><td valign="middle" class="rx-ink" style="${SANS}font-size:19px;line-height:22px;font-weight:700;letter-spacing:-0.3px;color:${P.ink}">Redaxa</td>`
+    : `<td valign="middle" style="padding-right:10px"><a href="${site}/">${logo}</a></td><td valign="middle"><a class="rx-ink" href="${site}/" style="${SANS}font-size:19px;line-height:22px;font-weight:700;letter-spacing:-0.3px;color:${P.ink};text-decoration:none">Redaxa</a></td>`;
+  const contact = input.noLinks
+    ? `Questions? Reply to this email or write to ${e(SUPPORT_ADDRESS)}.`
+    : `Questions? Reply to this email or write to <a class="rx-a" href="mailto:${SUPPORT_ADDRESS}" style="${linkStyle}">${SUPPORT_ADDRESS}</a>.`;
+  const links = input.noLinks
+    ? "Redaxa &middot; redaxa.getcertsprint.com"
+    : `Redaxa &nbsp;&middot;&nbsp; <a class="rx-a" href="${site}/" style="${linkStyle}">redaxa.getcertsprint.com</a> &nbsp;&middot;&nbsp; <a class="rx-a" href="${site}/privacy.html" style="${linkStyle}">Privacy</a> &nbsp;&middot;&nbsp; <a class="rx-a" href="${site}/terms.html" style="${linkStyle}">Terms</a>`;
+
+  const document = `<!doctype html>
 <html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-${HEAD_EXTRA}
-<title>Redaxa</title>
+<meta name="x-apple-disable-message-reformatting">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark">
+<title>${e(input.subject)}</title>
+<!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->
+<style>
+:root{color-scheme:light dark;supported-color-schemes:light dark}
+body{margin:0;padding:0;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%}
+@media only screen and (max-width:620px){.rx-wrap{padding:16px 10px!important}.rx-card{padding:28px 22px 14px!important}.rx-h1{font-size:24px!important;line-height:30px!important}.rx-bt{width:100%!important}.rx-bt a{display:block!important}}
+@media (prefers-color-scheme:dark){
+.rx-page{background:#141218!important}.rx-cardbox{background:#1c1a21!important;border-color:#2e2b35!important}
+.rx-ink{color:#f4f1ec!important}.rx-body{color:#ddd7e2!important}.rx-muted{color:#b8b1bf!important}
+.rx-inset{background:#17151b!important;border-color:#2e2b35!important}.rx-line{border-color:#2e2b35!important}
+.rx-kicker,.rx-a{color:#e8956a!important}.rx-bar{background:#f4f1ec!important}
+.rx-btn{background:#e8956a!important}.rx-btn-a{color:#2a1407!important}.rx-btn2{background:#1c1a21!important;border-color:#4a4552!important}.rx-btn2-a{color:#f4f1ec!important}
+}
+[data-ogsc] .rx-ink{color:#f4f1ec!important}[data-ogsc] .rx-body{color:#ddd7e2!important}[data-ogsc] .rx-muted{color:#b8b1bf!important}[data-ogsc] .rx-kicker,[data-ogsc] .rx-a{color:#e8956a!important}
+</style>
 </head>
-<body style="margin:0; padding:0; background:#050506; font-family:'Segoe UI', Arial, sans-serif;">
-<!-- The line an inbox shows next to the subject. Without it, clients scrape
-     the first words of the body, which here is the eyebrow "Trial Started"
-     repeated - the reader learns nothing they did not already see. -->
-<div lang="en" dir="ltr" style="display:none; max-height:0; overflow:hidden; opacity:0;">${escapeHtml(intro)}</div>
-<table lang="en" dir="ltr" role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#050506" style="background:#050506; padding:48px 16px;">
-  <tr>
-    <td align="center">
-      <table role="presentation" width="560" cellpadding="0" cellspacing="0" bgcolor="#0a0a0c" style="max-width:560px; width:100%; background:#0a0a0c; border:1px solid #2a2d33; border-radius:20px; overflow:hidden;">
-
-        <tr>
-          <td class="rx-pad" style="background:radial-gradient(circle at 20% 0%, ${ACCENT}4d 0%, transparent 60%), #0a0a0c; padding:40px 40px 32px; text-align:center;">
-            <div style="font-size:15px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:${ACCENT};">
-              ${trialing ? "Trial Started" : "Subscription Active"}
-            </div>
-          </td>
-        </tr>
-
-        <tr>
-          <td class="rx-pad" style="padding:0 40px; text-align:center;">
-            <h1 class="rx-h1" style="margin:0; font-size:32px; line-height:1.25; font-weight:800; color:#f3f4f6; letter-spacing:-0.5px;">
-              ${headline}
-            </h1>
-            <p style="margin:16px 0 0; font-size:16px; line-height:1.6; color:#9ca3af;">
-              ${intro}
-            </p>
-          </td>
-        </tr>
-
-        <tr><td class="rx-pad" style="padding:32px 40px 0;"><div style="height:1px; background:#2a2d33;"></div></td></tr>
-
-        <tr>
-          <td class="rx-pad" style="padding:28px 40px 0;">
-            <div style="font-size:13px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:${MUTED}; margin-bottom:16px;">What you've unlocked</div>
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-              <tr>
-                <td style="padding:10px 0; color:#e5e7eb; font-size:15px; line-height:1.5;">
-                  <span style="color:${ACCENT}; font-weight:700;">&rarr;</span>&nbsp; Prompt checks on the web, in the Windows app and in the Chrome extension
-                </td>
-              </tr>
-              <tr>
-                <td style="padding:10px 0; color:#e5e7eb; font-size:15px; line-height:1.5;">
-                  <span style="color:${ACCENT}; font-weight:700;">&rarr;</span>&nbsp; Local reviews of repositories for exposed secrets, in the Windows app
-                </td>
-              </tr>
-              <tr>
-                <td style="padding:10px 0; color:#e5e7eb; font-size:15px; line-height:1.5;">
-                  <span style="color:${ACCENT}; font-weight:700;">&rarr;</span>&nbsp; ${plan === "business" ? "Shared policies and an activity log for up to three seats" : "Every finding explained, with a redacted version ready to paste"}
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-
-        <tr>
-          <td class="rx-pad" style="padding:32px 40px 8px; text-align:center;">
-            ${button(appUrl, "Open Redaxa", 200)}
-          </td>
-        </tr>
-
-        <tr><td class="rx-pad" style="padding:32px 40px 0;"><div style="height:1px; background:#2a2d33;"></div></td></tr>
-        <tr>
-          <td class="rx-pad" style="padding:24px 40px 8px;">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-              <tr>
-                <td style="font-size:13px; color:${MUTED}; padding:4px 0;">Plan</td>
-                <td style="font-size:13px; color:#e5e7eb; padding:4px 0; text-align:right;">${escapeHtml(planLabel(plan, interval))}</td>
-              </tr>
-              ${
-                priceLabel
-                  ? `<tr>
-                <td style="font-size:13px; color:${MUTED}; padding:4px 0;">Price</td>
-                <td style="font-size:13px; color:#e5e7eb; padding:4px 0; text-align:right;">${escapeHtml(priceLabel)}</td>
-              </tr>`
-                  : ""
-              }
-              ${
-                renewsOn
-                  ? `<tr>
-                <td style="font-size:13px; color:${MUTED}; padding:4px 0;">${dateLabel}</td>
-                <td style="font-size:13px; color:#e5e7eb; padding:4px 0; text-align:right;">${escapeHtml(renewsOn)}</td>
-              </tr>`
-                  : ""
-              }
-            </table>
-          </td>
-        </tr>
-
-        <tr>
-          <td class="rx-pad" style="padding:32px 40px 40px; text-align:center;">
-            <p style="margin:0; font-size:13px; color:${MUTED}; line-height:1.6;">
-              Cancel anytime from your account settings. Questions? Just reply to this email.<br>
-              Redaxa &middot; <a href="${escapeHtml(appUrl)}" style="color:${MUTED};">${escapeHtml(hostOf(appUrl))}</a>
-            </p>
-          </td>
-        </tr>
-
-      </table>
-    </td>
-  </tr>
+<body class="rx-page" style="margin:0;padding:0;background:${P.page}">
+<div style="display:none;max-height:0;max-width:0;overflow:hidden;opacity:0;mso-hide:all;font-size:1px;line-height:1px;color:${P.page}">${e(input.preheader)}${"&#8199;&#847;".repeat(60)}</div>
+<table lang="en" dir="ltr" role="presentation" width="100%" cellpadding="0" cellspacing="0" class="rx-page" bgcolor="${P.page}" style="background:${P.page}"><tr><td align="center" class="rx-wrap" style="padding:32px 16px">
+<!--[if mso]><table role="presentation" width="600" cellpadding="0" cellspacing="0"><tr><td><![endif]-->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px">
+<tr><td style="padding:0 4px 18px"><table role="presentation" cellpadding="0" cellspacing="0"><tr>${brand}</tr></table></td></tr>
+<tr><td class="rx-cardbox" bgcolor="${P.card}" style="background:${P.card};border:1px solid ${P.line};border-radius:16px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td class="rx-card" style="padding:38px 40px 22px">${html.join("\n")}</td></tr></table></td></tr>
+<tr><td class="rx-muted" style="padding:22px 6px 6px;${SANS}font-size:12px;line-height:19px;color:${P.muted}">${e(input.footer)}<br>${contact}</td></tr>
+<tr><td class="rx-muted" style="padding:0 6px 26px;${SANS}font-size:12px;line-height:19px;color:${P.muted}">${links}</td></tr>
 </table>
+<!--[if mso]></td></tr></table><![endif]-->
+</td></tr></table>
 </body>
 </html>`;
+  const footerText = `--\nRedaxa\n${input.footer}\nQuestions? Reply to this email or write to ${SUPPORT_ADDRESS}.\n${input.noLinks ? "redaxa.getcertsprint.com" : `${site}/  ·  Privacy: ${site}/privacy.html  ·  Terms: ${site}/terms.html`}`;
+  return { subject: input.subject, html: document, text: `${text.join("\n\n")}\n\n${footerText}\n` };
+}
+
+export function subscriptionHtml(input: SubscriptionEmailInput): string { return subscriptionEmail(input).html; }
+export function subscriptionText(input: SubscriptionEmailInput): string { return subscriptionEmail(input).text; }
+
+function subscriptionEmail(input: SubscriptionEmailInput): { subject: string; html: string; text: string } {
+  const { firstName, plan, interval, priceLabel, renewsOn, trialing, appUrl } = input;
+  const intro = trialing
+    ? "Your seven-day trial of Redaxa has started. Everything below is unlocked for the whole trial, and nothing is charged until it ends."
+    : "Thanks for subscribing to Redaxa. Your account is active and everything below is unlocked, with no extra setup needed.";
+  // "Renews on" is wrong during a trial: nothing has been paid yet, so the
+  // date is when the first charge happens, not a renewal.
+  const rows: Array<[string, string]> = [["Plan", planLabel(plan, interval)]];
+  if (priceLabel) rows.push(["Price", priceLabel]);
+  if (renewsOn) rows.push([trialing ? "First charge" : "Renews on", renewsOn]);
+  return renderEmail({
+    subject: subscriptionSubject(trialing),
+    preheader: intro,
+    footer: trialing ? "You are receiving this email because you started a Redaxa trial." : "You are receiving this email because you subscribed to Redaxa.",
+    blocks: [
+      { kicker: trialing ? "Trial started" : "Subscription active" },
+      { h1: greet(trialing ? "Your trial is running" : "You're all set", firstName) },
+      { p: intro },
+      { rows },
+      { h2: "What you've unlocked" },
+      { list: [
+        "Prompt checks on the web, in the Windows app and in the Chrome extension",
+        "Local reviews of repositories for exposed secrets, in the Windows app",
+        plan === "business" ? "Shared policies and an activity log for up to three seats" : "Every finding explained, with a redacted version ready to paste",
+      ] },
+      { button: { href: appUrl, label: "Open Redaxa" } },
+      { p: trialing ? "You can cancel before the trial ends from your account settings, and nothing will be charged." : "You can cancel anytime from your account settings. Stripe sends the payment receipt separately.", muted: true },
+    ],
+  });
 }
 
 /**
@@ -290,13 +282,9 @@ export function formatChargedAmount(
 }
 
 /**
- * The one way out to Resend.
- *
- * `text` is not optional. Everything here used to go as HTML only, which spam
- * filters treat as a signal in its own right — and for a product sold on
- * privacy, a subscription confirmation landing in junk is the worst possible
- * first impression. Every caller now has to say what the message reads as
- * without markup.
+ * The one way out to Resend. `text` is not optional: HTML-only mail is a spam
+ * signal in itself, and for a product sold on privacy a confirmation landing
+ * in junk is the worst possible first impression.
  */
 async function send(to: string, subject: string, html: string, text: string, idempotencyKey?: string): Promise<boolean> {
   const key = process.env.RESEND_API_KEY;
@@ -311,251 +299,94 @@ async function send(to: string, subject: string, html: string, text: string, ide
       method: "POST",
       signal: AbortSignal.timeout(10000),
       headers: { authorization: `Bearer ${key}`, "content-type": "application/json", ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {}) },
-      // reply_to, because the subscription email says "Questions? Just reply
-      // to this email" and the address it is sent from is a noreply@. A
-      // promise in the copy that the transport quietly breaks is worse than
-      // not making it: the customer writes, hears nothing, and concludes
-      // there is nobody there.
-      body: JSON.stringify({ from, to, subject, html, text, reply_to: "redaxa@getcertsprint.com" }),
+      // reply_to, because every message invites a reply and the address it is
+      // sent from is a noreply@: a promise the transport quietly breaks is
+      // worse than not making it.
+      body: JSON.stringify({ from, to, subject, html, text, reply_to: SUPPORT_ADDRESS }),
     });
     if (!response.ok) {
       console.error("redaxa mail failed", response.status);
       return false;
     }
     return true;
-  } catch (error) {
+  } catch {
     console.error("redaxa mail request failed");
     return false;
   }
-}
-
-/** The same message with the markup taken away. Kept next to the HTML so the
- *  two cannot say different things about what was charged. */
-export function subscriptionText(input: SubscriptionEmailInput): string {
-  const { firstName, plan, interval, priceLabel, renewsOn, trialing, appUrl } = input;
-  const lines = [
-    greet(trialing ? "Your trial is running" : "You're all set", firstName, false),
-    "",
-    trialing
-      ? "Your seven-day trial of Redaxa has started. Everything is unlocked for the whole trial, and nothing is charged until it ends."
-      : "Thanks for subscribing to Redaxa. Your account is active and everything is unlocked - no extra setup needed.",
-    "",
-    "What you've unlocked:",
-    "- Prompt checks on the web, in the Windows app and in the Chrome extension",
-    "- Local reviews of repositories for exposed secrets, in the Windows app",
-    plan === "business"
-      ? "- Shared policies and an activity log for up to three seats"
-      : "- Every finding explained, with a redacted version ready to paste",
-    "",
-    `Plan: ${planLabel(plan, interval)}`,
-  ];
-  if (priceLabel) lines.push(`Price: ${priceLabel}`);
-  if (renewsOn) lines.push(`${trialing ? "First charge" : "Renews on"}: ${renewsOn}`);
-  lines.push("", `Open Redaxa: ${appUrl}`, "", "Cancel anytime from your account settings. Questions? Just reply to this email.");
-  return lines.join("\n");
 }
 
 /** Tells the customer their subscription started. Never throws. The key,
  *  derived from the subscription, makes a duplicate webhook delivery that
  *  runs in parallel harmless: Resend sends one message per key. */
 export async function sendSubscriptionEmail(input: SubscriptionEmailInput, idempotencyKey?: string): Promise<boolean> {
-  return send(input.to, subscriptionSubject(input.trialing), subscriptionHtml(input), subscriptionText(input), idempotencyKey);
+  const mail = subscriptionEmail(input);
+  return send(input.to, mail.subject, mail.html, mail.text, idempotencyKey);
 }
 
 /**
- * The first message a new account gets from us.
- *
- * Supabase sends the confirmation itself, from its own default template. What
- * it does not send is anything that explains the product — so until this
- * existed, someone confirmed an address and heard nothing further until they
- * happened to pay. It goes out once, on the first confirmed sign-in.
- *
- * Deliberately no credentials, no link with a token in it, and nothing to
- * click other than the app: a privacy product whose welcome mail trains
- * people to click authentication links out of an inbox is teaching the exact
- * habit that gets them phished.
+ * The first message a new account gets from us, once, on confirmation or the
+ * first confirmed sign-in. Deliberately no credentials and nothing to click
+ * other than the app: a privacy product whose welcome trains people to click
+ * authentication links out of an inbox teaches the habit that gets them phished.
  */
-export function welcomeHtml(firstName: string | null | undefined, appUrl: string): string {
+function welcomeEmail(firstName: string | null | undefined, appUrl: string): { subject: string; html: string; text: string } {
   const intro = "Redaxa helps you review prompts for sensitive details before sharing them with AI. Web and Windows checks are processed by Redaxa's scanner without storing the prompt text or forwarding it to an AI provider.";
-  return `<!doctype html>
-<html lang="en" dir="ltr">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-${HEAD_EXTRA}
-<title>Redaxa</title>
-</head>
-<body style="margin:0; padding:0; background:#050506; font-family:'Segoe UI', Arial, sans-serif;">
-<div lang="en" dir="ltr" style="display:none; max-height:0; overflow:hidden; opacity:0;">${escapeHtml(intro)}</div>
-<table lang="en" dir="ltr" role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#050506" style="background:#050506; padding:48px 16px;">
-  <tr>
-    <td align="center">
-      <table role="presentation" width="560" cellpadding="0" cellspacing="0" bgcolor="#0a0a0c" style="max-width:560px; width:100%; background:#0a0a0c; border:1px solid #2a2d33; border-radius:20px; overflow:hidden;">
-
-        <tr>
-          <td class="rx-pad" style="background:radial-gradient(circle at 20% 0%, ${ACCENT}4d 0%, transparent 60%), #0a0a0c; padding:40px 40px 32px; text-align:center;">
-            <div style="font-size:15px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:${ACCENT};">Welcome</div>
-          </td>
-        </tr>
-
-        <tr>
-          <td class="rx-pad" style="padding:0 40px; text-align:center;">
-            <h1 class="rx-h1" style="margin:0; font-size:32px; line-height:1.25; font-weight:800; color:#f3f4f6; letter-spacing:-0.5px;">${greet("Your account is confirmed", firstName, true)}</h1>
-            <p style="margin:16px 0 0; font-size:16px; line-height:1.6; color:#9ca3af;">${escapeHtml(intro)}</p>
-          </td>
-        </tr>
-
-        <tr><td class="rx-pad" style="padding:32px 40px 0;"><div style="height:1px; background:#2a2d33;"></div></td></tr>
-
-        <tr>
-          <td class="rx-pad" style="padding:28px 40px 0;">
-            <div style="font-size:13px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:${MUTED}; margin-bottom:16px;">Three minutes to set up</div>
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-              <tr><td style="padding:10px 0; color:#e5e7eb; font-size:15px; line-height:1.5;"><span style="color:${ACCENT}; font-weight:700;">1</span>&nbsp;&nbsp; Install the browser extension or the desktop app</td></tr>
-              <tr><td style="padding:10px 0; color:#e5e7eb; font-size:15px; line-height:1.5;"><span style="color:${ACCENT}; font-weight:700;">2</span>&nbsp;&nbsp; Open ChatGPT, Claude, Gemini or Perplexity as you normally would</td></tr>
-              <tr><td style="padding:10px 0; color:#e5e7eb; font-size:15px; line-height:1.5;"><span style="color:${ACCENT}; font-weight:700;">3</span>&nbsp;&nbsp; Paste something with a key or an address in it and see what Redaxa flags before it sends</td></tr>
-            </table>
-          </td>
-        </tr>
-
-        <tr>
-          <td class="rx-pad" style="padding:32px 40px 8px; text-align:center;">
-            ${button(appUrl, "Open Redaxa", 200)}
-          </td>
-        </tr>
-
-        <tr>
-          <td class="rx-pad" style="padding:32px 40px 40px; text-align:center;">
-            <p style="margin:0; font-size:13px; color:${MUTED}; line-height:1.6;">
-              We will never ask you for a password or an API key by email.<br>
-              Redaxa &middot; <a href="${escapeHtml(appUrl)}" style="color:${MUTED};">${escapeHtml(hostOf(appUrl))}</a>
-            </p>
-          </td>
-        </tr>
-
-      </table>
-    </td>
-  </tr>
-</table>
-</body>
-</html>`;
+  return renderEmail({
+    subject: "Welcome to Redaxa",
+    preheader: "Your account is confirmed. Here is how to catch keys, client names and personal data before they reach an AI chat.",
+    footer: "You are receiving this email because you just confirmed a Redaxa account.",
+    blocks: [
+      { kicker: "Welcome" },
+      { h1: greet("Your account is confirmed", firstName) },
+      { p: intro },
+      { h2: "Three minutes to set up" },
+      { list: [
+        "Install the browser extension or the desktop app",
+        "Open ChatGPT, Claude, Gemini or Perplexity as you normally would",
+        "Paste something with a key or an address in it and see what Redaxa flags before it sends",
+      ], numbered: true },
+      { button: { href: appUrl, label: "Open Redaxa" } },
+      { p: "We will never ask you for a password or an API key by email.", muted: true },
+    ],
+  });
 }
-
-export function welcomeText(firstName: string | null | undefined, appUrl: string): string {
-  return [
-    greet("Your account is confirmed", firstName, false),
-    "",
-    "Redaxa helps you review prompts for sensitive details before sharing them with AI. Web and Windows checks are processed by Redaxa's scanner without storing the prompt text or forwarding it to an AI provider.",
-    "",
-    "Three minutes to set up:",
-    "1. Install the browser extension or the desktop app",
-    "2. Open ChatGPT, Claude, Gemini or Perplexity as you normally would",
-    "3. Paste something with a key or an address in it and see what Redaxa flags before it sends",
-    "",
-    `Open Redaxa: ${appUrl}`,
-    "",
-    "We will never ask you for a password or an API key by email.",
-  ].join("\n");
-}
+export function welcomeHtml(firstName: string | null | undefined, appUrl: string): string { return welcomeEmail(firstName, appUrl).html; }
+export function welcomeText(firstName: string | null | undefined, appUrl: string): string { return welcomeEmail(firstName, appUrl).text; }
 
 /**
- * The notice sent once a password has actually changed.
- *
- * Redaxa was the only one of the products without this, and the only one
- * where the password does not change inside its own code — Supabase owns
- * that, and Supabase sends nothing. The reset now goes through our own
- * endpoint precisely so this can be true: the notice follows a change that
- * really happened, rather than a request that might not have.
- *
- * No link and no code in it, deliberately. Whoever reads this is not
- * necessarily the person who made the change — that is the entire reason it
- * exists — but by the time it arrives the new password is already set, so a
- * "this wasn't me" button would be the exact shape an attacker would forge,
- * on the one message a worried reader is most likely to click.
+ * The notice sent once a password has actually changed. No link and no code in
+ * it, deliberately: whoever reads it is not necessarily the person who made
+ * the change — that is why it exists — and a "this wasn't me" button would be
+ * the exact shape an attacker would forge on the message a worried reader clicks.
  */
-export function passwordChangedHtml(firstName: string | null | undefined, when: string): string {
-  const intro = `The password on your Redaxa account was changed on ${escapeHtml(when)}.`;
-  return `<!doctype html>
-<html lang="en" dir="ltr">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-${HEAD_EXTRA}
-<title>Redaxa</title>
-</head>
-<body style="margin:0; padding:0; background:#050506; font-family:'Segoe UI', Arial, sans-serif;">
-<div lang="en" dir="ltr" style="display:none; max-height:0; overflow:hidden; opacity:0;">${intro}</div>
-<table lang="en" dir="ltr" role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#050506" style="background:#050506; padding:48px 16px;">
-  <tr>
-    <td align="center">
-      <table role="presentation" width="560" cellpadding="0" cellspacing="0" bgcolor="#0a0a0c" style="max-width:560px; width:100%; background:#0a0a0c; border:1px solid #2a2d33; border-radius:20px; overflow:hidden;">
-
-        <tr>
-          <td class="rx-pad" style="background:radial-gradient(circle at 20% 0%, ${ACCENT}4d 0%, transparent 60%), #0a0a0c; padding:40px 40px 32px; text-align:center;">
-            <div style="font-size:15px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:${ACCENT};">Security notice</div>
-          </td>
-        </tr>
-
-        <tr>
-          <td class="rx-pad" style="padding:0 40px; text-align:center;">
-            <h1 class="rx-h1" style="margin:0; font-size:32px; line-height:1.25; font-weight:800; color:#f3f4f6; letter-spacing:-0.5px;">${greet("Your password was changed", firstName, true)}</h1>
-            <p style="margin:16px 0 0; font-size:16px; line-height:1.6; color:#9ca3af;">${intro}</p>
-          </td>
-        </tr>
-
-        <tr><td class="rx-pad" style="padding:32px 40px 0;"><div style="height:1px; background:#2a2d33;"></div></td></tr>
-
-        <tr>
-          <td class="rx-pad" style="padding:28px 40px 0;">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0f0f12; border:1px solid #2a2d33; border-radius:12px;">
-              <tr><td style="padding:18px; color:#9ca3af; font-size:15px; line-height:1.6;">If this was you, nothing else is needed.<br>If it was not, reply to this message straight away — somebody else set that password.</td></tr>
-            </table>
-          </td>
-        </tr>
-
-        <tr>
-          <td class="rx-pad" style="padding:32px 40px 40px; text-align:center;">
-            <p style="margin:0; font-size:13px; color:${MUTED}; line-height:1.6;">
-              We will never ask you for your password by email.<br>
-              This notice is sent every time the password changes and cannot be turned off.
-            </p>
-          </td>
-        </tr>
-
-      </table>
-    </td>
-  </tr>
-</table>
-</body>
-</html>`;
+function passwordChangedEmail(firstName: string | null | undefined, when: string): { subject: string; html: string; text: string } {
+  return renderEmail({
+    subject: "Your Redaxa password was changed",
+    preheader: `The password on your Redaxa account was changed on ${when}.`,
+    footer: "This security notice is sent every time the password changes and cannot be turned off.",
+    noLinks: true,
+    blocks: [
+      { kicker: "Security notice" },
+      { h1: greet("Your password was changed", firstName) },
+      { p: `The password on your Redaxa account was changed on ${when}. Other devices signed in to the account were signed out.` },
+      { note: "If this was you, nothing else is needed. If it was not, reply to this message straight away: somebody else set that password." },
+      { p: "We will never ask you for your password by email.", muted: true },
+    ],
+  });
 }
-
-export function passwordChangedText(firstName: string | null | undefined, when: string): string {
-  return [
-    greet("Your password was changed", firstName, false),
-    "",
-    `The password on your Redaxa account was changed on ${when}.`,
-    "",
-    "If this was you, nothing else is needed. If it was not, reply to this message straight away - somebody else set that password.",
-    "",
-    "We will never ask you for your password by email.",
-  ].join("\n");
-}
+export function passwordChangedHtml(firstName: string | null | undefined, when: string): string { return passwordChangedEmail(firstName, when).html; }
+export function passwordChangedText(firstName: string | null | undefined, when: string): string { return passwordChangedEmail(firstName, when).text; }
 
 /** Sends the notice. Never throws; the password has already changed. */
 export async function sendPasswordChangedEmail(to: string, firstName: string | null | undefined): Promise<boolean> {
-  const when = new Date().toUTCString();
-  return send(
-    to,
-    "Your Redaxa password was changed",
-    passwordChangedHtml(firstName, when),
-    passwordChangedText(firstName, when),
-  );
+  const mail = passwordChangedEmail(firstName, new Date().toUTCString());
+  return send(to, mail.subject, mail.html, mail.text);
 }
 
 /** Sends the welcome. Never throws; the caller has already succeeded. */
 export async function sendWelcomeEmail(to: string, firstName: string | null | undefined, appUrl: string, userId?: string): Promise<boolean> {
-  return send(to, "Welcome to Redaxa", welcomeHtml(firstName, appUrl), welcomeText(firstName, appUrl), userId ? `redaxa-welcome/${userId}` : undefined);
+  const mail = welcomeEmail(firstName, appUrl);
+  return send(to, mail.subject, mail.html, mail.text, userId ? `redaxa-welcome/${userId}` : undefined);
 }
 
 /** Tells the owner a sale happened. Never throws, and never blocks the
@@ -568,14 +399,17 @@ export async function notifyOwnerOfSale(
   idempotencyKey?: string,
 ): Promise<boolean> {
   const label = planLabel(plan, interval);
-  return send(
-    OWNER_INBOX,
-    `New Redaxa ${trialing ? "trial" : "subscription"} — ${label}`,
-    `<p>Someone just started a Redaxa ${trialing ? "trial" : "subscription"}.</p>
-     <p><strong>Plan:</strong> ${escapeHtml(label)}<br>
-        <strong>Account:</strong> ${escapeHtml(customerEmail || "(unknown address)")}</p>
-     <p>Stripe has the details; this is only the heads-up.</p>`,
-    `Someone just started a Redaxa ${trialing ? "trial" : "subscription"}.\n\nPlan: ${label}\nAccount: ${customerEmail || "(unknown address)"}\n\nStripe has the details; this is only the heads-up.`,
-    idempotencyKey,
-  );
+  const kind = trialing ? "trial" : "subscription";
+  const mail = renderEmail({
+    subject: `New Redaxa ${kind} — ${label}`,
+    preheader: `Someone just started a Redaxa ${kind}: ${label}.`,
+    footer: "Internal notice for the Redaxa team. Stripe holds the payment record.",
+    blocks: [
+      { kicker: `New ${kind}` },
+      { h1: `New Redaxa ${kind}` },
+      { rows: [["Plan", label], ["Account", customerEmail || "(unknown address)"]] },
+      { p: "Stripe has the details; this is only the heads-up.", muted: true },
+    ],
+  });
+  return send(OWNER_INBOX, mail.subject, mail.html, mail.text, idempotencyKey);
 }
