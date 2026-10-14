@@ -207,8 +207,10 @@ export function renderEmail(input: EmailInput): { subject: string; html: string;
 
   const site = SITE_URL;
   const kind = input.kind ?? "account";
-  // Security notices keep the composition but warm the hero, the bands and the moment towards oxblood.
-  const tone = kind === "security"
+  // Notices about a change that already happened (they carry no links) keep the composition but warm
+  // the hero, the bands and the moment towards oxblood. A reset or confirmation link the reader asked
+  // for is routine mail and stays teal.
+  const tone = kind === "security" && input.noLinks
     ? { hero: "#3a2a2e", heroImage: "linear-gradient(160deg,#2a1f25 0%,#4a3038 100%)", moment: "linear-gradient(135deg,#4a3038 0%,#2a1f25 100%)", bands: ["#42323a", "#2E3038", "#1C333B"] }
     : { hero: P.hero, heroImage: `linear-gradient(160deg,${P.alt} 0%,#245864 100%)`, moment: `linear-gradient(135deg,#245864 0%,${P.alt} 100%)`, bands: ["#1F4B57", "#1A3C46", "#163440"] };
   const logo = `<img src="${site}/outputs/redaxa-mark-128.png" width="56" height="56" alt="Redaxa" style="display:block;width:56px;height:56px;border-radius:14px;">`;
