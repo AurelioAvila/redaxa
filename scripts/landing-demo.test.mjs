@@ -20,8 +20,11 @@ let showPromo=null;
 const promo={...realPromo,mountOfferExtras:()=>()=>{},mountPromo:(place,words,lang,onChange)=>{assert.equal(place,null,'no banner on the landing: the strip and the card carry the offer at the top');assert.equal(words().kicker,'Halloween offer');assert.equal(lang(),'en');showPromo=onChange;return {relabel(){}};}};
 const script=readFileSync(new URL('../dist/landing.js',import.meta.url),'utf8')
   .replace(/import \{ track \} from ['"]\.\/growth.js['"];?/, 'const track=()=>{};')
-  .replace(/import \{[^}]*\} from ['"]\.\/promo.js['"];?/, 'const { OFFER_WORDS_EN, PROMO_WORDS_EN, mountOfferExtras, mountPromo, promoPriceHtml } = promo;');
-new Function('document','window','promo',script)(document,window,promo);
+  .replace(/import \{[^}]*\} from ['"]\.\/promo.js['"];?/, 'const { OFFER_WORDS_EN, PROMO_WORDS_EN, mountOfferExtras, mountPromo, promoPriceHtml } = promo;')
+  // No network here: the prices never arrive, so the page keeps the list prices it ships with.
+  .replace(/import \{[^}]*\} from ['"]\.\/trial.js['"];?/, 'const { TRIAL_UI, chargeDate, choiceCopy, money, priceFor } = trial; const loadPrices = () => Promise.resolve(null);');
+const trial=await import('../dist/trial.js');
+new Function('document','window','promo','trial',script)(document,window,promo,trial);
 
 for (const [index,interval,personal,business] of [[0,'monthly','€7.99','€14.99'],[1,'yearly','€79.90','€149.90']]) {
   billingButtons[index].handlers.click();

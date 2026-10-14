@@ -41,15 +41,21 @@ async function render() {
   statusBox.hidden = !currentStatus.signedIn;
   formBox.hidden = currentStatus.signedIn;
   $("account-summary").textContent = t(currentStatus.signedIn ? "accountSummary" : "signInSummary");
-  $("pro-benefits").hidden = Boolean(currentStatus.active);
+  // A paused plan is fixed below, not sold again.
+  $("pro-benefits").hidden = Boolean(currentStatus.active || currentStatus.paused);
   const accountChecks = currentStatus.signedIn === true && currentStatus.active === true && !currentStatus.unavailable;
   $("check-access").textContent = t(accountChecks ? "accessAccount" : "accessFree");
   $("check-privacy").textContent = t(accountChecks ? "privacyAccount" : "privacyLocal");
   if (currentStatus.signedIn) {
     statusEmail.textContent = currentStatus.email;
-    $("status-pill-text").textContent = t(currentStatus.unavailable ? "statusUnavailable" : currentStatus.active ? "statusActive" : "statusFree");
+    $("status-pill-text").textContent = t(currentStatus.unavailable ? "statusUnavailable" : currentStatus.paused ? "statusPaused" : currentStatus.active ? "statusActive" : "statusFree");
     $("status-pill").classList.toggle("off", !currentStatus.active);
-    $("status-plan").textContent = t(currentStatus.repositoryAccess ? (currentStatus.plan === "business" ? "planBusiness" : "planPro") : "planManage");
+    const trialEnd = currentStatus.active && currentStatus.trialEndsAt ? new Date(currentStatus.trialEndsAt) : null;
+    $("status-plan").textContent = currentStatus.paused ? t("planPaused")
+      : trialEnd && Number.isFinite(trialEnd.getTime()) ? t(currentStatus.plan === "business" ? "planTrialBusiness" : "planTrialPro", [trialEnd.toLocaleDateString((t("locale") || "en") === "en" ? "en-GB" : t("locale"), { day: "numeric", month: "long" })])
+      : t(currentStatus.repositoryAccess ? (currentStatus.plan === "business" ? "planBusiness" : "planPro") : "planManage");
+    // A paused plan is fixed in the workspace, under Account & team.
+    $("open-dashboard").textContent = t(currentStatus.paused ? "updatePayment" : "openWorkspace");
   }
   if (currentStatus.unavailable) msg.textContent = t("accountUnavailable");
 }
@@ -67,7 +73,7 @@ $("open-account").addEventListener("click", () => {
   $("account-details").open = true;
   $(currentStatus.signedIn ? "open-dashboard" : "email").focus();
 });
-$("open-dashboard").addEventListener("click", () => openWorkspace(DASHBOARD_URL));
+$("open-dashboard").addEventListener("click", () => openWorkspace(currentStatus.paused ? `${DASHBOARD_URL}#workspace` : DASHBOARD_URL));
 $("create-account").addEventListener("click", () => openWorkspace(`${DASHBOARD_URL}?auth=signup`));
 $("forgot-password").addEventListener("click", () => openWorkspace(`${DASHBOARD_URL}?auth=recovery`));
 $("show-password").addEventListener("click", (event) => {

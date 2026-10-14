@@ -149,5 +149,10 @@
   "tooLongBody": {"message": "Questo messaggio supera i 20.000 caratteri, quindi Redaxa non lo ha controllato. Dividilo in parti oppure invialo senza controllo."},
   "tooLongAccount": {"message": "Questo messaggio supera i 20.000 caratteri, quindi Redaxa non lo ha controllato. Dividilo in parti e invia ciascuna."},
   "sendUnchecked": {"message": "Invia senza controllo"},
-  "reloadAfterUpdate": {"message": "Redaxa è stato aggiornato e questa scheda non viene più controllata. Ricarica la pagina per riattivare i controlli."}
+  "reloadAfterUpdate": {"message": "Redaxa è stato aggiornato e questa scheda non viene più controllata. Ricarica la pagina per riattivare i controlli."},
+  "planTrialPro": {"message": "Prova di Pro · finisce il $DATE$", "placeholders": {"date": {"content": "$1", "example": "17 October"}}},
+  "planTrialBusiness": {"message": "Prova di Business · finisce il $DATE$", "placeholders": {"date": {"content": "$1", "example": "17 October"}}},
+  "statusPaused": {"message": "Pagamento non riuscito"},
+  "planPaused": {"message": "Piano sospeso finché un pagamento non va a buon fine."},
+  "updatePayment": {"message": "Aggiorna il metodo di pagamento"}
 }

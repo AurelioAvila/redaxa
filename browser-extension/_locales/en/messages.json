@@ -149,5 +149,10 @@
   "tooLongBody": {"message": "This message is longer than 20,000 characters, so Redaxa did not check it. Split it into parts, or send it without a check."},
   "tooLongAccount": {"message": "This message is longer than 20,000 characters, so Redaxa did not check it. Split it into parts, then send each one."},
   "sendUnchecked": {"message": "Send without checking"},
-  "reloadAfterUpdate": {"message": "Redaxa was updated, so this tab is no longer checked. Reload the page to turn checks back on."}
+  "reloadAfterUpdate": {"message": "Redaxa was updated, so this tab is no longer checked. Reload the page to turn checks back on."},
+  "planTrialPro": {"message": "Pro trial · ends $DATE$", "placeholders": {"date": {"content": "$1", "example": "17 October"}}},
+  "planTrialBusiness": {"message": "Business trial · ends $DATE$", "placeholders": {"date": {"content": "$1", "example": "17 October"}}},
+  "statusPaused": {"message": "Payment failed"},
+  "planPaused": {"message": "Plan paused until a payment goes through."},
+  "updatePayment": {"message": "Update payment method"}
 }

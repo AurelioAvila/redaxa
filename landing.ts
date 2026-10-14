@@ -1,5 +1,6 @@
 import { track } from './growth.js';
 import { OFFER_WORDS_EN, PROMO_WORDS_EN, mountOfferExtras, mountPromo, promoPriceHtml, type PromoView } from './promo.js';
+import { TRIAL_UI, chargeDate, choiceCopy, loadPrices, money, priceFor, type BillingView, type PriceList } from './trial.js';
 
 const demoPrompt = 'Write a concise project update to maria.rossi@example.com. Mention that the staging server is at 192.168.1.20 and include this demo credential: password=demo-secret-credential-123.';
 
@@ -17,18 +18,71 @@ function mountLanding(): void {
   const billingButtons = document.querySelectorAll<HTMLButtonElement>('[data-billing]');
   let yearly = true;
   let view: PromoView | null = null;
+  // Stripe's prices and the trial switch, through the server; the page ships today's list prices until they arrive.
+  let prices: PriceList | null = null;
+  // The signed-in account's own billing, once auth.ts has read it (undefined: not known, null: signed out).
+  let billing: BillingView | null | undefined;
+  const trialOn = (): boolean => (billing?.trialEnabled ?? prices?.trialEnabled) === true;
+  // The sentences that name the trial's length follow the switch.
+  const renderTrialCopy = (): void => {
+    document.querySelectorAll<HTMLElement>('[data-trial-copy]').forEach(el => {
+      if (el.dataset.legacyCopy === undefined) el.dataset.legacyCopy = el.textContent ?? '';
+      el.textContent = trialOn() ? el.dataset.trialCopy ?? '' : el.dataset.legacyCopy;
+    });
+    const fine = document.querySelector<HTMLElement>('#promo-fine');
+    if (fine) fine.textContent = trialOn() ? TRIAL_UI.en.promoFine : PROMO_WORDS_EN.fine;
+  };
+  // "Start 3-day free trial" and "Subscribe now" while the trial is on; one button as before while it is off.
+  const renderChoice = (): void => {
+    const interval = yearly ? 'yearly' : 'monthly';
+    const offerTrial = trialOn() && (billing === undefined || billing === null || billing.canStartTrial);
+    document.querySelectorAll<HTMLElement>('.plan-actions').forEach(actions => {
+      const primary = actions.querySelector<HTMLElement>('[data-plan]:not(.plan-now)');
+      const now = actions.querySelector<HTMLElement>('.plan-now');
+      const line = actions.querySelector<HTMLElement>('.plan-choice-line');
+      const note = actions.querySelector<HTMLElement>('.plan-choice-note');
+      if (!primary || !now || !line || !note) return;
+      const plan = primary.dataset.plan ?? 'personal';
+      const copy = choiceCopy('en', { interval, price: priceFor(prices, plan, interval), promo: view?.offer(plan, interval) ?? null, trialDays: prices?.trialDays ?? 3, date: prices ? chargeDate(prices) : new Date(Date.now() + 3 * 86_400_000) });
+      const show = (el: HTMLElement, text: string | null): void => { el.textContent = text ?? ''; el.hidden = !text; };
+      now.hidden = !offerTrial;
+      if (offerTrial) {
+        primary.dataset.choice = 'trial';
+        primary.textContent = copy.trialLabel;
+        show(line, copy.trialLine);
+        show(note, copy.nowLine);
+      } else if (trialOn()) {
+        primary.dataset.choice = 'now';
+        primary.textContent = copy.nowLabel;
+        show(line, null);
+        show(note, billing ? TRIAL_UI.en.trialUsed : null);
+      } else {
+        primary.dataset.choice = '';
+        primary.textContent = plan === 'business' ? 'Get Business' : 'Go Pro';
+        show(line, null);
+        show(note, null);
+      }
+    });
+  };
   // The page ships regular prices; a running offer replaces them only once the
   // server has confirmed it, and they come back the moment it ends.
   const renderPrices = (): void => {
     const interval = yearly ? 'yearly' : 'monthly';
     const pro = view?.offer('personal', interval);
     const business = view?.offer('business', interval);
+    const listed = (plan: string, unit: string): string | null => {
+      const price = priceFor(prices, plan, interval);
+      if (!price) return null;
+      const equiv = yearly ? `<small class="price-equiv">${money(Math.round(price.amount / 12), price.currency)} a month, billed yearly</small>` : '';
+      return `${money(price.amount, price.currency)} <small>${unit}</small>${equiv}`;
+    };
     required('#pro-plan-price').innerHTML = pro
       ? promoPriceHtml(pro, PROMO_WORDS_EN)
-      : yearly ? '€79.90 <small>/ year</small><small class="price-equiv">€6.66 a month, billed yearly</small>' : '€7.99 <small>/ month</small>';
+      : listed('personal', yearly ? '/ year' : '/ month') ?? (yearly ? '€79.90 <small>/ year</small><small class="price-equiv">€6.66 a month, billed yearly</small>' : '€7.99 <small>/ month</small>');
     required('#business-plan-price').innerHTML = business
       ? promoPriceHtml(business, PROMO_WORDS_EN)
-      : yearly ? '€149.90 <small>/ user / year</small><small class="price-equiv">€12.49 a month, billed yearly</small>' : '€14.99 <small>/ user / month</small>';
+      : listed('business', yearly ? '/ user / year' : '/ user / month') ?? (yearly ? '€149.90 <small>/ user / year</small><small class="price-equiv">€12.49 a month, billed yearly</small>' : '€14.99 <small>/ user / month</small>');
+    renderChoice();
   };
   billingButtons.forEach(button => button.addEventListener('click', () => {
     yearly = button.dataset.billing === 'yearly';
@@ -42,6 +96,15 @@ function mountLanding(): void {
   // plans keep the struck prices with the note that explains them.
   const promoFine = required<HTMLElement>('#promo-fine');
   promoFine.textContent = PROMO_WORDS_EN.fine;
+  void loadPrices().then(next => { if (next) { prices = next; renderTrialCopy(); renderPrices(); } });
+  document.addEventListener('redaxa:account', event => {
+    billing = (event as CustomEvent<{ billing?: BillingView | null } | null>).detail?.billing ?? null;
+    renderTrialCopy();
+    renderPrices();
+  });
+  document.addEventListener('redaxa:trial-unavailable', () => {
+    document.querySelectorAll<HTMLElement>('.plan-choice-note').forEach(note => { note.textContent = TRIAL_UI.en.trialUsed; note.hidden = false; });
+  });
   mountPromo(null, () => PROMO_WORDS_EN, () => 'en', next => {
     view = next;
     promoFine.hidden = !next.promo;
@@ -119,7 +182,7 @@ function mountLanding(): void {
       const message = error instanceof Error ? error.message : "";
       if (message === "TRIAL_REQUIRED") {
         track('trial_gate');
-        auth.requestAccess("You have used the free checks for today. Choose a plan to keep going; eligible new subscribers get a 7-day trial.");
+        auth.requestAccess(trialOn() ? "You have used the free checks for today. Choose a plan to keep going; you can try it free for 3 days." : "You have used the free checks for today. Choose a plan to keep going; eligible new subscribers get a 7-day trial.");
       } else {
         resultTitle.textContent = "Check failed";
         resultCopy.textContent = "We could not run that check. Please try again.";

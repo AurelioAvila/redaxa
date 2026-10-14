@@ -3,6 +3,7 @@ import { restoreTheme } from "./themes.js";
 import { installDesktopTitlebar } from "./desktop.js";
 import { track } from "./growth.js";
 import type { Finding } from "./scanner.js";
+import { loadPrices, parseBilling, type BillingView } from "./trial.js";
 
 type AuthConfig = { configured: boolean };
 type DesktopSession = { email: string; access_token: string; refresh_token: string; expires_at: number };
@@ -29,6 +30,9 @@ let mode: "signup" | "signin" | "recovery" = "signup";
 let currentEmail: string | null = null;
 let accountActive = false;
 let latestAccount: AccountState | null = null;
+// Days of free trial the server offers right now, or null while it is off or unknown.
+let trialDaysOffered: number | null = null;
+if (typeof document !== "undefined") void loadPrices().then((prices) => { trialDaysOffered = prices?.trialEnabled ? prices.trialDays : null; });
 
 type ScanRequestOptions = { includePersonalData?: boolean; includeCredentials?: boolean; includeFinancialData?: boolean; customTerms?: string[] };
 // The policy layer's verdict, passed through untouched from /api/scan so every
@@ -168,7 +172,9 @@ async function apiRequest(path: string, body?: Record<string, unknown>, method: 
   const payload: unknown = await response.json().catch(() => ({}));
   if (!response.ok) {
     const message = typeof payload === "object" && payload !== null && "error" in payload ? String((payload as { error?: unknown }).error) : "We could not complete that request.";
-    throw new Error(message);
+    // The machine-readable reason, when the API gives one (e.g. trial_unavailable).
+    const code = typeof payload === "object" && payload !== null && "code" in payload ? String((payload as { code?: unknown }).code) : undefined;
+    throw Object.assign(new Error(message), { code });
   }
   return payload as Record<string, unknown>;
 }
@@ -308,6 +314,8 @@ function accountControls(): { trigger: HTMLAnchorElement; login: HTMLAnchorEleme
 /** Display verified account state; an unavailable lookup is not a free plan. */
 function accountPlanLabel(state: AccountState | null): string {
   if (!state) return "Plan status unavailable";
+  const named = (plan: string | null | undefined) => plan === "business" ? "Business" : "Pro";
+  if (state.billing?.state === "blocked" && state.billing.blockedReason === "payment_failed") return `${named(state.billing.plan)} · Payment failed`;
   if (!state.active) return "No active subscription";
   const plan = state.plan === "personal" || state.plan === "pro" ? "Pro" : state.plan === "business" ? "Business" : "Active subscription";
   return plan + (state.status === "trialing" ? " · Trial" : " · Active");
@@ -460,7 +468,7 @@ function authRedirect(): string { return "https://redaxa.getcertsprint.com/"; }
 // it issue its own /api/account request (and race this one), the single
 // response already fetched here is published as an event.
 export type SyncedSettings = { detectPersonal?: boolean; detectCredentials?: boolean; detectFinancial?: boolean; scanMode?: "standard" | "strict"; customTerms?: string[] };
-export type AccountState = { active: boolean; status: string | null; currentPeriodEnd: string | null; plan: string | null; repositoryAccess?: boolean; settings?: SyncedSettings | null };
+export type AccountState = { active: boolean; status: string | null; currentPeriodEnd: string | null; plan: string | null; repositoryAccess?: boolean; settings?: SyncedSettings | null; billing?: BillingView | null };
 function publishAccountState(state: AccountState | null): void {
   latestAccount = state;
   document.dispatchEvent(new CustomEvent("redaxa:account", { detail: state }));
@@ -473,7 +481,7 @@ async function refreshEntitlement(): Promise<void> {
     if (isTauri() && !(await desktopAccessToken())) { accountActive = false; publishAccountState(null); return; }
     const response = await authorizedFetch("/api/account", { headers: {}, cache: "no-store", signal: AbortSignal.timeout(15_000) });
     if (!response.ok) { accountActive = false; publishAccountState(null); return; }
-    const payload = await response.json() as { active?: boolean; status?: string | null; currentPeriodEnd?: string | null; plan?: string | null; repositoryAccess?: boolean; settings?: SyncedSettings | null };
+    const payload = await response.json() as { active?: boolean; status?: string | null; currentPeriodEnd?: string | null; plan?: string | null; repositoryAccess?: boolean; settings?: SyncedSettings | null; billing?: unknown };
     accountActive = Boolean(payload.active);
     publishAccountState({
       active: accountActive,
@@ -481,7 +489,8 @@ async function refreshEntitlement(): Promise<void> {
       currentPeriodEnd: payload.currentPeriodEnd ?? null,
       plan: payload.plan ?? null,
       repositoryAccess: payload.repositoryAccess,
-      settings: payload.settings ?? null
+      settings: payload.settings ?? null,
+      billing: parseBilling(payload.billing)
     });
   } catch { accountActive = false; publishAccountState(null); }
 }
@@ -718,7 +727,7 @@ async function boot(): Promise<void> {
     requestAccess: (message) => {
       if (!currentEmail) {
         setMode("signup");
-        setMessage(message ?? "Create an account to choose a plan. Eligible new subscribers get a 7-day trial.");
+        setMessage(message ?? (trialDaysOffered ? `Create an account to choose a plan. You can try Pro or Business free for ${trialDaysOffered} days.` : "Create an account to choose a plan. Eligible new subscribers get a 7-day trial."));
         show();
         return;
       }
@@ -752,14 +761,25 @@ async function boot(): Promise<void> {
     const plan = button.dataset.plan;
     const interval = button.dataset.interval;
     const seats = plan === "business" ? Number(document.querySelector<HTMLSelectElement>("#business-seats")?.value ?? 1) : 1;
+    // "Start free trial" or "Subscribe now"; a page without the choice sends neither,
+    // and the server then applies the trial these pages have always advertised.
+    const choice = button.dataset.choice;
+    const startTrial = choice === "trial" ? { start_trial: true } : choice === "now" ? { start_trial: false } : {};
+    // Only so the trial emails are written in the language the page is in.
+    const language = document.documentElement.lang;
     button.setAttribute("aria-busy", "true");
     (button as HTMLButtonElement).disabled = true;
     try {
-      const payload = await apiRequest("/api/billing", { plan, interval, seats }) as { url?: string };
+      const payload = await apiRequest("/api/billing", { plan, interval, seats, ...startTrial, ...(language ? { language } : {}) }) as { url?: string };
       if (!payload.url) throw new Error("Checkout could not be opened.");
       if (desktop) void openInSystemBrowser(payload.url); else location.assign(payload.url);
     } catch (error) {
-      if (error instanceof Error && error.message === "UNAUTHORIZED") { renderAccount(null); void clearDesktopSession(); setMode("signin"); setMessage("Please sign in again to continue."); show(); }
+      if (error instanceof Error && (error as Error & { code?: string }).code === "trial_unavailable") {
+        // Used in the meantime (another account, the same card): the page redraws with Subscribe now only.
+        await refreshEntitlement();
+        document.dispatchEvent(new CustomEvent("redaxa:trial-unavailable", { detail: { plan } }));
+      }
+      else if (error instanceof Error && error.message === "UNAUTHORIZED") { renderAccount(null); void clearDesktopSession(); setMode("signin"); setMessage("Please sign in again to continue."); show(); }
       else { setMessage(error instanceof Error ? error.message : "Checkout could not be opened.", true); show(); }
     } finally {
       button.removeAttribute("aria-busy");
@@ -789,7 +809,7 @@ async function boot(): Promise<void> {
   accountSheet.setAttribute("aria-labelledby", "ps-account-title");
   accountSheet.innerHTML = `<header><div><h2 id="ps-account-title">Your account</h2><p>Subscription, access and account settings.</p></div><button type="button" data-sheet-close aria-label="Close account details">×</button></header>
     <section class="ps-profile-editor" aria-label="Profile photo"><span class="ps-avatar ps-profile-preview" aria-hidden="true"></span><div><label for="ps-profile-file">Profile photo</label><p>Saved on this device only. JPG, PNG or WebP, up to 5 MB.</p><input id="ps-profile-file" type="file" accept="image/jpeg,image/png,image/webp"><button type="button" data-photo-remove>Remove photo</button><p data-photo-message role="status"></p></div></section>
-    <dl class="ps-account-facts"><div><dt>Email</dt><dd data-account-email></dd></div><div><dt>Plan</dt><dd data-account-plan></dd></div><div><dt>Current period ends</dt><dd data-account-period></dd></div><div><dt>Repository access</dt><dd data-account-access></dd></div></dl>
+    <dl class="ps-account-facts"><div><dt>Email</dt><dd data-account-email></dd></div><div><dt>Plan</dt><dd data-account-plan></dd></div><div><dt data-account-period-label>Current period ends</dt><dd data-account-period></dd></div><div><dt>Repository access</dt><dd data-account-access></dd></div></dl>
     <p class="ps-account-message" role="status"></p><div class="ps-account-actions"><button type="button" data-sheet-billing>Subscription & invoices</button><button type="button" data-sheet-refresh>Refresh account</button></div>`;
   document.body.append(accountSheet);
   const paintAccountSheet = (): void => {
@@ -797,7 +817,11 @@ async function boot(): Promise<void> {
     accountSheet.querySelector<HTMLElement>("[data-account-email]")!.textContent = currentEmail ?? "Signed out";
     accountSheet.querySelector<HTMLElement>("[data-account-plan]")!.textContent = accountPlanLabel(latestAccount);
     const period = latestAccount?.currentPeriodEnd ? new Date(latestAccount.currentPeriodEnd) : null;
-    accountSheet.querySelector<HTMLElement>("[data-account-period]")!.textContent = period && Number.isFinite(period.getTime()) ? period.toLocaleDateString(undefined, {year:"numeric",month:"long",day:"numeric"}) : "Not available";
+    const trialing = latestAccount?.status === "trialing";
+    const paused = latestAccount?.billing?.state === "blocked" && latestAccount.billing.blockedReason === "payment_failed";
+    accountSheet.querySelector<HTMLElement>("[data-account-period-label]")!.textContent = trialing ? "Free trial ends" : "Current period ends";
+    accountSheet.querySelector<HTMLElement>("[data-account-period]")!.textContent = paused ? "Paused until a payment goes through. Update the payment method under Subscription & invoices."
+      : period && Number.isFinite(period.getTime()) ? period.toLocaleDateString(undefined, {year:"numeric",month:"long",day:"numeric"}) + (trialing && latestAccount?.billing?.cancelAtPeriodEnd ? " · cancelled, nothing will be charged" : "") : "Not available";
     accountSheet.querySelector<HTMLElement>("[data-account-access]")!.textContent = !latestAccount ? "Could not verify access" : latestAccount.repositoryAccess === true ? "Included · Windows app required" : latestAccount.repositoryAccess === false || !latestAccount.active ? "Not included in current access" : "Check your plan details";
   };
   const sheetClose = (): void => accountSheet.close();

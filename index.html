@@ -377,7 +377,7 @@
             <a class="btn-ghost" href="#scanner">See a free example</a>
           </div>
           <aside class="rx-hw-card rx-reserved" aria-hidden="true"><span class="rx-hw-card-mark" aria-hidden="true"></span><span class="rx-hw-card-tag">HALLOWEEN</span><div class="rx-hw-card-row"><span class="rx-hw-card-now">€00</span><s class="rx-hw-card-was">€00</s><span class="rx-hw-card-pct">−50%</span></div><span class="rx-hw-card-plan">Pro · first year, then €00 / year</span><div class="rx-hw-card-foot"><span class="rx-hw-card-note">Ends 6 November 2026 at 23:59 CET</span><a class="rx-hw-card-cta" href="#pricing"><span>See the offer</span><svg viewBox="0 0 14 10" width="14" height="10" aria-hidden="true" focusable="false"><path d="M1 5h11M8 1l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></a></div></aside>
-          <p class="hero-meta"><b>Prompt checks across web, Windows and Chrome.</b> Free GitHub repository checks on the web; Git history and archives with Pro on Windows. Free checks in the Chrome extension stay in your browser; on the web and in the Windows app, prompt text is processed by Redaxa’s servers and is not stored. <b>7-day trial for eligible new subscribers; card required.</b></p>
+          <p class="hero-meta"><b>Prompt checks across web, Windows and Chrome.</b> Free GitHub repository checks on the web; Git history and archives with Pro on Windows. Free checks in the Chrome extension stay in your browser; on the web and in the Windows app, prompt text is processed by Redaxa’s servers and is not stored. <b data-trial-copy="Try Pro or Business free for 3 days; a card is needed to start.">7-day trial for eligible new subscribers; card required.</b></p>
         </div>
 
         <!-- Static preview of an actual scan; the animation replays the real
@@ -511,7 +511,7 @@
           <article class="trust-item">
             <span class="label">03 / No surprises</span>
             <h3>Simple billing.</h3>
-            <p>Eligible new subscribers can start with a 7-day trial. A card is required; cancel before it ends to avoid a charge.</p>
+            <p data-trial-copy="Try Pro or Business free for 3 days, or subscribe straight away. Cancel before the trial ends and nothing is charged.">Eligible new subscribers can start with a 7-day trial. A card is required; cancel before it ends to avoid a charge.</p>
           </article>
         </div>
       </section>
@@ -521,7 +521,7 @@
       <section class="section plans-page" id="pricing" aria-labelledby="pricing-title">
         <div class="section-kicker">Pricing</div>
         <h2 id="pricing-title">Make privacy part<br />of your everyday work.</h2>
-        <p class="lede">Start with a 7-day trial if eligible. Choose Pro for your own work, or Business for shared team controls. Card required; cancel before the trial ends to avoid a charge.</p>
+        <p class="lede" data-trial-copy="Start with a 3-day free trial, or subscribe straight away. Choose Pro for your own work, or Business for shared team controls. A card or another payment method is needed to start; cancel before the trial ends and nothing is charged.">Start with a 7-day trial if eligible. Choose Pro for your own work, or Business for shared team controls. Card required; cancel before the trial ends to avoid a charge.</p>
         <div class="billing-switch" role="group" aria-label="Billing period"><button type="button" data-billing="monthly" aria-pressed="false">Monthly</button><button type="button" data-billing="yearly" aria-pressed="true">Yearly · 2 months free</button></div>
         <div class="plan-grid">
           <article class="plan-card plan-free" aria-labelledby="site-plan-free">
@@ -537,7 +537,7 @@
             <div class="plan-top"><h3 id="site-plan-pro">Pro</h3></div>
             <p class="plan-desc">For independent professionals and builders who want to review what they share.</p>
             <div class="plan-price" id="pro-plan-price">€79.90 <small>/ year</small><small class="price-equiv">€6.66 a month, billed yearly</small></div>
-            <div class="plan-actions"><button type="button" class="rx-plan-cta" data-plan="personal" data-interval="yearly">Go Pro</button></div>
+            <div class="plan-actions"><button type="button" class="rx-plan-cta" data-plan="personal" data-interval="yearly" data-choice="">Go Pro</button><button type="button" class="rx-plan-cta ghost plan-now" data-plan="personal" data-interval="yearly" data-choice="now" hidden>Subscribe now</button><p class="plan-choice-line" hidden></p><p class="plan-choice-note" hidden></p></div>
             <ul class="rx-benefits"><li><strong>Prompt checks with no daily limit</strong> across web, Windows and Chrome</li><li><strong>Your protected terms:</strong> flag client and project names</li><li><strong>Repository checks:</strong> 60 a day on the web, plus local reviews on Windows with accessible history and a prioritized recap</li><li><strong>Redacted text reports</strong> for repository reviews</li></ul>
             <p class="plan-footnote">Pro is the new name for Personal, at the same price. Repository checks require Redaxa 0.4.0 or later for Windows. Prompt checks remain available on web, Windows and Chrome.</p>
           </article>
@@ -547,7 +547,7 @@
             <p class="plan-desc">Everything in Pro, plus consistent rules and visibility for your team.</p>
             <div class="plan-price" id="business-plan-price">€149.90 <small>/ user / year</small><small class="price-equiv">€12.49 a month, billed yearly</small></div>
             <label class="seats-row">Seats <select id="business-seats"><option value="1">1 user</option><option value="2">2 users</option><option value="3">3 users</option></select></label>
-            <div class="plan-actions"><button type="button" class="rx-plan-cta" data-plan="business" data-interval="yearly">Get Business</button></div>
+            <div class="plan-actions"><button type="button" class="rx-plan-cta" data-plan="business" data-interval="yearly" data-choice="">Get Business</button><button type="button" class="rx-plan-cta ghost plan-now" data-plan="business" data-interval="yearly" data-choice="now" hidden>Subscribe now</button><p class="plan-choice-line" hidden></p><p class="plan-choice-note" hidden></p></div>
             <ul class="rx-benefits"><li><strong>Everything in Pro</strong></li><li><strong>Shared protected terms</strong> for every member</li><li><strong>Category policies:</strong> warn, redact, or block sending in the extension</li><li><strong>Metadata-only activity</strong> and CSV export for admins</li></ul>
           </article>
         </div>
@@ -589,7 +589,7 @@
           <h3>Questions</h3>
           <div class="faq-list">
             <details class="faq-item"><summary>How many free checks do I get?</summary><p>Visitors can try up to 5 prompt checks per day on the site, shared across their network; the Chrome extension's free checks have no daily limit. An active plan removes the daily limit on the site and in the Windows app.</p></details>
-            <details class="faq-item"><summary>How does the 7-day trial work?</summary><p>Eligible new subscribers start with a 7-day trial. A card is required; cancel before the trial ends to avoid a charge.</p></details>
+            <details class="faq-item"><summary data-trial-copy="How does the 3-day trial work?">How does the 7-day trial work?</summary><p data-trial-copy="Choose Start 3-day free trial on Pro or Business. A card or another payment method is needed, and nothing is charged for 3 days. Then the plan starts and is charged automatically, unless you cancel before the trial ends from your account. There is one free trial per person; if you would rather pay straight away, choose Subscribe now.">Eligible new subscribers start with a 7-day trial. A card is required; cancel before the trial ends to avoid a charge.</p></details>
             <details class="faq-item"><summary>Can I cancel or change my plan?</summary><p>Yes. Your account opens the billing portal, where you can update your payment method, download invoices or cancel renewal whenever you need to.</p></details>
             <details class="faq-item"><summary>What does Business add?</summary><p>Everything in Pro, plus shared protected terms, category policies and metadata-only activity for your team. Choose one to three users.</p></details>
             <details class="faq-item"><summary>Is the text I check stored?</summary><p>No. Checks on the web, in the Windows app and with a plan are analyzed and discarded, and Redaxa keeps metadata only. Free checks in the Chrome extension never leave your device.</p></details>
