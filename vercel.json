@@ -57,5 +57,11 @@
     "api/scan.ts": {
       "maxDuration": 60
     }
-  }
+  },
+  "crons": [
+    { "path": "/api/billing", "schedule": "0 1 * * *" },
+    { "path": "/api/billing", "schedule": "0 7 * * *" },
+    { "path": "/api/billing", "schedule": "0 13 * * *" },
+    { "path": "/api/billing", "schedule": "0 19 * * *" }
+  ]
 }

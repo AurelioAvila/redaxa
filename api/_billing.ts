@@ -11,6 +11,8 @@ export type BillingAccount = {
   current_period_end: string | null;
   plan: string | null;
   seat_count: number;
+  cancel_at_period_end?: boolean | null;
+  billing_interval?: string | null;
 };
 
 export type TeamInvite = {
@@ -360,7 +362,7 @@ export async function saveCustomer(userId: string, customerId: string): Promise<
 }
 
 export async function accountFor(userId: string): Promise<BillingAccount | null> {
-  const response = await supabaseService(`/rest/v1/billing_accounts?user_id=eq.${encodeURIComponent(userId)}&select=stripe_customer_id,stripe_subscription_id,has_used_trial,subscription_status,current_period_end,plan,seat_count`, { method: "GET" });
+  const response = await supabaseService(`/rest/v1/billing_accounts?user_id=eq.${encodeURIComponent(userId)}&select=stripe_customer_id,stripe_subscription_id,has_used_trial,subscription_status,current_period_end,plan,seat_count,cancel_at_period_end,billing_interval`, { method: "GET" });
   if (!response.ok) throw new Error("BILLING_STORAGE_ERROR");
   const rows = await response.json() as BillingAccount[];
   return rows[0] ?? null;
