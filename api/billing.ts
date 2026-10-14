@@ -1,14 +1,20 @@
-import { accountFor, billingAppUrl, corsHeaders, parseJson, releaseCheckout, requireUser, reserveCheckout, saveCustomer, stripe } from "./_billing.js";
+import { accountFor, billingAppUrl, corsHeaders, parseJson, releaseCheckout, requireUser, reserveCheckout, saveCustomer, stripe, supabaseUserById } from "./_billing.js";
 import { clientIp, rateLimited } from "./_rateLimit.js";
 import { promoCheckout, promoState } from "./_promo.js";
+import {
+  LEGACY_TRIAL_DAYS, LEGACY_TRIAL_MARK, LANGUAGES, TRIAL_DAYS, TRIAL_MARK, dueReminders, isOurTrial, markReminded, publicPrices,
+  trialEligible, trialEnabled, upcomingCharge, language as languageOf,
+} from "./_trial.js";
+import { sendTrialMail } from "./_trial-email.js";
 
 type RequestLike = { method?: string; body?: unknown; query?: Record<string, string | string[] | undefined>; headers?: Record<string, string | string[] | undefined> };
 type ResponseLike = { setHeader(name: string, value: string | string[]): void; status(code: number): ResponseLike; json(value: unknown): void; end(): void };
 
 // Consolidated with the portal action (Vercel's Hobby plan caps a deployment
 // at 12 serverless functions): ?action=portal opens the Stripe billing
-// portal, GET ?action=promo publishes the current offer, anything else
-// starts a checkout session.
+// portal, GET ?action=promo publishes the current offer, GET ?action=prices
+// the plan prices as Stripe has them, the cron sweep sends trial reminders,
+// anything else starts a checkout session.
 const priceFor = (plan: string, interval: string): string | null => {
   const prices: Record<string, string | undefined> = {
     "personal:monthly": process.env.STRIPE_PRICE_PERSONAL_MONTHLY,
@@ -18,6 +24,47 @@ const priceFor = (plan: string, interval: string): string | null => {
   };
   return prices[`${plan}:${interval}`] ?? null;
 };
+
+/**
+ * The reminder a day before a trial ends. Vercel Cron calls this four times a
+ * day with `Authorization: Bearer $CRON_SECRET`; without the secret it does
+ * nothing. Each reminder is re-checked against Stripe first, so a trial that
+ * was cancelled, converted or moved is skipped, and it is marked as sent only
+ * once the mail went out (the next run retries otherwise).
+ */
+export async function sendTrialReminders(now = Date.now()): Promise<{ due: number; sent: number }> {
+  let sent = 0;
+  const due = await dueReminders(now);
+  for (const claim of due) {
+    try {
+      const subscription = await stripe.subscriptions.retrieve(claim.subscription_id);
+      const trialEnd = subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null;
+      if (!isOurTrial(subscription) || subscription.status !== "trialing" || subscription.cancel_at_period_end || !trialEnd || Date.parse(trialEnd) !== Date.parse(claim.trial_end)) continue;
+      const customer = await stripe.customers.retrieve(String(subscription.customer));
+      const deleted = "deleted" in customer && customer.deleted;
+      const to = (!deleted ? customer.email : null) ?? (await supabaseUserById(claim.user_id))?.email;
+      if (!to) continue;
+      const item = subscription.items.data[0];
+      const price = item?.price;
+      const ok = await sendTrialMail("trial_ending", {
+        to,
+        firstName: (!deleted && "name" in customer ? customer.name : null)?.split(" ")[0] ?? null,
+        lang: languageOf(subscription.metadata.lang),
+        plan: subscription.metadata.plan ?? null,
+        interval: subscription.metadata.interval ?? price?.recurring?.interval ?? null,
+        seats: item?.quantity ?? 1,
+        days: subscription.trial_start && subscription.trial_end ? Math.round((subscription.trial_end - subscription.trial_start) / 86_400) : TRIAL_DAYS,
+        trialEnd: subscription.trial_end,
+        charge: await upcomingCharge(subscription.id),
+        renew: price?.unit_amount != null ? { amount: price.unit_amount * (item?.quantity ?? 1), currency: price.currency, taxExclusive: price.tax_behavior === "exclusive" } : null,
+      }, `redaxa-trial-ending/${subscription.id}/${subscription.trial_end}`);
+      if (ok) { await markReminded(subscription.id, trialEnd); sent += 1; }
+    } catch (error) {
+      console.error("trial reminder failed for", claim.subscription_id, String(error).slice(0, 200));
+    }
+  }
+  return { due: due.length, sent };
+}
 
 export default async function handler(request: RequestLike, response: ResponseLike): Promise<void> {
   const cors = corsHeaders(request);
@@ -29,6 +76,25 @@ export default async function handler(request: RequestLike, response: ResponseLi
   if (request.method === "GET" && action === "promo") {
     response.setHeader("Cache-Control", "no-store");
     response.status(200).json(promoState());
+    return;
+  }
+  // Public: the plan prices as Stripe has them (cached ten minutes), whether
+  // the trial is offered and how long it lasts. No page writes a price itself.
+  if (request.method === "GET" && action === "prices") {
+    response.setHeader("Cache-Control", "public, max-age=300");
+    response.status(200).json(await publicPrices());
+    return;
+  }
+  if (request.method === "GET" && (action === "trial-reminders" || request.headers?.["x-vercel-cron-schedule"] !== undefined)) {
+    response.setHeader("Cache-Control", "no-store");
+    const secret = process.env.CRON_SECRET;
+    if (!secret || request.headers?.authorization !== `Bearer ${secret}`) { response.status(401).json({ error: "UNAUTHORIZED" }); return; }
+    try {
+      response.status(200).json(await sendTrialReminders());
+    } catch (error) {
+      console.error("trial reminder sweep failed:", String(error).slice(0, 300));
+      response.status(500).json({ error: "Reminder sweep failed." });
+    }
     return;
   }
   if (request.method !== "POST") { response.setHeader("Allow", "POST"); response.status(405).end(); return; }
@@ -59,6 +125,18 @@ export default async function handler(request: RequestLike, response: ResponseLi
     const seats = plan === "business" && Number.isInteger(body.seats) ? Number(body.seats) : 1;
     const price = plan && interval ? priceFor(plan, interval) : null;
     if (!plan || !interval || !price || seats < 1 || seats > 3) { response.status(400).json({ error: "Invalid plan selection." }); return; }
+    // The customer's choice: "Start 3-day free trial" (true) or "Subscribe
+    // now" (false). Absent is what clients from before the choice send.
+    const startTrial = body.start_trial;
+    if (startTrial !== undefined && typeof startTrial !== "boolean") { response.status(400).json({ error: "start_trial must be true or false." }); return; }
+    // Only to word the emails in the language the customer was using.
+    const lang = LANGUAGES.includes(body.language as never) ? languageOf(body.language) : null;
+    // Asked for by the customer, granted by the server; the claim recorded
+    // when Stripe creates the subscription decides last.
+    if (startTrial === true && !(await trialEligible(user.id, user.email, await accountFor(user.id)))) {
+      response.status(409).json({ error: "The free trial is not available for this account. Subscribe now instead.", code: "trial_unavailable" });
+      return;
+    }
 
     const account = await reserveCheckout(user.id);
     let customerId = account.stripe_customer_id;
@@ -68,11 +146,24 @@ export default async function handler(request: RequestLike, response: ResponseLi
         customerId = customer.id;
         await saveCustomer(user.id, customerId);
       }
+      // Clients from before the choice (Windows app 0.5.5 and older) advertise
+      // a seven-day trial to eligible new subscribers and keep exactly that;
+      // with the switch on it falls under the one-per-person rule too.
+      const legacyTrial = startTrial === undefined && !account.has_used_trial
+        && (!trialEnabled() || await trialEligible(user.id, user.email, account));
+      const trial = startTrial === true
+        ? { days: TRIAL_DAYS, mark: TRIAL_MARK }
+        : legacyTrial ? { days: LEGACY_TRIAL_DAYS, mark: trialEnabled() ? LEGACY_TRIAL_MARK : null } : null;
       // The discount follows the plan resolved above and the server's clock.
-      // A once-only coupon skips the 7-day trial's zero invoice and comes off
-      // the first paid one (checked on Stripe test clocks, 10 Oct 2026).
+      // A once-only coupon skips the trial's zero invoice and comes off the
+      // first paid one (checked on Stripe test clocks, 10 and 14 Oct 2026).
       const promo = promoCheckout(process.env, Date.now(), plan, interval, seats);
-      const metadata = { redaxa_user_id: user.id, plan, interval, seats: String(seats), ...(promo ? { promo_id: promo.id } : {}) };
+      const metadata = {
+        redaxa_user_id: user.id, plan, interval, seats: String(seats),
+        ...(promo ? { promo_id: promo.id } : {}),
+        ...(trial?.mark ? { trial: trial.mark } : {}),
+        ...(lang ? { lang } : {}),
+      };
       const session = await stripe.checkout.sessions.create({
         customer: customerId,
         mode: "subscription",
@@ -84,15 +175,19 @@ export default async function handler(request: RequestLike, response: ResponseLi
         ...(promo
           ? { discounts: [{ coupon: promo.coupon }], ...(promo.expiresAt ? { expires_at: promo.expiresAt } : {}) }
           : { allow_promotion_codes: interval === "monthly" }),
+        // A card or another recurring method before the trial starts; with
+        // none left at the end, the subscription cancels itself unpaid.
+        ...(trial?.mark ? { payment_method_collection: "always" as const } : {}),
         subscription_data: {
-          trial_period_days: account.has_used_trial ? undefined : 7,
+          trial_period_days: trial?.days,
+          ...(trial?.mark ? { trial_settings: { end_behavior: { missing_payment_method: "cancel" as const } } } : {}),
           metadata
         },
         metadata,
         success_url: `${billingAppUrl(request)}/?checkout=success`,
         cancel_url: `${billingAppUrl(request)}/?checkout=cancelled`
       }, { idempotencyKey: `ps-checkout-${user.id}-${Date.now()}` });
-      response.status(200).json({ url: session.url });
+      response.status(200).json({ url: session.url, trial: Boolean(trial), trialDays: trial?.days ?? null });
     } catch (error) {
       await releaseCheckout(user.id);
       throw error;

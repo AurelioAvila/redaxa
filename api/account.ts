@@ -1,5 +1,6 @@
 import { accountFor, corsHeaders, createApiKey, effectiveEntitlement, listApiKeys, requireUser, revokeApiKey, supabaseService } from "./_billing.js";
 import { clientIp, rateLimited } from "./_rateLimit.js";
+import { billingView } from "./_trial.js";
 
 type RequestLike = { method?: string; body?: unknown; query?: Record<string, string | string[] | undefined>; headers?: Record<string, string | string[] | undefined> };
 type ResponseLike = { setHeader(name: string, value: string | string[]): void; status(code: number): ResponseLike; json(value: unknown): void; end(): void };
@@ -114,6 +115,10 @@ export default async function handler(request: RequestLike, response: ResponseLi
       plan: account?.plan ?? null,
       teamRole: entitlement.role,
       teamOwnerEmail: entitlement.ownerEmail,
+      // The account's own subscription as the plan screens describe it:
+      // trial, active, or blocked and why. Only added fields, so clients that
+      // do not know them read the payload exactly as before.
+      billing: await billingView(user, account),
       settings
     });
   } catch (error) {

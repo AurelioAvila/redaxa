@@ -127,7 +127,12 @@ export type EmailInput = {
    *  not necessarily the person who acted, and a link there is the exact
    *  shape an attacker would forge on the message a worried reader clicks. */
   noLinks?: boolean;
+  /** The frame's own words in another language. English when absent. */
+  frame?: EmailFrame;
 };
+
+/** The fixed words around a message: the help panel's closing line and the footer links. */
+export type EmailFrame = { lang: string; write: string; never: string; privacy: string; terms: string; support: string };
 
 const cap = (value: string): string => value.charAt(0).toUpperCase() + value.slice(1);
 
@@ -232,12 +237,15 @@ export function renderEmail(input: EmailInput): { subject: string; html: string;
   const logo = (size: number, alt: string): string => `<img src="${site}/outputs/redaxa-mark-128.png" width="${size}" height="${size}" alt="${alt}" style="display:block;width:${size}px;height:${size}px;border-radius:${size / 4}px;">`;
   const linked = (inner: string, style = "text-decoration:none;"): string => input.noLinks ? inner : `<a href="${site}/" style="${style}">${inner}</a>`;
   const [helpTitle, helpText] = input.help ?? ["Something not as described?", "Reply to this email with what you were doing and what you saw."];
-  const write = /^Reply/.test(helpText) ? "Or write to" : "Write to";
+  const frame = input.frame;
+  const write = frame ? frame.write : /^Reply/.test(helpText) ? "Or write to" : "Write to";
+  const never = frame?.never ?? "Never send a password or an API key by email.";
+  const lang = frame?.lang ?? "en";
   const support = input.noLinks ? SUPPORT_ADDRESS : `<a href="mailto:${SUPPORT_ADDRESS}" style="color:${P.copper};">${SUPPORT_ADDRESS}</a>`;
-  const footLink = (href: string, label: string): string => `<a href="${href}" style="color:${P.muted};">${label}</a>`;
+  const footLink = (href: string, label: string): string => `<a href="${href}" style="color:${P.muted};">${e(label)}</a>`;
   const links = input.noLinks
     ? "redaxa.getcertsprint.com"
-    : [footLink(`${site}/`, "redaxa.getcertsprint.com"), footLink(`${site}/privacy.html`, "Privacy"), footLink(`${site}/terms.html`, "Terms"), footLink(`mailto:${SUPPORT_ADDRESS}`, "Support")].join(" &nbsp;&middot;&nbsp; ");
+    : [footLink(`${site}/`, "redaxa.getcertsprint.com"), footLink(`${site}/privacy.html`, frame?.privacy ?? "Privacy"), footLink(`${site}/terms.html`, frame?.terms ?? "Terms"), footLink(`mailto:${SUPPORT_ADDRESS}`, frame?.support ?? "Support")].join(" &nbsp;&middot;&nbsp; ");
 
   // Spacing on the 8 px grid: 32 px above the first section; 24 px between sections of different
   // paper; two sections of the same paper read as one, so they meet on 32 px (40 px after a button).
@@ -261,7 +269,7 @@ export function renderEmail(input: EmailInput): { subject: string; html: string;
       return `  <tr><td class="card pad" bgcolor="${P.card}" style="background:${P.card};padding:${top}px 40px 32px;border-radius:0 0 8px 8px;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="white" bgcolor="${P.white}" style="background:${P.white};border:1px solid ${P.line};border-left:3px solid ${P.copper};border-radius:0 8px 8px 0;"><tr><td style="padding:16px 24px;">
       <p class="ink" style="margin:0 0 4px;${SANS}font-size:15px;line-height:22px;font-weight:700;color:${P.ink};">${e(helpTitle)}</p>
-      <p class="muted" style="margin:0;${SANS}font-size:14px;line-height:21px;color:${P.muted};">${e(helpText)} ${write} ${support}. Never send a password or an API key by email.</p>
+      <p class="muted" style="margin:0;${SANS}font-size:14px;line-height:21px;color:${P.muted};">${e(helpText)} ${e(write)} ${support}. ${e(never)}</p>
     </td></tr></table>
   </td></tr>`;
     }
@@ -278,7 +286,7 @@ export function renderEmail(input: EmailInput): { subject: string; html: string;
   const ogsc = pins.replace(/(^|\})\./g, "$1[data-ogsc] .");
 
   const document = `<!doctype html>
-<html lang="en" dir="ltr" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<html lang="${lang}" dir="ltr" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -306,7 +314,7 @@ export function renderEmail(input: EmailInput): { subject: string; html: string;
 <body class="bg" style="margin:0;padding:0;background:${P.page};">
 <div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;color:${P.page};">${e(input.preheader)}${"&#8199;&#847;".repeat(60)}</div>
 
-<table lang="en" dir="ltr" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="bg" bgcolor="${P.page}" style="background:${P.page};">
+<table lang="${lang}" dir="ltr" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="bg" bgcolor="${P.page}" style="background:${P.page};">
 <tr><td align="center" class="wrap" style="padding:32px 16px;">
 <!--[if mso]><table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td><![endif]-->
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:600px;margin:0 auto;">
@@ -339,7 +347,7 @@ ${body}
 </table>
 </body>
 </html>`;
-  const footerText = `${helpTitle} ${helpText} ${write} ${SUPPORT_ADDRESS}. Never send a password or an API key by email.\n\n--\n${input.footer}\n${input.noLinks ? "Redaxa · redaxa.getcertsprint.com" : `Redaxa · ${site}/ · Privacy: ${site}/privacy.html · Terms: ${site}/terms.html · Support: ${SUPPORT_ADDRESS}`}`;
+  const footerText = `${helpTitle} ${helpText} ${write} ${SUPPORT_ADDRESS}. ${never}\n\n--\n${input.footer}\n${input.noLinks ? "Redaxa · redaxa.getcertsprint.com" : `Redaxa · ${site}/ · ${frame?.privacy ?? "Privacy"}: ${site}/privacy.html · ${frame?.terms ?? "Terms"}: ${site}/terms.html · ${frame?.support ?? "Support"}: ${SUPPORT_ADDRESS}`}`;
   return { subject: input.subject, html: document, text: `${text.join("\n\n")}\n\n${footerText}\n` };
 }
 
@@ -433,8 +441,10 @@ export function formatChargedAmount(
  * itself, and for a product sold on privacy a confirmation landing in junk is
  * the worst possible first impression.
  */
-async function send(to: string, subject: string, html: string, text: string, idempotencyKey?: string): Promise<boolean> {
-  if (!readyProviders().length || !to) return false;
+export async function send(to: string, subject: string, html: string, text: string, idempotencyKey?: string): Promise<boolean> {
+  // EMAIL_SINK (local tests and previews) writes the message to disk and sends nothing.
+  const sink = ["1", "true", "yes", "dry-run"].includes(String(process.env.EMAIL_SINK ?? "").trim().toLowerCase());
+  if ((!readyProviders().length && !sink) || !to) return false;
   const from = sender();
   if (!from) {
     console.error("redaxa mail not sent: a mail provider key is set but REDAXA_MAIL_FROM is not");
