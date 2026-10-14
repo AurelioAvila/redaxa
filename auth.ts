@@ -438,7 +438,8 @@ async function loadSession(): Promise<string | null> {
 // location.origin -- on desktop that's the Tauri window's own internal
 // origin (tauri://localhost or similar), which an email client can't open
 // and Supabase's redirect allowlist can't match against an http(s) URL.
-function authRedirect(): string { return `${webAppUrl}/`; }
+// The canonical site, not the legacy Vercel host the desktop API still uses.
+function authRedirect(): string { return "https://redaxa.getcertsprint.com/"; }
 
 // Scanning is gated on an active trial or subscription, not just being signed
 // in -- checked server-side too (the real enforcement point is whatever calls
@@ -493,12 +494,16 @@ async function boot(): Promise<void> {
   // moment it is used. Its presence is what tells the one submit handler
   // below that this is a password being set rather than a sign-in.
   let recoveryToken: string | null = null;
+  // One-time hashes from the current confirmation and reset emails. Spent only
+  // when the reader acts on this page, so link scanners cannot use them up.
+  let recoveryHash: string | null = null;
+  let confirmHash: string | null = null;
   const show = (): void => { dialog.backdrop.classList.add("open"); dialog.email.focus(); };
   const close = (): void => dialog.backdrop.classList.remove("open");
   const setMessage = (message: string, error = false): void => { dialog.message.textContent = message; dialog.message.classList.toggle("error", error); };
   const setMode = (nextMode: typeof mode): void => {
     mode = nextMode; setMessage("");
-    recoveryToken = null;
+    recoveryToken = null; recoveryHash = null; confirmHash = null;
     dialog.switcher.hidden = false;
     dialog.email.closest("label")?.removeAttribute("hidden");
     dialog.email.required = true;
@@ -593,6 +598,47 @@ async function boot(): Promise<void> {
 
   // Install the form handlers before handling entry links, including recovery.
   const handleEntryLinks = async (): Promise<void> => {
+  const entry = new URLSearchParams(location.hash.slice(1));
+  const validHash = (value: string | null): string | null => value && /^[A-Za-z0-9_-]{20,128}$/.test(value) ? value : null;
+  if (!desktop && (entry.has("confirm") || entry.has("recovery"))) {
+    history.replaceState(null, "", location.pathname + location.search);
+    const recovering = entry.has("recovery");
+    const hash = validHash(entry.get(recovering ? "recovery" : "confirm"));
+    if (!hash) {
+      setMode(recovering ? "recovery" : "signup");
+      setMessage(recovering ? "That reset link is incomplete. Request a new one below." : "That confirmation link is incomplete. Enter your email and resend the confirmation.", true);
+      show();
+    } else if (recovering) {
+      setMode("recovery");
+      recoveryHash = hash;
+      dialog.title.textContent = "Choose a new password";
+      dialog.description.textContent = "Use at least 12 characters. Every device signed in to your account will be signed out.";
+      dialog.email.closest("label")?.setAttribute("hidden", "hidden");
+      dialog.email.required = false;
+      dialog.passwordField.hidden = false;
+      dialog.password.required = true;
+      dialog.password.value = "";
+      dialog.password.autocomplete = "new-password";
+      dialog.password.minLength = 12;
+      dialog.submit.textContent = "Set the new password";
+      dialog.switcher.hidden = true;
+      show();
+    } else {
+      setMode("signin");
+      confirmHash = hash;
+      dialog.title.textContent = "Confirm your email";
+      dialog.description.textContent = "Select Confirm email to finish creating your Redaxa account. Then sign in with your password.";
+      dialog.email.closest("label")?.setAttribute("hidden", "hidden");
+      dialog.email.required = false;
+      dialog.passwordField.hidden = true;
+      dialog.password.required = false;
+      dialog.rememberRow.hidden = true;
+      dialog.forgot.hidden = true;
+      dialog.submit.textContent = "Confirm email";
+      dialog.switcher.hidden = true;
+      show();
+    }
+  } else
   // Token fragments cannot establish a browser identity. A recovery token is
   // used only after the user explicitly submits a new password.
   if (!desktop && location.hash.includes("access_token")) {
@@ -882,6 +928,23 @@ async function boot(): Promise<void> {
         renderAccount(email); await refreshEntitlement();
         if (localStorage.getItem(pendingInviteKey)) { close(); await reviewPendingInvite(); }
         else { setMessage("Signed in successfully."); window.setTimeout(close, 700); }
+      } else if (confirmHash) {
+        const hash = confirmHash;
+        dialog.submit.textContent = "Confirming…";
+        const payload = await apiRequest("/api/auth/signup", { confirm: hash }) as { email?: string };
+        dialog.submit.textContent = restingLabel;
+        setMode("signin");
+        if (payload.email) dialog.email.value = payload.email;
+        setMessage("Email confirmed. Sign in with your password to continue.");
+        dialog.password.focus();
+      } else if (recoveryHash) {
+        dialog.submit.textContent = "Saving…";
+        // Kept until the server accepts it: a rejected password does not spend the link.
+        await apiRequest("/api/auth/recover?action=finish", { token_hash: recoveryHash, password: dialog.password.value });
+        dialog.submit.textContent = restingLabel;
+        dialog.switcher.hidden = false;
+        setMode("signin");
+        setMessage("Password changed and other devices signed out. Sign in with the new password.");
       } else if (recoveryToken) {
         // The second half of a recovery: the link has been followed and a new
         // password typed. Cleared before the await so a double submit cannot

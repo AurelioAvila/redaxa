@@ -11,6 +11,16 @@ function required(name: string): string {
   return value;
 }
 
+/** The provider's codes turned into sentences a person can act on. "Email not
+ *  confirmed" is only reported after the password matched, so it reveals
+ *  nothing to someone guessing addresses. */
+export function signinError(status: number, code: string | undefined): string {
+  if (status === 429 || code === "over_request_rate_limit") return "Too many attempts. Please wait a few minutes and try again.";
+  if (code === "email_not_confirmed") return "Confirm your email address first: open the link we sent you, or use Resend confirmation email on the Create account screen.";
+  if (status >= 500) return "Sign-in is not available right now. Please try again shortly.";
+  return "Incorrect email or password.";
+}
+
 export default async function handler(request: RequestLike, response: ResponseLike): Promise<void> {
   const cors = corsHeaders(request);
   for (const [name, value] of Object.entries(cors)) response.setHeader(name, value);
@@ -44,9 +54,9 @@ export default async function handler(request: RequestLike, response: ResponseLi
       headers: { apikey: publishableKey, "Content-Type": "application/json" },
       body: JSON.stringify({ email, password })
     });
-    const payload = await upstream.json().catch(() => ({})) as { access_token?: string; refresh_token?: string; expires_in?: number; user?: { id?: string; email?: string; email_confirmed_at?: string; created_at?: string; user_metadata?: Record<string, unknown> }; msg?: string; error_description?: string };
+    const payload = await upstream.json().catch(() => ({})) as { access_token?: string; refresh_token?: string; expires_in?: number; user?: { id?: string; email?: string; email_confirmed_at?: string; created_at?: string; user_metadata?: Record<string, unknown> }; msg?: string; error_description?: string; error_code?: string; code?: string };
     if (!upstream.ok || !payload.access_token || !payload.refresh_token) {
-      response.status(upstream.status || 401).json({ error: payload.msg ?? payload.error_description ?? "Incorrect email or password." });
+      response.status(upstream.status === 429 ? 429 : upstream.status >= 500 ? 503 : 401).json({ error: signinError(upstream.status, payload.error_code ?? payload.code) });
       return;
     }
     setSessionCookies(response, payload.access_token, payload.refresh_token, payload.expires_in ?? 3600, remember);
