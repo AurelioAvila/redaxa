@@ -45,6 +45,7 @@
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDMwNjlGQzhCM0U5QUZFOTEKUldTUi9wbytpL3hwTUdZbzVBdmRzNk5CRXc1REZKeHFFTDBNa0lESytMQmJMeSt5ZDA0YTZVZk0K",
       "endpoints": [
+        "https://dl.pctweaker.app/redaxa/latest.json",
         "https://github.com/AurelioAvila/redaxa/releases/latest/download/latest.json"
       ]
     }

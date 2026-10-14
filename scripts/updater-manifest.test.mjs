@@ -8,7 +8,7 @@ const root=fs.mkdtempSync(path.join(parent,'redaxa-updater-test-'));
 try {
   for(const dir of ['scripts','src-tauri/target/release/bundle/nsis','src-tauri/target/release/bundle/msi']) fs.mkdirSync(path.join(root,dir),{recursive:true});
   fs.copyFileSync(new URL('./make-latest-json.mjs',import.meta.url),path.join(root,'scripts/make-latest-json.mjs'));
-  fs.writeFileSync(path.join(root,'src-tauri/tauri.conf.json'),JSON.stringify({version:'0.4.0',plugins:{updater:{endpoints:['https://github.com/AurelioAvila/redaxa/releases/latest/download/latest.json']}}}));
+  fs.writeFileSync(path.join(root,'src-tauri/tauri.conf.json'),JSON.stringify({version:'0.4.0',plugins:{updater:{endpoints:['https://dl.pctweaker.app/redaxa/latest.json','https://github.com/AurelioAvila/redaxa/releases/latest/download/latest.json']}}}));
   fs.writeFileSync(path.join(root,'notes.md'),'# Redaxa\n\nUpdate notes.\n');
   const nsis=path.join(root,'src-tauri/target/release/bundle/nsis/Redaxa_0.4.0_x64-setup.exe');
   const msi=path.join(root,'src-tauri/target/release/bundle/msi/Redaxa_0.4.0_x64_en-US.msi');
