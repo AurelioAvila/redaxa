@@ -78,7 +78,7 @@ export function subscriptionSubject(trialing: boolean): string {
 // palette: Paper with the copper accent, the site's default, and Ink & Copper when the reader's mail
 // app is dark. Contrast on the card: ink 16.9:1, muted 6.9:1, white on copper 6.4:1; dark: ink
 // 15.2:1, muted 8.0:1, button ink on copper 7.4:1.
-const P = { page: "#f7f6f2", card: "#ffffff", panel: "#f2f0ea", line: "#e3dfd5", ink: "#1b1724", muted: "#5a5466", copper: "#a3471d", copperInk: "#ffffff" };
+const P = { page: "#efe8dd", card: "#fffdf9", panel: "#f6eee3", line: "#e8dccb", ink: "#1b1724", muted: "#5a5466", copper: "#a3471d", copperInk: "#ffffff", night: "#1b1724" };
 const D = { page: "#141218", card: "#1c1a21", panel: "#24212a", line: "#2e2b35", ink: "#f4f1ec", muted: "#b8b1bf", copper: "#e8956a", copperInk: "#2a1407" };
 const SANS = "font-family:Inter,'Segoe UI',Bahnschrift,Helvetica,Arial,sans-serif;";
 const MONO = "font-family:Consolas,'SFMono-Regular',Menlo,'Courier New',monospace;";
@@ -97,8 +97,19 @@ export type Block =
   | { link: { label: string; href: string } }
   | { security: [string, string] };
 
+export type EmailKind = "account" | "security" | "billing" | "welcome" | "internal";
+const KIND_LABEL: Record<EmailKind, string> = { account: "Account", security: "Security notice", billing: "Billing", welcome: "Welcome", internal: "Team notice" };
+
+/** The signature: redaction bars, the wink of the Lock Pup mark, as a line of blacked-out text. */
+function redactionBars(widths: number[], colours: string[]): string {
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>${widths.map((width, i) =>
+    `<td style="padding:0 ${i === widths.length - 1 ? 0 : 6}px 0 0;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td width="${width}" height="8" bgcolor="${colours[i % colours.length]}" style="width:${width}px;height:8px;font-size:0;line-height:0;border-radius:4px;background:${colours[i % colours.length]};">&nbsp;</td></tr></table></td>`).join("")}</tr></table>`;
+}
+
 export type EmailInput = {
   subject: string;
+  /** Sets the label in the header and the colour of the card's top edge. */
+  kind?: EmailKind;
   /** The line an inbox shows next to the subject. */
   preheader: string;
   blocks: Block[];
@@ -147,7 +158,7 @@ export function renderEmail(input: EmailInput): { subject: string; html: string;
       text.push(block.title ? `${block.title}\n${block.note}` : block.note);
     } else if ("rows" in block) {
       const last = block.rows.length - 1;
-      html.push(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="panel" bgcolor="${P.panel}" style="background:${P.panel};border-radius:10px;margin:0 0 24px;"><tr><td style="padding:6px 18px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">` +
+      html.push(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="panel" bgcolor="${P.panel}" style="background:${P.panel};border-left:4px solid ${P.copper};border-radius:6px;margin:0 0 24px;"><tr><td style="padding:6px 18px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">` +
         block.rows.map(([key, value], i) => {
           const rule = i < last ? `border-bottom:1px solid ${P.line};` : "";
           return `<tr><td class="muted rule" width="38%" valign="top" style="padding:10px 12px 10px 0;${rule}${SANS}font-size:13px;line-height:20px;color:${P.muted};">${e(key)}</td><td class="ink rule" valign="top" style="padding:10px 0;${rule}${SANS}font-size:15px;line-height:20px;font-weight:700;color:${P.ink};word-break:break-word;">${e(value)}</td></tr>`;
@@ -161,7 +172,7 @@ export function renderEmail(input: EmailInput): { subject: string; html: string;
       html.push(button(block.button.href, block.button.label));
       text.push(`${block.button.label}: ${block.button.href}`);
     } else if ("code" in block) {
-      html.push(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="panel" bgcolor="${P.panel}" style="background:${P.panel};border-radius:10px;margin:0 0 20px;"><tr><td align="center" class="ink otp" style="padding:20px 16px;${MONO}font-size:28px;line-height:36px;font-weight:700;letter-spacing:6px;color:${P.ink};">${e(block.code)}</td></tr></table>`);
+      html.push(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="panel" bgcolor="${P.panel}" style="background:${P.panel};border:1px dashed ${P.copper};border-radius:10px;margin:0 0 20px;"><tr><td align="center" class="ink otp" style="padding:20px 16px;${MONO}font-size:28px;line-height:36px;font-weight:700;letter-spacing:6px;color:${P.ink};">${e(block.code)}</td></tr></table>`);
       text.push(block.code);
     } else if ("link" in block) {
       html.push(`<p class="muted" style="margin:-8px 0 24px;${SANS}font-size:13px;line-height:19px;color:${P.muted};word-break:break-all;">${e(block.link.label)}<br><a class="link" href="${e(block.link.href)}" style="color:${P.copper};">${e(block.link.href)}</a></p>`);
@@ -173,20 +184,22 @@ export function renderEmail(input: EmailInput): { subject: string; html: string;
   }
 
   const site = SITE_URL;
-  const linkStyle = `color:${P.muted};`;
-  const logo = `<img src="${site}/outputs/redaxa-mark-128.png" width="40" height="40" alt="Redaxa" style="display:block;width:40px;height:40px;border-radius:10px;">`;
+  const linkStyle = "color:#f0c9ad;";
+  const logo = `<img src="${site}/outputs/redaxa-mark-128.png" width="44" height="44" alt="Redaxa" style="display:block;width:44px;height:44px;border-radius:11px;">`;
   const brand = input.noLinks
-    ? `<td width="40" valign="middle" style="padding:0 12px 0 0;">${logo}</td><td valign="middle" class="ink" style="${SANS}font-size:19px;line-height:24px;font-weight:700;letter-spacing:-0.2px;color:${P.ink};">Redaxa</td>`
-    : `<td width="40" valign="middle" style="padding:0 12px 0 0;"><a href="${site}/" style="text-decoration:none;">${logo}</a></td><td valign="middle" style="${SANS}font-size:19px;line-height:24px;font-weight:700;letter-spacing:-0.2px;"><a class="ink" href="${site}/" style="color:${P.ink};text-decoration:none;">Redaxa</a></td>`;
+    ? `<td width="44" valign="middle" style="padding:0 12px 0 0;">${logo}</td><td valign="middle" class="ink" style="${SANS}font-size:21px;line-height:24px;font-weight:700;letter-spacing:-0.4px;color:${P.ink};">Redaxa</td>`
+    : `<td width="44" valign="middle" style="padding:0 12px 0 0;"><a href="${site}/" style="text-decoration:none;">${logo}</a></td><td valign="middle" style="${SANS}font-size:21px;line-height:24px;font-weight:700;letter-spacing:-0.4px;"><a class="ink" href="${site}/" style="color:${P.ink};text-decoration:none;">Redaxa</a></td>`;
   const [helpTitle, helpText] = input.help ?? ["Something not as described?", "Reply to this email with what you were doing and what you saw."];
   const write = /^Reply/.test(helpText) ? "Or write to" : "Write to";
   const support = input.noLinks ? SUPPORT_ADDRESS : `<a class="link" href="mailto:${SUPPORT_ADDRESS}" style="color:${P.copper};">${SUPPORT_ADDRESS}</a>`;
   const links = input.noLinks
     ? "Redaxa &middot; redaxa.getcertsprint.com"
     : `Redaxa &middot; <a class="link" href="${site}/" style="${linkStyle}">redaxa.getcertsprint.com</a> &middot; <a class="link" href="${site}/privacy.html" style="${linkStyle}">Privacy</a> &middot; <a class="link" href="${site}/terms.html" style="${linkStyle}">Terms</a>`;
-  const dark = `.bg{background:${D.page}!important}.card{background:${D.card}!important;border-color:${D.line}!important}.panel{background:${D.panel}!important}.ink{color:${D.ink}!important}.muted{color:${D.muted}!important}.rule{border-color:${D.line}!important}.link,.eyebrow{color:${D.copper}!important}.btn-cell{background:${D.copper}!important}.btn-a{color:${D.copperInk}!important;background:${D.copper}!important}.bar{background:${D.copper}!important}`;
+  const dark = `.bg{background:#0f0d12!important}.card{background:${D.card}!important;border-color:${D.line}!important}.panel{background:${D.panel}!important}.ink{color:${D.ink}!important}.muted{color:${D.muted}!important}.rule{border-color:${D.line}!important}.link,.eyebrow{color:${D.copper}!important}.btn-cell{background:${D.copper}!important}.btn-a{color:${D.copperInk}!important;background:${D.copper}!important}.bar{background:${D.copper}!important}`;
   const ogsc = dark.replace(/(^|\}|,)\./g, "$1[data-ogsc] .");
 
+  const kind = input.kind ?? "account";
+  const edge = kind === "security" ? P.ink : P.copper;
   const document = `<!doctype html>
 <html lang="en" dir="ltr">
 <head>
@@ -204,13 +217,14 @@ export function renderEmail(input: EmailInput): { subject: string; html: string;
   body{margin:0;padding:0;width:100%!important}
   a[x-apple-data-detectors]{color:inherit!important;text-decoration:none!important}
   @media only screen and (max-width:620px){
-    .wrap{padding:16px 10px!important}
-    .card-pad{padding:26px 20px 8px!important}
-    .head{padding:18px 20px!important}
+    .wrap{padding:18px 10px!important}
+    .card-pad{padding:28px 20px 10px!important}
     .help{padding:18px 20px!important}
+    .foot{padding:24px 20px!important}
     .h1{font-size:24px!important;line-height:30px!important}
     .btn,.btn td,.btn a{width:100%!important;display:block!important;text-align:center!important;box-sizing:border-box!important}
     .otp{font-size:22px!important;letter-spacing:4px!important}
+    .hide-sm{display:none!important}
   }
   @media (prefers-color-scheme:dark){${dark}}
   ${ogsc}
@@ -219,25 +233,35 @@ export function renderEmail(input: EmailInput): { subject: string; html: string;
 <body class="bg" style="margin:0;padding:0;background:${P.page};">
 <div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;color:${P.page};">${e(input.preheader)}${"&#8199;&#847;".repeat(60)}</div>
 <table lang="en" dir="ltr" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="bg" bgcolor="${P.page}" style="background:${P.page};">
-<tr><td align="center" class="wrap" style="padding:32px 16px;">
+<tr><td align="center" class="wrap" style="padding:30px 16px 34px;">
 <!--[if mso]><table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td><![endif]-->
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:600px;margin:0 auto;">
-  <tr><td class="card" bgcolor="${P.card}" style="background:${P.card};border:1px solid ${P.line};border-radius:14px;">
+  <tr><td style="padding:0 4px 18px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+      <td valign="middle"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>${brand}</tr></table></td>
+      <td class="hide-sm" align="right" valign="middle"><table role="presentation" cellpadding="0" cellspacing="0" border="0" align="right"><tr><td class="muted" style="padding:0 0 6px;${SANS}font-size:11px;line-height:14px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:${P.muted};text-align:right;">${e(KIND_LABEL[kind])}</td></tr><tr><td align="right">${redactionBars([34, 18, 26], [P.ink, P.ink, P.copper])}</td></tr></table></td>
+    </tr></table>
+  </td></tr>
+  <tr><td class="card" bgcolor="${P.card}" style="background:${P.card};border:1px solid ${P.line};border-top:5px solid ${edge};border-radius:14px;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-      <tr><td class="bar" style="height:5px;font-size:0;line-height:0;background:${P.copper};border-radius:14px 14px 0 0;">&nbsp;</td></tr>
-      <tr><td class="head rule" style="padding:20px 32px;border-bottom:1px solid ${P.line};"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>${brand}</tr></table></td></tr>
-      <tr><td class="card-pad" style="padding:32px 32px 8px;">
+      <tr><td class="card-pad" style="padding:34px 34px 10px;">
 ${html.join("\n")}
       </td></tr>
-      <tr><td class="panel help" bgcolor="${P.panel}" style="background:${P.panel};padding:18px 32px;border-radius:0 0 14px 14px;">
+      <tr><td class="panel help" bgcolor="${P.panel}" style="background:${P.panel};padding:20px 34px 22px;border-radius:0 0 13px 13px;">
         <p class="ink" style="margin:0 0 4px;${SANS}font-size:14px;line-height:21px;font-weight:700;color:${P.ink};">${e(helpTitle)}</p>
         <p class="muted" style="margin:0;${SANS}font-size:14px;line-height:21px;color:${P.muted};">${e(helpText)} ${write} ${support}. Never send a password or an API key by email.</p>
       </td></tr>
     </table>
   </td></tr>
-  <tr><td align="center" style="padding:20px 8px 0;">
-    <p class="muted" style="margin:0 0 6px;${SANS}font-size:12px;line-height:18px;color:${P.muted};">${e(input.footer)}</p>
-    <p class="muted" style="margin:0;${SANS}font-size:12px;line-height:18px;color:${P.muted};">${links}</p>
+  <tr><td style="padding:14px 0 0;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${P.night}" style="background:${P.night};border-radius:14px;">
+      <tr><td class="foot" align="center" style="padding:26px 28px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td align="center" style="padding:0 0 12px;">${redactionBars([42, 22, 58, 16], ["#4a4552", "#e8956a", "#4a4552", "#4a4552"])}</td></tr></table>
+        <p style="margin:0 0 4px;${SANS}font-size:15px;line-height:21px;font-weight:700;color:#f4f1ec;">Share the work. Keep the secrets.</p>
+        <p style="margin:0 0 14px;${SANS}font-size:12px;line-height:18px;color:#b8b1bf;">${e(input.footer)}</p>
+        <p style="margin:0;${SANS}font-size:12px;line-height:18px;color:#b8b1bf;">${links}</p>
+      </td></tr>
+    </table>
   </td></tr>
 </table>
 <!--[if mso]></td></tr></table><![endif]-->
@@ -273,6 +297,7 @@ function subscriptionEmail(input: SubscriptionEmailInput): { subject: string; ht
       "Install the Chrome extension. It checks what you are about to send on ChatGPT, Claude, Gemini and Perplexity."];
   return renderEmail({
     subject: subscriptionSubject(trialing),
+    kind: "billing",
     preheader: trialing ? `Nothing is charged before ${renewsOn ?? "the trial ends"}. Three things to try first.` : `Plan ${planLabel(plan, interval)}${renewsOn ? `, renews on ${renewsOn}` : ""}. Three things to try first.`,
     footer: trialing ? "You received this email because you started a Redaxa trial with this address." : "You received this email because you subscribed to Redaxa with this address.",
     help: ["Billing question, or something not working?", "Reply to this email from the address on the account."],
@@ -378,6 +403,7 @@ function welcomeEmail(firstName: string | null | undefined, appUrl: string): { s
   const intro = "Redaxa helps you review prompts for sensitive details before sharing them with AI. Web and Windows checks are processed by Redaxa's scanner without storing the prompt text or forwarding it to an AI provider.";
   return renderEmail({
     subject: "Welcome to Redaxa",
+    kind: "welcome",
     preheader: "Your account is confirmed. Here is how to catch keys, client names and personal data before they reach an AI chat.",
     footer: "You received this email because you just confirmed a Redaxa account with this address. It is sent once.",
     help: ["Not sure where to start?", "Reply with the AI tools you use most and we will point you to the right setup."],
@@ -409,6 +435,7 @@ export function welcomeText(firstName: string | null | undefined, appUrl: string
 function passwordChangedEmail(firstName: string | null | undefined, when: string): { subject: string; html: string; text: string } {
   return renderEmail({
     subject: "Your Redaxa password was changed",
+    kind: "security",
     preheader: `Changed on ${when}. Every device that was signed in has been signed out.`,
     footer: "This security notice is sent every time the password changes and cannot be turned off.",
     help: ["Did not change it?", "Reply to this message straight away from this address."],
@@ -450,6 +477,7 @@ export async function notifyOwnerOfSale(
   const kind = trialing ? "trial" : "subscription";
   const mail = renderEmail({
     subject: `New Redaxa ${kind} — ${label}`,
+    kind: "internal",
     preheader: `Someone just started a Redaxa ${kind}: ${label}.`,
     footer: "Internal notice for the Redaxa team. Stripe holds the payment record.",
     blocks: [

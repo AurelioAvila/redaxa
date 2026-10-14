@@ -24,6 +24,7 @@ const recoveryLink = `${SITE_URL}/#recovery={{ .TokenHash }}`;
 const redaxa: Template[] = [
   { file: "confirm-signup.html", dashboard: "Confirm sign up", frameWitness: "confirm-signup", ...renderEmail({
     subject: "Confirm your email for Redaxa",
+    kind: "account",
     preheader: "One step left: confirm this address, then sign in and run your first check.",
     footer: "You received this email because this address was used to create a Redaxa account. If that was not you, ignore it: nothing is created without the link.",
     help: ["Link expired or already used?", "Choose Create account on the site and resend the confirmation email, or simply sign in if you confirmed already."],
@@ -40,6 +41,7 @@ const redaxa: Template[] = [
   }) },
   { file: "reset-password.html", dashboard: "Reset password", ...renderEmail({
     subject: "Reset your Redaxa password",
+    kind: "security",
     preheader: "The link works once and expires soon. Setting a new password signs out every device.",
     footer: "You received this email because a password reset was requested for the Redaxa account on this address.",
     help: ["Did not ask for this?", "Ignore this email: your password stays the same. If these keep arriving, tell us."],
@@ -54,6 +56,7 @@ const redaxa: Template[] = [
   }) },
   { file: "magic-link.html", dashboard: "Magic link", frameWitness: "magic-link", ...renderEmail({
     subject: "Your Redaxa sign-in link",
+    kind: "account",
     preheader: "A one-time sign-in link for your Redaxa account. It expires soon.",
     footer: "You received this email because a sign-in link was requested for this address.",
     help: ["Did not ask for it?", "Ignore this email. Nobody can sign in without the link."],
@@ -68,6 +71,7 @@ const redaxa: Template[] = [
   }) },
   { file: "change-email.html", dashboard: "Change email address", frameWitness: "change-email", ...renderEmail({
     subject: "Confirm your new Redaxa email address",
+    kind: "security",
     preheader: "Confirm the change of your Redaxa sign-in address. Nothing moves until you do.",
     footer: "You received this email because a change of address was requested for a Redaxa account linked to it.",
     help: ["Not expecting this?", "Ignore it and choose Forgot password? on the sign-in screen to set a new password, then tell us."],
@@ -83,6 +87,7 @@ const redaxa: Template[] = [
   }) },
   { file: "invite.html", dashboard: "Invite user", ...renderEmail({
     subject: "You are invited to Redaxa",
+    kind: "account",
     preheader: "Accept the invitation, then choose your password.",
     footer: "You received this email because someone invited this address to Redaxa.",
     help: ["Not expecting this?", "Ignore this email and nothing will happen."],
@@ -98,6 +103,7 @@ const redaxa: Template[] = [
   }) },
   { file: "reauthentication.html", dashboard: "Reauthentication", ...renderEmail({
     subject: "Your Redaxa verification code",
+    kind: "security",
     preheader: "Enter this one-time code in Redaxa to confirm the change you asked for.",
     footer: "You received this email because a sensitive change was requested on the Redaxa account on this address.",
     help: ["Did not ask for it?", "Ignore this email: nothing changes without the code. If these keep arriving, tell us."],
