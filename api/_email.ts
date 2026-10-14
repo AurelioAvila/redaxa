@@ -10,6 +10,8 @@
  * already succeeded, and the customer's access does not depend on the mail.
  */
 
+import { readyProviders, sendEmail } from "./_email-relay.js";
+
 // Sale notices go to Redaxa's own support alias (forwarded to the owner), never
 // a personal inbox written into a public repository.
 const OWNER_INBOX = process.env.OWNER_INBOX || "redaxa@getcertsprint.com";
@@ -396,37 +398,29 @@ export function formatChargedAmount(
 }
 
 /**
- * The one way out to Resend. `text` is not optional: HTML-only mail is a spam
- * signal in itself, and for a product sold on privacy a confirmation landing
- * in junk is the worst possible first impression.
+ * The one way out for mail: Resend, then SMTP2GO and Mailjet once their keys
+ * are set (_email-relay.ts, the same file every product carries). A provider
+ * without its key is skipped; the next one only gets a message the previous one
+ * did not take. `text` is not optional: HTML-only mail is a spam signal in
+ * itself, and for a product sold on privacy a confirmation landing in junk is
+ * the worst possible first impression.
  */
 async function send(to: string, subject: string, html: string, text: string, idempotencyKey?: string): Promise<boolean> {
-  const key = process.env.RESEND_API_KEY;
-  if (!key || !to) return false;
+  if (!readyProviders().length || !to) return false;
   const from = sender();
   if (!from) {
-    console.error("redaxa mail not sent: RESEND_API_KEY is set but REDAXA_MAIL_FROM is not");
+    console.error("redaxa mail not sent: a mail provider key is set but REDAXA_MAIL_FROM is not");
     return false;
   }
-  try {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      signal: AbortSignal.timeout(10000),
-      headers: { authorization: `Bearer ${key}`, "content-type": "application/json", ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {}) },
-      // reply_to, because every message invites a reply and the address it is
-      // sent from is a noreply@: a promise the transport quietly breaks is
-      // worse than not making it.
-      body: JSON.stringify({ from, to, subject, html, text, reply_to: SUPPORT_ADDRESS }),
-    });
-    if (!response.ok) {
-      console.error("redaxa mail failed", response.status);
-      return false;
-    }
-    return true;
-  } catch {
-    console.error("redaxa mail request failed");
+  // replyTo, because every message invites a reply and the address it is sent
+  // from is a noreply@: a promise the transport quietly breaks is worse than
+  // not making it.
+  const result = await sendEmail({ from, to, subject, html, text, replyTo: SUPPORT_ADDRESS, idempotencyKey }, { timeoutMs: 10000 }).catch(() => null);
+  if (!result?.ok) {
+    console.error("redaxa mail failed", result?.error ?? "relay_error");
     return false;
   }
+  return true;
 }
 
 /** Tells the customer their subscription started. Never throws. The key,
