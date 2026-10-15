@@ -1,4 +1,4 @@
-import { ACCESS_COOKIE, clearSessionCookies, corsHeaders, parseCookies } from "../_billing.js";
+import { ACCESS_COOKIE, REFRESH_COOKIE, clearSessionCookies, corsHeaders, parseCookies, refreshSession } from "../_billing.js";
 
 type RequestLike = { method?: string; headers?: Record<string, string | string[] | undefined> };
 type ResponseLike = { setHeader(name: string, value: string | string[]): void; status(code: number): ResponseLike; json(value: unknown): void; end(): void };
@@ -20,7 +20,14 @@ export default async function handler(request: RequestLike, response: ResponseLi
   for (const [name, value] of Object.entries(cors)) response.setHeader(name, value);
   if (request.method === "OPTIONS") { response.status(204).end(); return; }
   if (request.method !== "POST") { response.setHeader("Allow", "POST"); response.status(405).end(); return; }
-  const accessToken = bearerToken(request.headers) ?? parseCookies(request.headers?.cookie)[ACCESS_COOKIE];
+  const cookies = parseCookies(request.headers?.cookie);
+  let accessToken: string | undefined = bearerToken(request.headers) ?? cookies[ACCESS_COOKIE];
+  // The short-lived access cookie may already be gone while the 30-day
+  // refresh cookie is not: trade it for a session so that one ends upstream
+  // too, instead of only being forgotten by this browser.
+  if (!accessToken && cookies[REFRESH_COOKIE]) {
+    accessToken = (await refreshSession(cookies[REFRESH_COOKIE]).catch(() => null))?.access_token;
+  }
   if (accessToken) {
     try {
       const url = required("SUPABASE_URL").replace(/\/$/, "");

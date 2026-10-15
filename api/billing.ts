@@ -25,6 +25,45 @@ const priceFor = (plan: string, interval: string): string | null => {
   return prices[`${plan}:${interval}`] ?? null;
 };
 
+const PORTAL_MARK = "redaxa-portal-v1";
+let portalConfigurationId: Promise<string | undefined> | null = null;
+
+/**
+ * Redaxa's own customer-portal configuration: cancel at period end, card,
+ * invoices. The account's default configuration is shared with the other
+ * products sold through the same Stripe account and offers their prices as
+ * "plan changes", which would move a Redaxa subscriber onto another
+ * product's price. No plan changes here: plan and seats come from checkout.
+ * Found by its metadata, created the first time; STRIPE_PORTAL_CONFIGURATION
+ * overrides. Undefined (the account default, as before) when Stripe refuses.
+ */
+export function portalConfiguration(): Promise<string | undefined> {
+  const configured = process.env.STRIPE_PORTAL_CONFIGURATION;
+  if (configured?.startsWith("bpc_")) return Promise.resolve(configured);
+  portalConfigurationId ??= (async () => {
+    const existing = await stripe.billingPortal.configurations.list({ active: true, limit: 100 });
+    const found = existing.data.find((configuration) => configuration.metadata?.redaxa === PORTAL_MARK);
+    if (found) return found.id;
+    const created = await stripe.billingPortal.configurations.create({
+      business_profile: { headline: "Manage your Redaxa subscription" },
+      features: {
+        customer_update: { enabled: true, allowed_updates: ["name", "email", "address", "phone"] },
+        invoice_history: { enabled: true },
+        payment_method_update: { enabled: true },
+        subscription_cancel: { enabled: true, mode: "at_period_end", proration_behavior: "none" },
+        subscription_update: { enabled: false },
+      },
+      metadata: { redaxa: PORTAL_MARK },
+    });
+    return created.id;
+  })().catch((error: unknown) => {
+    console.error("no Redaxa portal configuration, using the account default:", String((error as Error)?.message ?? error).slice(0, 200));
+    portalConfigurationId = null;
+    return undefined;
+  });
+  return portalConfigurationId;
+}
+
 /**
  * The reminder a day before a trial ends. Vercel Cron calls this four times a
  * day with `Authorization: Bearer $CRON_SECRET`; without the secret it does
@@ -90,6 +129,8 @@ export default async function handler(request: RequestLike, response: ResponseLi
     const secret = process.env.CRON_SECRET;
     if (!secret || request.headers?.authorization !== `Bearer ${secret}`) { response.status(401).json({ error: "UNAUTHORIZED" }); return; }
     try {
+      // Also makes the portal configuration exist before a customer needs it.
+      await portalConfiguration();
       response.status(200).json(await sendTrialReminders());
     } catch (error) {
       console.error("trial reminder sweep failed:", String(error).slice(0, 300));
@@ -104,7 +145,7 @@ export default async function handler(request: RequestLike, response: ResponseLi
       const user = await requireUser(request, response);
       const account = await accountFor(user.id);
       if (!account?.stripe_customer_id) { response.status(400).json({ error: "No subscription is attached to this account yet." }); return; }
-      const session = await stripe.billingPortal.sessions.create({ customer: account.stripe_customer_id, return_url: `${billingAppUrl(request)}/?billing=managed` });
+      const session = await stripe.billingPortal.sessions.create({ customer: account.stripe_customer_id, configuration: await portalConfiguration(), return_url: `${billingAppUrl(request)}/?billing=managed` });
       response.status(200).json({ url: session.url });
     } catch (error) {
       const message = error instanceof Error ? error.message : "PORTAL_ERROR";

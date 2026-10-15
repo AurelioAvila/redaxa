@@ -142,6 +142,31 @@ await assert.rejects(handle({ type: 'SCAN', text: 'Synthetic text', requireAccou
 assert.equal(requestHeaders.Authorization, 'Bearer fixture', 'An account check is authenticated and never anonymous');
 context.fetch = async () => ({ ok: true, json: async () => ({}) });
 await assert.rejects(handle({ type: 'SCAN', text: 'Synthetic text', requireAccount: true }, popup), /incomplete result/);
+// This computer's clock a day behind: the token looks fresh here but the API
+// refuses it, so the server is asked once and the check retried with its token.
+session = { email: 'fixture@example.test', access_token: 'stale', refresh_token: 'fixture', expires_at: Date.now() + 86_400_000 };
+const skewed = [];
+context.fetch = async (url, request) => {
+  skewed.push([url.replace(/^https?:\/\/[^/]+/, ''), request?.headers?.Authorization]);
+  if (url.endsWith('/api/auth/session')) return { ok: true, status: 200, json: async () => ({ email: 'fixture@example.test', access_token: 'fresh', refresh_token: 'fresh-refresh', expires_in: 3600 }) };
+  if (request.headers.Authorization === 'Bearer stale') return { ok: false, status: 401, json: async () => ({ error: 'UNAUTHORIZED' }) };
+  return { ok: true, json: async () => ({ findings: [], redactedText: 'Synthetic text', decision: { action: 'allow' } }) };
+};
+assert.equal((await handle({ type: 'SCAN', text: 'Synthetic text', requireAccount: true }, popup)).engine, 'account');
+assert.deepEqual(skewed.map(([path, auth]) => `${path} ${auth}`), ['/api/scan Bearer stale', '/api/auth/session Bearer stale', '/api/scan Bearer fresh']);
+assert.equal(session.access_token, 'fresh');
+// A day ahead: the token looks expired here; the server confirms it is still good and it is kept.
+session = { email: 'fixture@example.test', access_token: 'still-good', refresh_token: 'fixture', expires_at: Date.now() - 86_400_000 };
+skewed.length = 0;
+context.fetch = async (url, request) => {
+  skewed.push([url.replace(/^https?:\/\/[^/]+/, ''), request?.headers?.Authorization]);
+  if (url.endsWith('/api/auth/session')) return { ok: true, status: 200, json: async () => ({ email: 'fixture@example.test' }) };
+  return { ok: true, json: async () => ({ findings: [], redactedText: 'Synthetic text', decision: { action: 'allow' } }) };
+};
+assert.equal((await handle({ type: 'SCAN', text: 'Synthetic text', requireAccount: true }, popup)).engine, 'account');
+assert.deepEqual(skewed.map(([path, auth]) => `${path} ${auth}`), ['/api/auth/session Bearer still-good', '/api/scan Bearer still-good']);
+assert.equal(session.access_token, 'still-good', 'a wrong clock never signs anyone out');
+
 session.expires_at = 0;
 context.fetch = async () => ({ ok: false, status: 503 });
 const unavailable = await handle({ type: 'STATUS' }, popup);
