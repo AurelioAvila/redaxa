@@ -2,8 +2,9 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const read = file => readFileSync(new URL('../' + file, import.meta.url), 'utf8');
-const entries = [...read('sitemap.xml').matchAll(/<url>\s*<loc>([^<]+)<\/loc><lastmod>([^<]+)<\/lastmod>/g)];
-assert.equal(entries.length, 9);
+// Hand-maintained silos; /sitemap.xml is the index build-web.mjs writes over them and the generated silos.
+const entries = ['sitemap-pages.xml', 'sitemap-guides.xml'].flatMap(file => [...read(file).matchAll(/<url>\s*<loc>([^<]+)<\/loc><lastmod>([^<]+)<\/lastmod>/g)]);
+assert.equal(entries.length, 11);
 assert.equal(new Set(entries.map(entry => entry[1])).size, entries.length);
 const origin = new URL(entries[0][1]).origin;
 assert.equal(origin, 'https://redaxa.getcertsprint.com', 'Public metadata must use the verified branded domain.');
@@ -48,4 +49,38 @@ assert.ok(rendered.llms.includes(facts.trust.sha256) && rendered.llms.includes('
 assert.doesNotMatch(rendered.full, /illustrative|anti-?cheat/i);
 const built = applyToIndex(read('index.html'), facts);
 assert.ok(built.includes('"softwareVersion": "' + pkg.version + '"') && built.includes(facts.trust.sha256) && built.includes('"@type":"FAQPage"') && !built.includes('RELEASE_TRUST'));
-console.log('SEO checks passed: nine canonical sitemap URLs; the personal workspace remains noindex.');
+// Guides: no hand-typed prices or trial lengths; markers are filled at build from the offers and the switch.
+const { applyMarkers } = await import('./site-generated.mjs');
+const guides = entries.map(([, url]) => new URL(url).pathname.slice(1)).filter(path => path.endsWith('.html') && !['github.html', 'api-docs.html', 'privacy.html', 'terms.html'].includes(path));
+assert.equal(guides.length, 6);
+for (const env of [{ TRIAL_ENABLED: 'true' }, {}]) {
+  const f = readFacts(new URL('../', import.meta.url), env);
+  assert.equal(f.trial.enabled, env.TRIAL_ENABLED === 'true');
+  assert.match(f.trial.short, env.TRIAL_ENABLED ? /3-day free trial/ : /7-day trial/);
+  if (env.TRIAL_ENABLED) assert.match(f.trial.long, /payment fails, the plan is paused/);
+  for (const file of guides) {
+    const source = read(file);
+    assert.doesNotMatch(source.replace(/<!--[^>]*-->/g, ''), /€\s?\d|\d+-day trial/, `${file}: prices and trial lengths come from markers`);
+    const html = applyMarkers(source, f);
+    assert.doesNotMatch(html, /<!--(?:PRICE|TRIAL)/);
+    assert.doesNotMatch(html, /illustrative/i);
+  }
+  const index = applyToIndex(read('index.html'), f);
+  assert.equal(index.includes('data-legacy-copy'), f.trial.enabled, 'the build writes the live trial wording into the page');
+  assert.equal(/How does the 3-day trial work\?/.test(index.replace(/data-[a-z-]+="[^"]*"/g, '')), f.trial.enabled);
+}
+// FAQPage markup on every static page: a real question with a non-empty answer that is visible on the page.
+for (const file of [...guides, 'github.html', 'api-docs.html']) {
+  const html = read(file);
+  for (const [, json] of html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)) {
+    const data = JSON.parse(json);
+    const nodes = data['@graph'] ?? [data];
+    for (const faq of nodes.filter(n => n['@type'] === 'FAQPage')) for (const q of faq.mainEntity) {
+      assert.ok(q.name && q.acceptedAnswer?.text, `${file}: empty FAQ entry`);
+      assert.doesNotMatch(q.name, /\]\(|\*\*/, `${file}: markdown in FAQ`);
+      assert.ok(html.includes(q.name.replace(/'/g, "'")) || html.includes(q.name.replace(/'/g, '&#39;')), `${file}: FAQ question not on the page: ${q.name}`);
+    }
+  }
+  assert.doesNotMatch(html, /\]\(https?:|\*\*\s/, `${file}: stray markdown`);
+}
+console.log('SEO checks passed: eleven canonical sitemap URLs in two silos; guides take prices and the trial from the build; FAQ markup matches the pages; the personal workspace remains noindex.');

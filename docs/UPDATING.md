@@ -21,3 +21,14 @@ node scripts/release-trust.mjs --repo AurelioAvila/redaxa --key redaxa --asset '
 ```
 
 `softwareVersion` in the structured data is filled from `package.json` at build time; prices are read from the same JSON-LD, which `npm test` (`scripts/seo.test.mjs`) checks against the prices shown on the page.
+
+## Generated public pages and search engines
+
+`npm run build:web` also writes, from real data:
+
+- `/detectors/` (detection reference): `scripts/site-detectors-catalog.mjs` holds the words and synthetic examples; `scripts/site-detectors.mjs` runs every example through the compiled engine (`dist/scanner.js`, `dist/repository-scanner.js`) and stops the build if an example is no longer flagged as the page says, a near miss starts being flagged, or a declared false positive disappears. After an engine change, fix the catalog entry the build names, and bump `UPDATED` in the catalog.
+- `/it/`, `/es/`, `/fr/`, `/de/`: plan benefits, FAQ, trial wording and price formats come from `dashboard.ts`, `trial.ts` and the extension's `_locales`; hreflang alternates are added to the home page at build.
+- Trial wording on static pages follows `TRIAL_ENABLED` at build time, the same switch the API reads, so turning the trial on or off needs a production redeploy (already the case for the API).
+- Sitemaps: `sitemap.xml` is an index of `sitemap-pages.xml` and `sitemap-guides.xml` (edit their `lastmod` when a page changes) plus the generated `sitemap-detectors.xml` and `sitemap-languages.xml`.
+
+After a production deploy, tell IndexNow (Bing and others) once: `node scripts/indexnow.mjs` (`--dry-run` lists the URLs; `--only detectors` limits them).
