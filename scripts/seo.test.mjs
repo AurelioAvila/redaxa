@@ -60,7 +60,7 @@ for (const env of [{ TRIAL_ENABLED: 'true' }, {}]) {
   if (env.TRIAL_ENABLED) assert.match(f.trial.long, /payment fails, the plan is paused/);
   for (const file of guides) {
     const source = read(file);
-    assert.doesNotMatch(source.replace(/<!--[^>]*-->/g, ''), /€\s?\d|\d+-day trial/, `${file}: prices and trial lengths come from markers`);
+    assert.doesNotMatch(source.split(/<!--(?:PRICE:[^>]*|TRIAL|TRIAL_LONG)-->/).join(' '), /€\s?\d|\d+-day trial/, `${file}: prices and trial lengths come from markers`);
     const html = applyMarkers(source, f);
     assert.doesNotMatch(html, /<!--(?:PRICE|TRIAL)/);
     assert.doesNotMatch(html, /illustrative/i);
@@ -78,7 +78,7 @@ for (const file of [...guides, 'github.html', 'api-docs.html']) {
     for (const faq of nodes.filter(n => n['@type'] === 'FAQPage')) for (const q of faq.mainEntity) {
       assert.ok(q.name && q.acceptedAnswer?.text, `${file}: empty FAQ entry`);
       assert.doesNotMatch(q.name, /\]\(|\*\*/, `${file}: markdown in FAQ`);
-      assert.ok(html.includes(q.name.replace(/'/g, "'")) || html.includes(q.name.replace(/'/g, '&#39;')), `${file}: FAQ question not on the page: ${q.name}`);
+      assert.ok(html.includes(q.name) || html.includes(q.name.replace(/'/g, '&#39;')), `${file}: FAQ question not on the page: ${q.name}`);
     }
   }
   assert.doesNotMatch(html, /\]\(https?:|\*\*\s/, `${file}: stray markdown`);

@@ -11,8 +11,10 @@
 import { readFileSync } from "node:fs";
 
 const ORIGIN = "https://redaxa.getcertsprint.com";
-const unescapeHtml = (s) => s.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'");
-const stripTags = (s) => unescapeHtml(s.replace(/<[^>]+>/g, "")).replace(/\s+/g, " ").trim();
+// &amp; last, so "&amp;lt;" stays "&lt;" instead of becoming "<".
+const unescapeHtml = (s) => s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, "&");
+// Plain text for llms.txt and JSON-LD: no angle brackets survive, whatever the markup was.
+const stripTags = (s) => unescapeHtml(s.replace(/<[^>]*>/g, "")).replace(/[<>]/g, "").replace(/\s+/g, " ").trim();
 
 /** The trial as checkout will give it: api/_trial.ts reads TRIAL_ENABLED === "true" and TRIAL_DAYS. */
 export function trialFacts(root, env = process.env) {
