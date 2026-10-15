@@ -25,6 +25,8 @@ function mountLanding(): void {
   const trialOn = (): boolean => (billing?.trialEnabled ?? prices?.trialEnabled) === true;
   // The sentences that name the trial's length follow the switch.
   const renderTrialCopy = (): void => {
+    // The build already wrote the wording for the current switch; change it only once the server has answered.
+    if (prices === null && billing?.trialEnabled === undefined) return;
     document.querySelectorAll<HTMLElement>('[data-trial-copy]').forEach(el => {
       if (el.dataset.legacyCopy === undefined) el.dataset.legacyCopy = el.textContent ?? '';
       el.textContent = trialOn() ? el.dataset.trialCopy ?? '' : el.dataset.legacyCopy;

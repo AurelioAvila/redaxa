@@ -1,5 +1,10 @@
 import { cpSync, mkdirSync, rmSync } from "node:fs";
 import { resolve, dirname, basename } from "node:path";
+import { readFileSync, writeFileSync } from "node:fs";
+import { applyMarkers, applyToIndex, readFacts, renderLlms } from "./site-generated.mjs";
+import { buildDetectors } from "./site-detectors.mjs";
+import { alternates, buildLanguages } from "./site-i18n.mjs";
+import { sitemapIndex, urlset } from "./site-sitemaps.mjs";
 
 const root = process.cwd();
 const output = resolve(root, "public");
@@ -8,9 +13,38 @@ if(dirname(output)!==resolve(root)||basename(output)!=='public')throw new Error(
 rmSync(output, { recursive: true, force: true });
 mkdirSync(output, { recursive: true });
 
-for (const file of ["index.html", "dashboard.html", "github.html", "repository.css", "brand-system.css", "themes.css", "app.css", "plans.css", "dialogs.css", "theme-boot.js", "cf-beacon.js", "privacy.html", "terms.html", "api-docs.html", "redact-sensitive-data-before-chatgpt.html", "check-public-github-repo-for-leaked-api-keys.html", "protect-client-and-project-names-in-ai-prompts.html", "what-not-to-paste-into-chatgpt-checklist.html", "auth.css", "manifest.webmanifest", "service-worker.js", "robots.txt", "sitemap.xml", "50dbe3a3e39c297a807eb935fcdaba29.txt"]) {
+for (const file of ["index.html", "dashboard.html", "github.html", "repository.css", "brand-system.css", "themes.css", "app.css", "plans.css", "dialogs.css", "theme-boot.js", "cf-beacon.js", "privacy.html", "terms.html", "api-docs.html", "redact-sensitive-data-before-chatgpt.html", "check-public-github-repo-for-leaked-api-keys.html", "protect-client-and-project-names-in-ai-prompts.html", "what-not-to-paste-into-chatgpt-checklist.html", "stop-api-keys-leaking-into-ai-prompts.html", "pii-redaction-browser-extension.html", "404.html", "lang-pref.js", "auth.css", "manifest.webmanifest", "service-worker.js", "robots.txt", "sitemap-pages.xml", "sitemap-guides.xml", "50dbe3a3e39c297a807eb935fcdaba29.txt"]) {
   cpSync(resolve(root, file), resolve(output, file));
 }
+
+// Derived parts of the public site (see site-generated.mjs): llms.txt, FAQPage JSON-LD, verify-download block.
+const rootUrl = new URL("../", import.meta.url);
+const facts = readFacts(rootUrl);
+const indexFile = resolve(output, "index.html");
+const hreflang = alternates().map((a) => `<link rel="alternate" hreflang="${a.hreflang}" href="${a.href}" />`).join("\n    ");
+writeFileSync(indexFile, applyToIndex(readFileSync(indexFile, "utf8"), facts).replace(/(<link rel="canonical"[^>]*>)/, (m) => `${m}\n    ${hreflang}`));
+// Guides: prices from the offers and the trial wording for this build's switch.
+for (const file of ["redact-sensitive-data-before-chatgpt.html", "check-public-github-repo-for-leaked-api-keys.html", "protect-client-and-project-names-in-ai-prompts.html", "what-not-to-paste-into-chatgpt-checklist.html", "stop-api-keys-leaking-into-ai-prompts.html", "pii-redaction-browser-extension.html"]) {
+  const path = resolve(output, file);
+  writeFileSync(path, applyMarkers(readFileSync(path, "utf8"), facts));
+}
+// Detection reference and localized landing pages, generated from the engine and the product's own translations.
+const detectors = await buildDetectors(rootUrl, facts);
+const languages = await buildLanguages(rootUrl, facts);
+for (const file of [...detectors.files, ...languages.files]) {
+  mkdirSync(dirname(resolve(output, file.path)), { recursive: true });
+  writeFileSync(resolve(output, file.path), file.html);
+}
+// Sitemaps by silo: pages and guides are maintained by hand, the generated ones follow their generator.
+writeFileSync(resolve(output, "sitemap-detectors.xml"), urlset(detectors.files.map((f) => ({ loc: f.url, lastmod: detectors.updated }))));
+writeFileSync(resolve(output, "sitemap-languages.xml"), urlset(languages.files.map((f) => ({ loc: f.url, lastmod: detectors.updated }))));
+writeFileSync(resolve(output, "sitemap.xml"), sitemapIndex(output, ["sitemap-pages.xml", "sitemap-guides.xml", "sitemap-detectors.xml", "sitemap-languages.xml"]));
+const { llms, full } = renderLlms(facts, {
+  detectors: detectors.pages.map((p) => ({ slug: p.slug, name: p.name, label: p.mainLabel, severity: p.examples[0].findings.find((f) => f.label === p.mainLabel).severity })),
+  languages: languages.files.map((f) => ({ code: f.code, name: f.name })),
+});
+writeFileSync(resolve(output, "llms.txt"), llms);
+writeFileSync(resolve(output, "llms-full.txt"), full);
 
 // scanner.js/scanner.test.js are deliberately left out of the public bundle:
 // only dashboard.ts/auth.ts import *types* from scanner.ts (erased at compile
