@@ -46,6 +46,7 @@ for (const env of [{ TRIAL_ENABLED: "true" }, {}]) {
   // hreflang: every localized page lists all languages and x-default; the home page gets the same set at build.
   for (const f of languages.files) for (const a of alternates()) assert.ok(f.html.includes(`hreflang="${a.hreflang}" href="${a.href}"`), `${f.path}: missing ${a.hreflang}`);
   assert.equal(languages.files.length, LANGUAGES.length);
+  for (const f of languages.files) assert.ok(f.html.includes(JSON.parse(read(`browser-extension/_locales/${f.code}/messages.json`)).extName.message.replace(/&/g, "&amp;")), `${f.code}: extension name differs from _locales`);
 }
 
 // The guides' worked examples are real engine output.

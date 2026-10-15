@@ -1,8 +1,9 @@
 // Landing pages in the product's other languages (/it/, /es/, /fr/, /de/): the
 // languages the Chrome extension, the workspace, the trial and the emails already
 // ship in. Plan benefits, FAQ answers, trial wording and price formats are the
-// product's own translations, read from dashboard.ts, trial.ts and the extension's
-// _locales; only the page's framing below is written here.
+// product's own translations, read from dashboard.ts and trial.ts (the extension's
+// store names are copied below, because Vercel does not upload browser-extension/);
+// only the page's framing below is written here.
 import { readFileSync } from "node:fs";
 import { sourceLiteral } from "./source-literal.mjs";
 import { CWS, ORIGIN, esc, pageShell } from "./site-detectors.mjs";
@@ -20,6 +21,8 @@ export const LANGUAGES = [
 // de "sensible daten chatgpt", "sensible daten mit chatgpt teilen", "chatgpt personenbezogene daten".
 const WORDS = {
   it: {
+    // The extension's store name in this language (browser-extension/_locales; checked by site-pages.test.mjs).
+    eyebrow: "Redaxa – Oscura dati personali e chiavi API per ChatGPT, Claude, Gemini",
     title: "Dati sensibili e ChatGPT: oscurali prima dell'invio | Redaxa",
     description: "Redaxa controlla il prompt prima che arrivi a ChatGPT, Claude, Gemini o Perplexity e oscura chiavi API, password e dati personali. Controlli gratuiti sul tuo dispositivo.",
     h1: "Condividi il lavoro con l'AI.<br>Tieni per te i dati sensibili.",
@@ -57,6 +60,8 @@ const WORDS = {
     footer: "Informativa privacy e termini (in inglese)",
   },
   es: {
+    // The extension's store name in this language (browser-extension/_locales; checked by site-pages.test.mjs).
+    eyebrow: "Redaxa – Oculta datos personales y claves API en ChatGPT, Claude, Gemini",
     title: "Datos sensibles y ChatGPT: ocúltalos antes de enviar | Redaxa",
     description: "Redaxa revisa el prompt antes de que llegue a ChatGPT, Claude, Gemini o Perplexity y oculta claves API, contraseñas y datos personales. Análisis gratuitos en tu dispositivo.",
     h1: "Comparte el trabajo con la IA.<br>Guarda los datos sensibles.",
@@ -94,6 +99,8 @@ const WORDS = {
     footer: "Política de privacidad y términos (en inglés)",
   },
   fr: {
+    // The extension's store name in this language (browser-extension/_locales; checked by site-pages.test.mjs).
+    eyebrow: "Redaxa – Masquez clés API et données personnelles : ChatGPT, Claude, Gemini",
     title: "Données sensibles et ChatGPT : masquez-les avant l'envoi | Redaxa",
     description: "Redaxa vérifie le prompt avant qu'il n'arrive à ChatGPT, Claude, Gemini ou Perplexity et masque clés API, mots de passe et données personnelles. Vérifications gratuites sur votre appareil.",
     h1: "Partagez le travail avec l'IA.<br>Gardez les données sensibles.",
@@ -131,6 +138,8 @@ const WORDS = {
     footer: "Politique de confidentialité et conditions (en anglais)",
   },
   de: {
+    // The extension's store name in this language (browser-extension/_locales; checked by site-pages.test.mjs).
+    eyebrow: "Redaxa – Schwärzt API-Keys & persönliche Daten: ChatGPT, Claude, Gemini",
     title: "Sensible Daten mit ChatGPT teilen? Erst schwärzen | Redaxa",
     description: "Redaxa prüft den Prompt, bevor er an ChatGPT, Claude, Gemini oder Perplexity geht, und schwärzt API-Keys, Passwörter und personenbezogene Daten. Kostenlose Prüfungen auf Ihrem Gerät.",
     h1: "Arbeit mit KI teilen.<br>Sensible Daten behalten.",
@@ -190,7 +199,6 @@ export async function buildLanguages(root, facts) {
     const w = WORDS[code];
     const v = view[code];
     const t = TRIAL_UI[code];
-    const ext = JSON.parse(read(`browser-extension/_locales/${code}/messages.json`));
     for (const key of ["freeName", "freeDesc", "freeNote", "freeB1", "freeB2", "freeB3", "freeB4", "proB1", "proB2", "proB3", "proB4", "bizB1", "bizB2", "bizB3", "bizB4", "plansHeadline", "faqTitle", "faqTrialQ", "faqTrialA", "faqCancelQ", "faqCancelA", "faqBizQ", "faqBizA", "faqStoredQ", "faqStoredA", "faqMissQ", "faqMissA", "recommended"]) {
       if (typeof v?.[key] !== "string") throw new Error(`dashboard.ts ${code}.${key} missing`);
     }
@@ -205,7 +213,7 @@ export async function buildLanguages(root, facts) {
     const card = (title, price, note, items, featured) => `<article class="plan"${featured ? ' style="border-color:#a3471d"' : ""}><h3>${esc(title)}${featured ? ` <span class="tag">${esc(v.recommended)}</span>` : ""}</h3><p class="price">${esc(price)}</p>${note ? `<p class="note">${esc(note)}</p>` : ""}<ul>${items.map((i) => `<li>${i}</li>`).join("")}</ul></article>`;
     const langs = `<nav class="langs" aria-label="Language"><a href="/" hreflang="en" lang="en">English</a>${LANGUAGES.map((l) => l.code === code ? `<strong style="margin-left:10px">${l.name}</strong>` : `<a href="/${l.code}/" hreflang="${l.code}" lang="${l.code}">${l.name}</a>`).join("")}</nav>`;
     const body = `${langs}
-<p class="label">${esc(ext.extName.message)}</p>
+<p class="label">${esc(w.eyebrow)}</p>
 <h1>${w.h1}</h1>
 <p class="lead">${esc(w.lead)}</p>
 <p><a class="button" href="${CWS}?hl=${code}">${esc(w.ctaExt)}</a><a class="button ghost" href="https://dl.pctweaker.app/redaxa/Redaxa-Setup.exe">${esc(w.ctaWin)}</a><a class="button ghost" href="/dashboard.html" data-workspace-lang="${code}">${esc(w.ctaWeb)}</a></p>
