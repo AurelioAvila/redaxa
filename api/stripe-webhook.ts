@@ -99,12 +99,15 @@ async function failureOf(invoice: Stripe.Invoice): Promise<FailureKey | null> {
     const full = await stripe.invoices.retrieve(invoice.id!, { expand: ["payments.data.payment.payment_intent"] });
     const payments = (full as unknown as { payments?: { data?: Array<{ payment?: { payment_intent?: Stripe.PaymentIntent | string } }> } }).payments?.data ?? [];
     const intent = payments.map((p) => p.payment?.payment_intent).find((pi): pi is Stripe.PaymentIntent => typeof pi === "object" && pi !== null);
+    // A card that needs 3-D Secure off-session leaves the payment waiting for
+    // the bank with no error recorded on it.
+    if (intent?.status === "requires_action") return "authentication_required";
     const error = intent?.last_payment_error;
     const code = error?.decline_code ?? error?.code ?? null;
     if (!code) return null;
     if (code === "insufficient_funds") return "insufficient_funds";
     if (code === "expired_card") return "expired_card";
-    if (code === "authentication_required" || intent?.status === "requires_action") return "authentication_required";
+    if (code === "authentication_required") return "authentication_required";
     if (code === "processing_error") return "processing_error";
     if (["card_declined", "generic_decline", "do_not_honor", "lost_card", "stolen_card", "fraudulent"].includes(code)) return "card_declined";
     return "generic";
