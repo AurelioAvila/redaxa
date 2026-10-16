@@ -3,14 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Redaxa finds and removes personal data, credentials and confidential details in a prompt before you send it to ChatGPT, Claude, Gemini or another AI tool." />
+    <meta name="description" content="Find and redact PII and secrets before sharing AI prompts. Review public GitHub repositories for exposed keys on the web or with local checks on Windows." />
     <meta name="google-site-verification" content="A0iTA5gIcRJ88SPRMZ3xAvV7DIe_4YttqAAF9OUj0Mo" />
-    <title>AI Prompt Privacy Scanner &amp; Redaction Tool | Redaxa</title>
+    <title>Redaxa — AI Prompt Redaction &amp; GitHub Secret Scanner</title>
     <link rel="canonical" href="https://redaxa.getcertsprint.com/" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Redaxa" />
-    <meta property="og:title" content="Redaxa — Remove Sensitive Data Before Sharing AI Prompts" />
-    <meta property="og:description" content="Detect and redact personal data, credentials and secrets before a prompt reaches an AI model." />
+    <meta property="og:title" content="Redaxa — AI Prompt Redaction &amp; GitHub Secret Scanner" />
+    <meta property="og:description" content="Review sensitive data in AI prompts and exposed credentials in public GitHub repositories. Free Chrome extension, web checks and extended Windows reviews." />
     <meta property="og:url" content="https://redaxa.getcertsprint.com/" />
     <meta property="og:image" content="https://redaxa.getcertsprint.com/og-image.png" />
     <meta property="og:image:width" content="1200" />
@@ -18,8 +18,8 @@
     <meta property="og:image:alt" content="Redaxa — find and redact personal data, credentials and secrets before a prompt reaches an AI." />
     <meta property="og:locale" content="en" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Redaxa — Remove Sensitive Data Before Sharing AI Prompts" />
-    <meta name="twitter:description" content="Detect and redact personal data, credentials and secrets before a prompt reaches an AI model." />
+    <meta name="twitter:title" content="Redaxa — AI Prompt Redaction &amp; GitHub Secret Scanner" />
+    <meta name="twitter:description" content="Review sensitive data in AI prompts and exposed credentials in public GitHub repositories. Free Chrome extension, web checks and extended Windows reviews." />
     <meta name="twitter:image" content="https://redaxa.getcertsprint.com/og-image.png" />
     <link rel="icon" type="image/svg+xml" href="/outputs/redaxa-mark.svg" />
     <script type="application/ld+json">
@@ -29,7 +29,7 @@
       "name": "Redaxa",
       "alternateName": "PromptShield",
       "url": "https://redaxa.getcertsprint.com/",
-      "description": "Privacy software that detects and redacts personal data, credentials, financial information and secrets before users share prompts with AI tools.",
+      "description": "Detects and redacts sensitive data in AI prompts and reviews public GitHub repositories for possible exposed credentials. Free extension checks run in Chrome; extended repository reviews run locally on Windows.",
       "applicationCategory": "SecurityApplication",
       "operatingSystem": "Web, Windows, Chrome",
       "image": "https://redaxa.getcertsprint.com/og-image.png",
@@ -37,7 +37,9 @@
         "https://github.com/AurelioAvila/redaxa",
         "https://chromewebstore.google.com/detail/redaxa/clkobbjoaegkgnmkibjghlboeoplpmok"
       ],
-      "author": { "@type": "Person", "name": "Aurelio Avila" },
+      "author": { "@type": "Person", "name": "Aurelio Avila", "url": "https://github.com/AurelioAvila" },
+      "downloadUrl": "https://dl.pctweaker.app/redaxa/Redaxa-Setup.exe",
+      "featureList": ["PII and credential redaction before sharing prompts", "Free browser-local checks in the Chrome extension", "Public GitHub repository checks on the web", "Local repository history and archive reviews on Windows with Pro or Business"],
       "softwareVersion": "0.6.0",
       "offers": [
         { "@type": "Offer", "name": "Pro monthly", "price": "7.99", "priceCurrency": "EUR", "category": "subscription" },
@@ -305,6 +307,10 @@
       .footer-brand img { width: 20px; height: 20px; border-radius: 5px; }
       .footer-tag { color: var(--dim); font-weight: 400; margin-left: 4px; }
       footer nav.flinks { display: flex; gap: 18px; }
+      .source-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+      .source-actions a { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); font-weight: 600; }
+      .source-actions a:hover { border-color: var(--accent); }
+      .source-actions a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
       footer a { transition: color 160ms var(--ease); }
       footer a:hover { color: var(--ink); }
 
@@ -345,6 +351,18 @@
         *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; }
         html { scroll-behavior: auto; }
       }
+      .hero-paths{display:flex;flex-wrap:wrap;gap:.6rem 1.5rem;margin-top:1rem}
+      .hero-paths a{display:inline-flex;align-items:center;gap:.4rem;min-height:44px;font-size:13px;font-weight:650;color:var(--acid);text-decoration:underline;text-underline-offset:4px}
+      .hero-trial{color:var(--mut);font-size:13px;line-height:1.6;margin:.75rem 0 0}
+      #processing{scroll-margin-top:6rem}
+      .surface-intro{max-width:70ch;color:var(--theme-muted);font-size:15px;line-height:1.6;margin:0 0 1.5rem}
+      .surface-table{width:100%;border-collapse:collapse;font-size:14px;line-height:1.65}
+      .surface-table th,.surface-table td{padding:1.25rem 1rem;border-bottom:1px solid var(--theme-line);text-align:left;vertical-align:top}
+      .surface-table thead th{font-weight:650;color:var(--theme-text);background:var(--theme-inset)}
+      .surface-table tbody th{width:30%;font-weight:650;color:var(--theme-text);padding-left:0}
+      .surface-table td{width:35%;color:var(--theme-muted)}
+      .surface-table strong{display:block;color:var(--theme-text);font-weight:650}
+      @media(max-width:650px){.surface-table,.surface-table tbody,.surface-table tr,.surface-table th,.surface-table td{display:block;width:100%}.surface-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}.surface-table tbody tr{padding:1.25rem 0;border-bottom:1px solid var(--theme-line)}.surface-table tbody th,.surface-table td{padding:0;border:0;width:100%}.surface-table td{margin-top:.75rem}.surface-table tbody th{font-size:16px}.hero-paths{gap:.1rem;flex-direction:column;align-items:flex-start}}
     </style>
     <link rel="stylesheet" href="/brand-system.css" /><link rel="stylesheet" href="/themes.css" /><link rel="stylesheet" href="/plans.css" /><link rel="stylesheet" href="/dialogs.css" />
   </head>
@@ -377,7 +395,9 @@
             <a class="btn-ghost" href="#scanner">See a free example</a>
           </div>
           <aside class="rx-hw-card rx-reserved" aria-hidden="true"><span class="rx-hw-card-mark" aria-hidden="true"></span><span class="rx-hw-card-tag">HALLOWEEN</span><div class="rx-hw-card-row"><span class="rx-hw-card-now">€00</span><s class="rx-hw-card-was">€00</s><span class="rx-hw-card-pct">−50%</span></div><span class="rx-hw-card-plan">Pro · first year, then €00 / year</span><div class="rx-hw-card-foot"><span class="rx-hw-card-note">Ends 6 November 2026 at 23:59 CET</span><a class="rx-hw-card-cta" href="#pricing"><span>See the offer</span><svg viewBox="0 0 14 10" width="14" height="10" aria-hidden="true" focusable="false"><path d="M1 5h11M8 1l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></a></div></aside>
-          <p class="hero-meta"><b>Prompt checks across web, Windows and Chrome.</b> Free GitHub repository checks on the web; Git history and archives with Pro on Windows. Free checks in the Chrome extension stay in your browser; on the web and in the Windows app, prompt text is processed by Redaxa’s servers and is not stored. <b data-trial-copy="Try Pro or Business free for 3 days; a card is needed to start.">7-day trial for eligible new subscribers; card required.</b></p>
+          <div class="hero-paths"><a href="/github.html">Check a public GitHub repository <span aria-hidden="true">→</span></a><a href="#processing">Compare where checks run</a></div>
+          <p class="hero-meta">Free extension checks stay on your device. Web and Windows prompt checks use Redaxa’s servers; prompt text is discarded after analysis.</p>
+          <p class="hero-trial"><b data-trial-copy="Try Pro or Business free for 3 days; a card is needed to start.">7-day trial for eligible new subscribers; card required.</b></p>
         </div>
 
         <!-- Static preview of an actual scan; the animation replays the real
@@ -574,15 +594,19 @@
           </div>
         </div>
 
-        <div class="plans-section plans-trust">
-          <h3>What leaves your device</h3>
-          <div class="trust-grid">
-            <article class="trust-item"><h4>Free checks in Chrome</h4><p>Run in your browser. The text you check does not leave your device.</p></article>
-            <article class="trust-item"><h4>Checks on the web, in Windows and with a plan</h4><p>Sent over an encrypted connection, analyzed and discarded. Never stored and never forwarded to an AI provider.</p></article>
-            <article class="trust-item"><h4>Activity record</h4><p>Metadata only: time, application, finding categories and counts. Never your text.</p></article>
-            <article class="trust-item"><h4>Repository reviews</h4><p>Public repositories only; reviews in the Windows app run locally. Private repositories are not supported.</p></article>
-          </div>
-          <p class="trust-limit">Detection can miss sensitive information or flag harmless text. Review every result before sharing. <a href="/privacy.html">Read the privacy policy</a></p>
+        <div class="plans-section plans-trust" id="processing">
+          <h3 id="processing-title">Choose where your checks run.</h3>
+          <p class="surface-intro">Prompt checks and repository reviews use different processing paths. Pick the one that fits what you are sharing.</p>
+          <table class="surface-table" aria-labelledby="processing-title" role="table">
+            <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">What you check</th><th scope="col" role="columnheader">Where it runs</th><th scope="col" role="columnheader">Access and limits</th></tr></thead>
+            <tbody role="rowgroup">
+              <tr role="row"><th scope="row" role="rowheader">Prompts in the free Chrome extension</th><td role="cell"><strong>In your browser.</strong> The text you check stays on your device.</td><td role="cell">Free, no account or daily limit. Runs on supported chat sites.</td></tr>
+              <tr role="row"><th scope="row" role="rowheader">Prompts on the web, in Windows or in the extension with an active plan</th><td role="cell"><strong>On Redaxa’s servers.</strong> Encrypted in transit, analyzed and discarded. Never forwarded to an AI provider.</td><td role="cell">Web and Windows: 5 free checks a day. Active plans remove that daily limit.</td></tr>
+              <tr role="row"><th scope="row" role="rowheader">Public GitHub repositories on the web</th><td role="cell"><strong>On Redaxa’s servers.</strong> The service fetches the public repository and returns findings with values hidden.</td><td role="cell">Default branch: 3 free checks a day, or 60 with Pro or Business.</td></tr>
+              <tr role="row"><th scope="row" role="rowheader">Extended repository reviews in Windows</th><td role="cell"><strong>On your PC.</strong> Includes accessible Git history and supported archives. Downloads and vulnerability lookups need a network connection.</td><td role="cell">Pro or Business. Public repositories only. Review scan coverage and exclusions.</td></tr>
+            </tbody>
+          </table>
+          <p class="trust-limit">Activity records contain metadata such as finding categories and counts, never prompt text. Private repositories are not supported. Detection can miss sensitive information or flag harmless text. Review every result before sharing. <a href="/privacy.html">Read the privacy policy</a></p>
         </div>
 
         <div class="plans-section">
@@ -625,6 +649,7 @@
       <footer>
         <span class="footer-brand"><img src="outputs/redaxa-mark.svg" alt="" width="20" height="20" />Redaxa<span class="footer-tag">· Privacy, before AI</span></span>
         <nav class="flinks" aria-label="Footer"><a href="/api-docs.html">API</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="https://pctweaker.app" target="_blank" rel="noopener">PC Tweaker</a></nav>
+        <nav class="source-actions" aria-label="Project source"><a href="https://github.com/AurelioAvila/redaxa">Star on GitHub</a><a href="https://github.com/AurelioAvila/.github/blob/master/CODE_SIGNING.md">Verify release</a></nav>
         <span>© 2026 Redaxa · Anonymous action counts, no tracking cookies. <a href="/privacy.html">Measurement details</a></span>
       </footer>
     </div>
