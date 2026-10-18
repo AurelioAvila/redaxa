@@ -1,4 +1,4 @@
-import { cpSync, mkdirSync, rmSync } from "node:fs";
+import { cpSync, mkdirSync, rmSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve, dirname, basename } from "node:path";
 
 const root = process.cwd();
@@ -35,5 +35,15 @@ cpSync(resolve(root, "outputs", "redaxa-mark-128.png"), resolve(output, "outputs
 cpSync(resolve(root, "brand", "og-image.png"), resolve(output, "og-image.png"));
 
 for(const file of ["redaxa-inter.woff2", "Inter-LICENSE.txt"]) cpSync(resolve(root,"outputs",file),resolve(output,"outputs",file));
+// Windows and Linux checkouts must produce identical bytes for publisher verification.
+const textExtensions = /\.(?:html|css|js|txt|xml|svg|webmanifest|json)$/i;
+function normalizeStaticText(directory) {
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const file = resolve(directory, entry.name);
+    if (entry.isDirectory()) normalizeStaticText(file);
+    else if (textExtensions.test(entry.name)) writeFileSync(file, readFileSync(file, 'utf8').replace(/\r\n/g, '\n'));
+  }
+}
+normalizeStaticText(output);
 // Keep the publisher catalog available alongside the exact static build it signs.
 cpSync(resolve(root, "web-release.cat"), resolve(output, "web-release.cat"));
