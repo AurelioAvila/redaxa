@@ -35,3 +35,5 @@ cpSync(resolve(root, "outputs", "redaxa-mark-128.png"), resolve(output, "outputs
 cpSync(resolve(root, "brand", "og-image.png"), resolve(output, "og-image.png"));
 
 for(const file of ["redaxa-inter.woff2", "Inter-LICENSE.txt"]) cpSync(resolve(root,"outputs",file),resolve(output,"outputs",file));
+// Keep the publisher catalog available alongside the exact static build it signs.
+cpSync(resolve(root, "web-release.cat"), resolve(output, "web-release.cat"));
