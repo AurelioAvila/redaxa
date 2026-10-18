@@ -1,8 +1,14 @@
+# Redaxa — Sensitive Data Checks for AI Prompts and Repositories
+
+For people preparing prompts and reviewing repositories before sharing them. Inspect detected sensitive values and a redacted preview. Free extension checks run in the browser; web and Windows checks use the backend.
+
+[Open Redaxa](https://redaxa.getcertsprint.com/) · [Official Windows downloads](https://github.com/AurelioAvila/redaxa/releases/latest) · [Verify the publisher signature](https://github.com/AurelioAvila/.github/blob/master/CODE_SIGNING.md)
+
+**Reproducible example:** `Contact person@customer.example.` → `Contact [EMAIL].` The prompt-checking engine returns an email finding and a redacted preview for this reserved example address. This is a controlled example, not a customer submission or proof that every secret can be detected.
+
 <p align="center">
   <img src="brand/redaxa-0.4.9-prompt.png" width="88%" alt="Redaxa 0.4.9 desktop app in its default Petrol and Copper theme, checking a prompt before it is shared">
 </p>
-
-<h1 align="center">Redaxa — Sensitive Data Checks for AI Prompts and Repositories</h1>
 
 <p align="center">
   <strong>Catch what you're about to leak, before it reaches an AI tool.</strong><br>
