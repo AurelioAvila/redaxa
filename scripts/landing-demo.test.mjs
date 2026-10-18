@@ -7,7 +7,11 @@ for (const id of ['prompt','findings','safe-output','redacted','result-title','r
 let authCalls=0, scans=0, scanOutcome=null;
 const billingButtons=['monthly','yearly'].map(billing=>({dataset:{billing},handlers:{},attributes:{},addEventListener(event,fn){this.handlers[event]=fn;},setAttribute(key,value){this.attributes[key]=value;}}));
 const checkoutButtons=['personal','business'].map(plan=>({dataset:{plan,interval:'yearly'}}));
-const document={querySelector:s=>elements.get(s),querySelectorAll:s=>s==='[data-billing]'?billingButtons:s==='[data-plan]'?checkoutButtons:[],addEventListener(){}};
+const landingHtml=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+const trialNodes=Array.from(landingHtml.matchAll(/data-trial-copy="([^"]+)"[^>]*>([^<]*)</g),match=>({dataset:{trialCopy:match[1]},textContent:match[2]}));
+const trialFallback=trialNodes.map(node=>node.textContent);
+const documentEvents=new Map();
+const document={querySelector:s=>elements.get(s),querySelectorAll:s=>s==='[data-billing]'?billingButtons:s==='[data-plan]'?checkoutButtons:s==='[data-trial-copy]'?trialNodes:[],addEventListener:(event,handler)=>documentEvents.set(event,handler)};
 // scanOutcome is null while the demo path is under test: any scan there is a
 // bug. The anonymous-scan cases below set it to the result the server would
 // have produced.
@@ -85,3 +89,18 @@ await new Promise((resolve)=>setImmediate(resolve));
 assert.equal(scans,2);
 assert.equal(authCalls,1,'the dialog opens when the server says the quota is spent');
 console.log('Demo answers without scanning; an anonymous visitor gets a real scan, and the signup dialog waits for the server to say the quota is spent.');
+
+// Static copy must not promise a duration before the server confirms the offer.
+assert.equal(trialNodes.length,5);
+assert.doesNotMatch(trialFallback.join(' '),/\b[37][- ]day|\b[37] days/);
+assert.doesNotMatch(landingHtml,/7-day trial/);
+for(const days of [3,7]){
+  documentEvents.get('redaxa:account')({detail:{billing:{trialEnabled:true,trialDays:days,canStartTrial:true}}});
+  for(const node of trialNodes){
+    assert.ok(node.textContent.includes(String(days)),'each trial sentence uses the server duration');
+    assert.doesNotMatch(node.textContent,/\{days\}/);
+  }
+}
+documentEvents.get('redaxa:account')({detail:{billing:{trialEnabled:false,trialDays:3,canStartTrial:false}}});
+assert.deepEqual(trialNodes.map(node=>node.textContent),trialFallback,'disabled trials restore neutral copy, not a stale seven-day offer');
+console.log('Trial copy: neutral static/network-failure fallback, server-confirmed 3/7 days, and disabled state passed.');
