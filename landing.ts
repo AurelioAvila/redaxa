@@ -27,7 +27,10 @@ function mountLanding(): void {
   const renderTrialCopy = (): void => {
     document.querySelectorAll<HTMLElement>('[data-trial-copy]').forEach(el => {
       if (el.dataset.legacyCopy === undefined) el.dataset.legacyCopy = el.textContent ?? '';
-      el.textContent = trialOn() ? el.dataset.trialCopy ?? '' : el.dataset.legacyCopy;
+      const days = billing?.trialDays ?? prices?.trialDays;
+      el.textContent = trialOn() && days
+        ? (el.dataset.trialCopy ?? '').replaceAll('{days}', String(days))
+        : el.dataset.legacyCopy;
     });
     const fine = document.querySelector<HTMLElement>('#promo-fine');
     if (fine) fine.textContent = trialOn() ? TRIAL_UI.en.promoFine : PROMO_WORDS_EN.fine;
