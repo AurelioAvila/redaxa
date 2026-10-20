@@ -58,6 +58,7 @@ const db = {
   users: new Map<string, string>(),
   calls: [] as Array<{ method: string; url: string; body?: Row }>,
   locked: false,
+  trialTableMissing: false,
 };
 function resetDb(): void { db.accounts.clear(); db.claims = []; db.users.clear(); db.calls = []; }
 const json = (value: unknown, status = 200) => new Response(JSON.stringify(value), { status, headers: { "Content-Type": "application/json" } });
@@ -82,6 +83,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     db.accounts.set(id, row);
     return json(row);
   }
+  if (url.includes("/rpc/redaxa_trial_available") && db.trialTableMissing) return json({ message: "function not found" }, 404);
   if (url.includes("/rpc/redaxa_trial_available")) return json(!db.claims.some((c) => c.user_id === body?.p_user_id || c.email_hash === body?.p_email_hash));
   if (url.includes("/rpc/claim_redaxa_trial")) {
     const clash = db.claims.find((c) => c.subscription_id !== body?.p_subscription_id
@@ -186,6 +188,11 @@ resetDb();
   const now = await checkout(id, { plan: "personal", interval: "monthly", start_trial: false });
   assert.equal(now.params.subscription_data.trial_period_days, undefined, "Subscribe now never carries a trial");
   await checkout(id, { plan: "personal", interval: "monthly", start_trial: "yes" }, 400);
+  // If the trial table cannot be read, an old client still buys, just without the week.
+  db.trialTableMissing = true;
+  const unreadable = newUser("user-legacy-unreadable");
+  assert.equal((await checkout(unreadable, { plan: "personal", interval: "monthly" })).params.subscription_data.trial_period_days, undefined);
+  db.trialTableMissing = false;
 }
 
 // --- Switch on: the customer chooses, the server grants.

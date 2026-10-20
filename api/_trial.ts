@@ -129,7 +129,13 @@ export async function trialEligible(userId: string, email: string, account: Pick
  *  its seven-day trial: the same one-per-person rule, switch on or off. */
 export async function legacyTrialEligible(userId: string, email: string, account: Pick<BillingAccount, "has_used_trial" | "subscription_status"> | null): Promise<boolean> {
   if (account?.has_used_trial || isLive(account?.subscription_status)) return false;
-  return trialAvailable(userId, email);
+  // These clients never asked for the trial table: if it cannot be read, the
+  // purchase goes ahead without the free week rather than failing.
+  try {
+    return await trialAvailable(userId, email);
+  } catch {
+    return false;
+  }
 }
 
 /** Records the trial of `subscriptionId`: true when this subscription holds
