@@ -372,7 +372,7 @@ async function gate(composer, resend) {
   gatePending = true;
   const run = ++gateRun;
   const text = composerText(composer).trim();
-  const sendChecked = () => { if (sameCheckedPrompt(composer, text)) { closeModal(); resend(); } };
+  const sendChecked = () => { if (sameCheckedPrompt(composer, text)) { clearAttachments(); closeModal(); resend(); } };
   const closeButton = `<button type="button" class="ps-int-x" id="ps-int-close" aria-label="${escapeHtml(t("close"))}">×</button>`;
   // A clean local check takes milliseconds: the "Checking" notice only
   // appears when a check is slow, so ordinary sends do not flash a dialog.
@@ -385,12 +385,30 @@ async function gate(composer, resend) {
     const status = await currentStatus();
     // Switched off in the popup while this send waited for the status.
     if (!autoCheck) { resend(); return; }
-    // A signed-in account whose plan cannot be confirmed may carry team
-    // policies that block sending, so it waits rather than guessing.
-    if (status.unavailable) throw new Error(t("couldNotVerify"));
-    const account = status.signedIn === true && status.active === true;
-    // Longer than a check accepts: say so instead of holding the send forever.
-    result = text.length > 20_000 ? { tooLong: true, account } : await runScan(text, account);
+    // The account service is unreachable. A Business workspace member may
+    // have team rules that block sending, so only they wait; everyone else
+    // is checked on this device, as free use is.
+    if (status.unavailable && status.orgManaged) throw new Error(t("couldNotVerify"));
+    const account = status.signedIn === true && status.active === true && !status.unavailable;
+    let outage = status.signedIn === true && status.unavailable === true;
+    if (!text) {
+      // Only a flagged attachment holds this send.
+      result = { findings: [], redactedText: "", decision: null, engine: "local" };
+    } else if (text.length > 20_000) {
+      // Longer than a check accepts: say so instead of holding the send forever.
+      result = { tooLong: true, account: account || status.orgManaged === true };
+    } else {
+      try {
+        result = await runScan(text, account);
+      } catch (error) {
+        // The account check failed without an answer (network, timeout): the
+        // same fallback as an outage. A refusal (402, 401) or team rules stand.
+        if (!account || status.orgManaged || error.httpStatus) throw error;
+        result = await runScan(text, false);
+        outage = true;
+      }
+    }
+    if (outage) result.outage = true;
   } catch (error) {
     window.clearTimeout(loading);
     if (run !== gateRun) return;
@@ -423,8 +441,10 @@ async function gate(composer, resend) {
     return;
   }
 
-  if (!result.findings.length && result.decision?.action !== "block") {
+  if (Date.now() - attachmentsSince > ATTACHMENT_HOLD_MS) clearAttachments();
+  if (!result.findings.length && result.decision?.action !== "block" && !flaggedFiles.length) {
     sendChecked();
+    if (result.outage) psToast(t("checkedLocallyOutage"));
     return;
   }
 
@@ -434,17 +454,19 @@ async function gate(composer, resend) {
   // organization rules.)
   const blocked = result.decision?.action === "block";
   const found = result.findings.length;
-  const title = blocked ? t("blockedTitle") : found === 1 ? t("foundOne") : t("foundMany", [String(found)]);
+  const title = blocked ? t("blockedTitle") : found === 1 ? t("foundOne") : found ? t("foundMany", [String(found)]) : t("attachTitle");
   showModal(`
     <div class="ps-int-head"><span id="ps-int-title">${escapeHtml(title)}</span>${closeButton}</div>
     <div class="ps-int-body">
-      ${apiWarning(result.findings)}
+      ${found ? `${apiWarning(result.findings)}
       ${decisionReason(result)}
       ${findingList(result.findings)}
       ${redactedPreview(result)}
-      <p class="ps-explain">${escapeHtml(t("fixExplain"))}</p>
+      <p class="ps-explain">${escapeHtml(t("fixExplain"))}</p>` : ""}
+      ${attachmentSection(found > 0)}
+      ${result.outage ? `<p class="ps-where">${escapeHtml(t("checkedLocallyOutage"))}</p>` : ""}
       <div class="ps-actions">
-        <button type="button" class="ps-use-redacted" id="ps-int-fix">${escapeHtml(t("replaceRedacted"))}</button>
+        ${found ? `<button type="button" class="ps-use-redacted" id="ps-int-fix">${escapeHtml(t("replaceRedacted"))}</button>` : ""}
         ${blocked ? "" : `<button type="button" class="ps-int-secondary" id="ps-int-send-anyway">${escapeHtml(t("sendAnyway"))}</button>`}
       </div>
     </div>
@@ -456,8 +478,79 @@ async function gate(composer, resend) {
     psToast(t("replacedToast"));
   });
   modalEl.querySelector("#ps-int-send-anyway")?.addEventListener("click", sendChecked);
-  modalEl.querySelector("#ps-int-fix")?.focus?.();
+  (modalEl.querySelector("#ps-int-fix") ?? modalEl.querySelector("#ps-int-close"))?.focus?.();
 }
+
+// ---------------------------------------------------------------------------
+// Attachments. Uploads are never blocked or re-sent (a site may ignore a
+// replayed drop or file choice). Text files are read here and checked with
+// the same engine on this device; their contents go nowhere. A finding is
+// announced at once and holds the next send until the user confirms it.
+// ---------------------------------------------------------------------------
+const ATTACHMENT_MAX_BYTES = 1_000_000;
+const ATTACHMENT_HOLD_MS = 30 * 60_000;
+const textFileName = /(?:^|\.)(?:env(?:\.(?:local|development|production|staging|test|example|sample))?|txt|text|csv|tsv|json|jsonl|ya?ml|toml|ini|conf|cfg|config|properties|log|md|markdown|xml|html?|js|mjs|cjs|jsx|ts|tsx|py|rb|go|rs|java|kt|cs|php|swift|sh|bash|zsh|ps1|bat|cmd|sql|pem|key|crt|cer|p8|tf|tfvars|tfstate|npmrc|pypirc|netrc|gitconfig|htpasswd)$/i;
+const textFileBase = /^(?:id_rsa|id_ecdsa|id_ed25519|credentials|dockerfile|makefile)$/i;
+const textMime = /^(?:text\/|application\/(?:json|xml|x-yaml|yaml|toml|sql|javascript|x-sh|x-pem-file|x-x509-ca-cert)\b)/i;
+let flaggedFiles = [];
+let skippedFiles = [];
+let attachmentsSince = 0;
+
+function clearAttachments() {
+  flaggedFiles = [];
+  skippedFiles = [];
+}
+
+function inspectableFile(file) {
+  const name = String(file?.name ?? "");
+  return Number(file?.size) <= ATTACHMENT_MAX_BYTES
+    && (textMime.test(file?.type ?? "") || textFileName.test(name) || textFileBase.test(name));
+}
+
+// The engine takes 20,000 characters at a time; chunks overlap so a value
+// on a boundary is still seen whole.
+async function attachmentKinds(text) {
+  const kinds = new Set();
+  for (let start = 0; start < text.length; start += 19_600) {
+    const part = text.slice(start, start + 20_000);
+    if (!part.trim()) continue;
+    const result = await send({ type: "SCAN", text: part, requireAccount: false, options: { includePersonalData: true, includeCredentials: true, includeFinancialData: true } });
+    for (const finding of findingPriority(result.findings ?? [])) kinds.add(findingLabel(finding));
+  }
+  return [...kinds];
+}
+
+async function inspectAttachments(files) {
+  if (!files.length || !autoCheck || !globalThis.chrome?.runtime?.id) return;
+  const flagged = [];
+  for (const file of files) {
+    if (!inspectableFile(file)) { skippedFiles.push(file.name); continue; }
+    try {
+      const kinds = await attachmentKinds(await file.text());
+      if (kinds.length) flagged.push({ name: file.name, kinds });
+    } catch {
+      skippedFiles.push(file.name);
+    }
+  }
+  if (!flagged.length) return;
+  flaggedFiles.push(...flagged);
+  attachmentsSince = Date.now();
+  psToast(t("attachFoundToast", [flagged[0].name, flagged[0].kinds.join(", ")]));
+}
+
+function attachmentSection(afterText) {
+  if (!flaggedFiles.length) return "";
+  const rows = flaggedFiles.map(({ name, kinds }) => `<div class="ps-finding"><b>${escapeHtml(name)}</b> <span class="ps-times">${escapeHtml(kinds.join(", "))}</span></div>`).join("");
+  const skipped = skippedFiles.length ? `<p class="ps-where">${escapeHtml(t("attachSkipped", [skippedFiles.join(", ")]))}</p>` : "";
+  return `${afterText ? `<p class="ps-count">${escapeHtml(t("attachTitle"))}</p>` : ""}${rows}<p class="ps-explain">${escapeHtml(t("attachExplain"))}</p>${skipped}`;
+}
+
+const filesOf = (list) => [...(list ?? [])].filter((file) => file && typeof file.name === "string");
+document.addEventListener("drop", (event) => { void inspectAttachments(filesOf(event.dataTransfer?.files)); }, true);
+document.addEventListener("paste", (event) => { void inspectAttachments(filesOf(event.clipboardData?.files)); }, true);
+document.addEventListener("change", (event) => {
+  if (event.target?.type === "file") void inspectAttachments(filesOf(event.target.files));
+}, true);
 
 // After the extension updates, scripts already running in open tabs lose
 // their link to it for good. They can no longer check anything, so they step
@@ -475,14 +568,65 @@ function withinComposer(node, composer) {
   return Boolean(composer) && (node === composer || composer.contains(node));
 }
 
+// Editing an earlier message happens in a second text box on conversation
+// pages. Settings, project and dialog text areas keep Enter as a new line.
+const editableSelector = "textarea, [contenteditable='true'], [contenteditable='plaintext-only']";
+const conversationPath = /^\/(?:c|g\/[^/]+\/c|chat|app|u\/\d+\/app|search)\//;
+function inConversation(el) {
+  return conversationPath.test(globalThis.location?.pathname ?? "")
+    && !el.closest?.("[role='dialog'], [aria-modal='true'], nav, aside, header, footer, #redaxa-panel, #redaxa-intercept");
+}
+
+// Enter is only intercepted in the main composer. In an edit box (and in
+// editors such as ChatGPT's canvas) Enter may be a new line, and a re-sent
+// synthetic Enter inserts nothing, so intercepting it would eat the line
+// break. Edited messages are checked when their Save/Send button is clicked.
+function composerForKey(target) {
+  const main = findComposer();
+  return withinComposer(target, main) ? main : null;
+}
+
+// The text box a send button belongs to, found from the button itself. The
+// main composer wins when it is in reach: ChatGPT keeps a hidden fallback
+// textarea in the same form, and an empty hidden box must never stand in.
+const visible = (el) => Boolean(el?.offsetHeight || el?.getClientRects?.().length);
+function firstVisibleEditable(node) {
+  return [...(node.querySelectorAll?.(editableSelector) ?? [])].find(visible) ?? null;
+}
+function composerNear(button) {
+  const main = findComposer();
+  let node = button?.parentElement;
+  for (let depth = 0; node && depth < 6; depth++, node = node.parentElement) {
+    if (main && node.contains?.(main)) return main;
+    const editable = firstVisibleEditable(node);
+    if (editable) return editable;
+  }
+  return main;
+}
+
+// An edit box's own submit is the last button beside it (Save, Send or
+// Update after Cancel), whatever its translated label.
+function editBoxForButton(button) {
+  const main = findComposer();
+  let node = button?.parentElement;
+  for (let depth = 0; node && depth < 4; depth++, node = node.parentElement) {
+    const editable = firstVisibleEditable(node);
+    if (!editable) continue;
+    if (withinComposer(editable, main) || !inConversation(editable)) return null;
+    const buttons = [...node.querySelectorAll("button")].filter((b) => !b.disabled && !editable.contains(b));
+    return buttons.at(-1) === button ? editable : null;
+  }
+  return null;
+}
+
 document.addEventListener("keydown", (event) => {
   if (bypassArm) { bypassArm = false; return; }
   if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
   if (!autoCheck) return;
-  const composer = findComposer();
-  if (!withinComposer(event.target, composer)) return;
+  const composer = composerForKey(event.target);
+  if (!composer) return;
   const text = composerText(composer).trim();
-  if (!text || orphaned()) return;
+  if ((!text && !flaggedFiles.length) || orphaned()) return;
   event.preventDefault();
   event.stopImmediatePropagation();
   const keys = { ctrlKey: event.ctrlKey, metaKey: event.metaKey, altKey: event.altKey };
@@ -493,10 +637,11 @@ document.addEventListener("click", (event) => {
   if (bypassArm) { bypassArm = false; return; }
   if (!autoCheck) return;
   const button = event.target.closest?.("button");
-  if (!button || !isSendButton(button)) return;
-  const composer = findComposer();
+  if (!button) return;
+  const composer = isSendButton(button) ? composerNear(button) : editBoxForButton(button);
+  if (!composer) return;
   const text = composerText(composer).trim();
-  if (!text || orphaned()) return;
+  if ((!text && !flaggedFiles.length) || orphaned()) return;
   event.preventDefault();
   event.stopImmediatePropagation();
   gate(composer, () => resendVia("click", button));

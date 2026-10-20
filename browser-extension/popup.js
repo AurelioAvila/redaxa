@@ -58,6 +58,13 @@ async function render() {
     $("open-dashboard").textContent = t(currentStatus.paused ? "updatePayment" : "openWorkspace");
   }
   if (currentStatus.unavailable) msg.textContent = t("accountUnavailable");
+  // Kept on by an enterprise policy or a Business workspace: shown, not offered.
+  const locked = currentStatus.autoCheckLocked === true;
+  const lockedSwitch = $("auto-check");
+  lockedSwitch.disabled = locked;
+  if (locked) lockedSwitch.checked = true;
+  $("auto-check-locked").hidden = !locked;
+  $("auto-check-locked").textContent = locked ? t(currentStatus.lockedBy === "policy" ? "autoCheckLockedAdmin" : "autoCheckLockedTeam") : "";
 }
 formBox.addEventListener("submit", async (event) => {
   event.preventDefault(); msg.textContent = "";
@@ -176,7 +183,7 @@ const autoCheck = $("auto-check");
 const autoStep = () => { if (welcome) $("step-enable").classList.toggle("done", autoCheck.checked); };
 if (installed && chrome.storage?.local) {
   chrome.storage.local.get(["redaxa_auto_check", HELPFUL_KEY, REVIEW_KEY]).then(stored => {
-    autoCheck.checked = stored?.redaxa_auto_check !== false;
+    autoCheck.checked = autoCheck.disabled || stored?.redaxa_auto_check !== false;
     autoStep();
     // Shown once, after three checks on AI sites that found something. No reward, no pressure.
     const ask = Number(stored?.[HELPFUL_KEY]) >= 3 && stored?.[REVIEW_KEY] !== "done";

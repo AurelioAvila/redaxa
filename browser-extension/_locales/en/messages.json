@@ -154,5 +154,12 @@
   "planTrialBusiness": {"message": "Business trial · ends $DATE$", "placeholders": {"date": {"content": "$1", "example": "17 October"}}},
   "statusPaused": {"message": "Payment failed"},
   "planPaused": {"message": "Plan paused until a payment goes through."},
-  "updatePayment": {"message": "Update payment method"}
+  "updatePayment": {"message": "Update payment method"},
+  "attachFoundToast": {"message": "$FILE$ may contain: $KINDS$. Redaxa will ask before you send.", "placeholders": {"file": {"content": "$1", "example": "report.csv"}, "kinds": {"content": "$2", "example": "Email address"}}},
+  "attachTitle": {"message": "An attached file may contain sensitive data"},
+  "attachExplain": {"message": "Checked on this device; the file was not sent anywhere. Remove it from the message if it should not be shared."},
+  "attachSkipped": {"message": "Not inspected: $FILES$. Only text files up to 1 MB are checked; PDFs, images and Office documents are not.", "placeholders": {"files": {"content": "$1", "example": "scan.pdf"}}},
+  "autoCheckLockedTeam": {"message": "Kept on by your Business workspace while you are signed in."},
+  "autoCheckLockedAdmin": {"message": "Kept on by your organization's browser policy."},
+  "checkedLocallyOutage": {"message": "Your account could not be reached, so this message was checked on this device. Protected terms and team rules were not applied."}
 }

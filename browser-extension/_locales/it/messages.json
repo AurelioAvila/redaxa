@@ -154,5 +154,12 @@
   "planTrialBusiness": {"message": "Prova di Business · finisce il $DATE$", "placeholders": {"date": {"content": "$1", "example": "17 October"}}},
   "statusPaused": {"message": "Pagamento non riuscito"},
   "planPaused": {"message": "Piano sospeso finché un pagamento non va a buon fine."},
-  "updatePayment": {"message": "Aggiorna il metodo di pagamento"}
+  "updatePayment": {"message": "Aggiorna il metodo di pagamento"},
+  "attachFoundToast": {"message": "$FILE$ potrebbe contenere: $KINDS$. Redaxa chiederà conferma prima dell'invio.", "placeholders": {"file": {"content": "$1", "example": "report.csv"}, "kinds": {"content": "$2", "example": "Email address"}}},
+  "attachTitle": {"message": "Un file allegato potrebbe contenere dati sensibili"},
+  "attachExplain": {"message": "Controllato su questo dispositivo: il file non è stato inviato da nessuna parte. Rimuovilo dal messaggio se non deve essere condiviso."},
+  "attachSkipped": {"message": "Non controllati: $FILES$. Vengono controllati solo file di testo fino a 1 MB; PDF, immagini e documenti Office no.", "placeholders": {"files": {"content": "$1", "example": "scan.pdf"}}},
+  "autoCheckLockedTeam": {"message": "Mantenuto attivo dal tuo workspace Business finché hai effettuato l'accesso."},
+  "autoCheckLockedAdmin": {"message": "Mantenuto attivo dai criteri del browser della tua organizzazione."},
+  "checkedLocallyOutage": {"message": "Non è stato possibile raggiungere il tuo account, quindi il messaggio è stato controllato su questo dispositivo. Termini protetti e regole del team non sono stati applicati."}
 }

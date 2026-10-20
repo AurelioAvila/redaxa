@@ -14,6 +14,28 @@ const t = (key) => chrome.i18n.getMessage(key);
 const SESSION_KEY = "redaxa_session";
 const HELPFUL_KEY = "redaxa_helpful_checks";
 const AUTO_CHECK_KEY = "redaxa_auto_check";
+// Whether the last confirmed account was a member of a Business workspace:
+// read when the account service is down, so an outage holds sends only for
+// people whose team rules might block them. A boolean, nothing else.
+const ORG_MANAGED_KEY = "redaxa_org_managed";
+
+// Enterprise policy (managed_schema.json): an administrator who deploys the
+// extension can keep automatic checks on, signed in or not. Without a managed
+// deployment nothing stops a person from signing out or removing the extension.
+async function forcedByPolicy() {
+  try { return (await chrome.storage.managed?.get?.("forceAutoCheck"))?.forceAutoCheck === true; } catch { return false; }
+}
+
+// Business members are checked under their workspace's rules, so the switch
+// stays on for them; the owner who sets those rules keeps the choice.
+function orgManaged(account) {
+  return account?.active === true && account?.teamRole === "member";
+}
+
+async function lastOrgManaged() {
+  const stored = await chrome.storage.local.get(ORG_MANAGED_KEY).catch(() => ({}));
+  return stored?.[ORG_MANAGED_KEY] === true;
+}
 
 // Content scripts share a process with the AI site they run on, so they do not
 // get storage access: a compromised page renderer could otherwise read the
@@ -39,6 +61,7 @@ async function saveSession(session) {
 
 async function clearSession() {
   await chrome.storage.local.remove(SESSION_KEY);
+  await chrome.storage.local.remove(ORG_MANAGED_KEY);
 }
 
 // `force` skips the local expiry check: the API refused a token this computer's
@@ -144,22 +167,35 @@ async function handleMessage(message, sender) {
     }
     case "STATUS": {
       // The automatic-check switch travels with the status; pages get no email.
-      const autoCheck = (await chrome.storage.local.get(AUTO_CHECK_KEY))?.[AUTO_CHECK_KEY] !== false;
+      // It is locked on by an enterprise policy or, while signed in, by a
+      // Business workspace (the popup shows which).
+      const chosen = (await chrome.storage.local.get(AUTO_CHECK_KEY))?.[AUTO_CHECK_KEY] !== false;
+      const forced = await forcedByPolicy();
+      const switchState = (managed) => ({
+        autoCheck: chosen || forced || managed,
+        autoCheckLocked: forced || managed,
+        lockedBy: forced ? "policy" : managed ? "team" : null
+      });
       const session = await readSession();
       const email = () => fromPopup ? { email: session.email } : {};
-      if (!session) return { signedIn: false, autoCheck };
+      if (!session) return { signedIn: false, ...switchState(false) };
       try {
         const token = await accessToken();
-        if (!token) return { signedIn: false, autoCheck };
+        if (!token) return { signedIn: false, ...switchState(false) };
         const account = await apiRequest("/api/account", undefined, "GET");
+        const managed = orgManaged(account);
+        await chrome.storage.local.set({ [ORG_MANAGED_KEY]: managed }).catch(() => undefined);
         // The trial and a paused plan, for the popup; only fields the account service sends.
         const billing = account.billing && typeof account.billing === "object" ? account.billing : null;
         return { signedIn: true, ...email(), active: account.active === true, plan: account.plan,
-          repositoryAccess: repositoryEntitlement(account), autoCheck,
+          repositoryAccess: repositoryEntitlement(account), orgManaged: managed, ...switchState(managed),
           trialEndsAt: account.status === "trialing" && typeof account.currentPeriodEnd === "string" ? account.currentPeriodEnd : null,
           paused: billing?.state === "blocked" && billing?.blockedReason === "payment_failed" };
       } catch {
-        return { signedIn: true, ...email(), active: false, repositoryAccess: false, unavailable: true, autoCheck };
+        // Unreachable: only a confirmed workspace member waits; everyone else
+        // falls back to the check on this device.
+        const managed = await lastOrgManaged();
+        return { signedIn: true, ...email(), active: false, repositoryAccess: false, unavailable: true, orgManaged: managed, ...switchState(managed) };
       }
     }
     case "SCAN": {
@@ -214,7 +250,8 @@ chrome.runtime.onInstalled.addListener(({ reason }) => {
 // without the content script simply do not answer.
 chrome.storage.onChanged?.addListener((changes, area) => {
   const signedInOrOut = SESSION_KEY in changes && !changes[SESSION_KEY].oldValue !== !changes[SESSION_KEY].newValue;
-  if (area !== "local" || !(AUTO_CHECK_KEY in changes || signedInOrOut)) return;
+  const policyChanged = area === "managed" && "forceAutoCheck" in changes;
+  if (!policyChanged && (area !== "local" || !(AUTO_CHECK_KEY in changes || signedInOrOut || ORG_MANAGED_KEY in changes))) return;
   chrome.tabs.query({}).then(tabs => {
     for (const tab of tabs) chrome.tabs.sendMessage(tab.id, { type: "SETTINGS_CHANGED" }).catch(() => undefined);
   }).catch(() => undefined);

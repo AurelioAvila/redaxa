@@ -41,17 +41,56 @@ await drain();
 assert.equal(scans, 1, 'Repeated actions do not duplicate the pending scan');
 const automatic = callbacks.shift();
 assert.equal(automatic.message.requireAccount, true, 'Automatic check cannot fall back to a guest scan');
+// The account check fails without an answer (network, timeout): a plan outside a
+// Business workspace is checked on this device instead, and says so.
 automatic.callback({ ok: false, error: 'Synthetic scan outage' });
 await drain();
-assert.ok(!modal.innerHTML.includes('ps-int-send-anyway'), 'Unknown policy cannot offer an unchecked bypass');
+const fallback = callbacks.shift();
+assert.equal(fallback.message.type, 'SCAN');
+assert.equal(fallback.message.requireAccount, false, 'An account-check outage falls back to the check on this device');
+fallback.callback({ ok: true, result: { findings: [], redactedText: composer.value, decision: { action: 'allow' }, engine: 'local' } });
+await drain();
+assert.equal(vm.runInContext('bypassArm', context), true, 'A clean fallback check sends');
+assert.equal(modal.textContent, getMessage('checkedLocallyOutage'), 'and says protected terms and team rules were not applied');
+vm.runInContext('bypassArm = false', context);
+// A refusal is an answer: it stands.
+assert.equal(event('keydown'), true);
+await drain();
+callbacks.shift().callback({ ok: false, error: 'TRIAL_REQUIRED', httpStatus: 402 });
+await drain();
+assert.ok(!modal.innerHTML.includes('ps-int-send-anyway'), 'A plan refusal cannot offer an unchecked bypass');
 assert.match(modal.innerHTML, /not been sent/i);
-const refresh = vm.runInContext('refreshStatus()', context);
-callbacks.shift().callback({ ok: true, result: { signedIn: true, active: false, unavailable: true } });
+assert.equal(scans, 3);
+// A Business workspace member may have team rules that block: an outage holds the send.
+let refresh = vm.runInContext('refreshStatus()', context);
+callbacks.shift().callback({ ok: true, result: { signedIn: true, active: true, orgManaged: true } });
+await refresh;
+assert.equal(event('keydown'), true);
+await drain();
+callbacks.shift().callback({ ok: false, error: 'Synthetic scan outage' });
+await drain();
+assert.equal(callbacks.length, 0, 'No local fallback for a workspace member');
+assert.ok(!modal.innerHTML.includes('ps-int-send-anyway'), 'Unknown team policy cannot offer an unchecked bypass');
+refresh = vm.runInContext('refreshStatus()', context);
+callbacks.shift().callback({ ok: true, result: { signedIn: true, active: false, unavailable: true, orgManaged: true } });
 await refresh;
 assert.equal(event('click'), true, 'Account outage cannot silently disable protection');
 await drain();
-assert.equal(scans, 1, 'Account outage cannot grant paid scanning');
+assert.equal(scans, 4, 'Account outage cannot grant paid scanning');
 assert.ok(!modal.innerHTML.includes('ps-int-send-anyway'));
+assert.match(modal.innerHTML, /could not verify/i);
+// Outside a workspace, an unreachable account is checked on this device.
+refresh = vm.runInContext('refreshStatus()', context);
+callbacks.shift().callback({ ok: true, result: { signedIn: true, active: false, unavailable: true } });
+await refresh;
+assert.equal(event('keydown'), true);
+await drain();
+const outageScan = callbacks.shift();
+assert.equal(outageScan.message.requireAccount, false, 'An account outage outside a workspace never blocks every send');
+outageScan.callback({ ok: true, result: { findings: [], redactedText: composer.value, decision: { action: 'allow' }, engine: 'local' } });
+await drain();
+assert.equal(vm.runInContext('bypassArm', context), true);
+vm.runInContext('bypassArm = false', context);
 // Visitors and accounts without a plan are checked too, on their device.
 for (const status of [{ signedIn: false }, { signedIn: true, active: false }]) {
   const next = vm.runInContext('refreshStatus()', context);
@@ -68,7 +107,7 @@ for (const status of [{ signedIn: false }, { signedIn: true, active: false }]) {
   assert.equal(vm.runInContext('bypassArm', context), true, 'A clean check sends the prompt');
   vm.runInContext('bypassArm = false', context);
 }
-assert.equal(scans, 3);
+assert.equal(scans, 7);
 vm.runInContext('autoCheck = false', context);
 assert.equal(event('keydown'), false, 'Switching automatic checks off restores ordinary send');
 assert.equal(event('click'), false);
@@ -123,4 +162,82 @@ assert.equal(clickOn({ disabled: false, click() {}, matches: () => false }), fal
 assert.equal(clickOn(submit('Interrompi generazione')), false, 'Stopping a reply is not a send');
 assert.equal(clickOn(submit('Invia messaggio', { matches: () => { throw new SyntaxError('unsupported'); } })), false, 'An unparseable selector never throws');
 assert.equal(clickOn(submit('Invia messaggio')), true, 'A send button with a translated label is still checked');
-console.log('Interception: initial status, duplicate actions, account/scan outages, free local checks, the off switch (pushed to open tabs), Ctrl+Enter, the update notice and translated send buttons passed.');
+// Editing an earlier message: its own box is checked on conversation pages
+// by the last button beside it (Save/Send/Update after Cancel). Enter there
+// is left alone: it may be a new line, which a re-sent Enter would not insert.
+{
+  // Settle the check the translated send button started.
+  await drain();
+  callbacks.shift().callback({ ok: true, result: { findings: [], redactedText: composer.value, decision: { action: 'allow' }, engine: 'local' } });
+  await drain();
+  vm.runInContext('bypassArm = false', context);
+  const fresh = vm.runInContext('refreshStatus()', context);
+  callbacks.shift().callback({ ok: true, result: { signedIn: false, autoCheck: true } });
+  await fresh;
+  const editable = "textarea, [contenteditable='true'], [contenteditable='plaintext-only']";
+  let inDialog = false;
+  const editBox = { value: 'Edited: deploy key ghp_SYNTHETIC', offsetHeight: 40, focus() {}, dispatchEvent(e) { dispatched.push({ ...e, on: 'edit' }); },
+    contains: node => node === editBox, closest: selector => selector === editable ? editBox : inDialog ? {} : null };
+  const press = () => { let stopped = false; listeners.get('keydown')({ key: 'Enter', target: editBox, preventDefault() { stopped = true; }, stopImmediatePropagation() {} }); return stopped; };
+  context.location = { pathname: '/settings' };
+  assert.equal(press(), false, 'Text areas outside conversations keep Enter as a new line');
+  context.location = { pathname: '/c/abc' };
+  inDialog = true;
+  assert.equal(press(), false, 'Dialog text areas (custom instructions) are left alone');
+  inDialog = false;
+  assert.equal(press(), false, 'Enter in an edit box keeps its own meaning (it may be a new line)');
+  const cancel = { disabled: false, click() {}, matches: () => false };
+  const save = { disabled: false, click() {}, matches: () => false };
+  const container = { parentElement: null, contains: node => node === editBox,
+    querySelectorAll: selector => selector === 'button' ? [cancel, save] : [editBox] };
+  cancel.parentElement = save.parentElement = container;
+  assert.equal(clickOn(cancel), false, 'Cancel next to an edit box is not a send');
+  assert.equal(clickOn(save), true, 'Save after Cancel sends the edited message, whatever its label');
+  await drain();
+  const saveScan = callbacks.shift();
+  assert.equal(saveScan.message.text, editBox.value);
+  saveScan.callback({ ok: true, result: { findings: [], redactedText: editBox.value, decision: { action: 'allow' }, engine: 'local' } });
+  await drain();
+  vm.runInContext('bypassArm = false', context);
+  context.location = undefined;
+}
+
+// Attachments: text files are checked on this device when dropped, pasted or
+// chosen; uploads are never blocked, but a finding holds the next send.
+{
+  const file = (name, text, extra = {}) => ({ name, size: text.length, type: '', text: async () => text, ...extra });
+  const finding = { kind: 'credential', category: 'credentials', severity: 'critical', label: 'Secret in a configuration value' };
+  listeners.get('drop')({ dataTransfer: { files: [file('.env', 'DB_PASSWORD=Sup3rSecretValue'), file('scan.pdf', '%PDF', { type: 'application/pdf' }), file('big.log', 'x', { size: 2_000_000 })] } });
+  await drain();
+  const fileScan = callbacks.shift();
+  assert.equal(fileScan.message.requireAccount, false, 'Attachments are checked on this device only');
+  assert.equal(fileScan.message.text, 'DB_PASSWORD=Sup3rSecretValue');
+  assert.equal(callbacks.length, 0, 'Binary and oversized files are not read');
+  fileScan.callback({ ok: true, result: { findings: [finding], redactedText: '', decision: null, engine: 'local' } });
+  await drain();
+  assert.equal(modal.textContent, getMessage('attachFoundToast', ['.env', getMessage('kind_credential')]));
+  const prompt = composer.value;
+  composer.value = '';
+  assert.equal(event('keydown'), true, 'A flagged attachment holds a send with no text');
+  await drain();
+  assert.match(modal.innerHTML, /\.env/);
+  assert.ok(modal.innerHTML.includes(getMessage('attachTitle')));
+  assert.ok(modal.innerHTML.includes('scan.pdf') && modal.innerHTML.includes('big.log'), 'Files that were not inspected are named');
+  assert.ok(modal.innerHTML.includes('ps-int-send-anyway'));
+  controls.get('#ps-int-send-anyway')();
+  assert.equal(vm.runInContext('bypassArm', context), true, 'Send anyway sends');
+  vm.runInContext('bypassArm = false', context);
+  assert.equal(event('keydown'), false, 'Confirmed once: nothing left to hold');
+  listeners.get('change')({ target: { type: 'file', files: [file('notes.txt', 'hello')] } });
+  await drain();
+  callbacks.shift().callback({ ok: true, result: { findings: [], redactedText: 'hello', decision: null, engine: 'local' } });
+  await drain();
+  assert.equal(event('keydown'), false, 'A clean attachment holds nothing');
+  vm.runInContext('autoCheck = false', context);
+  listeners.get('paste')({ clipboardData: { files: [file('.env', 'TOKEN=abcdefgh12345')] } });
+  await drain();
+  assert.equal(callbacks.length, 0, 'Automatic checks off: attachments are not read');
+  vm.runInContext('autoCheck = true', context);
+  composer.value = prompt;
+}
+console.log('Interception: initial status, duplicate actions, account/scan outages, free local checks, the off switch (pushed to open tabs), Ctrl+Enter, the update notice, translated send buttons, edit boxes and attachments passed.');
