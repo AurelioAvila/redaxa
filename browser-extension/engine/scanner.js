@@ -181,13 +181,15 @@ const rules = [
         kind: "secret", category: "credentials", severity: "critical", label: "AWS secret access key", replacement: "[SECRET]",
         validate: awsSecretValid,
         // aws_secret_access_key, AWS_SECRET_KEY, SecretAccessKey (CLI and STS JSON), secretAccessKey (SDK config).
-        pattern: /(?<=\b(?:aws_?)?secret_?access_?key["']?[ \t]*[:=][ \t]*["']?|\baws_?secret_?key["']?[ \t]*[:=][ \t]*["']?)[A-Za-z0-9/+]{40}(?![A-Za-z0-9/+=])/gi
+        pattern: /(?<=\b(?:aws_?)?secret_?access_?key["']?[ \t]{0,32}[:=][ \t]{0,32}["']?|\baws_?secret_?key["']?[ \t]{0,32}[:=][ \t]{0,32}["']?)[A-Za-z0-9/+]{40}(?![A-Za-z0-9/+=])/gi
     },
+    // Lookbehinds here are bounded: an unbounded [ \t]* re-scans a whole run of
+    // spaces at every position, which made long whitespace quadratic (ReDoS).
     // Secrets assigned by name in .env files and config: DB_PASSWORD=..., JWT_SECRET: ...,
     // "apiKey": "...". Known key formats above keep their service; this catches the rest.
     {
         kind: "credential", category: "credentials", severity: "critical", label: "Secret in a configuration value", replacement: "[REDACTED]",
-        pattern: /(?<=\b[A-Za-z0-9_.-]*(?:secret|token|passw(?:or)?d|pwd|[_-]pass|api[_-]?key|secret[_-]?key|access[_-]?key|private[_-]?key|auth[_-]?key)["']?[ \t]*[:=][ \t]*["']?)[^\s"'`,;&]{8,}/gi,
+        pattern: /(?<=\b[A-Za-z0-9_.-]{0,64}(?:secret|token|passw(?:or)?d|pwd|[_-]pass|api[_-]?key|secret[_-]?key|access[_-]?key|private[_-]?key|auth[_-]?key)["']?[ \t]{0,32}[:=][ \t]{0,32}["']?)[^\s"'`,;&]{8,}/gi,
         validate: configSecretValid
     },
     { kind: "privateKey", category: "credentials", severity: "critical", label: "Private key", replacement: "[PRIVATE KEY]", pattern: /-----(BEGIN|END) ([A-Z ]{0,64}PRIVATE KEY)-----/g },
