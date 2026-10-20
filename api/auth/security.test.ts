@@ -22,8 +22,10 @@ async function invoke(handler: typeof signin, method: string, headers: Headers =
 }
 const originalFetch = globalThis.fetch;
 let calls = 0;
+let sharedLimited = false;
 try {
-  globalThis.fetch = async () => {
+  globalThis.fetch = async (url) => {
+    if (String(url).endsWith('/rest/v1/rpc/rate_limit_hit')) return Response.json(sharedLimited);
     calls++;
     return Response.json({access_token:'fixture-access',refresh_token:'fixture-refresh',user:{email:'fixture@example.test'}});
   };
@@ -50,5 +52,9 @@ try {
     assert.equal(result.written.has('Set-Cookie'),true);
   }
   assert.equal(calls,4);
+  // Counted across every instance: the shared counter refuses before Supabase is asked.
+  sharedLimited = true;
+  assert.equal((await invoke(signin,'POST',{'content-type':'application/json'},{email:'other@example.test',password:'fixture-password'})).status,429);
+  assert.equal(calls,4,'a limited sign-in never reaches the credential exchange');
 } finally { globalThis.fetch=originalFetch; }
 console.log('Retired callback and JSON/origin sign-in boundaries passed without live requests.');

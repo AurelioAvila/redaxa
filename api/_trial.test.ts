@@ -164,19 +164,21 @@ function newUser(id: string, email = `${id}@example.test`, accountRow?: Row) {
   return id;
 }
 
-// --- Switch off: exactly what ran before. Old clients send no start_trial and
-// keep the seven-day trial they advertise; nothing touches the trial tables.
+// --- Switch off: no choice is offered. Old clients send no start_trial and
+// keep the seven-day trial they advertise, still one per person: unpoliced, a
+// new address and the same card bought another week every time.
 resetDb();
 {
   const id = newUser("user-legacy");
   const { res, params } = await checkout(id, { plan: "personal", interval: "monthly" });
   assert.equal(params.subscription_data.trial_period_days, 7);
-  assert.deepEqual(Object.keys(params.subscription_data).sort(), ["metadata", "trial_period_days"]);
-  assert.equal(params.subscription_data.metadata.trial, undefined);
-  assert.equal(params.payment_method_collection, undefined);
+  assert.equal(params.subscription_data.metadata.trial, "7d", "the webhook claims it like any policed trial");
+  assert.equal(params.payment_method_collection, "always");
   assert.equal(params.metadata.lang, undefined);
   assert.equal(res.body.trial, true);
-  assert.equal(db.calls.some((c) => c.url.includes("redaxa_trial")), false, "switch off: no trial table is read");
+  db.claims.push({ subscription_id: "sub_legacy", user_id: id, email_hash: await trial.emailHash("user-legacy@example.test"), card_fingerprint: "fp_legacy", trial_end: null, reminded_for: null });
+  const again = newUser("user-legacy-again", "user-legacy+2@example.test");
+  assert.equal((await checkout(again, { plan: "personal", interval: "monthly" })).params.subscription_data.trial_period_days, undefined, "switch off: the same mailbox gets no second week");
   newUser("user-subscribed-before", undefined, { has_used_trial: true });
   assert.equal((await checkout("user-subscribed-before", { plan: "personal", interval: "yearly" })).params.subscription_data.trial_period_days, undefined);
   const refused = await checkout(id, { plan: "personal", interval: "monthly", start_trial: true }, 409);

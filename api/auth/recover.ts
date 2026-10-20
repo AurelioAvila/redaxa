@@ -1,5 +1,5 @@
-import { authRedirectUrl, corsHeaders, supabaseAuthUser } from "../_billing.js";
-import { clientIp, rateLimited } from "../_rateLimit.js";
+import { authRedirectUrl, corsHeaders, supabaseAuthUser, supabaseService } from "../_billing.js";
+import { clientIp, keyedHash, rateLimitedEverywhere } from "../_rateLimit.js";
 import { sendPasswordChangedEmail } from "../_email.js";
 
 type RequestLike = { method?: string; body?: unknown; headers?: Record<string, string | string[] | undefined> };
@@ -22,52 +22,49 @@ const minPasswordLength = 12;
  * sits at Vercel's cap of twelve functions, and this is the other half of the
  * same flow.
  *
- * The update is made with the caller's own recovery token, never the service
- * role. Supabase then decides whether that token is valid and of the right
- * kind, which is a check we would otherwise be reimplementing — and getting
- * wrong here would mean anyone could set anyone's password.
+ * The update is made with the session that verifying the one-time recovery
+ * hash returns, never the service role. Only that hash is accepted: an access
+ * token sent directly could be any session's (Supabase lets any session change
+ * its password), and would turn a stolen one-hour token into a permanent
+ * takeover with every other session signed out.
  *
  * Routing the change through here rather than letting the browser call
  * Supabase directly is what makes the notice trustworthy: it is sent only
  * after a change that actually happened.
  */
 async function finishReset(request: RequestLike, response: ResponseLike): Promise<void> {
-  const body = (request.body ?? {}) as { access_token?: unknown; token_hash?: unknown; password?: unknown };
-  const legacyToken = typeof body.access_token === "string" ? body.access_token : "";
+  const body = (request.body ?? {}) as { token_hash?: unknown; password?: unknown };
   const tokenHash = typeof body.token_hash === "string" && /^[A-Za-z0-9_-]{20,128}$/.test(body.token_hash) ? body.token_hash : "";
   const password = typeof body.password === "string" ? body.password : "";
 
-  if (!legacyToken && !tokenHash) { response.status(400).json({ error: "This link is no longer valid. Request a new one." }); return; }
+  if (!tokenHash) { response.status(400).json({ error: "This link is no longer valid. Request a new one." }); return; }
   // Checked before the one-time link is spent, so a rejected password does not cost the link.
   if (password.length < minPasswordLength) {
     response.status(400).json({ error: `Use a password with at least ${minPasswordLength} characters.` });
     return;
   }
-  if (rateLimited(`reset:ip:${clientIp(request.headers)}`, 10, 15 * 60_000)) {
+  if (await rateLimitedEverywhere(supabaseService, `reset:ip:${clientIp(request.headers)}`, 10, 15 * 60_000)) {
     response.status(429).json({ error: "Too many attempts. Please wait a few minutes." });
     return;
   }
 
   const url = required("SUPABASE_URL").replace(/\/$/, "");
   const publishable = required("SUPABASE_PUBLISHABLE_KEY");
-  // Current links carry a one-time hash that only becomes a session here, after
-  // the reader typed a new password: a mail scanner fetching the link spends
-  // nothing. Older links (sent before this change) still arrive as a token.
-  let accessToken = legacyToken;
-  if (tokenHash) {
-    const verified = await fetch(`${url}/auth/v1/verify`, {
-      method: "POST",
-      headers: { apikey: publishable, "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "recovery", token_hash: tokenHash }),
-      signal: AbortSignal.timeout(15_000),
-    });
-    const session = await verified.json().catch(() => ({})) as { access_token?: string };
-    if (!verified.ok || !session.access_token) {
-      response.status(400).json({ error: "This reset link has expired or was already used. Request a new one." });
-      return;
-    }
-    accessToken = session.access_token;
+  // Links carry a one-time hash that only becomes a session here, after the
+  // reader typed a new password: a mail scanner fetching the link spends
+  // nothing. (Token links from before 14 October 2026 expired within the hour.)
+  const verified = await fetch(`${url}/auth/v1/verify`, {
+    method: "POST",
+    headers: { apikey: publishable, "Content-Type": "application/json" },
+    body: JSON.stringify({ type: "recovery", token_hash: tokenHash }),
+    signal: AbortSignal.timeout(15_000),
+  });
+  const session = await verified.json().catch(() => ({})) as { access_token?: string };
+  if (!verified.ok || !session.access_token) {
+    response.status(400).json({ error: "This reset link has expired or was already used. Request a new one." });
+    return;
   }
+  const accessToken = session.access_token;
 
   // Resolved before the update so the notice has an address even though the
   // update's own response also carries one — and so an invalid token is
@@ -130,7 +127,7 @@ export default async function handler(request: RequestLike, response: ResponseLi
     const email = typeof body.email === "string" ? body.email.trim() : "";
     if (!email) { response.status(400).json({ error: "Enter your email address." }); return; }
     const ip = clientIp(request.headers);
-    if (rateLimited(`recover:ip:${ip}`, 10, 15 * 60_000) || rateLimited(`recover:email:${email.toLowerCase()}`, 3, 15 * 60_000)) {
+    if (await rateLimitedEverywhere(supabaseService, `recover:ip:${ip}`, 10, 15 * 60_000) || await rateLimitedEverywhere(supabaseService, `recover:email:${keyedHash(email.toLowerCase())}`, 3, 15 * 60_000)) {
       response.status(200).json({ ok: true });
       return;
     }

@@ -1,5 +1,5 @@
-import { authRedirectUrl, corsHeaders } from "../_billing.js";
-import { clientIp, rateLimited } from "../_rateLimit.js";
+import { authRedirectUrl, corsHeaders, supabaseService } from "../_billing.js";
+import { clientIp, keyedHash, rateLimitedEverywhere } from "../_rateLimit.js";
 import { welcomeOnce } from "../_welcome.js";
 
 type RequestLike = { method?: string; body?: unknown; headers?: Record<string, string | string[] | undefined> };
@@ -34,7 +34,7 @@ export function confirmationHash(value: unknown): string | null {
  * not prove this browser started the signup, so the reader signs in after.
  */
 async function confirm(request: RequestLike, response: ResponseLike, hash: string): Promise<void> {
-  if (rateLimited(`confirm:ip:${clientIp(request.headers)}`, 10, 15 * 60_000)) {
+  if (await rateLimitedEverywhere(supabaseService, `confirm:ip:${clientIp(request.headers)}`, 10, 15 * 60_000)) {
     response.status(429).json({ error: "Too many attempts. Please wait a few minutes and try again." });
     return;
   }
@@ -86,7 +86,7 @@ export default async function handler(request: RequestLike, response: ResponseLi
     if (body.resend === true) {
       if (!email) { response.status(400).json({ error: "Enter your email address." }); return; }
       const ip = clientIp(request.headers);
-      if (rateLimited(`resend:ip:${ip}`, 5, 15 * 60_000) || rateLimited(`resend:email:${email.toLowerCase()}`, 3, 15 * 60_000)) {
+      if (await rateLimitedEverywhere(supabaseService, `resend:ip:${ip}`, 5, 15 * 60_000) || await rateLimitedEverywhere(supabaseService, `resend:email:${keyedHash(email.toLowerCase())}`, 3, 15 * 60_000)) {
         response.status(200).json({ ok: true });
         return;
       }
@@ -110,7 +110,7 @@ export default async function handler(request: RequestLike, response: ResponseLi
     const firstName = typeof body.firstName === "string" ? body.firstName.trim() : "";
     if (!email || password.length < 12) { response.status(400).json({ error: "Enter a valid email and a password of at least 12 characters." }); return; }
     const ip = clientIp(request.headers);
-    if (rateLimited(`signup:ip:${ip}`, 10, 15 * 60_000)) {
+    if (await rateLimitedEverywhere(supabaseService, `signup:ip:${ip}`, 10, 15 * 60_000)) {
       response.status(429).json({ error: "Too many attempts. Please wait a few minutes and try again." });
       return;
     }

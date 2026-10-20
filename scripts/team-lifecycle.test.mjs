@@ -39,15 +39,18 @@ try {
   console.log('Running migrations and concurrent lifecycle checks.');
   await sql(`create role anon; create role authenticated; create role service_role;
     create schema auth; create table auth.users(id uuid primary key);
-    create function auth.uid() returns uuid language sql as 'select null::uuid';`);
-  for (const file of ['20260811_billing.sql','20260812_team.sql','20260821_scan_events.sql','20260821_organizations.sql','20261002074537_team_lifecycle.sql']) {
+    create function auth.uid() returns uuid language sql as 'select null::uuid';
+    alter default privileges in schema public grant execute on functions to anon, authenticated;`);
+  for (const file of ['20260811_billing.sql','20260812_team.sql','20260821_scan_events.sql','20260821_organizations.sql','20260821_rate_limits_settings.sql','20261002074537_team_lifecycle.sql','20261020_rate_limit_grants.sql']) {
     await sql(await readFile(join(root, 'supabase/migrations', file), 'utf8'));
   }
   const owner='00000000-0000-0000-0000-000000000001', member='00000000-0000-0000-0000-000000000002', other='00000000-0000-0000-0000-000000000003', owner2='00000000-0000-0000-0000-000000000004';
   const t1='a'.repeat(32), t2='b'.repeat(32), t3='c'.repeat(32), t4='d'.repeat(32);
   await sql(`insert into auth.users values ('${owner}'),('${member}'),('${other}'),('${owner2}');
     insert into billing_accounts(user_id,plan,subscription_status,seat_count) values ('${owner}','business','active',2),('${owner2}','business','active',3);`);
-  for (const fn of ['create_team_invite(uuid,text)','accept_team_invite(text,uuid)','revoke_team_invite(uuid,uuid)']) {
+  // Supabase grants anon/authenticated EXECUTE on new functions by default (simulated above).
+  assert.equal(await sql(`select relrowsecurity from pg_class where oid = 'public.rate_limit_counters'::regclass`), 't');
+  for (const fn of ['create_team_invite(uuid,text)','accept_team_invite(text,uuid)','revoke_team_invite(uuid,uuid)','rate_limit_hit(text,integer,integer)']) {
     assert.equal(await sql(`select has_function_privilege('anon','${fn}','execute'),has_function_privilege('authenticated','${fn}','execute'),has_function_privilege('service_role','${fn}','execute')`), 'f|f|t');
   }
   const create = (who, token) => `set role service_role; select (create_team_invite('${who}','${token}')).id;`;
