@@ -34,7 +34,7 @@ env:
   COLOR: "6004208"
   SITE: redaxa.getcertsprint.com
   AVATAR: https://raw.githubusercontent.com/AurelioAvila/redaxa/7cb4a81dd7e8e48940e77626f4e4dcef1e06dbdf/src-tauri/icons/128x128@2x.png
-  BANNER: https://repository-images.githubusercontent.com/1330372350/b1f68abc-c106-4237-8685-9e2ec7ea2763
+  BANNER: https://redaxa.getcertsprint.com/og-redaxa-eb3e35858c.png
 
 jobs:
   announce:
