@@ -185,11 +185,14 @@ const rules = [
     },
     // Lookbehinds here are bounded: an unbounded [ \t]* re-scans a whole run of
     // spaces at every position, which made long whitespace quadratic (ReDoS).
+    // The name before the keyword is not walked at all: a word boundary or one
+    // name character is all the old unbounded prefix amounted to, and capping its
+    // length missed long names (PRODUCTION_..._DATABASE_PASSWORD=...).
     // Secrets assigned by name in .env files and config: DB_PASSWORD=..., JWT_SECRET: ...,
     // "apiKey": "...". Known key formats above keep their service; this catches the rest.
     {
         kind: "credential", category: "credentials", severity: "critical", label: "Secret in a configuration value", replacement: "[REDACTED]",
-        pattern: /(?<=\b[A-Za-z0-9_.-]{0,64}(?:secret|token|passw(?:or)?d|pwd|[_-]pass|api[_-]?key|secret[_-]?key|access[_-]?key|private[_-]?key|auth[_-]?key)["']?[ \t]{0,32}[:=][ \t]{0,32}["']?)[^\s"'`,;&]{8,}/gi,
+        pattern: /(?<=(?:\b|[A-Za-z0-9_.-])(?:secret|token|passw(?:or)?d|pwd|[_-]pass|api[_-]?key|secret[_-]?key|access[_-]?key|private[_-]?key|auth[_-]?key)["']?[ \t]{0,32}[:=][ \t]{0,32}["']?)[^\s"'`,;&]{8,}/gi,
         validate: configSecretValid
     },
     { kind: "privateKey", category: "credentials", severity: "critical", label: "Private key", replacement: "[PRIVATE KEY]", pattern: /-----(BEGIN|END) ([A-Z ]{0,64}PRIVATE KEY)-----/g },
