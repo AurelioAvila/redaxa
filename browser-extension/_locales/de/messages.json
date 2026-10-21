@@ -154,5 +154,12 @@
   "planTrialBusiness": {"message": "Business-Testphase · endet am $DATE$", "placeholders": {"date": {"content": "$1", "example": "17 October"}}},
   "statusPaused": {"message": "Zahlung fehlgeschlagen"},
   "planPaused": {"message": "Tarif pausiert, bis eine Zahlung erfolgt."},
-  "updatePayment": {"message": "Zahlungsmethode aktualisieren"}
+  "updatePayment": {"message": "Zahlungsmethode aktualisieren"},
+  "attachFoundToast": {"message": "$FILE$ enthält möglicherweise: $KINDS$. Redaxa fragt vor dem Senden nach.", "placeholders": {"file": {"content": "$1", "example": "report.csv"}, "kinds": {"content": "$2", "example": "Email address"}}},
+  "attachTitle": {"message": "Eine angehängte Datei enthält möglicherweise sensible Daten"},
+  "attachExplain": {"message": "Auf diesem Gerät geprüft; die Datei wurde nirgendwohin gesendet. Entfernen Sie sie aus der Nachricht, wenn sie nicht geteilt werden soll."},
+  "attachSkipped": {"message": "Nicht geprüft: $FILES$. Geprüft werden nur Textdateien bis 1 MB, keine PDFs, Bilder oder Office-Dokumente.", "placeholders": {"files": {"content": "$1", "example": "scan.pdf"}}},
+  "autoCheckLockedTeam": {"message": "Von Ihrem Business-Workspace aktiviert, solange Sie angemeldet sind."},
+  "autoCheckLockedAdmin": {"message": "Durch die Browser-Richtlinie Ihrer Organisation aktiviert."},
+  "checkedLocallyOutage": {"message": "Ihr Konto war nicht erreichbar, daher wurde diese Nachricht auf diesem Gerät geprüft. Geschützte Begriffe und Teamregeln wurden nicht angewendet."}
 }

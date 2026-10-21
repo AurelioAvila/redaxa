@@ -121,4 +121,19 @@ assert.equal(el('status-plan').textContent, 'Plan paused until a payment goes th
 assert.equal(el('open-dashboard').textContent, 'Update payment method');
 fire('open-dashboard');
 assert.equal(opened.at(-1).url, 'https://redaxa.getcertsprint.com/dashboard.html#workspace', 'a paused plan is fixed in Account & team');
-console.log('Popup: links, one-time review ask, example, guest check, duplicate/stale guards, grouped credential-first results, copy, plan error, clear, plan CTA, trial end and paused plan passed.');
+// A switch kept on by a Business workspace or an enterprise policy is shown locked, with the reason.
+el('auto-check').checked = false;
+status = { signedIn: true, active: true, email: 'fixture@example.test', autoCheck: true, autoCheckLocked: true, lockedBy: 'team' };
+await vm.runInContext('render()', context);
+assert.equal(el('auto-check').disabled, true);
+assert.equal(el('auto-check').checked, true);
+assert.equal(el('auto-check-locked').hidden, false);
+assert.equal(el('auto-check-locked').textContent, getMessage('autoCheckLockedTeam'));
+status = { signedIn: false, autoCheck: true, autoCheckLocked: true, lockedBy: 'policy' };
+await vm.runInContext('render()', context);
+assert.equal(el('auto-check-locked').textContent, getMessage('autoCheckLockedAdmin'));
+status = { signedIn: false, autoCheck: true, autoCheckLocked: false, lockedBy: null };
+await vm.runInContext('render()', context);
+assert.equal(el('auto-check').disabled, false, 'otherwise the choice is the user\'s');
+assert.equal(el('auto-check-locked').hidden, true);
+console.log('Popup: links, one-time review ask, example, guest check, duplicate/stale guards, grouped credential-first results, copy, plan error, clear, plan CTA, trial end, paused plan and the locked switch passed.');

@@ -1,0 +1,10 @@
+{
+  "type": "object",
+  "properties": {
+    "forceAutoCheck": {
+      "title": "Keep automatic checks on",
+      "description": "When true, Redaxa checks every message before it is sent on ChatGPT, Claude, Gemini and Perplexity, and users cannot switch this off in the popup. Signing out does not turn it off. Deploy the extension through enterprise policy (ExtensionInstallForcelist) so it cannot be removed.",
+      "type": "boolean"
+    }
+  }
+}

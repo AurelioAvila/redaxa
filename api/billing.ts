@@ -3,7 +3,7 @@ import { clientIp, rateLimited } from "./_rateLimit.js";
 import { promoCheckout, promoState } from "./_promo.js";
 import {
   LEGACY_TRIAL_DAYS, LEGACY_TRIAL_MARK, LANGUAGES, TRIAL_DAYS, TRIAL_MARK, dueReminders, isOurTrial, markReminded, publicPrices,
-  trialEligible, trialEnabled, upcomingCharge, language as languageOf,
+  legacyTrialEligible, trialEligible, upcomingCharge, language as languageOf,
 } from "./_trial.js";
 import { sendTrialMail } from "./_trial-email.js";
 
@@ -204,13 +204,13 @@ export default async function handler(request: RequestLike, response: ResponseLi
         await saveCustomer(user.id, customerId);
       }
       // Clients from before the choice (Windows app 0.5.5 and older) advertise
-      // a seven-day trial to eligible new subscribers and keep exactly that;
-      // with the switch on it falls under the one-per-person rule too.
-      const legacyTrial = startTrial === undefined && !account.has_used_trial
-        && (!trialEnabled() || await trialEligible(user.id, user.email, account));
+      // a seven-day trial to eligible new subscribers and keep exactly that,
+      // always under the one-per-person rule: the mark makes the webhook claim
+      // it against the account, the mailbox and the card.
+      const legacyTrial = startTrial === undefined && await legacyTrialEligible(user.id, user.email, account);
       const trial = startTrial === true
         ? { days: TRIAL_DAYS, mark: TRIAL_MARK }
-        : legacyTrial ? { days: LEGACY_TRIAL_DAYS, mark: trialEnabled() ? LEGACY_TRIAL_MARK : null } : null;
+        : legacyTrial ? { days: LEGACY_TRIAL_DAYS, mark: LEGACY_TRIAL_MARK } : null;
       // The discount follows the plan resolved above and the server's clock.
       // A once-only coupon skips the trial's zero invoice and comes off the
       // first paid one (checked on Stripe test clocks, 10 and 14 Oct 2026).

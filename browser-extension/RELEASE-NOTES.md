@@ -1,4 +1,24 @@
-# Extension 0.4.13
+# Extension 0.4.14
+
+Edited messages are checked too. Clicking the Save, Send or Update button of the box for editing an earlier message on ChatGPT, Claude, Gemini or Perplexity now goes through the same check as a new message. Enter in that box is left as it is, since on some sites it adds a new line; the check runs when the edit is sent with its button.
+
+Attached text files are checked on this device. When a file is dropped, pasted or chosen on a supported site, a text file up to 1 MB (`.env`, `.txt`, `.csv`, `.json`, `.yaml`, `.log`, source code, `.pem`, `.key` and similar) is read inside the browser and checked with the same engine; its contents are not sent anywhere. If something is found, a notice names the file and what was found, and the next send waits for "Send anyway". Uploads are never blocked or replayed. PDFs, images, Office documents and larger files are not inspected, and the dialog says so.
+
+Team rules stay on. For members of a Business workspace, "Check automatically before sending" stays on while they are signed in; the popup shows the switch locked and why. Administrators who deploy the extension through enterprise policy can set `forceAutoCheck` (see `managed_schema.json`) to keep checks on whether or not anyone is signed in. Without a managed deployment, a person can still sign out or remove the extension.
+
+An outage no longer stops everyone from sending. When the Redaxa account service cannot be reached, only members of a Business workspace, whose team rules might block a message, are asked to wait. Everyone else is checked on this device, as free use is, and told that protected terms and team rules were not applied.
+
+New strings in English, Italian, Spanish, French and German. No new permissions, telemetry or dependencies.
+
+Fixed before release, after checks on the live sites (21 October 2026):
+- The first send after the browser starts no longer waits for enterprise policies to load (5 to 15 seconds in Brave). It waits at most 250 ms; a policy that arrives later is applied to open tabs.
+- On ChatGPT and Gemini the edit box uses the same editor as the composer and comes first on the page, so it was taken for the composer and its Send/Update button went unchecked. The composer is now the lowest match.
+- Only the edit box's own Save/Send/Update button counts. ChatGPT's feedback close and Perplexity's panel toggle no longer trigger a check, and Cancel never stands in while Save is still disabled.
+- Switching automatic checks off while a status request was already on its way is no longer lost.
+
+Verification: `npm test`, then `python scripts/qa/extension-e2e.py` on the staged package in a temporary Brave profile. On the live sites: Enter and the Send button held a prompt with fake secrets on ChatGPT, Gemini and Perplexity (signed out, temporary profile), a synthetic `.env` attachment was flagged and held the next send on ChatGPT and Gemini and flagged on Perplexity, and the edit box's own button was recognised on ChatGPT, Claude, Gemini and Perplexity (owner's sessions, benign text only).
+
+## Previous extension 0.4.13
 
 The account panel in the popup now says when a free trial ends ("Pro trial · ends 17 October") and when a payment did not go through: the plan shows as paused, and the button opens Account & team in the Redaxa workspace to update the payment method instead of offering the plan again. In English, Italian, Spanish, French and German. Nothing else changes: free checks still run inside the browser and send nothing. No new permissions, telemetry or dependencies.
 

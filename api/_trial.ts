@@ -19,11 +19,12 @@ import { stripe, supabaseService, type BillingAccount } from "./_billing.js";
  *   Stripe creates the subscription, so several open checkouts cannot win
  *   several trials.
  *
- * Off unless TRIAL_ENABLED=true. Off means exactly what ran before: clients
- * that never send `start_trial` get the seven-day trial they advertise, and
- * nothing here touches the trial tables. Subscriptions sold with a policed
- * trial carry `trial` in their metadata and keep these rules even if the
- * switch is turned off again.
+ * The choice is off unless TRIAL_ENABLED=true. Clients that never send
+ * `start_trial` (Windows app 0.5.5 and older) get the seven-day trial they
+ * advertise either way, and it is always policed by the same one-per-person
+ * claim: unpoliced, a new address plus the same card bought another week
+ * every time. Subscriptions sold with a policed trial carry `trial` in their
+ * metadata and keep these rules even if the switch is turned off again.
  */
 export const TRIAL_DAYS = 3;
 /** Metadata mark of a trial sold under the one-per-person rule. */
@@ -122,6 +123,19 @@ export async function trialAvailable(userId: string, email: string): Promise<boo
 export async function trialEligible(userId: string, email: string, account: Pick<BillingAccount, "has_used_trial" | "subscription_status"> | null, environment: NodeJS.ProcessEnv = process.env): Promise<boolean> {
   if (!trialEnabled(environment) || account?.has_used_trial || isLive(account?.subscription_status)) return false;
   return trialAvailable(userId, email);
+}
+
+/** Whether a checkout from a client that never offers the choice may carry
+ *  its seven-day trial: the same one-per-person rule, switch on or off. */
+export async function legacyTrialEligible(userId: string, email: string, account: Pick<BillingAccount, "has_used_trial" | "subscription_status"> | null): Promise<boolean> {
+  if (account?.has_used_trial || isLive(account?.subscription_status)) return false;
+  // These clients never asked for the trial table: if it cannot be read, the
+  // purchase goes ahead without the free week rather than failing.
+  try {
+    return await trialAvailable(userId, email);
+  } catch {
+    return false;
+  }
 }
 
 /** Records the trial of `subscriptionId`: true when this subscription holds

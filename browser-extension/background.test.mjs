@@ -10,6 +10,7 @@ let session = { email: 'fixture@example.test', access_token: 'nonworking-test-to
 let stored = {};
 const opened = [], requests = [];
 let installed, accessLevel, storageChanged;
+let managedPolicy = {};
 const pushed = [];
 let calls = 0;
 const context = vm.createContext({ URL, AbortController, AbortSignal, setTimeout, clearTimeout, console, inspectPrompt, defaultPersonalPolicy, evaluatePolicy,
@@ -18,7 +19,8 @@ const context = vm.createContext({ URL, AbortController, AbortSignal, setTimeout
       setAccessLevel: async value => { accessLevel = value.accessLevel; },
       get: async key => key === 'redaxa_session' ? { redaxa_session: session } : { [key]: stored[key] },
       set: async value => { if ('redaxa_session' in value) session = value.redaxa_session; else Object.assign(stored, value); },
-      remove: async () => { session = null; } } },
+      remove: async key => { if (key === 'redaxa_session') session = null; else delete stored[key]; } },
+    managed: { get: async () => managedPolicy } },
     tabs: { create: async value => { opened.push(value); }, query: async () => [{ id: 1 }, { id: 2 }],
       sendMessage: async (id, message) => { pushed.push([id, message.type]); if (id === 2) throw new Error('No content script'); } },
     i18n: { getMessage },
@@ -42,6 +44,11 @@ assert.equal(manifest.optional_permissions, undefined);
 assert.deepEqual(manifest.content_scripts[0].matches, ['https://chatgpt.com/*', 'https://claude.ai/*', 'https://gemini.google.com/*', 'https://www.perplexity.ai/*']);
 assert.equal(manifest.externally_connectable, undefined);
 assert.equal(manifest.web_accessible_resources, undefined);
+// Administrators can keep automatic checks on through enterprise policy.
+assert.equal(manifest.storage.managed_schema, 'managed_schema.json');
+const managedSchema = JSON.parse(fs.readFileSync(new URL(manifest.storage.managed_schema, root), 'utf8'));
+assert.deepEqual(Object.keys(managedSchema.properties), ['forceAutoCheck']);
+assert.equal(managedSchema.properties.forceAutoCheck.type, 'boolean');
 assert.equal(manifest.content_security_policy, undefined, 'Manifest V3 default CSP: script-src self, no remote code');
 for (const size of ['16', '32', '48', '128']) assert.ok(fs.existsSync(new URL(manifest.icons[size], root)), `icon ${size}`);
 for (const file of fs.readdirSync(root).filter(name => /\.(js|html)$/.test(name)).concat(fs.readdirSync(new URL('engine/', root)).map(name => `engine/${name}`))) {
@@ -124,7 +131,7 @@ await handle({ type: 'SCAN', text: 'mail maria.rossi@company.io' }, welcomeTab);
 await handle({ type: 'SCAN', text: 'nothing here' }, chatgpt);
 await handle({ type: 'SCAN', text: 'mail maria.rossi@company.io' }, chatgpt);
 await new Promise(resolve => setImmediate(resolve));
-assert.deepEqual(stored, { redaxa_helpful_checks: 1 }, 'one helpful AI-site check, and nothing else stored');
+assert.deepEqual(stored, { redaxa_helpful_checks: 1, redaxa_org_managed: false }, 'one helpful AI-site check; besides it only the workspace flag the status keeps');
 assert.equal(calls, localCalls, 'still nothing sent');
 
 const beforeAutomatic = calls;
@@ -172,4 +179,67 @@ context.fetch = async () => ({ ok: false, status: 503 });
 const unavailable = await handle({ type: 'STATUS' }, popup);
 assert.equal(unavailable.signedIn, true, 'Transient auth failure keeps the account visible');
 assert.equal(unavailable.active, false, 'Transient auth failure cannot unlock paid features');
-console.log('Extension background: minimal permissions, no remote code, welcome tab, popup-only account actions, storage closed to pages, no email for pages, switch pushed to tabs, local checks send nothing, local review counter, authenticated account checks passed.');
+// A Business workspace member's switch stays on; the last confirmed membership
+// decides what an outage does, and only workspace members wait during one.
+session = { email: 'fixture@example.test', access_token: 'fixture', refresh_token: 'fixture', expires_at: Date.now() + 3600000 };
+stored.redaxa_auto_check = false;
+context.fetch = async () => ({ ok: true, json: async () => ({ active: true, teamRole: 'member', plan: null, status: null }) });
+let member = await handle({ type: 'STATUS' }, chatgpt);
+assert.equal(member.orgManaged, true);
+assert.equal(member.autoCheck, true, 'a workspace member cannot switch checks off');
+assert.equal(member.autoCheckLocked, true);
+assert.equal(member.lockedBy, 'team');
+assert.equal(stored.redaxa_org_managed, true);
+context.fetch = async () => { throw new TypeError('Synthetic network failure'); };
+member = await handle({ type: 'STATUS' }, chatgpt);
+assert.equal(member.unavailable, true);
+assert.equal(member.orgManaged, true, 'an outage remembers the last confirmed workspace membership');
+assert.equal(member.autoCheck, true);
+context.fetch = async () => ({ ok: true, json: async () => ({ active: true, teamRole: 'owner', plan: 'business', status: 'active' }) });
+const owner = await handle({ type: 'STATUS' }, chatgpt);
+assert.equal(owner.orgManaged, false, 'the owner who sets the rules keeps the choice');
+assert.equal(owner.autoCheck, false);
+assert.equal(owner.autoCheckLocked, false);
+context.fetch = async () => ({ ok: false, status: 502, json: async () => ({}) });
+const ownerOutage = await handle({ type: 'STATUS' }, chatgpt);
+assert.equal(ownerOutage.unavailable, true);
+assert.equal(ownerOutage.orgManaged, false, 'outside a workspace an outage falls back to local checks');
+await handle({ type: 'SIGN_OUT' }, popup);
+assert.equal(stored.redaxa_org_managed, undefined, 'signing out forgets the workspace flag');
+// Enterprise policy keeps the switch on even when signed out.
+storageChanged({ forceAutoCheck: { newValue: true } }, 'managed');
+const forced = await handle({ type: 'STATUS' }, chatgpt);
+assert.equal(forced.signedIn, false);
+assert.equal(forced.autoCheck, true);
+assert.equal(forced.autoCheckLocked, true);
+assert.equal(forced.lockedBy, 'policy');
+delete stored.redaxa_auto_check;
+pushed.length = 0;
+storageChanged({ forceAutoCheck: { newValue: true } }, 'managed');
+await new Promise(resolve => setImmediate(resolve));
+assert.equal(pushed.length, 2, 'a changed enterprise policy is pushed to open tabs');
+storageChanged({ forceAutoCheck: { oldValue: true } }, 'managed');
+assert.equal((await handle({ type: 'STATUS' }, chatgpt)).autoCheckLocked, false, 'a removed policy unlocks the switch');
+// Policies load for seconds after the browser starts (about five in Brave):
+// a send never waits for that first read, and a late answer is pushed.
+{
+  let release;
+  const slow = new Promise(resolve => { release = resolve; });
+  const c = context.chrome;
+  const fresh = vm.createContext({ URL, AbortController, AbortSignal, setTimeout, clearTimeout, console, inspectPrompt, defaultPersonalPolicy, evaluatePolicy, fetch: context.fetch,
+    chrome: { ...c, storage: { onChanged: { addListener() {} }, managed: { get: () => slow },
+      local: { ...c.storage.local, get: async key => key === 'redaxa_auto_check' ? { redaxa_auto_check: false } : {} } } } });
+  vm.runInContext(fs.readFileSync(new URL('config.js', root), 'utf8'), fresh);
+  vm.runInContext(fs.readFileSync(new URL('background.js', root), 'utf8').replace(/^import .*;\r?\n/gm, ''), fresh);
+  const freshHandle = vm.runInContext('handleMessage', fresh);
+  pushed.length = 0;
+  const startedAt = Date.now();
+  const early = await freshHandle({ type: 'STATUS' }, chatgpt);
+  assert.ok(Date.now() - startedAt < 1000, 'a slow policy read does not hold the status');
+  assert.equal(early.autoCheck, false, 'until the policy answers, the person\'s choice stands');
+  release({ forceAutoCheck: true });
+  await new Promise(resolve => setTimeout(resolve, 10));
+  assert.equal(pushed.length, 2, 'the late policy answer is pushed to open tabs');
+  assert.equal((await freshHandle({ type: 'STATUS' }, chatgpt)).autoCheck, true, 'and holds from then on');
+}
+console.log('Extension background: minimal permissions, no remote code, welcome tab, popup-only account actions, storage closed to pages, no email for pages, switch pushed to tabs, local checks send nothing, local review counter, authenticated account checks, enterprise policy, workspace-locked switch and outage memory passed.');
