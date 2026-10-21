@@ -18,6 +18,11 @@ export function isTauri(): boolean {
   return tauriInvoke() !== null;
 }
 
+/** The notification-area menu speaks the window's language. */
+export function syncTrayLanguage(language: string): void {
+  void tauriInvoke()?.("set_tray_language", { language }).catch(() => {});
+}
+
 /** Only the desktop development webview uses the guarded loopback proxy. */
 export function usesDesktopPreviewTransport(desktop: boolean, origin: string): boolean {
   if (!desktop) return false;

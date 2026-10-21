@@ -2,7 +2,7 @@ import type { Finding, FindingSeverity, ScanOptions } from "./scanner.js";
 import type { AccountState } from "./auth.js";
 import { enableAppShell } from "./pwa.js";
 import { track } from "./growth.js";
-import { enableDesktopCompanion, openSupportEmail, shellCopyByLanguage } from "./desktop.js";
+import { enableDesktopCompanion, openSupportEmail, shellCopyByLanguage, syncTrayLanguage } from "./desktop.js";
 import { PROMO_WORDS_EN, euro, mountPromo, promoPriceHtml, type PromoView, type PromoWords } from "./promo.js";
 import { TRIAL_UI, chargeDate, choiceCopy, fillTrial, loadPrices, longDay, priceFor, type PriceList } from "./trial.js";
 
@@ -1173,6 +1173,7 @@ export function mountDashboard(): void {
     const w = words();
     const settings = settingsByLanguage[preferences.language];
     document.documentElement.lang = preferences.language;
+    syncTrayLanguage(preferences.language);
     document.querySelectorAll<HTMLElement>("[data-i18n]").forEach((element) => {
       const value = w[element.dataset.i18n ?? ""];
       if (value !== undefined) element.textContent = value;

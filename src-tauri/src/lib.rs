@@ -12,6 +12,7 @@ const KEYRING_SERVICE: &str = "com.redaxa.desktop";
 const KEYRING_SERVICE: &str = "com.redaxa.desktop.dev";
 const KEYRING_USER: &str = "session";
 mod repository;
+mod tray;
 mod update_identity;
 
 #[tauri::command]
@@ -44,12 +45,32 @@ fn secure_store_delete() -> Result<(), String> {
     }
 }
 
-// Silent-by-default auto-update: checked once at startup, and the user is
-// asked before anything is downloaded or installed. Update artifacts are
+// Set while a check, its question or an install is under way, so reopening the
+// window from the notification area never stacks a second one.
+#[cfg(desktop)]
+static UPDATE_BUSY: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+// Silent-by-default auto-update: checked at startup and each time the window
+// is reopened from the notification area, and the user is asked before
+// anything is downloaded or installed. Update artifacts are
 // signed (minisign) and verified by the updater plugin against the pubkey in
 // tauri.conf.json, so a compromised download host cannot ship a payload.
 #[cfg(desktop)]
 async fn check_for_updates(app: tauri::AppHandle) {
+    use std::sync::atomic::Ordering;
+    if UPDATE_BUSY.swap(true, Ordering::AcqRel) {
+        return;
+    }
+    let asked = ask_to_update(app).await;
+    if !asked {
+        UPDATE_BUSY.store(false, Ordering::Release);
+    }
+}
+
+/// True when the question is on screen; its answer clears UPDATE_BUSY.
+#[cfg(desktop)]
+async fn ask_to_update(app: tauri::AppHandle) -> bool {
+    use std::sync::atomic::Ordering;
     use tauri_plugin_dialog::{DialogExt, MessageDialogButtons};
     use tauri_plugin_updater::UpdaterExt;
     // The plugin starts the installer and then ends this process at once. Just
@@ -66,9 +87,9 @@ async fn check_for_updates(app: tauri::AppHandle) {
         })
         .build()
     else {
-        return;
+        return false;
     };
-    let Ok(Some(update)) = updater.check().await else { return };
+    let Ok(Some(update)) = updater.check().await else { return false };
     let version = update.version.clone();
     let app_for_install = app.clone();
     app.dialog()
@@ -82,20 +103,26 @@ async fn check_for_updates(app: tauri::AppHandle) {
         ))
         .show(move |confirmed| {
             if !confirmed {
+                UPDATE_BUSY.store(false, Ordering::Release);
                 return;
             }
             tauri::async_runtime::spawn(async move {
                 if update.download_and_install(|_, _| {}, || {}).await.is_ok() {
                     app_for_install.restart();
                 }
+                UPDATE_BUSY.store(false, Ordering::Release);
             });
         });
+    true
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        // A second launch (shortcut, Start menu, redaxa:// link) brings back
+        // the running window, also when it was closed to the notification area.
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+            tray::show(app);
             for arg in args { repository::open_deep_link(app, &arg); }
         }))
         .plugin(tauri_plugin_deep_link::init())
@@ -111,7 +138,8 @@ pub fn run() {
             secure_store_delete,
             repository::repository_scan,
             repository::repository_progress,
-            repository::repository_cancel
+            repository::repository_cancel,
+            tray::set_tray_language
         ])
         .setup(|app| {
             use tauri_plugin_deep_link::DeepLinkExt;
@@ -137,6 +165,7 @@ pub fn run() {
                             && update_identity::release_matches(&release.version.to_string(), &release.data)
                     }).build())?;
                 app.handle().plugin(tauri_plugin_dialog::init())?;
+                tray::setup(app)?;
                 let handle = app.handle().clone();
                 tauri::async_runtime::spawn(async move {
                     check_for_updates(handle).await;
@@ -145,6 +174,7 @@ pub fn run() {
             Ok(())
         })
         .on_window_event(|window, event| {
+            tray::window_event(window, event);
             if matches!(event, tauri::WindowEvent::Destroyed) {
                 use tauri::Manager;
                 repository::cancel(window.state::<repository::RepositoryState>().inner());
