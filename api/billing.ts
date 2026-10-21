@@ -251,6 +251,13 @@ export default async function handler(request: RequestLike, response: ResponseLi
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : "CHECKOUT_ERROR";
+    // An unpaid, paused or incomplete subscription still exists and can bill:
+    // a second one would charge twice once the card is fixed. The customer
+    // settles the first one in Manage billing instead.
+    if (message === "BILLING_ACTION_REQUIRED") {
+      response.status(409).json({ error: "Your subscription has a payment to sort out. Update it in Manage billing instead of starting a new one.", code: "manage_billing" });
+      return;
+    }
     const status = message === "UNAUTHORIZED" ? 401 : message === "ACTIVE_SUBSCRIPTION" ? 409 : message === "CHECKOUT_IN_PROGRESS" ? 429 : 500;
     if (status === 500) console.error("billing checkout error:", error);
     response.status(status).json({ error: status === 500 ? "We could not start checkout. Please try again." : message });

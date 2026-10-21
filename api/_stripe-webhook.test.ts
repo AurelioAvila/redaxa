@@ -7,7 +7,11 @@ process.env.SUPABASE_PUBLISHABLE_KEY = "test-publishable-key";
 process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-key";
 process.env.STRIPE_SECRET_KEY = "sk_test_dummy";
 
-const { syncSubscription } = await import("./stripe-webhook.js");
+process.env.STRIPE_WEBHOOK_SECRET = "whsec_test_fixture";
+
+const { default: webhook, syncSubscription } = await import("./stripe-webhook.js");
+const Stripe = (await import("stripe")).default;
+const { Readable } = await import("node:stream");
 
 /**
  * One Stripe account bills PC Tweaker, the uninstaller and Redaxa, and Stripe
@@ -80,5 +84,23 @@ await withMockFetch(async (url) => ok(url.includes("billing_accounts?user_id") ?
 await withMockFetch(async () => ok([]), async () => {
   assert.equal(await syncSubscription(subscription({}), "user-3"), "user-3");
 });
+
+
+// A delivery of an event another invocation is still processing gets a 500
+// (Stripe retries later) and does no work; a completed one is acknowledged.
+for (const [claim, status] of [["in_progress", 500], ["completed", 200]] as const) {
+  const payload = JSON.stringify({ id: "evt_dup", object: "event", type: "customer.subscription.created", data: { object: { id: "sub_dup", object: "subscription" } } });
+  const signature = new Stripe("sk_test_dummy").webhooks.generateTestHeaderString({ payload, secret: "whsec_test_fixture" });
+  const request = Object.assign(Readable.from([Buffer.from(payload)]), { method: "POST", headers: { "stripe-signature": signature } });
+  const res = { code: 0, body: undefined as unknown, setHeader() {}, status(code: number) { this.code = code; return this; }, json(value: unknown) { this.body = value; }, end() {} };
+  await withMockFetch(async (url) => {
+    assert.ok(url.includes("/rpc/claim_stripe_event"), `no other call for a ${claim} event: ${url}`);
+    return ok(claim);
+  }, async (calls) => {
+    await webhook(request as never, res as never);
+    assert.equal(calls.length, 1);
+  });
+  assert.equal(res.code, status, claim);
+}
 
 console.log("_stripe-webhook.test.ts ok");

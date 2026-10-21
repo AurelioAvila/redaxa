@@ -779,6 +779,7 @@ async function boot(): Promise<void> {
         await refreshEntitlement();
         document.dispatchEvent(new CustomEvent("redaxa:trial-unavailable", { detail: { plan } }));
       }
+      else if (error instanceof Error && (error as Error & { code?: string }).code === "manage_billing") void manageBilling();
       else if (error instanceof Error && error.message === "UNAUTHORIZED") { renderAccount(null); void clearDesktopSession(); setMode("signin"); setMessage("Please sign in again to continue."); show(); }
       else { setMessage(error instanceof Error ? error.message : "Checkout could not be opened.", true); show(); }
     } finally {

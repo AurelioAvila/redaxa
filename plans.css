@@ -113,6 +113,10 @@ html:is(:not([data-theme]), [data-theme="paper"]) .plans-page, html:is(:not([dat
 .compare-table .cmp-cell-no { color: var(--theme-muted); }
 
 .trust-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+/* Five statements: three over two, every row full. */
+.plans-trust .trust-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.plans-trust .trust-item { grid-column: span 2; }
+.plans-trust .trust-item:nth-child(n + 4) { grid-column: span 3; }
 .trust-item { padding: 16px; border: 1px solid var(--theme-line); border-radius: 12px; background: var(--theme-surface); }
 .trust-item :is(h3, h4) { display: flex; align-items: center; gap: 9px; margin: 0 0 6px; color: var(--theme-text); font: 600 14px/1.35 var(--font-display); }
 /* Lock Pup's wink: each statement is marked with the redaction bar. */
@@ -140,10 +144,12 @@ html:is(:not([data-theme]), [data-theme="paper"]) .plans-page, html:is(:not([dat
 @container plans (max-width: 879px) {
   .plan-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .plan-card.plan-free { grid-column: 1 / -1; }
-  .trust-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .trust-grid, .plans-trust .trust-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .plans-trust .trust-item, .plans-trust .trust-item:nth-child(n + 4) { grid-column: auto; }
+  .plans-trust .trust-item:last-child { grid-column: 1 / -1; }
 }
 @container plans (max-width: 599px) {
-  .plan-grid, .trust-grid { grid-template-columns: minmax(0, 1fr); }
+  .plan-grid, .trust-grid, .plans-trust .trust-grid { grid-template-columns: minmax(0, 1fr); }
   .plan-desc { min-height: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
