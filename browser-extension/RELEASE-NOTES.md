@@ -10,7 +10,13 @@ An outage no longer stops everyone from sending. When the Redaxa account service
 
 New strings in English, Italian, Spanish, French and German. No new permissions, telemetry or dependencies.
 
-Verification: `npm test`, then `python scripts/qa/extension-e2e.py` on the staged package in a temporary Brave profile.
+Fixed before release, after checks on the live sites (21 October 2026):
+- The first send after the browser starts no longer waits for enterprise policies to load (5 to 15 seconds in Brave). It waits at most 250 ms; a policy that arrives later is applied to open tabs.
+- On ChatGPT and Gemini the edit box uses the same editor as the composer and comes first on the page, so it was taken for the composer and its Send/Update button went unchecked. The composer is now the lowest match.
+- Only the edit box's own Save/Send/Update button counts. ChatGPT's feedback close and Perplexity's panel toggle no longer trigger a check, and Cancel never stands in while Save is still disabled.
+- Switching automatic checks off while a status request was already on its way is no longer lost.
+
+Verification: `npm test`, then `python scripts/qa/extension-e2e.py` on the staged package in a temporary Brave profile. On the live sites: Enter and the Send button held a prompt with fake secrets on ChatGPT, Gemini and Perplexity (signed out, temporary profile), a synthetic `.env` attachment was flagged and held the next send on ChatGPT and Gemini and flagged on Perplexity, and the edit box's own button was recognised on ChatGPT, Claude, Gemini and Perplexity (owner's sessions, benign text only).
 
 ## Previous extension 0.4.13
 

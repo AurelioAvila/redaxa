@@ -22,8 +22,30 @@ const ORG_MANAGED_KEY = "redaxa_org_managed";
 // Enterprise policy (managed_schema.json): an administrator who deploys the
 // extension can keep automatic checks on, signed in or not. Without a managed
 // deployment nothing stops a person from signing out or removing the extension.
+// Read once per worker start and kept current by storage.onChanged. The first
+// read after the browser starts waits for policies to load (about five
+// seconds in Brave, up to about 15 on a busy start), which held every send
+// that long: the first send waits at most 250 ms, and a late answer that
+// changes the switch is pushed to open tabs like any other change.
+let policyForced = false;
+let policyLate = false;
+const policyRead = Promise.resolve(chrome.storage.managed?.get?.("forceAutoCheck"))
+  .then((value) => value?.forceAutoCheck === true, () => false)
+  .then((forced) => {
+    if (forced === policyForced) return;
+    policyForced = forced;
+    if (policyLate) pushSettings();
+  });
 async function forcedByPolicy() {
-  try { return (await chrome.storage.managed?.get?.("forceAutoCheck"))?.forceAutoCheck === true; } catch { return false; }
+  // Only the first send waits; later ones take the last known answer.
+  if (!policyLate) await Promise.race([policyRead, new Promise((resolve) => setTimeout(() => { policyLate = true; resolve(); }, 250))]);
+  return policyForced;
+}
+
+function pushSettings() {
+  chrome.tabs.query({}).then(tabs => {
+    for (const tab of tabs) chrome.tabs.sendMessage(tab.id, { type: "SETTINGS_CHANGED" }).catch(() => undefined);
+  }).catch(() => undefined);
 }
 
 // Business members are checked under their workspace's rules, so the switch
@@ -251,10 +273,9 @@ chrome.runtime.onInstalled.addListener(({ reason }) => {
 chrome.storage.onChanged?.addListener((changes, area) => {
   const signedInOrOut = SESSION_KEY in changes && !changes[SESSION_KEY].oldValue !== !changes[SESSION_KEY].newValue;
   const policyChanged = area === "managed" && "forceAutoCheck" in changes;
+  if (policyChanged) policyForced = changes.forceAutoCheck.newValue === true;
   if (!policyChanged && (area !== "local" || !(AUTO_CHECK_KEY in changes || signedInOrOut || ORG_MANAGED_KEY in changes))) return;
-  chrome.tabs.query({}).then(tabs => {
-    for (const tab of tabs) chrome.tabs.sendMessage(tab.id, { type: "SETTINGS_CHANGED" }).catch(() => undefined);
-  }).catch(() => undefined);
+  pushSettings();
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

@@ -15,7 +15,12 @@ function findComposer() {
     "textarea#composer-background"
   ];
   for (const selector of known) {
-    const el = document.querySelector(selector);
+    // Editing an earlier message on ChatGPT and Gemini opens a second editor
+    // of the same kind above the composer: the composer is the lowest one.
+    const shown = [...(document.querySelectorAll?.(selector) ?? [])].filter(visible);
+    const el = shown.length > 1
+      ? shown.reduce((a, b) => (b.getBoundingClientRect().top >= a.getBoundingClientRect().top ? b : a))
+      : document.querySelector(selector);
     if (el) return el;
   }
   const candidates = [...document.querySelectorAll("textarea, [contenteditable='true']")]
@@ -274,7 +279,10 @@ let statusCache = { unavailable: true };
 let autoCheck = true;
 // The switch or a sign-in/out changed in the popup: apply it before the next send.
 chrome.runtime.onMessage?.addListener((message, sender) => {
-  if (sender?.id === chrome.runtime.id && message?.type === "SETTINGS_CHANGED") { statusCheckedAt = 0; void refreshStatus(); }
+  if (sender?.id !== chrome.runtime.id || message?.type !== "SETTINGS_CHANGED") return;
+  statusCheckedAt = 0;
+  // A status request already on its way was answered before the change: ask again after it.
+  void (statusRefresh ?? Promise.resolve()).then(() => refreshStatus());
 });
 let statusCheckedAt = 0;
 let bypassArm = false;
@@ -605,7 +613,18 @@ function composerNear(button) {
 }
 
 // An edit box's own submit is the last button beside it (Save, Send or
-// Update after Cancel), whatever its translated label.
+// Update after Cancel), whatever its translated label. "Beside it" is the
+// nearest container around the box that holds buttons: further out, other
+// controls (ChatGPT's feedback close, Perplexity's panel toggle) come last.
+// A disabled Save (text unchanged) still counts, so Cancel never stands in.
+function editSubmit(editable) {
+  let node = editable.parentElement;
+  for (let depth = 0; node && depth < 6; depth++, node = node.parentElement) {
+    const buttons = [...node.querySelectorAll("button")].filter((b) => !editable.contains(b));
+    if (buttons.length) return buttons.at(-1);
+  }
+  return null;
+}
 function editBoxForButton(button) {
   const main = findComposer();
   let node = button?.parentElement;
@@ -613,8 +632,7 @@ function editBoxForButton(button) {
     const editable = firstVisibleEditable(node);
     if (!editable) continue;
     if (withinComposer(editable, main) || !inConversation(editable)) return null;
-    const buttons = [...node.querySelectorAll("button")].filter((b) => !b.disabled && !editable.contains(b));
-    return buttons.at(-1) === button ? editable : null;
+    return !button.disabled && editSubmit(editable) === button ? editable : null;
   }
   return null;
 }

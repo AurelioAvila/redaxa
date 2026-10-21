@@ -130,9 +130,24 @@ callbacks.shift().callback({ ok: true, result: { signedIn: false, autoCheck: fal
 await switched;
 assert.equal(event('keydown'), false, 'Switched off in the popup: ordinary send');
 onRuntimeMessage({ type: 'SETTINGS_CHANGED' }, { id: 'test-extension' });
+await drain();
 callbacks.shift().callback({ ok: true, result: { signedIn: false, autoCheck: true } });
 await drain();
 assert.equal(vm.runInContext('autoCheck', context), true, 'Switched back on without reloading the tab');
+// A change pushed while an older status request is still on its way is not
+// lost to that older answer (seen live while browser policies were loading).
+{
+  const inflight = vm.runInContext('refreshStatus()', context);
+  onRuntimeMessage({ type: 'SETTINGS_CHANGED' }, { id: 'test-extension' });
+  callbacks.shift().callback({ ok: true, result: { signedIn: false, autoCheck: true } });
+  await inflight; await drain();
+  callbacks.shift().callback({ ok: true, result: { signedIn: false, autoCheck: false } });
+  await drain();
+  assert.equal(vm.runInContext('autoCheck', context), false, 'A switch-off during a status request still applies');
+  const back = vm.runInContext('refreshStatus()', context);
+  callbacks.shift().callback({ ok: true, result: { signedIn: false, autoCheck: true } });
+  await back;
+}
 onRuntimeMessage({ type: 'SETTINGS_CHANGED' }, { id: 'another-extension' });
 assert.equal(callbacks.length, 0, 'Only this extension can push a settings change');
 
@@ -191,6 +206,17 @@ assert.equal(clickOn(submit('Invia messaggio')), true, 'A send button with a tra
   const container = { parentElement: null, contains: node => node === editBox,
     querySelectorAll: selector => selector === 'button' ? [cancel, save] : [editBox] };
   cancel.parentElement = save.parentElement = container;
+  editBox.parentElement = container;
+  // Further out, another control comes last (ChatGPT's feedback close,
+  // Perplexity's panel toggle, both seen live): it is not the edit's submit.
+  const other = { disabled: false, click() {}, matches: () => false };
+  const outer = { parentElement: null, contains: node => node === editBox || node === container,
+    querySelectorAll: selector => selector === 'button' ? [cancel, save, other] : [editBox] };
+  container.parentElement = outer; other.parentElement = outer;
+  assert.equal(clickOn(other), false, 'A later control around the conversation is not a send');
+  save.disabled = true;
+  assert.equal(clickOn(cancel), false, 'Cancel does not stand in while Save is disabled');
+  save.disabled = false;
   assert.equal(clickOn(cancel), false, 'Cancel next to an edit box is not a send');
   assert.equal(clickOn(save), true, 'Save after Cancel sends the edited message, whatever its label');
   await drain();
@@ -200,6 +226,16 @@ assert.equal(clickOn(submit('Invia messaggio')), true, 'A send button with a tra
   await drain();
   vm.runInContext('bypassArm = false', context);
   context.location = undefined;
+  // ChatGPT and Gemini edit in a second editor of the composer's own kind,
+  // above it: the main composer is the lowest visible match, not the first.
+  const editor = (top) => ({ offsetHeight: 40, getBoundingClientRect: () => ({ top }) });
+  const editing = editor(97), main = editor(827);
+  context.document.querySelectorAll = selector => selector === "div.ProseMirror[contenteditable='true']" ? [editing, main] : [];
+  const prompt = context.document.querySelector;
+  context.document.querySelector = () => null;
+  assert.equal(vm.runInContext('findComposer()', context), main, 'An open edit box is not taken for the composer');
+  context.document.querySelector = prompt;
+  delete context.document.querySelectorAll;
 }
 
 // Attachments: text files are checked on this device when dropped, pasted or

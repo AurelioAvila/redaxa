@@ -207,16 +207,39 @@ assert.equal(ownerOutage.orgManaged, false, 'outside a workspace an outage falls
 await handle({ type: 'SIGN_OUT' }, popup);
 assert.equal(stored.redaxa_org_managed, undefined, 'signing out forgets the workspace flag');
 // Enterprise policy keeps the switch on even when signed out.
-managedPolicy = { forceAutoCheck: true };
+storageChanged({ forceAutoCheck: { newValue: true } }, 'managed');
 const forced = await handle({ type: 'STATUS' }, chatgpt);
 assert.equal(forced.signedIn, false);
 assert.equal(forced.autoCheck, true);
 assert.equal(forced.autoCheckLocked, true);
 assert.equal(forced.lockedBy, 'policy');
-managedPolicy = {};
 delete stored.redaxa_auto_check;
 pushed.length = 0;
 storageChanged({ forceAutoCheck: { newValue: true } }, 'managed');
 await new Promise(resolve => setImmediate(resolve));
 assert.equal(pushed.length, 2, 'a changed enterprise policy is pushed to open tabs');
+storageChanged({ forceAutoCheck: { oldValue: true } }, 'managed');
+assert.equal((await handle({ type: 'STATUS' }, chatgpt)).autoCheckLocked, false, 'a removed policy unlocks the switch');
+// Policies load for seconds after the browser starts (about five in Brave):
+// a send never waits for that first read, and a late answer is pushed.
+{
+  let release;
+  const slow = new Promise(resolve => { release = resolve; });
+  const c = context.chrome;
+  const fresh = vm.createContext({ URL, AbortController, AbortSignal, setTimeout, clearTimeout, console, inspectPrompt, defaultPersonalPolicy, evaluatePolicy, fetch: context.fetch,
+    chrome: { ...c, storage: { onChanged: { addListener() {} }, managed: { get: () => slow },
+      local: { ...c.storage.local, get: async key => key === 'redaxa_auto_check' ? { redaxa_auto_check: false } : {} } } } });
+  vm.runInContext(fs.readFileSync(new URL('config.js', root), 'utf8'), fresh);
+  vm.runInContext(fs.readFileSync(new URL('background.js', root), 'utf8').replace(/^import .*;\r?\n/gm, ''), fresh);
+  const freshHandle = vm.runInContext('handleMessage', fresh);
+  pushed.length = 0;
+  const startedAt = Date.now();
+  const early = await freshHandle({ type: 'STATUS' }, chatgpt);
+  assert.ok(Date.now() - startedAt < 1000, 'a slow policy read does not hold the status');
+  assert.equal(early.autoCheck, false, 'until the policy answers, the person\'s choice stands');
+  release({ forceAutoCheck: true });
+  await new Promise(resolve => setTimeout(resolve, 10));
+  assert.equal(pushed.length, 2, 'the late policy answer is pushed to open tabs');
+  assert.equal((await freshHandle({ type: 'STATUS' }, chatgpt)).autoCheck, true, 'and holds from then on');
+}
 console.log('Extension background: minimal permissions, no remote code, welcome tab, popup-only account actions, storage closed to pages, no email for pages, switch pushed to tabs, local checks send nothing, local review counter, authenticated account checks, enterprise policy, workspace-locked switch and outage memory passed.');
