@@ -58,6 +58,7 @@ const db = {
   users: new Map<string, string>(),
   calls: [] as Array<{ method: string; url: string; body?: Row }>,
   locked: false,
+  refusal: null as string | null,
   trialTableMissing: false,
 };
 function resetDb(): void { db.accounts.clear(); db.claims = []; db.users.clear(); db.calls = []; }
@@ -78,6 +79,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
   if (url.includes("/rpc/complete_stripe_event")) return json(null);
   if (url.includes("/rpc/reserve_billing_checkout")) {
     if (db.locked) { db.locked = false; return json({ message: "A checkout session is already being prepared" }, 400); }
+    if (db.refusal) { const message = db.refusal; db.refusal = null; return json({ message }, 400); }
     const id = String(body?.p_user_id);
     const row = db.accounts.get(id) ?? { user_id: id, stripe_customer_id: "cus_fixture", has_used_trial: false, subscription_status: null };
     db.accounts.set(id, row);
@@ -222,6 +224,12 @@ resetDb();
   db.locked = true;
   await checkout(id, { plan: "personal", interval: "monthly" }, 429);
   db.locked = false;
+  // An unpaid, paused or incomplete subscription is settled in Manage billing, never doubled.
+  const opened = sessions.length;
+  db.refusal = "The existing subscription needs attention in billing management";
+  const unpaid = await checkout(id, { plan: "personal", interval: "monthly", start_trial: false }, 409);
+  assert.equal(unpaid.res.body.code, "manage_billing");
+  assert.equal(sessions.length, opened, "no second checkout session");
   // Windows app 0.5.5 and older: seven days, under the same rule.
   const legacy = await checkout(id, { plan: "personal", interval: "monthly" });
   assert.equal(legacy.params.subscription_data.trial_period_days, 7);

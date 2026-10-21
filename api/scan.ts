@@ -65,8 +65,11 @@ export default async function handler(request: RequestLike, response: ResponseLi
   // only, the visibility the Business plan exists for.
   if (request.method === "GET") {
     try {
-      const user = await requireUser(request, response, true);
+      // An API key reads its own account's activity only. Team activity names
+      // members by email, so it needs a signed-in owner or admin: a key leaked
+      // from a CI log must not hand out the team's addresses.
       const scope = queryValue(request, "scope");
+      const user = await requireUser(request, response, scope !== "org");
       const format = queryValue(request, "format");
       const from = auditBoundary(queryValue(request, "from"), false);
       const to = auditBoundary(queryValue(request, "to"), true);

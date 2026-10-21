@@ -28,7 +28,7 @@ for (const language of languages) {
 }
 const shellKeys = Object.keys(shell.en).sort();
 for (const language of languages) assert.deepEqual(Object.keys(shell[language]).sort(), shellKeys, `${language}: shell copy keys differ from English`);
-for (const key of ['plansHeadline', 'trustServer', 'faqMissA', 'sevCriticalHint']) {
+for (const key of ['plansHeadline', 'trustServer', 'trustTerms', 'faqMissA', 'sevCriticalHint']) {
   for (const language of languages.slice(1)) assert.notEqual(views[language][key], views.en[key], `${language}.${key} is untranslated`);
 }
 for (const key of ['navCheck', 'navRepository', 'repoNoteText']) {
@@ -52,6 +52,11 @@ const english = Object.values(views.en).join(' ');
 assert.doesNotMatch(english, /\b(blocks everything|100%|guarantee|never miss|the best)\b/i);
 assert.doesNotMatch(english.replace(/Private repositories are not supported/g, ''), /private repositories/i);
 assert.match(views.en.trustLimit, /can miss sensitive information/);
+// What a Business workspace keeps on the server is stated in every language and in the policy.
+for (const language of languages) assert.match(views[language].trustTerms, /serv/i, `${language}.trustTerms`);
+const privacy = fs.readFileSync(new URL('../privacy.html', import.meta.url), 'utf8');
+assert.match(privacy, /protected terms[^<]*category policies[^<]*member list/i);
+for (const language of languages) assert.ok(base[language].orgLeave && base[language].orgLeaveConfirm, `${language}: leave workspace copy`);
 
 // Old dialog links keep landing on the matching page.
 const routes = constant('viewForHash');
