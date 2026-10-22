@@ -117,6 +117,29 @@ assert.equal(lastScan.requireAccount, false, 'a visitor is checked on the device
 assert.match(ui.get('#redaxa-body').innerHTML, /Checked on this device/);
 assert.ok(!ui.get('#redaxa-body').innerHTML.includes(token));
 console.log('Manual check: runs locally on one click and says so, without exposing values.');
+// Narrow Gemini (929 x 923, measured live): Send sits where the check button
+// used to be. The button moves above the composer card, and back down once
+// the card no longer reaches the right edge.
+{
+  const style = {}, panelStyle = {};
+  const send = { offsetHeight: 40, getBoundingClientRect: () => ({ left: 745, right: 785, top: 800, bottom: 840 }) };
+  const card = { contains: node => node === send, getBoundingClientRect: () => ({ left: 135, right: 795, top: 702, bottom: 857, height: 155 }) };
+  const editor = { parentElement: card, contains: node => node === editor, getBoundingClientRect: () => ({ left: 160, right: 770, top: 715, bottom: 790, height: 75 }) };
+  const saved = { find: sandbox.findComposer, get: sandbox.document.getElementById, all: sandbox.document.querySelectorAll };
+  sandbox.findComposer = () => editor;
+  Object.assign(sandbox.window, { innerWidth: 929, innerHeight: 923 });
+  sandbox.document.getElementById = id => id === 'redaxa-check-btn' ? { offsetHeight: 34, offsetWidth: 170, style } : id === 'redaxa-panel' ? { style: panelStyle } : null;
+  sandbox.document.querySelectorAll = selector => selector === '.send-button button' ? [send] : [];
+  vm.runInContext('placeCheckButton()', sandbox);
+  assert.equal(style.bottom, '233px', 'the button sits 12 px above the composer card');
+  assert.equal(panelStyle.bottom, '281px', 'the panel opens above the moved button');
+  sandbox.window.innerWidth = 1600;
+  vm.runInContext('placeCheckButton()', sandbox);
+  assert.equal(style.bottom, '88px', 'back to the usual place when nothing is covered');
+  Object.assign(sandbox, { findComposer: saved.find });
+  Object.assign(sandbox.document, { getElementById: saved.get, querySelectorAll: saved.all });
+}
+console.log('Check button: moves off Send and the composer on narrow layouts.');
 // Too long to check: free use may send it unchecked, a plan account may not.
 sandbox.document.createElement=()=>({innerHTML:'',remove(){},querySelector(selector){return {addEventListener(_e,h){handlers.set(selector,h);}};}});
 sandbox.document.body={append(m){currentModal=m;}};

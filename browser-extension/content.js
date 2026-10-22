@@ -670,8 +670,50 @@ document.addEventListener("click", (event) => {
 void refreshStatus();
 document.addEventListener("visibilitychange", () => { if (!document.hidden) void refreshStatus(); });
 
+// Bottom-right is where Send sits on narrow layouts (Gemini below about
+// 1000 px wide), so the button moves up above the composer whenever it would
+// cover it, and back down when the window widens again.
+const CHECK_BOTTOM = 88;
+function placeCheckButton() {
+  const button = document.getElementById("redaxa-check-btn");
+  if (!button) return;
+  const composer = findComposer();
+  const sends = sendButtonSelectors.flatMap((selector) => {
+    try { return [...document.querySelectorAll(selector)]; } catch { return []; }
+  }).filter(visible);
+  // The composer's card: the smallest box holding the editor and its Send button.
+  let card = composer;
+  while (card && sends.length && !sends.some((send) => card.contains(send))) card = card.parentElement;
+  const cardRect = card?.getBoundingClientRect();
+  const obstacles = cardRect && cardRect.height < window.innerHeight / 2
+    ? [cardRect]
+    : [composer, ...sends].filter((el) => el && visible(el)).map((el) => el.getBoundingClientRect());
+  const height = button.offsetHeight, right = window.innerWidth - 22, left = right - button.offsetWidth;
+  let bottom = CHECK_BOTTOM;
+  for (const rect of obstacles.sort((a, b) => b.bottom - a.bottom)) {
+    const top = window.innerHeight - bottom - height;
+    if (rect.left < right && rect.right > left && rect.top < top + height && rect.bottom > top) bottom = window.innerHeight - rect.top + 12;
+  }
+  if (bottom + height > window.innerHeight - 8) bottom = CHECK_BOTTOM; // no room above: keep the usual place
+  button.style.bottom = `${bottom}px`;
+  const panel = document.getElementById("redaxa-panel");
+  if (panel) Object.assign(panel.style, { bottom: `${bottom + 48}px`, maxHeight: `min(64vh, ${window.innerHeight - bottom - 64}px)` });
+}
+
 function boot() {
   if (!document.getElementById("redaxa-check-btn")) buildUI();
+  // Typing grows the composer and brings up Send; the composer itself can
+  // render after the button does.
+  let queued = false;
+  const schedule = () => {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(() => { queued = false; placeCheckButton(); });
+  };
+  window.addEventListener("resize", schedule);
+  document.addEventListener("input", schedule, true);
+  document.addEventListener("focusin", schedule, true);
+  for (const delay of [0, 600, 2000]) setTimeout(schedule, delay);
 }
 if (document.body) boot();
 else document.addEventListener("DOMContentLoaded", boot, { once: true });
