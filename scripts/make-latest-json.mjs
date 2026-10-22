@@ -82,6 +82,18 @@ if (!nsisPlatform.signature || !msiPlatform.signature) {
   console.error("Empty updater signature. Refusing to publish.");
   process.exit(1);
 }
+// Every Redaxa from 0.4.3 reads the signed file name as everything after
+// "\tfile:" in the trusted comment (src-tauri/src/update_identity.rs). A
+// signature made with --app-version, or by `tauri build` with the key in the
+// environment, ends in "\tversion:X"; those clients read that as part of the
+// file name and never offer the update. 0.6.3 shipped like that.
+for (const [file, platform] of [[setup, nsisPlatform], [msi, msiPlatform]]) {
+  const comment = Buffer.from(platform.signature, "base64").toString("utf8").split("\n")[2]?.trimEnd() ?? "";
+  if (!/^trusted comment: timestamp:\d+\tfile:[^\t]+$/.test(comment) || !comment.endsWith(`\tfile:${file}`)) {
+    console.error(`${file}: the trusted comment must be exactly "timestamp:<n>\\tfile:${file}", got ${JSON.stringify(comment)}. Re-sign with \`tauri signer sign\` and no --app-version.`);
+    process.exit(1);
+  }
+}
 const manifest = {
   version,
   notes,
