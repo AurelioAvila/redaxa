@@ -544,6 +544,31 @@ export async function sendPasswordChangedEmail(to: string, firstName: string | n
   return send(to, mail.subject, mail.html, mail.text);
 }
 
+/** Tells a workspace owner that a teammate left: the seat is free again and nothing else would tell them. */
+function memberLeftEmail(memberEmail: string, workspace: string, when: string): { subject: string; html: string; text: string } {
+  return renderEmail({
+    subject: "A teammate left your Redaxa workspace",
+    kind: "account",
+    preheader: `${memberEmail} left ${workspace}. Their seat is free for someone else.`,
+    footer: "You received this because you own this Redaxa workspace. It is sent each time a teammate leaves it.",
+    help: ["Did not expect this?", "Reply to this message and we will help you check the workspace."],
+    blocks: [
+      { kicker: "Workspace" },
+      { h1: "A teammate left your workspace." },
+      { p: `${memberEmail} left ${workspace} on ${when}. Their seat is free again, so you can invite someone else from Account > Organization.` },
+      { rows: [["Teammate", memberEmail], ["Workspace", workspace], ["Left on", when]] },
+    ],
+  });
+}
+export function memberLeftHtml(memberEmail: string, workspace: string, when: string): string { return memberLeftEmail(memberEmail, workspace, when).html; }
+export function memberLeftText(memberEmail: string, workspace: string, when: string): string { return memberLeftEmail(memberEmail, workspace, when).text; }
+
+/** Sends the owner's notice. Never throws; the teammate has already left. */
+export async function sendMemberLeftEmail(to: string, memberEmail: string, workspace: string): Promise<boolean> {
+  const mail = memberLeftEmail(memberEmail, workspace, `${new Date().toLocaleString("en-GB", { dateStyle: "long", timeStyle: "short", timeZone: "UTC" })} UTC`);
+  return send(to, mail.subject, mail.html, mail.text);
+}
+
 /** Sends the welcome. Never throws; the caller has already succeeded. */
 export async function sendWelcomeEmail(to: string, firstName: string | null | undefined, appUrl: string, userId?: string): Promise<boolean> {
   const mail = welcomeEmail(firstName, appUrl);
