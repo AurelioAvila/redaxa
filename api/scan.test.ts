@@ -39,6 +39,16 @@ assert.deepEqual(sixth.payload, { error: "TRIAL_REQUIRED" });
 // A different account keeps its own allowance.
 assert.equal((await scan("00000000-0000-0000-0000-0000000000f2", null, "10.0.0.1")).code, 200);
 
+// New free accounts from one address share a cap: a fresh mailbox is not
+// five more checks once the address has run fifteen.
+for (let n = 0; n < 3; n++)
+  for (let i = 0; i < 5; i++)
+    assert.equal((await scan(`00000000-0000-0000-0000-00000000010${n}`, null, "10.7.7.7")).code, 200, `account ${n}, check ${i + 1}`);
+const fresh = await scan("00000000-0000-0000-0000-0000000002ff", null, "10.7.7.7");
+assert.equal(fresh.code, 402, "a fourth new account on the same address");
+assert.deepEqual(fresh.payload, { error: "TRIAL_REQUIRED" });
+assert.equal((await scan("00000000-0000-0000-0000-0000000002ff", null, "10.7.7.8")).code, 200, "the same account elsewhere keeps its own five");
+
 // A subscriber is not held to the daily allowance.
 const paid = "00000000-0000-0000-0000-0000000000a1";
 const plan = { user_id: paid, plan: "pro", subscription_status: "active", current_period_end: new Date(Date.now() + 864e5).toISOString() };

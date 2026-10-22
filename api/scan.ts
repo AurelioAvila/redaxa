@@ -14,6 +14,11 @@ const maxPromptLength = 20_000;
  *  enough that the detection engine is not a free public API, large enough
  *  to check a genuine prompt and a retry after editing it. */
 const anonymousDailyScans = 5;
+/** Free checks one address may run across every plan-less account in a day.
+ *  Each account had its own 5 and nothing else, so a new mailbox was five
+ *  more checks: the detection engine as a free API with a sign-up step.
+ *  Three accounts' worth, so a household or an office is not punished. */
+const freeDailyScansPerAddress = 15;
 
 // The surface the prompt came from, self-reported by the client and used ONLY
 // as audit metadata — it grants nothing. Values outside the allowlist are
@@ -174,7 +179,9 @@ export default async function handler(request: RequestLike, response: ResponseLi
       // entirely, which punished exactly the people most likely to buy.
       if (!entitlement.active && (
         rateLimited(`scan:free:${user.id}`, anonymousDailyScans, 86_400_000) ||
-        await rateLimitedShared(supabaseService, `scan:free:${user.id}`, anonymousDailyScans, 86_400)
+        await rateLimitedShared(supabaseService, `scan:free:${user.id}`, anonymousDailyScans, 86_400) ||
+        rateLimited(`scan:free-ip:${ip}`, freeDailyScansPerAddress, 86_400_000) ||
+        await rateLimitedShared(supabaseService, `scan:free-ip:${ip}`, freeDailyScansPerAddress, 86_400)
       )) { response.status(402).json({ error: "TRIAL_REQUIRED" }); return; }
       if (
         rateLimited(`scan:user:${user.id}`, 120, 60_000) ||
