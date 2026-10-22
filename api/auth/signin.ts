@@ -1,6 +1,6 @@
-import { corsHeaders, setSessionCookies } from "../_billing.js";
+import { corsHeaders, setSessionCookies, supabaseService } from "../_billing.js";
 import { welcomeOnce } from "../_welcome.js";
-import { clientIp, rateLimited } from "../_rateLimit.js";
+import { clientIp, keyedHash, rateLimitedEverywhere } from "../_rateLimit.js";
 
 type RequestLike = { method?: string; body?: unknown; headers?: Record<string, string | string[] | undefined> };
 type ResponseLike = { setHeader(name: string, value: string | string[]): void; status(code: number): ResponseLike; json(value: unknown): void; end(): void };
@@ -43,7 +43,7 @@ export default async function handler(request: RequestLike, response: ResponseLi
     const remember = body.remember !== false;
     if (!email || !password) { response.status(400).json({ error: "Enter your email and password." }); return; }
     const ip = clientIp(request.headers);
-    if (rateLimited(`signin:ip:${ip}`, 20, 5 * 60_000) || rateLimited(`signin:email:${email.toLowerCase()}`, 8, 5 * 60_000)) {
+    if (await rateLimitedEverywhere(supabaseService, `signin:ip:${ip}`, 20, 5 * 60_000) || await rateLimitedEverywhere(supabaseService, `signin:email:${keyedHash(email.toLowerCase())}`, 8, 5 * 60_000)) {
       response.status(429).json({ error: "Too many attempts. Please wait a few minutes and try again." });
       return;
     }

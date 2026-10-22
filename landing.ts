@@ -29,7 +29,10 @@ function mountLanding(): void {
     if (prices === null && billing?.trialEnabled === undefined) return;
     document.querySelectorAll<HTMLElement>('[data-trial-copy]').forEach(el => {
       if (el.dataset.legacyCopy === undefined) el.dataset.legacyCopy = el.textContent ?? '';
-      el.textContent = trialOn() ? el.dataset.trialCopy ?? '' : el.dataset.legacyCopy;
+      const days = billing?.trialDays ?? prices?.trialDays;
+      el.textContent = trialOn() && days
+        ? (el.dataset.trialCopy ?? '').replaceAll('{days}', String(days))
+        : el.dataset.legacyCopy;
     });
     const fine = document.querySelector<HTMLElement>('#promo-fine');
     if (fine) fine.textContent = trialOn() ? TRIAL_UI.en.promoFine : PROMO_WORDS_EN.fine;
@@ -184,7 +187,7 @@ function mountLanding(): void {
       const message = error instanceof Error ? error.message : "";
       if (message === "TRIAL_REQUIRED") {
         track('trial_gate');
-        auth.requestAccess(trialOn() ? "You have used the free checks for today. Choose a plan to keep going; you can try it free for 3 days." : "You have used the free checks for today. Choose a plan to keep going; eligible new subscribers get a 7-day trial.");
+        auth.requestAccess(trialOn() ? `You have used the free checks for today. Choose a plan to keep going; you can try it free for ${billing?.trialDays ?? prices?.trialDays ?? 3} days.` : "You have used the free checks for today. Choose a plan to keep going; eligible new subscribers get a 7-day trial.");
       } else {
         resultTitle.textContent = "Check failed";
         resultCopy.textContent = "We could not run that check. Please try again.";

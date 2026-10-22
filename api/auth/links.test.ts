@@ -15,7 +15,10 @@ let verifyOk = true;
 let weakPassword = false;
 const hash = "a".repeat(56);
 const originalFetch = globalThis.fetch;
+let sharedLimited = false;
 globalThis.fetch = (async (input: string, options: RequestInit = {}) => {
+  // The shared rate-limit counter answers on its own, outside the recorded flow.
+  if (String(input).endsWith("/rest/v1/rpc/rate_limit_hit")) return Response.json(sharedLimited);
   const headers = new Headers(options.headers);
   calls.push({ url: String(input), method: options.method, body: options.body ? JSON.parse(String(options.body)) : undefined, auth: headers.get("authorization") ?? undefined });
   const url = String(input);
@@ -80,11 +83,18 @@ try {
   assert.equal(weak.status, 400);
   assert.match(String(weak.result.error), /Request a new link/);
   weakPassword = false;
-  // Links sent before this change still work.
+  // A bare access token is not a recovery link: any session could change the password with it.
   calls.length = 0;
-  assert.equal((await invoke(recover, { access_token: "legacy-access", password: "a-long-enough-password" }, { action: "finish" })).status, 200);
-  assert.equal(calls.some(call => call.url.endsWith("/auth/v1/verify")), false);
+  assert.equal((await invoke(recover, { access_token: "any-session-access", password: "a-long-enough-password" }, { action: "finish" })).status, 400);
+  assert.equal(calls.some(call => call.url.endsWith("/auth/v1/user")), false, "nothing is written without a verified recovery hash");
   assert.equal((await invoke(recover, { password: "a-long-enough-password" }, { action: "finish" })).status, 400);
+
+  // The shared counter limits every instance, not only this one's memory.
+  sharedLimited = true;
+  calls.length = 0;
+  assert.equal((await invoke(recover, { token_hash: hash, password: "a-long-enough-password" }, { action: "finish" })).status, 429);
+  assert.equal(calls.length, 0, "a limited reset does not spend the link");
+  sharedLimited = false;
 
   // Requesting a reset names the destination in the query string and never reveals whether the account exists.
   calls.length = 0;
@@ -96,5 +106,5 @@ try {
   assert.match(signinError(400, "email_not_confirmed"), /Confirm your email address first/);
   assert.match(signinError(429, undefined), /Too many attempts/);
   assert.match(signinError(503, undefined), /not available/);
-  console.log("Email links: hash confirmation without a session, scanner-safe reset with global sign-out, legacy links and query-string destinations passed.");
+  console.log("Email links: hash confirmation without a session, scanner-safe reset with global sign-out, bare access tokens refused and query-string destinations passed.");
 } finally { globalThis.fetch = originalFetch; }

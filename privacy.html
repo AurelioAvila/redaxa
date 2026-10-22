@@ -11,13 +11,16 @@
     <meta property="og:title" content="Privacy policy — Redaxa" />
     <meta property="og:description" content="What a Redaxa scan receives, what is stored and for how long, and the choices you have over your account." />
     <meta property="og:url" content="https://redaxa.getcertsprint.com/privacy.html" />
-    <meta property="og:image" content="https://redaxa.getcertsprint.com/og-image.png" />
+    <meta property="og:image" content="https://redaxa.getcertsprint.com/og-redaxa-eb3e35858c.png" />
+    <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Redaxa prompt check flagging an email, a server address and a credential, with a safer version to copy" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Privacy policy — Redaxa" />
     <meta name="twitter:description" content="What a Redaxa scan receives, what is stored and for how long, and the choices you have over your account." />
-    <meta name="twitter:image" content="https://redaxa.getcertsprint.com/og-image.png" />
+    <meta name="twitter:image" content="https://redaxa.getcertsprint.com/og-redaxa-eb3e35858c.png" />
+    <meta name="twitter:image:alt" content="Redaxa prompt check flagging an email, a server address and a credential, with a safer version to copy" />
     <link rel="icon" type="image/svg+xml" href="/outputs/redaxa-mark.svg" />
     <style>
       :root { --ink:#f7f6f2; --paper:#1b1724; --muted:#5a5466; --line:#e3dfd5; --acid:#a3471d; color-scheme:light; }
@@ -35,17 +38,17 @@
       th { color:var(--paper); font-weight:700; }
       @media (max-width:760px) { .shell { padding:40px 20px 80px; } }
     </style>
-  </head>
+</head>
   <body>
     <main class="shell">
       <a class="back" href="/">← Redaxa</a>
       <h1>Privacy policy</h1>
-      <p class="updated">Last updated 14 October 2026</p>
+      <p class="updated">Last updated 21 October 2026</p>
 
       <p>Redaxa is operated by Aurelio Avila, a private individual who is the controller of your personal data ("we", "us"). No data protection officer has been appointed. This page explains what we collect, why, and how you can control it. If anything here is unclear, email <a href="mailto:redaxa@getcertsprint.com">redaxa@getcertsprint.com</a>.</p>
 
       <h2>The short version</h2>
-      <p>The text you paste into the scanner is used only to compute the result you see. It is never written to a database, a log file, an analytics tool, or a backup. We collect account and billing details needed to run a subscription (email, optional first name and billing status), a record of each signed-in check processed on our servers that never includes the text, and the anonymous website action totals described below. We do not use advertising trackers or sell this data. Older accounts may retain profile details supplied before this change.</p>
+      <p>The text you paste into the scanner is used only to compute the result you see. It is never written to a database, a log file, an analytics tool, or a backup. We collect account and billing details needed to run a subscription (email, optional first name and billing status), a record of each signed-in check processed on our servers that never includes the text, the settings a Business workspace shares (its protected terms, category policies and member list), and the anonymous website action totals described below. We do not use advertising trackers or sell this data. Older accounts may retain profile details supplied before this change.</p>
 
       <h2>What we collect</h2>
       <table>
@@ -56,7 +59,8 @@
         <tr><td>Free-trial record: a one-way hash (SHA-256) of your email address, normalised so that variations of the same mailbox match; the fingerprint Stripe gives the card used; the subscription ID and when the trial ends</td><td>Give each person one free trial and send the reminder before it ends. It holds no email address and no card number, and it is kept after an account is deleted: otherwise deleting and re-creating an account would start another trial</td></tr>
         <tr><td>Local scan history (timestamps and counts by category)</td><td>Stored only in your own browser’s local storage to show “Recent checks.” Prompt text and detected values are not retained in this history. Older local text previews are removed when this version reads the history; account activity metadata is described separately below</td></tr>
         <tr><td>Offer display choice</td><td>Stored only in your own browser’s local storage: whether you last saw a time-limited offer running, and whether you dismissed its banner. It holds no personal data, is never sent to us, and lets the page keep its layout steady and stay quiet after you dismiss it</td></tr>
-        <tr><td>Check activity for signed-in accounts: time, the app or AI site the check came from, detected categories and counts, and the policy outcome</td><td>Shown to you as your activity history and export. In a Business workspace, owners and admins can also see their members' activity. It never includes prompt text or detected values, and is kept while your account exists</td></tr>
+        <tr><td>Check activity for signed-in accounts: time, the app or AI site the check came from, detected categories and counts, and the policy outcome</td><td>Shown to you as your activity history and export. In a Business workspace, owners and admins can also see their members' activity, with each member's email address, when signed in to Redaxa; API keys read only their own account's activity. It never includes prompt text or detected values, and is kept while your account exists</td></tr>
+        <tr><td>Business workspace settings: the workspace name, its protected terms (the words the team chose to flag, such as client or project names, which can include people's names), its category policies, and its member list (each member's account and role)</td><td>Apply the same protection on every member's device. Stored on our servers (Supabase) while the workspace exists. Every member can read them; only owners and admins can change them. Members see teammates' email addresses masked, owners and admins see them in full to manage the team. A term or policy is deleted when an owner or admin removes it, a membership when the member leaves or is removed, and all of them when the workspace owner's account is deleted</td></tr>
         <tr><td>Daily allowance counters</td><td>Enforce the free daily checks. Counters for visitors are stored under a one-way hash of the network address, never the address itself; each holds only a number and the start of its window</td></tr>
         <tr><td>Session tokens</td><td>Keep you signed in (httpOnly cookies on the web app, the Windows credential store in the desktop app, and the extension's own storage in the browser extension)</td></tr>
         <tr><td>Team invite tokens</td><td>If you're on a Business plan, link-based invites so you can add teammates. We don't collect a teammate's email before they join</td></tr>

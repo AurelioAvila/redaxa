@@ -3,7 +3,7 @@ import { clientIp, rateLimited } from "./_rateLimit.js";
 import { promoCheckout, promoState } from "./_promo.js";
 import {
   LEGACY_TRIAL_DAYS, LEGACY_TRIAL_MARK, LANGUAGES, TRIAL_DAYS, TRIAL_MARK, dueReminders, isOurTrial, markReminded, publicPrices,
-  trialEligible, trialEnabled, upcomingCharge, language as languageOf,
+  legacyTrialEligible, trialEligible, upcomingCharge, language as languageOf,
 } from "./_trial.js";
 import { sendTrialMail } from "./_trial-email.js";
 
@@ -24,6 +24,45 @@ const priceFor = (plan: string, interval: string): string | null => {
   };
   return prices[`${plan}:${interval}`] ?? null;
 };
+
+const PORTAL_MARK = "redaxa-portal-v1";
+let portalConfigurationId: Promise<string | undefined> | null = null;
+
+/**
+ * Redaxa's own customer-portal configuration: cancel at period end, card,
+ * invoices. The account's default configuration is shared with the other
+ * products sold through the same Stripe account and offers their prices as
+ * "plan changes", which would move a Redaxa subscriber onto another
+ * product's price. No plan changes here: plan and seats come from checkout.
+ * Found by its metadata, created the first time; STRIPE_PORTAL_CONFIGURATION
+ * overrides. Undefined (the account default, as before) when Stripe refuses.
+ */
+export function portalConfiguration(): Promise<string | undefined> {
+  const configured = process.env.STRIPE_PORTAL_CONFIGURATION;
+  if (configured?.startsWith("bpc_")) return Promise.resolve(configured);
+  portalConfigurationId ??= (async () => {
+    const existing = await stripe.billingPortal.configurations.list({ active: true, limit: 100 });
+    const found = existing.data.find((configuration) => configuration.metadata?.redaxa === PORTAL_MARK);
+    if (found) return found.id;
+    const created = await stripe.billingPortal.configurations.create({
+      business_profile: { headline: "Manage your Redaxa subscription" },
+      features: {
+        customer_update: { enabled: true, allowed_updates: ["name", "email", "address", "phone"] },
+        invoice_history: { enabled: true },
+        payment_method_update: { enabled: true },
+        subscription_cancel: { enabled: true, mode: "at_period_end", proration_behavior: "none" },
+        subscription_update: { enabled: false },
+      },
+      metadata: { redaxa: PORTAL_MARK },
+    });
+    return created.id;
+  })().catch((error: unknown) => {
+    console.error("no Redaxa portal configuration, using the account default:", String((error as Error)?.message ?? error).slice(0, 200));
+    portalConfigurationId = null;
+    return undefined;
+  });
+  return portalConfigurationId;
+}
 
 /**
  * The reminder a day before a trial ends. Vercel Cron calls this four times a
@@ -90,6 +129,8 @@ export default async function handler(request: RequestLike, response: ResponseLi
     const secret = process.env.CRON_SECRET;
     if (!secret || request.headers?.authorization !== `Bearer ${secret}`) { response.status(401).json({ error: "UNAUTHORIZED" }); return; }
     try {
+      // Also makes the portal configuration exist before a customer needs it.
+      await portalConfiguration();
       response.status(200).json(await sendTrialReminders());
     } catch (error) {
       console.error("trial reminder sweep failed:", String(error).slice(0, 300));
@@ -104,7 +145,7 @@ export default async function handler(request: RequestLike, response: ResponseLi
       const user = await requireUser(request, response);
       const account = await accountFor(user.id);
       if (!account?.stripe_customer_id) { response.status(400).json({ error: "No subscription is attached to this account yet." }); return; }
-      const session = await stripe.billingPortal.sessions.create({ customer: account.stripe_customer_id, return_url: `${billingAppUrl(request)}/?billing=managed` });
+      const session = await stripe.billingPortal.sessions.create({ customer: account.stripe_customer_id, configuration: await portalConfiguration(), return_url: `${billingAppUrl(request)}/?billing=managed` });
       response.status(200).json({ url: session.url });
     } catch (error) {
       const message = error instanceof Error ? error.message : "PORTAL_ERROR";
@@ -163,13 +204,13 @@ export default async function handler(request: RequestLike, response: ResponseLi
         await saveCustomer(user.id, customerId);
       }
       // Clients from before the choice (Windows app 0.5.5 and older) advertise
-      // a seven-day trial to eligible new subscribers and keep exactly that;
-      // with the switch on it falls under the one-per-person rule too.
-      const legacyTrial = startTrial === undefined && !account.has_used_trial
-        && (!trialEnabled() || await trialEligible(user.id, user.email, account));
+      // a seven-day trial to eligible new subscribers and keep exactly that,
+      // always under the one-per-person rule: the mark makes the webhook claim
+      // it against the account, the mailbox and the card.
+      const legacyTrial = startTrial === undefined && await legacyTrialEligible(user.id, user.email, account);
       const trial = startTrial === true
         ? { days: TRIAL_DAYS, mark: TRIAL_MARK }
-        : legacyTrial ? { days: LEGACY_TRIAL_DAYS, mark: trialEnabled() ? LEGACY_TRIAL_MARK : null } : null;
+        : legacyTrial ? { days: LEGACY_TRIAL_DAYS, mark: LEGACY_TRIAL_MARK } : null;
       // The discount follows the plan resolved above and the server's clock.
       // A once-only coupon skips the trial's zero invoice and comes off the
       // first paid one (checked on Stripe test clocks, 10 and 14 Oct 2026).
@@ -210,6 +251,13 @@ export default async function handler(request: RequestLike, response: ResponseLi
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : "CHECKOUT_ERROR";
+    // An unpaid, paused or incomplete subscription still exists and can bill:
+    // a second one would charge twice once the card is fixed. The customer
+    // settles the first one in Manage billing instead.
+    if (message === "BILLING_ACTION_REQUIRED") {
+      response.status(409).json({ error: "Your subscription has a payment to sort out. Update it in Manage billing instead of starting a new one.", code: "manage_billing" });
+      return;
+    }
     const status = message === "UNAUTHORIZED" ? 401 : message === "ACTIVE_SUBSCRIPTION" ? 409 : message === "CHECKOUT_IN_PROGRESS" ? 429 : 500;
     if (status === 500) console.error("billing checkout error:", error);
     response.status(status).json({ error: status === 500 ? "We could not start checkout. Please try again." : message });

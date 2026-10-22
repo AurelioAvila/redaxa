@@ -154,5 +154,12 @@
   "planTrialBusiness": {"message": "Essai de Business · se termine le $DATE$", "placeholders": {"date": {"content": "$1", "example": "17 October"}}},
   "statusPaused": {"message": "Échec du paiement"},
   "planPaused": {"message": "Offre suspendue jusqu’à ce qu’un paiement aboutisse."},
-  "updatePayment": {"message": "Mettre à jour le paiement"}
+  "updatePayment": {"message": "Mettre à jour le paiement"},
+  "attachFoundToast": {"message": "$FILE$ pourrait contenir : $KINDS$. Redaxa vous demandera confirmation avant l'envoi.", "placeholders": {"file": {"content": "$1", "example": "report.csv"}, "kinds": {"content": "$2", "example": "Email address"}}},
+  "attachTitle": {"message": "Un fichier joint pourrait contenir des données sensibles"},
+  "attachExplain": {"message": "Vérifié sur cet appareil ; le fichier n'a été envoyé nulle part. Retirez-le du message s'il ne doit pas être partagé."},
+  "attachSkipped": {"message": "Non vérifiés : $FILES$. Seuls les fichiers texte jusqu'à 1 Mo sont vérifiés ; pas les PDF, images ni documents Office.", "placeholders": {"files": {"content": "$1", "example": "scan.pdf"}}},
+  "autoCheckLockedTeam": {"message": "Maintenu activé par votre espace Business tant que vous êtes connecté."},
+  "autoCheckLockedAdmin": {"message": "Maintenu activé par la stratégie de navigateur de votre organisation."},
+  "checkedLocallyOutage": {"message": "Votre compte est injoignable : ce message a été vérifié sur cet appareil. Les termes protégés et les règles d'équipe n'ont pas été appliqués."}
 }

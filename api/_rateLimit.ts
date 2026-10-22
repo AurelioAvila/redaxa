@@ -12,6 +12,13 @@ export function rateLimited(key: string, limit: number, windowMs: number): boole
   const now = Date.now();
   if (buckets.size > maxTrackedKeys) {
     for (const [bucketKey, bucket] of buckets) if (bucket.resetAt <= now) buckets.delete(bucketKey);
+    // Day-long windows rarely expire, so sweeping alone let the map grow (and
+    // every call walk it). Drop the oldest keys down to 90%: the shared
+    // counter below is the authority, this is only the cheap first line.
+    for (const bucketKey of buckets.keys()) {
+      if (buckets.size <= maxTrackedKeys * 0.9) break;
+      buckets.delete(bucketKey);
+    }
   }
   const bucket = buckets.get(key);
   if (!bucket || bucket.resetAt <= now) {
@@ -45,6 +52,23 @@ export async function rateLimitedShared(
   }
 }
 
+/** The in-memory first line, then the shared counter. For auth endpoints:
+ *  per-instance memory alone multiplied the limit by the number of warm
+ *  instances and reset on every cold start. */
+export async function rateLimitedEverywhere(
+  supabaseService: (path: string, init?: RequestInit) => Promise<Response>,
+  key: string,
+  limit: number,
+  windowMs: number
+): Promise<boolean> {
+  return rateLimited(key, limit, windowMs) || await rateLimitedShared(supabaseService, key, limit, Math.ceil(windowMs / 1000));
+}
+
+/** A keyed hash, never the value itself: the shared counters live in the database. */
+export function keyedHash(value: string): string {
+  return createHmac("sha256", process.env.SUPABASE_SERVICE_ROLE_KEY ?? "").update(value).digest("base64url");
+}
+
 /** A keyed hash of the caller's IP address, never the address itself: every
  *  use is a rate-limit key, and the shared counters live in the database. */
 export function clientIp(headers: Record<string, string | string[] | undefined> | undefined): string {
@@ -52,5 +76,5 @@ export function clientIp(headers: Record<string, string | string[] | undefined> 
   const value = Array.isArray(forwarded) ? forwarded[0] : forwarded;
   const real = headers?.["x-real-ip"];
   const address = (value ? value.split(",")[0]?.trim() : Array.isArray(real) ? real[0] : real) || "unknown";
-  return createHmac("sha256", process.env.SUPABASE_SERVICE_ROLE_KEY ?? "").update(address).digest("base64url");
+  return keyedHash(address);
 }

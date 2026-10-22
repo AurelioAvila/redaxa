@@ -12,20 +12,30 @@ try {
   fs.writeFileSync(path.join(root,'notes.md'),'# Redaxa\n\nUpdate notes.\n');
   const nsis=path.join(root,'src-tauri/target/release/bundle/nsis/Redaxa_0.4.0_x64-setup.exe');
   const msi=path.join(root,'src-tauri/target/release/bundle/msi/Redaxa_0.4.0_x64_en-US.msi');
-  fs.writeFileSync(nsis,'test fixture');fs.writeFileSync(nsis+'.sig','test-nsis-signature');
+  // A minisign signature as `tauri signer sign` writes it (base64 of four lines).
+  const sig=(file,extra='')=>Buffer.from(`untrusted comment: signature from tauri secret key\nRUQfixture\ntrusted comment: timestamp:1792656968\tfile:${file}${extra}\nfixture\n`).toString('base64');
+  fs.writeFileSync(nsis,'test fixture');fs.writeFileSync(nsis+'.sig',sig('Redaxa_0.4.0_x64-setup.exe'));
   fs.writeFileSync(msi,'test fixture');
   const run=()=>spawnSync(process.execPath,[path.join(root,'scripts/make-latest-json.mjs'),'notes.md'],{cwd:root,encoding:'utf8'});
   assert.notEqual(run().status,0,'Missing MSI signature must prevent publication');
-  fs.writeFileSync(msi+'.sig','test-msi-signature');
+  fs.writeFileSync(msi+'.sig',sig('Redaxa_0.4.0_x64_en-US.msi'));
   assert.equal(run().status,0);
   const manifest=JSON.parse(fs.readFileSync(path.join(path.dirname(nsis),'latest.json')));
   assert.deepEqual(manifest.platforms['windows-x86_64'],manifest.platforms['windows-x86_64-nsis'],'Legacy fallback remains NSIS');
   assert.equal(manifest.platforms['windows-x86_64-msi'].url,'https://github.com/AurelioAvila/redaxa/releases/download/v0.4.0/Redaxa_0.4.0_x64_en-US.msi');
-  assert.equal(manifest.platforms['windows-x86_64-msi'].signature,'test-msi-signature');
-  assert.equal(manifest.platforms['windows-x86_64-nsis'].signature,'test-nsis-signature');
+  assert.equal(manifest.platforms['windows-x86_64-msi'].signature,sig('Redaxa_0.4.0_x64_en-US.msi'));
+  assert.equal(manifest.platforms['windows-x86_64-nsis'].signature,sig('Redaxa_0.4.0_x64-setup.exe'));
+  // Installed clients read everything after "\tfile:" as the file name, so a
+  // version-bound signature (0.6.3) or another file's signature is refused.
+  for(const [bad,why] of [[sig('Redaxa_0.4.0_x64_en-US.msi','\tversion:0.4.0'),'version-bound signature'],[sig('Redaxa_0.3.9_x64_en-US.msi'),'signature of another file']]){
+    fs.writeFileSync(msi+'.sig',bad);
+    const refused=run();
+    assert.notEqual(refused.status,0,`${why} must prevent publication`);
+    assert.match(refused.stderr,/trusted comment must be exactly/);
+  }
   fs.writeFileSync(msi+'.sig',' \n');
   assert.notEqual(run().status,0,'Empty signature must prevent publication');
-  console.log('Updater metadata: MSI/NSIS pairing, legacy fallback and missing/empty signature rejection passed.');
+  console.log('Updater metadata: MSI/NSIS pairing, legacy fallback, missing/empty signature and client-readable signed file name passed.');
 } finally {
   if(path.dirname(fs.realpathSync(root))!==parent||!path.basename(root).startsWith('redaxa-updater-test-'))throw new Error('Unsafe test cleanup');
   fs.rmSync(root,{recursive:true,force:true});

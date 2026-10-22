@@ -6,7 +6,8 @@ process.env.STRIPE_SECRET_KEY = 'sk_test_dummy';
 const { default: handler } = await import('./signup.js');
 const originalFetch = globalThis.fetch;
 const calls: unknown[] = [];
-globalThis.fetch = async (_url, options) => {
+globalThis.fetch = async (url, options) => {
+  if (String(url).endsWith('/rest/v1/rpc/rate_limit_hit')) return Response.json(false);
   calls.push(JSON.parse(String(options?.body)));
   return new Response('{}', {status:200});
 };

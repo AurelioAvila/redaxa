@@ -230,7 +230,7 @@ export async function buildLanguages(root, facts) {
 <p class="note"><a href="/privacy.html" hreflang="en">${esc(w.footer)}</a> · © 2026 Redaxa · Aurelio Avila</p>
 <script src="/lang-pref.js" defer></script><script src="/cf-beacon.js" defer></script>`;
     const graph = [
-      { "@type": "Organization", "@id": `${ORIGIN}/#organization`, name: "Redaxa", url: `${ORIGIN}/`, logo: `${ORIGIN}/og-image.png` },
+      { "@type": "Organization", "@id": `${ORIGIN}/#organization`, name: "Redaxa", url: `${ORIGIN}/`, logo: `${ORIGIN}/outputs/redaxa-mark-128.png` },
       { "@type": "WebPage", "@id": `${url}#page`, url, name: w.title, description: w.description, inLanguage: code, isPartOf: { "@type": "WebSite", "@id": `${ORIGIN}/#website`, name: "Redaxa", url: `${ORIGIN}/` }, about: { "@type": "SoftwareApplication", name: "Redaxa", applicationCategory: "SecurityApplication", operatingSystem: "Web, Windows, Chrome", softwareVersion: facts.version, offers: facts.app.offers.map((o) => ({ "@type": "Offer", name: o.name, price: o.price, priceCurrency: o.priceCurrency, category: o.category })) } },
       { "@type": "FAQPage", "@id": `${url}#faq`, inLanguage: code, mainEntity: faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })) },
     ];

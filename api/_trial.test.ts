@@ -58,6 +58,8 @@ const db = {
   users: new Map<string, string>(),
   calls: [] as Array<{ method: string; url: string; body?: Row }>,
   locked: false,
+  refusal: null as string | null,
+  trialTableMissing: false,
 };
 function resetDb(): void { db.accounts.clear(); db.claims = []; db.users.clear(); db.calls = []; }
 const json = (value: unknown, status = 200) => new Response(JSON.stringify(value), { status, headers: { "Content-Type": "application/json" } });
@@ -77,11 +79,13 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
   if (url.includes("/rpc/complete_stripe_event")) return json(null);
   if (url.includes("/rpc/reserve_billing_checkout")) {
     if (db.locked) { db.locked = false; return json({ message: "A checkout session is already being prepared" }, 400); }
+    if (db.refusal) { const message = db.refusal; db.refusal = null; return json({ message }, 400); }
     const id = String(body?.p_user_id);
     const row = db.accounts.get(id) ?? { user_id: id, stripe_customer_id: "cus_fixture", has_used_trial: false, subscription_status: null };
     db.accounts.set(id, row);
     return json(row);
   }
+  if (url.includes("/rpc/redaxa_trial_available") && db.trialTableMissing) return json({ message: "function not found" }, 404);
   if (url.includes("/rpc/redaxa_trial_available")) return json(!db.claims.some((c) => c.user_id === body?.p_user_id || c.email_hash === body?.p_email_hash));
   if (url.includes("/rpc/claim_redaxa_trial")) {
     const clash = db.claims.find((c) => c.subscription_id !== body?.p_subscription_id
@@ -164,19 +168,21 @@ function newUser(id: string, email = `${id}@example.test`, accountRow?: Row) {
   return id;
 }
 
-// --- Switch off: exactly what ran before. Old clients send no start_trial and
-// keep the seven-day trial they advertise; nothing touches the trial tables.
+// --- Switch off: no choice is offered. Old clients send no start_trial and
+// keep the seven-day trial they advertise, still one per person: unpoliced, a
+// new address and the same card bought another week every time.
 resetDb();
 {
   const id = newUser("user-legacy");
   const { res, params } = await checkout(id, { plan: "personal", interval: "monthly" });
   assert.equal(params.subscription_data.trial_period_days, 7);
-  assert.deepEqual(Object.keys(params.subscription_data).sort(), ["metadata", "trial_period_days"]);
-  assert.equal(params.subscription_data.metadata.trial, undefined);
-  assert.equal(params.payment_method_collection, undefined);
+  assert.equal(params.subscription_data.metadata.trial, "7d", "the webhook claims it like any policed trial");
+  assert.equal(params.payment_method_collection, "always");
   assert.equal(params.metadata.lang, undefined);
   assert.equal(res.body.trial, true);
-  assert.equal(db.calls.some((c) => c.url.includes("redaxa_trial")), false, "switch off: no trial table is read");
+  db.claims.push({ subscription_id: "sub_legacy", user_id: id, email_hash: await trial.emailHash("user-legacy@example.test"), card_fingerprint: "fp_legacy", trial_end: null, reminded_for: null });
+  const again = newUser("user-legacy-again", "user-legacy+2@example.test");
+  assert.equal((await checkout(again, { plan: "personal", interval: "monthly" })).params.subscription_data.trial_period_days, undefined, "switch off: the same mailbox gets no second week");
   newUser("user-subscribed-before", undefined, { has_used_trial: true });
   assert.equal((await checkout("user-subscribed-before", { plan: "personal", interval: "yearly" })).params.subscription_data.trial_period_days, undefined);
   const refused = await checkout(id, { plan: "personal", interval: "monthly", start_trial: true }, 409);
@@ -184,6 +190,11 @@ resetDb();
   const now = await checkout(id, { plan: "personal", interval: "monthly", start_trial: false });
   assert.equal(now.params.subscription_data.trial_period_days, undefined, "Subscribe now never carries a trial");
   await checkout(id, { plan: "personal", interval: "monthly", start_trial: "yes" }, 400);
+  // If the trial table cannot be read, an old client still buys, just without the week.
+  db.trialTableMissing = true;
+  const unreadable = newUser("user-legacy-unreadable");
+  assert.equal((await checkout(unreadable, { plan: "personal", interval: "monthly" })).params.subscription_data.trial_period_days, undefined);
+  db.trialTableMissing = false;
 }
 
 // --- Switch on: the customer chooses, the server grants.
@@ -213,6 +224,12 @@ resetDb();
   db.locked = true;
   await checkout(id, { plan: "personal", interval: "monthly" }, 429);
   db.locked = false;
+  // An unpaid, paused or incomplete subscription is settled in Manage billing, never doubled.
+  const opened = sessions.length;
+  db.refusal = "The existing subscription needs attention in billing management";
+  const unpaid = await checkout(id, { plan: "personal", interval: "monthly", start_trial: false }, 409);
+  assert.equal(unpaid.res.body.code, "manage_billing");
+  assert.equal(sessions.length, opened, "no second checkout session");
   // Windows app 0.5.5 and older: seven days, under the same rule.
   const legacy = await checkout(id, { plan: "personal", interval: "monthly" });
   assert.equal(legacy.params.subscription_data.trial_period_days, 7);

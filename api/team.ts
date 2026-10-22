@@ -1,8 +1,16 @@
-import { acceptTeamInvite, accountFor, addProtectedTerm, appUrl, clearOrgPolicy, orgPoliciesFor, setOrgPolicy, corsHeaders, createTeamInvite, ensureOrganization, hasActiveEntitlement, inviteByToken, organizationById, organizationForOwner, organizationMembers, organizationMembershipFor, protectedTermsFor, removeProtectedTerm, renameOrganization, requireUser, revokeTeamInvite, supabaseUserById, teamInvitesFor } from "./_billing.js";
+import { acceptTeamInvite, accountFor, addProtectedTerm, appUrl, clearOrgPolicy, orgPoliciesFor, setOrgPolicy, corsHeaders, createTeamInvite, ensureOrganization, hasActiveEntitlement, inviteByToken, leaveOrganization, organizationById, organizationForOwner, organizationMembers, organizationMembershipFor, protectedTermsFor, removeProtectedTerm, renameOrganization, requireUser, revokeTeamInvite, supabaseUserById, teamInvitesFor } from "./_billing.js";
 import { clientIp, rateLimited } from "./_rateLimit.js";
+import { sendMemberLeftEmail } from "./_email.js";
 
 type RequestLike = { method?: string; body?: unknown; query?: Record<string, string | string[] | undefined>; headers?: Record<string, string | string[] | undefined> };
 type ResponseLike = { setHeader(name: string, value: string | string[]): void; status(code: number): ResponseLike; json(value: unknown): void; end(): void };
+
+/** "marco.rossi@acme.com" -> "m•••@acme.com": a plain member sees who is in
+ *  the workspace without collecting teammates' addresses. */
+const maskEmail = (email: string): string => {
+  const at = email.lastIndexOf("@");
+  return at > 0 ? `${email[0]}•••${email.slice(at)}` : "•••";
+};
 
 // Consolidated into one function (Vercel's Hobby plan caps a deployment at 12
 // serverless functions) -- action is chosen by method + ?action= query param
@@ -80,8 +88,13 @@ export default async function handler(request: RequestLike, response: ResponseLi
         orgPoliciesFor(membership.organization_id)
       ]);
       // Member emails via the auth admin API; capped so a pathological member
-      // list can't fan out into dozens of upstream calls.
-      const emails = await Promise.all(members.slice(0, 10).map(async (member) => (await supabaseUserById(member.user_id))?.email ?? null));
+      // list can't fan out into dozens of upstream calls. Owners and admins
+      // manage the team and see full addresses; a member sees them masked.
+      const manages = membership.role === "owner" || membership.role === "admin";
+      const emails = await Promise.all(members.slice(0, 10).map(async (member) => {
+        const email = (await supabaseUserById(member.user_id))?.email ?? null;
+        return email && !manages && member.user_id !== user.id ? maskEmail(email) : email;
+      }));
       response.status(200).json({
         organization: org ? { id: org.id, name: org.name, createdAt: org.created_at } : null,
         role: membership.role,
@@ -154,6 +167,22 @@ export default async function handler(request: RequestLike, response: ResponseLi
       return;
     }
 
+    // A member or admin leaves the workspace; the seat frees itself. The
+    // owner cannot (the database refuses it).
+    if (action === "leave") {
+      const ownerId = await leaveOrganization(user.id);
+      if (!ownerId) { response.status(404).json({ error: "You're not part of a workspace." }); return; }
+      // The owner hears about it; the leave has already happened, so a failed
+      // lookup or send never turns it into an error. Awaited: a serverless
+      // function may be frozen as soon as the response is sent.
+      try {
+        const [ownerUser, org] = await Promise.all([supabaseUserById(ownerId), organizationForOwner(ownerId)]);
+        if (ownerUser?.email) await sendMemberLeftEmail(ownerUser.email, user.email, org?.name || "your workspace");
+      } catch (error) { console.error("member-left notice not sent", error instanceof Error ? error.message : "unknown"); }
+      response.status(200).json({ ok: true });
+      return;
+    }
+
     if (action === "revoke") {
       const inviteId = typeof body.inviteId === "string" ? body.inviteId : "";
       if (!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(inviteId)) { response.status(400).json({ error: "Invalid invite id." }); return; }
@@ -174,7 +203,8 @@ export default async function handler(request: RequestLike, response: ResponseLi
       TEAM_FULL: [409, "No seats available. Remove a teammate or add seats to invite more."],
       TEAM_SELF: [400, "You can't accept your own invite."],
       TEAM_INVALID: [400, "Invalid invite link."],
-      TEAM_MEMBERSHIP_CONFLICT: [409, "You're already part of a workspace. Leave it before joining another."]
+      TEAM_MEMBERSHIP_CONFLICT: [409, "You're already part of a workspace. Leave it from Account > Organization before joining another."],
+      TEAM_OWNER_CANNOT_LEAVE: [409, "As the owner you can't leave your own workspace. Remove teammates or cancel the Business plan instead."]
     };
     const [status, detail] = errors[message] ?? [500, "We could not complete that request."];
     response.status(status).json({ error: detail });

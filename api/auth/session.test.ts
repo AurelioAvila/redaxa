@@ -69,4 +69,31 @@ try {
   }
 } finally { globalThis.fetch=originalFetch; }
 
+// Signing out with only the refresh cookie left still ends the session upstream.
+{
+  const { default: signout } = await import("./signout.js");
+  const calls: Array<{ url: string; auth?: string }> = [];
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    calls.push({ url, auth: (init?.headers as Record<string, string> | undefined)?.Authorization });
+    return url.includes("grant_type=refresh_token")
+      ? Response.json({ access_token: "fresh-access", refresh_token: "fresh-refresh", expires_in: 3600 })
+      : new Response(null, { status: 204 });
+  }) as typeof fetch;
+  try {
+    let status = 0;
+    const written = new Map<string, string | string[]>();
+    const response = {
+      setHeader(name: string, value: string | string[]) { written.set(name, value); },
+      status(code: number) { status = code; return response; },
+      json() {}, end() {}
+    };
+    await signout({ method: "POST", headers: { cookie: "ps_rt=old-refresh" } }, response);
+    assert.equal(status, 200);
+    const logout = calls.find((call) => call.url.includes("/auth/v1/logout?scope=local"));
+    assert.equal(logout?.auth, "Bearer fresh-access", "the session behind the refresh cookie is revoked");
+    assert.ok(String(written.get("Set-Cookie")).includes("ps_rt=;"), "cookies are cleared");
+  } finally { globalThis.fetch = originalFetch; }
+}
+
 console.log("Redaxa auth configuration tests passed.");

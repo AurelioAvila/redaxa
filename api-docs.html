@@ -11,13 +11,16 @@
     <meta property="og:title" content="Scan API for Prompt Redaction | Redaxa" />
     <meta property="og:description" content="Call the Redaxa scan API from your own scripts and pipelines to flag personal data, credentials and secrets in text." />
     <meta property="og:url" content="https://redaxa.getcertsprint.com/api-docs.html" />
-    <meta property="og:image" content="https://redaxa.getcertsprint.com/og-image.png" />
+    <meta property="og:image" content="https://redaxa.getcertsprint.com/og-redaxa-eb3e35858c.png" />
+    <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Redaxa prompt check flagging an email, a server address and a credential, with a safer version to copy" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Scan API for Prompt Redaction | Redaxa" />
     <meta name="twitter:description" content="Call the Redaxa scan API from your own scripts and pipelines to flag personal data, credentials and secrets in text." />
-    <meta name="twitter:image" content="https://redaxa.getcertsprint.com/og-image.png" />
+    <meta name="twitter:image" content="https://redaxa.getcertsprint.com/og-redaxa-eb3e35858c.png" />
+    <meta name="twitter:image:alt" content="Redaxa prompt check flagging an email, a server address and a credential, with a safer version to copy" />
     <link rel="icon" type="image/svg+xml" href="/outputs/redaxa-mark.svg" />
     <style>
       :root { --ink:#f7f6f2; --paper:#1b1724; --muted:#5a5466; --line:#e3dfd5; --acid:#a3471d; color-scheme:light; }
@@ -35,7 +38,7 @@
       p code, li code { background:#f2f0ea; border:1px solid var(--line); border-radius:5px; padding:1px 6px; font-size:13px; color:var(--paper); }
       @media (max-width:760px) { .shell { padding:40px 20px 80px; } }
     </style>
-  </head>
+</head>
   <body>
     <main class="shell">
       <a class="back" href="/">← Redaxa</a>
@@ -86,7 +89,7 @@
       <h2>Read your activity</h2>
       <pre><code>curl -s https://redaxa.getcertsprint.com/api/scan \
   -H "Authorization: Bearer psk_live_..."</code></pre>
-      <p>Returns your most recent 200 scan events — metadata only (surface, detection kinds, decision). Organization owners and admins can add <code>?scope=org</code> for the whole team's events. There is no endpoint that returns prompt content, because none is ever stored.</p>
+      <p>Returns your most recent 200 scan events — metadata only (surface, detection kinds, decision). Organization owners and admins can add <code>?scope=org</code> for the whole team's events, with each member's email address, when signed in to Redaxa (a session, not an API key): API keys read only their own account's activity, so a key leaked from a CI log never exposes your team's addresses. There is no endpoint that returns prompt content, because none is ever stored.</p>
 
       <h2>Honesty note</h2>
       <p>Before automating a check, read the <a href="/redact-sensitive-data-before-chatgpt.html">practical guide to reducing and reviewing prompt content</a>. A clean scan does not establish that material is safe or authorized to share.</p>

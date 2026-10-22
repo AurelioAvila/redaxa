@@ -44,7 +44,7 @@ export function readFacts(root, env = process.env) {
   const trust = JSON.parse(read("release-trust.json")).redaxa;
   const trial = trialFacts(root, env);
   // Visible FAQ. The trial item carries the wording applyToIndex writes into the page for this build.
-  const pick = (open, inner) => trial.enabled && attr(open, "data-trial-copy") ? unescapeHtml(attr(open, "data-trial-copy")) : stripTags(inner);
+  const pick = (open, inner) => trial.enabled && attr(open, "data-trial-copy") ? withDays(unescapeHtml(attr(open, "data-trial-copy")), trial) : stripTags(inner);
   const faq = [...html.matchAll(/<details class="faq-item"><summary([^>]*)>([\s\S]*?)<\/summary><p([^>]*)>([\s\S]*?)<\/p><\/details>/g)]
     .map((m) => ({ q: pick(m[1], m[2]), a: pick(m[3], m[4]) }));
   return { app, version, trust, faq, trial };
@@ -112,11 +112,14 @@ export function trustBlock(trust) {
   return `<details class="verify-download" style="margin:12px 0;font-size:14px;line-height:1.55"><summary style="cursor:pointer;font-weight:600">Verify the Windows download (v${trust.version})</summary><p>Redaxa-Setup.exe is the installer of release v${trust.version}. SHA-256: <code style="word-break:break-all">${trust.sha256}</code>.</p><p>Authenticode signature: ${trust.signature.status}, publisher ${trust.signature.signer}${trust.signature.timestamped ? ", with a trusted timestamp" : ""}. Certificate thumbprint <code style="word-break:break-all">${trust.signature.thumbprint}</code>.</p><p>In PowerShell, from the folder you saved it to:</p><pre style="overflow-x:auto"><code>Get-FileHash .\\Redaxa-Setup.exe -Algorithm SHA256\nGet-AuthenticodeSignature .\\Redaxa-Setup.exe | Format-List Status, SignerCertificate</code></pre></details>`;
 }
 
+// landing.ts fills {days} in the browser; the static page and its FAQ JSON-LD need the number already in place.
+const withDays = (copy, trial) => copy.replaceAll("{days}", String(trial.days));
+
 /** With the trial switch on, the page ships the trial wording itself; landing.ts keeps the old text in data-legacy-copy. */
 export function applyTrialCopy(html, trial) {
   if (!trial.enabled) return html;
   return html.replace(/<(\w+)([^>]*?) data-trial-copy="([^"]*)"([^>]*)>([^<]*)<\/\1>/g,
-    (_, tag, before, copy, after, legacy) => `<${tag}${before} data-trial-copy="${copy}" data-legacy-copy="${legacy.replace(/"/g, "&quot;")}"${after}>${copy}</${tag}>`);
+    (_, tag, before, copy, after, legacy) => `<${tag}${before} data-trial-copy="${copy}" data-legacy-copy="${legacy.replace(/"/g, "&quot;")}"${after}>${withDays(copy, trial)}</${tag}>`);
 }
 
 /** <!--PRICE:Pro yearly--> becomes the offer's price; <!--TRIAL--> and <!--TRIAL_LONG--> the trial wording. */

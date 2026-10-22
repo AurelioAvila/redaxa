@@ -208,4 +208,23 @@ assert.deepEqual(passwordAdvice.findings, []);
   }
 }
 
+// Lookbehinds with an unbounded [ \t]* re-scanned a whole run of whitespace at
+// every position: 80,000 spaces took 8-16 seconds, reachable through a hosted
+// repository check. Aligned config values must still be found.
+{
+  const started = performance.now();
+  for (const text of ["x" + " ".repeat(200_000), "aws_secret_access_key" + "\t".repeat(200_000), "token" + " ".repeat(200_000)]) inspectPrompt(text);
+  assert.ok(performance.now() - started < 3000, "whitespace runs must be checked in linear time");
+  const aligned = inspectPrompt("DB_PASSWORD            =   s3cr3tValue123456");
+  assert.equal(aligned.findings.filter((f) => f.kind === "credential").length, 1);
+  // Bounding the name before the keyword must not lose long names.
+  const longName = inspectPrompt("PRODUCTION_ENVIRONMENT_PRIMARY_REPLICATED_CLUSTER_DATABASE_SERVICE_ACCOUNT_PASSWORD=Zq8vLr2mXw4tNp7c");
+  assert.equal(longName.findings.filter((f) => f.kind === "credential").length, 1);
+  assert.equal(inspectPrompt("x -pass=Zq8vLr2mXw4tNp7c").findings.length, 0, "a flag after a space is not a name");
+  const started2 = performance.now();
+  inspectPrompt("a".repeat(200_000) + "token=x");
+  inspectPrompt("_".repeat(200_000) + "secret");
+  assert.ok(performance.now() - started2 < 3000, "long names must be checked in linear time");
+}
+
 console.log("Redaxa scanner tests passed.");

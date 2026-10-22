@@ -17,6 +17,7 @@ async function call(method: string, action: string, body: Record<string, unknown
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input); calls.push(url);
     if (url.endsWith("/auth/v1/user")) return Response.json({ id: member, email: "member@example.test" });
+    if (url === "https://api.resend.com/emails") return database(url, init);
     assert.equal((init?.headers as Record<string, string>).Authorization, "Bearer test-service-key");
     return database(url, init);
   }) as typeof fetch;
@@ -84,4 +85,52 @@ const created = await call("POST", "create", {}, (url, init) => {
   return Response.json({ ...invite, owner_user_id: member, token: value.p_token });
 });
 assert.equal(created.code, 200);
+
+// Leaving a workspace: the database decides, the API reports it plainly.
+for (const [reply, expected] of [[Response.json(owner), 200], [Response.json(null), 404], [Response.json({ message: "TEAM_OWNER_CANNOT_LEAVE" }, { status: 400 }), 409], [Response.json(42), 500]] as const) {
+  const left = await call("POST", "leave", {}, (url, init) => {
+    assert.ok(url.endsWith("/rpc/leave_organization"));
+    assert.deepEqual(JSON.parse(String(init?.body)), { p_member_user_id: member });
+    return reply.clone();
+  });
+  assert.equal(left.code, expected);
+}
+
+// The owner is told by email who left; a failed notice never undoes the leave
+// (the loop above already covers failed owner/workspace lookups: its mock
+// throws on them). Two calls only: the team limiter allows 20 per user.
+process.env.RESEND_API_KEY = "re_test";
+process.env.REDAXA_MAIL_FROM = "Redaxa <noreply@example.test>";
+for (const mailReply of [Response.json({ id: "mail-1" }), Response.json({ name: "validation_error" }, { status: 422 })]) {
+  let mail: { to?: unknown; subject?: unknown; text?: string; html?: string } | null = null;
+  const left = await call("POST", "leave", {}, (url, init) => {
+    if (url.endsWith("/rpc/leave_organization")) return Response.json(owner);
+    if (url.includes(`/auth/v1/admin/users/${owner}`)) return Response.json({ email: "owner@acme.example" });
+    if (url.includes(`/organizations?owner_user_id=eq.${owner}`)) return Response.json([{ id: "org", name: "Acme <Ops>", owner_user_id: owner, created_at: "2026-10-01" }]);
+    if (url === "https://api.resend.com/emails") { mail = JSON.parse(String(init?.body)); return mailReply.clone(); }
+    throw new Error(url);
+  });
+  assert.equal(left.code, 200);
+  assert.equal(mail?.to, "owner@acme.example");
+  assert.equal(mail?.subject, "A teammate left your Redaxa workspace");
+  assert.match(String(mail?.text), /member@example\.test left Acme <Ops> on .+ UTC\. Their seat is free again/);
+  assert.ok(String(mail?.html).includes("Acme &lt;Ops&gt;") && !String(mail?.html).includes("<Ops>"), "workspace name is escaped in HTML");
+}
+delete process.env.RESEND_API_KEY;
+delete process.env.REDAXA_MAIL_FROM;
+
+// A plain member sees teammates' addresses masked; owners and admins see them in full.
+for (const [role, ownerEmail] of [["member", "o•••@acme.example"], ["admin", "owner@acme.example"]] as const) {
+  const org = await call("GET", "org", {}, (url) => {
+    if (url.includes("/organization_members?user_id=")) return Response.json([{ organization_id: "org", user_id: member, role }]);
+    if (url.includes("/organization_members?organization_id=")) return Response.json([{ user_id: owner, role: "owner", joined_at: "2026-10-01" }, { user_id: member, role, joined_at: "2026-10-02" }]);
+    if (url.includes("/organizations?")) return Response.json([{ id: "org", name: "Acme", created_at: "2026-10-01" }]);
+    if (url.includes(`/auth/v1/admin/users/${owner}`)) return Response.json({ email: "owner@acme.example" });
+    if (url.includes(`/auth/v1/admin/users/${member}`)) return Response.json({ email: "member@acme.example" });
+    return Response.json([]);
+  });
+  assert.equal(org.code, 200);
+  const members = (org.payload as { members: { email: string; you: boolean }[] }).members;
+  assert.deepEqual(members.map((m) => m.email), [ownerEmail, "member@acme.example"], role);
+}
 console.log("Team API regressions passed.");

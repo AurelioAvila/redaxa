@@ -338,6 +338,7 @@ export async function reserveCheckout(userId: string): Promise<BillingAccount> {
   if (!response.ok) {
     const detail = await response.text();
     if (detail.includes("active subscription")) throw new Error("ACTIVE_SUBSCRIPTION");
+    if (detail.includes("needs attention")) throw new Error("BILLING_ACTION_REQUIRED");
     if (detail.includes("already being prepared")) throw new Error("CHECKOUT_IN_PROGRESS");
     console.error("reserveCheckout RPC failed:", response.status, detail);
     throw new Error("BILLING_STORAGE_ERROR");
@@ -416,7 +417,7 @@ async function teamRpc<T>(name: string, body: Record<string, string>): Promise<T
   });
   if (!response.ok) {
     const payload = await response.json().catch(() => ({})) as { message?: string };
-    const known = ["TEAM_PLAN_REQUIRED", "TEAM_FULL", "TEAM_SELF", "TEAM_INVALID", "TEAM_MEMBERSHIP_CONFLICT"];
+    const known = ["TEAM_PLAN_REQUIRED", "TEAM_FULL", "TEAM_SELF", "TEAM_INVALID", "TEAM_MEMBERSHIP_CONFLICT", "TEAM_OWNER_CANNOT_LEAVE"];
     throw new Error(known.includes(payload.message ?? "") ? payload.message : "TEAM_STORAGE_ERROR");
   }
   return response.json() as Promise<T>;
@@ -426,6 +427,14 @@ export async function revokeTeamInvite(ownerUserId: string, inviteId: string): P
   const revoked = await teamRpc<unknown>("revoke_team_invite", { p_owner_user_id: ownerUserId, p_invite_id: inviteId });
   if (typeof revoked !== "boolean") throw new Error("TEAM_STORAGE_ERROR");
   return revoked;
+}
+
+/** Removes the caller from their workspace and frees the seat. Returns the
+ *  workspace owner's id, or null when the caller belongs to none. */
+export async function leaveOrganization(memberUserId: string): Promise<string | null> {
+  const ownerId = await teamRpc<unknown>("leave_organization", { p_member_user_id: memberUserId });
+  if (ownerId !== null && typeof ownerId !== "string") throw new Error("TEAM_STORAGE_ERROR");
+  return ownerId;
 }
 
 export async function inviteByToken(token: string): Promise<TeamInvite | null> {

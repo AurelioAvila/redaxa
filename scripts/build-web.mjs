@@ -1,6 +1,5 @@
-import { cpSync, mkdirSync, rmSync } from "node:fs";
+import { cpSync, mkdirSync, rmSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve, dirname, basename } from "node:path";
-import { readFileSync, writeFileSync } from "node:fs";
 import { applyMarkers, applyToIndex, readFacts, renderLlms } from "./site-generated.mjs";
 import { buildDetectors } from "./site-detectors.mjs";
 import { alternates, buildLanguages } from "./site-i18n.mjs";
@@ -63,9 +62,21 @@ mkdirSync(resolve(output, "outputs"), { recursive: true });
 cpSync(resolve(root, "outputs", "redaxa-mark.svg"), resolve(output, "outputs", "redaxa-mark.svg"));
 // Email clients do not render SVG: the PNG is the logo in every Redaxa email.
 cpSync(resolve(root, "outputs", "redaxa-mark-128.png"), resolve(output, "outputs", "redaxa-mark-128.png"));
-// og-image.png is the 1200x630 social card, not the 1024x1024 app mark: link
-// previews on X/LinkedIn/Slack need the wide ratio, and a square source gets
-// centre-cropped into an unreadable tile.
-cpSync(resolve(root, "brand", "og-image.png"), resolve(output, "og-image.png"));
+// The 1200x630 link-preview card: a real capture of the prompt check, with no
+// price or version inside. The hash in the name changes with the image, so
+// Discord, X, Facebook and LinkedIn fetch the new card instead of a cached one.
+cpSync(resolve(root, "brand", "og-redaxa-eb3e35858c.png"), resolve(output, "og-redaxa-eb3e35858c.png"));
 
 for(const file of ["redaxa-inter.woff2", "Inter-LICENSE.txt"]) cpSync(resolve(root,"outputs",file),resolve(output,"outputs",file));
+// Windows and Linux checkouts must produce identical bytes for publisher verification.
+const textExtensions = /\.(?:html|css|js|txt|xml|svg|webmanifest|json)$/i;
+function normalizeStaticText(directory) {
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const file = resolve(directory, entry.name);
+    if (entry.isDirectory()) normalizeStaticText(file);
+    else if (textExtensions.test(entry.name)) writeFileSync(file, readFileSync(file, 'utf8').replace(/\r\n/g, '\n'));
+  }
+}
+normalizeStaticText(output);
+// Keep the publisher catalog available alongside the exact static build it signs.
+cpSync(resolve(root, "web-release.cat"), resolve(output, "web-release.cat"));
