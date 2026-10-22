@@ -1,5 +1,6 @@
 import { acceptTeamInvite, accountFor, addProtectedTerm, appUrl, clearOrgPolicy, orgPoliciesFor, setOrgPolicy, corsHeaders, createTeamInvite, ensureOrganization, hasActiveEntitlement, inviteByToken, leaveOrganization, organizationById, organizationForOwner, organizationMembers, organizationMembershipFor, protectedTermsFor, removeProtectedTerm, renameOrganization, requireUser, revokeTeamInvite, supabaseUserById, teamInvitesFor } from "./_billing.js";
 import { clientIp, rateLimited } from "./_rateLimit.js";
+import { sendMemberLeftEmail } from "./_email.js";
 
 type RequestLike = { method?: string; body?: unknown; query?: Record<string, string | string[] | undefined>; headers?: Record<string, string | string[] | undefined> };
 type ResponseLike = { setHeader(name: string, value: string | string[]): void; status(code: number): ResponseLike; json(value: unknown): void; end(): void };
@@ -169,7 +170,15 @@ export default async function handler(request: RequestLike, response: ResponseLi
     // A member or admin leaves the workspace; the seat frees itself. The
     // owner cannot (the database refuses it).
     if (action === "leave") {
-      if (!await leaveOrganization(user.id)) { response.status(404).json({ error: "You're not part of a workspace." }); return; }
+      const ownerId = await leaveOrganization(user.id);
+      if (!ownerId) { response.status(404).json({ error: "You're not part of a workspace." }); return; }
+      // The owner hears about it; the leave has already happened, so a failed
+      // lookup or send never turns it into an error. Awaited: a serverless
+      // function may be frozen as soon as the response is sent.
+      try {
+        const [ownerUser, org] = await Promise.all([supabaseUserById(ownerId), organizationForOwner(ownerId)]);
+        if (ownerUser?.email) await sendMemberLeftEmail(ownerUser.email, user.email, org?.name || "your workspace");
+      } catch (error) { console.error("member-left notice not sent", error instanceof Error ? error.message : "unknown"); }
       response.status(200).json({ ok: true });
       return;
     }

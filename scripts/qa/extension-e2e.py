@@ -63,6 +63,15 @@ box.addEventListener('keydown', e => {{ if (e.key === 'Enter' && !e.shiftKey) {{
 document.querySelector('button').addEventListener('click', send);
 </script></body></html>"""
 
+# Gemini's composer card below about 1000 px wide (measured 22 October 2026 at
+# 929 x 923): centred, at most 760 px, Send at its bottom-right corner.
+GEMINI_NARROW = site_html("gemini.google.com").replace(
+    '<rich-textarea>', '<div class="card" style="position:fixed;left:50%;transform:translateX(-50%);bottom:66px;'
+    'width:min(760px,calc(100% - 269px));padding:12px 24px 56px;border:1px solid #ccc;border-radius:28px;box-sizing:border-box">'
+    '<rich-textarea>').replace(
+    '<div class="send-button">', '<div class="send-button" style="position:absolute;right:16px;bottom:10px">').replace(
+    '➤</button></div>', '➤</button></div></div>')
+
 WAIT = 15000  # ms for one step on a busy machine
 failures = []
 def check(ok, label):
@@ -196,6 +205,20 @@ def run(lang):
                 type_into(page, EXAMPLE); page.keyboard.press("Enter"); page.wait_for_selector("#ps-int-fix")
                 page.screenshot(path=str(shots / "e2e-chatgpt-dialog.png")); page.keyboard.press("Escape")
             page.close()
+
+        # Narrow Gemini: the check button must not cover Send or the composer card.
+        context.route("https://gemini.google.com/narrow", lambda route: route.fulfill(status=200, content_type="text/html", body=GEMINI_NARROW))
+        page = context.new_page(); page.set_viewport_size({"width": 929, "height": 923})
+        page.goto("https://gemini.google.com/narrow"); page.wait_for_selector("#redaxa-check-btn")
+        type_into(page, EXAMPLE); page.wait_for_timeout(300)
+        covers = """() => { const a = document.getElementById('redaxa-check-btn').getBoundingClientRect();
+            return [...document.querySelectorAll('.card, .send-button button')].some(el => { const b = el.getBoundingClientRect();
+            return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top; }); }"""
+        check(not page.evaluate(covers), "narrow Gemini: check button covers neither Send nor the composer")
+        if shots: page.screenshot(path=str(shots / "e2e-gemini-narrow.png"))
+        page.set_viewport_size({"width": 1600, "height": 923}); page.wait_for_timeout(300)
+        check(page.evaluate("getComputedStyle(document.getElementById('redaxa-check-btn')).bottom") == "88px", "wide Gemini: check button back in its usual place")
+        page.close()
 
         # 20,000 characters: still a single quick check, editor not blocked.
         page = context.new_page(); page.goto("https://chatgpt.com/"); page.wait_for_selector("#redaxa-check-btn")

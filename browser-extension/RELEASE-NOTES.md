@@ -1,4 +1,10 @@
-# Extension 0.4.14
+# Extension 0.4.15
+
+The "Check with Redaxa" button no longer covers Send. In a narrow window, Gemini puts its Send button in the bottom-right corner, right where the button sat. The button now moves up above the message box whenever it would cover it, on any supported site, and goes back to its usual place when the window is wide again. Nothing else changes: no new permissions, telemetry or dependencies.
+
+Verification: `npm test`, then `python scripts/qa/extension-e2e.py` on the staged package in a temporary Brave profile, including a narrow Gemini layout (929 x 923) where the button must cover neither Send nor the message box.
+
+## Previous extension 0.4.14
 
 Edited messages are checked too. Clicking the Save, Send or Update button of the box for editing an earlier message on ChatGPT, Claude, Gemini or Perplexity now goes through the same check as a new message. Enter in that box is left as it is, since on some sites it adds a new line; the check runs when the edit is sent with its button.
 
