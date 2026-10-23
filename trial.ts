@@ -305,6 +305,9 @@ export const TRIAL_BANNER: Record<Lang, { offerTitle: string; offerText: string;
   },
 };
 
+/** A call to action's trailing arrow, glued to the last word by a no-break space: it never wraps onto a line of its own. */
+export const keepArrow = (text: string): string => text.replace(/\s+→$/u, " →");
+
 export type Tier = "free" | "personal" | "business";
 const RANK: Record<Tier, number> = { free: 0, personal: 1, business: 2 };
 
