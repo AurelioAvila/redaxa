@@ -115,7 +115,7 @@ html.rx-native .rx-shell .brand { display: none; }
 .rx-shell .side-fill { display: block; margin: 8px 0 0; padding: 0; border: 0; background: none; }
 .rx-shell .side-fill a { color: var(--theme-accent); font: 650 12.5px/1.3 var(--font-text); text-decoration: none; }
 .rx-shell .side-fill a:hover { text-decoration: underline; text-underline-offset: 3px; }
-.rx-shell .side-fill a.is-trial { display: block; padding: 8px 10px; border-radius: 8px; background: var(--theme-accent); color: var(--theme-ink); text-align: center; }
+.rx-shell .side-fill a.is-trial { display: block; padding: 8px 10px; border-radius: 8px; background: var(--theme-accent); color: var(--theme-ink); text-align: center; text-wrap: pretty; }
 .rx-shell .side-fill a.is-trial:hover { text-decoration: none; filter: brightness(1.06); }
 .rx-shell .nav-foot { gap: 2px; overflow: visible; }
 
@@ -424,6 +424,9 @@ html:is(:not([data-theme]), [data-theme="paper"]) .rx-shell .api-key-alert :is(s
   .rx-shell .side > .nav { flex: 1 1 100%; flex-direction: row; gap: 4px; overflow-x: auto; }
   .rx-shell .nav-group { display: flex; gap: 4px; }
   .rx-shell .nav-label, .rx-shell .usage { display: none; }
+  /* The free trial offer stays in the top strip: the one part of the plan box shown on phones. */
+  .rx-shell .usage:has(> .side-fill .is-trial) { display: block; flex: 1 1 100%; padding: 0; border: 0; background: none; }
+  .rx-shell .usage:has(> .side-fill .is-trial) > :not(.side-fill) { display: none; }
   .rx-shell .nav-item { width: auto; min-height: 36px; white-space: nowrap; }
   .rx-shell .nav-item.active::before { left: 50%; top: auto; bottom: -1px; width: 18px; height: 3px; border-radius: 3px 3px 0 0; transform: translateX(-50%); }
   .rx-shell .side-foot { flex: 1 1 100%; padding: 0; border: 0; }

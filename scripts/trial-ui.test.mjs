@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { TRIAL_BANNER, TRIAL_UI, chargeDate, choiceCopy, longDay, parseBilling, parsePrices, planView } from "../dist/trial.js";
+import { TRIAL_BANNER, TRIAL_UI, chargeDate, choiceCopy, keepArrow, longDay, parseBilling, parsePrices, planView } from "../dist/trial.js";
 
 // What the plan cards say under "Start 3-day free trial" and "Subscribe now",
 // from Stripe's price and the server's offer; never a number of its own.
@@ -72,4 +72,11 @@ for (const [name, got, cards, trial] of cases) {
 assert.notEqual(view("business", { state: "active", canStartTrial: true, trialUsed: false }).trial, "offer");
 for (const [lang, words] of Object.entries(TRIAL_BANNER)) for (const key of Object.keys(TRIAL_BANNER.en)) assert.ok(words[key], `${lang}.${key}`);
 assert.match(TRIAL_BANNER.en.offerButton.replace("{days}", "3"), /^Start your 3-day free trial$/);
+// The sidebar button's arrow stays on the line of its last word in every language (no breakable space before it).
+for (const [lang, words] of Object.entries(TRIAL_BANNER)) {
+  const side = keepArrow(words.sideOffer.replace("{days}", "3"));
+  assert.match(side, /\S →$/u, `${lang}.sideOffer`);
+}
+assert.equal(keepArrow("Compare plans →"), "Compare plans →");
+assert.equal(keepArrow("Confronta i piani"), "Confronta i piani");
 console.log("Trial screens: choice lines from Stripe prices and the offer, five languages, server clock, defensive account parsing passed.");

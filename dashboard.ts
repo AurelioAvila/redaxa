@@ -4,7 +4,7 @@ import { enableAppShell } from "./pwa.js";
 import { track } from "./growth.js";
 import { enableDesktopCompanion, openSupportEmail, shellCopyByLanguage, syncTrayLanguage } from "./desktop.js";
 import { PROMO_WORDS_EN, euro, mountPromo, promoPriceHtml, type PromoView, type PromoWords } from "./promo.js";
-import { TRIAL_BANNER, TRIAL_UI, chargeDate, choiceCopy, fillTrial, loadPrices, longDay, planView, priceFor, type PriceList, type Tier } from "./trial.js";
+import { TRIAL_BANNER, TRIAL_UI, chargeDate, choiceCopy, fillTrial, keepArrow, loadPrices, longDay, planView, priceFor, type PriceList, type Tier } from "./trial.js";
 
 type HistoryEntry = { id: string; createdAt: string; findings: number; preview: string; byKind: Record<string, number> };
 type Language = "en" | "it" | "es" | "fr" | "de";
@@ -1326,7 +1326,7 @@ export function mountDashboard(): void {
     // The main screen's entry point: the same offer, one click from anywhere.
     const sideCta = required<HTMLAnchorElement>("#side-fill-cta");
     sideCta.classList.toggle("is-trial", view.trial === "offer");
-    sideCta.textContent = view.trial === "offer" ? fillTrial(banner.sideOffer, { days: trialDays }) : w.seePlans;
+    sideCta.textContent = keepArrow(view.trial === "offer" ? fillTrial(banner.sideOffer, { days: trialDays }) : w.seePlans);
     plansView.querySelectorAll<HTMLElement>("[data-plan-card]").forEach((card) => {
       const plan = (card.dataset.planCard ?? "free") as Tier;
       const mine = plan === held;
