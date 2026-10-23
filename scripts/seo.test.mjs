@@ -83,4 +83,16 @@ for (const file of [...guides, 'github.html', 'api-docs.html']) {
   }
   assert.doesNotMatch(html, /\]\(https?:|\*\*\s/, `${file}: stray markdown`);
 }
-console.log('SEO checks passed: eleven canonical sitemap URLs in two silos; guides take prices and the trial from the build; FAQ markup matches the pages; the personal workspace remains noindex.');
+// The legacy Vercel host moves its pages to the branded domain with a permanent
+// redirect, so Search Console stops reporting them as noindex duplicates.
+// Released desktop and extension builds still call its /api, which must stay.
+{
+  const vercel = JSON.parse(read('vercel.json'));
+  const legacy = (vercel.redirects ?? []).filter(rule => rule.has?.some(h => h.type === 'host' && h.value === 'promptshield-beta.vercel.app'));
+  assert.ok(legacy.length >= 1 && legacy.every(rule => rule.permanent === true && rule.destination.startsWith(origin + '/')));
+  const pagePattern = legacy.find(rule => rule.source.includes(':path'));
+  const regex = new RegExp('^/(' + pagePattern.source.slice('/:path('.length, -1) + ')$');
+  for (const page of ['/privacy.html', '/dashboard.html', '/sitemap.xml']) assert.ok(regex.test(page), page);
+  for (const api of ['/api/account', '/api/auth/session', '/api/billing']) assert.ok(!regex.test(api), api);
+}
+console.log('SEO checks passed: eleven canonical sitemap URLs in two silos; guides take prices and the trial from the build; FAQ markup matches the pages; the personal workspace remains noindex; the legacy host redirects its pages.');

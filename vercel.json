@@ -7,6 +7,20 @@
       "destination": "/api/auth/session"
     }
   ],
+  "redirects": [
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "promptshield-beta.vercel.app" }],
+      "destination": "https://redaxa.getcertsprint.com/",
+      "permanent": true
+    },
+    {
+      "source": "/:path((?!api/).+)",
+      "has": [{ "type": "host", "value": "promptshield-beta.vercel.app" }],
+      "destination": "https://redaxa.getcertsprint.com/:path",
+      "permanent": true
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
