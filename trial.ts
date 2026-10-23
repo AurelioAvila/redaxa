@@ -256,6 +256,78 @@ export const TRIAL_UI: Record<Lang, TrialWords> = {
   },
 };
 
+/** The banner that offers, reports or explains the free trial, per language. */
+export const TRIAL_BANNER: Record<Lang, { offerTitle: string; offerText: string; offerButton: string; runningTitle: string; usedTitle: string; usedText: string; sideOffer: string }> = {
+  en: {
+    offerTitle: "Try Pro free for {days} days",
+    offerText: "Everything in Pro, with no daily limit. A card or another payment method is needed to start; cancel before the {days} days are up and nothing is charged. One free trial per person.",
+    offerButton: "Start your {days}-day free trial",
+    runningTitle: "Trial — {left}",
+    usedTitle: "Free trial already used",
+    usedText: "This account has already had its free trial, so Pro and Business start straight away when you subscribe.",
+    sideOffer: "Start your {days}-day free trial →",
+  },
+  it: {
+    offerTitle: "Prova Pro gratis per {days} giorni",
+    offerText: "Tutto Pro, senza limite giornaliero. Per iniziare serve una carta o un altro metodo di pagamento; se annulli prima che finiscano i {days} giorni non paghi nulla. Una sola prova gratuita per persona.",
+    offerButton: "Inizia la prova gratuita di {days} giorni",
+    runningTitle: "Prova — {left}",
+    usedTitle: "Prova gratuita già usata",
+    usedText: "Questo account ha già avuto la sua prova gratuita, quindi Pro e Business partono subito quando ti abboni.",
+    sideOffer: "Inizia la prova gratuita di {days} giorni →",
+  },
+  es: {
+    offerTitle: "Prueba Pro gratis durante {days} días",
+    offerText: "Todo Pro, sin límite diario. Para empezar se necesita una tarjeta u otro método de pago; si cancelas antes de que pasen los {days} días, no pagas nada. Una sola prueba gratuita por persona.",
+    offerButton: "Empezar la prueba gratuita de {days} días",
+    runningTitle: "Prueba — {left}",
+    usedTitle: "Prueba gratuita ya usada",
+    usedText: "Esta cuenta ya ha tenido su prueba gratuita, así que Pro y Business empiezan al momento cuando te suscribes.",
+    sideOffer: "Empezar la prueba gratuita de {days} días →",
+  },
+  fr: {
+    offerTitle: "Essayez Pro gratuitement pendant {days} jours",
+    offerText: "Tout Pro, sans limite quotidienne. Une carte ou un autre moyen de paiement est nécessaire pour commencer ; annulez avant la fin des {days} jours et rien n’est prélevé. Un seul essai gratuit par personne.",
+    offerButton: "Commencer l’essai gratuit de {days} jours",
+    runningTitle: "Essai — {left}",
+    usedTitle: "Essai gratuit déjà utilisé",
+    usedText: "Ce compte a déjà eu son essai gratuit : Pro et Business démarrent donc dès que vous vous abonnez.",
+    sideOffer: "Commencer l’essai gratuit de {days} jours →",
+  },
+  de: {
+    offerTitle: "Pro {days} Tage kostenlos testen",
+    offerText: "Alles aus Pro, ohne Tageslimit. Zum Start ist eine Karte oder eine andere Zahlungsmethode nötig; wenn Sie vor Ablauf der {days} Tage kündigen, wird nichts abgebucht. Eine kostenlose Testphase pro Person.",
+    offerButton: "{days} Tage kostenlos testen",
+    runningTitle: "Testphase — {left}",
+    usedTitle: "Testphase bereits genutzt",
+    usedText: "Dieses Konto hatte bereits seine kostenlose Testphase, daher beginnen Pro und Business sofort, wenn Sie abonnieren.",
+    sideOffer: "{days} Tage kostenlos testen →",
+  },
+};
+
+export type Tier = "free" | "personal" | "business";
+const RANK: Record<Tier, number> = { free: 0, personal: 1, business: 2 };
+
+/**
+ * What Plans & pricing shows, from the account alone: every tier below the
+ * one held is included in it, the held one is current (with Manage
+ * subscription), higher ones are upgrades. The trial banner offers the trial
+ * only to accounts without a plan that the server says may start one (or to
+ * signed-out visitors, where checkout decides), reports a running one, and
+ * explains a used one. A paying account is never offered it.
+ */
+export function planView(input: { held: Tier; paused: boolean; trialOn: boolean; signedIn: boolean; billing: Pick<BillingView, "state" | "canStartTrial" | "trialUsed"> | null }): { cards: Record<Tier, "current" | "included" | "upgrade">; trial: "offer" | "running" | "used" | null } {
+  const cards = { free: "upgrade", personal: "upgrade", business: "upgrade" } as Record<Tier, "current" | "included" | "upgrade">;
+  for (const tier of Object.keys(RANK) as Tier[]) cards[tier] = tier === input.held ? "current" : RANK[tier] < RANK[input.held] ? "included" : "upgrade";
+  const b = input.billing;
+  const trial = b?.state === "trialing" && input.held !== "free" ? "running"
+    : input.held !== "free" || input.paused || !input.trialOn ? null
+    : !input.signedIn || b?.canStartTrial === true ? "offer"
+    : b?.trialUsed ? "used"
+    : null;
+  return { cards, trial };
+}
+
 const fill = (template: string, values: Record<string, string | number>): string =>
   template.replace(/\{(\w+)\}/g, (match, key: string) => key in values ? String(values[key]) : match);
 

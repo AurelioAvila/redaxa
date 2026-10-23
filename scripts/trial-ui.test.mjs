@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { TRIAL_UI, chargeDate, choiceCopy, longDay, parseBilling, parsePrices } from "../dist/trial.js";
+import { TRIAL_BANNER, TRIAL_UI, chargeDate, choiceCopy, longDay, parseBilling, parsePrices, planView } from "../dist/trial.js";
 
 // What the plan cards say under "Start 3-day free trial" and "Subscribe now",
 // from Stripe's price and the server's offer; never a number of its own.
@@ -47,4 +47,29 @@ assert.equal(parseBilling({ trialEnabled: true, state: "pro" }), null);
 const odd = parseBilling({ trialEnabled: true, state: "blocked", blockedReason: "something_new", canStartTrial: "yes" });
 assert.equal(odd.blockedReason, "canceled");
 assert.equal(odd.canStartTrial, false);
+// Plans & pricing for every plan state: tiers below the one held are included, the held one is
+// current, higher ones are upgrades; the trial is offered only to accounts without a plan.
+const view = (held, billing, extra = {}) => planView({ held, paused: false, trialOn: true, signedIn: true, billing, ...extra });
+const none = { state: "none", canStartTrial: true, trialUsed: false };
+const cases = [
+  ["signed out", view("free", null, { signedIn: false }), { free: "current", personal: "upgrade", business: "upgrade" }, "offer"],
+  ["free, eligible", view("free", none), { free: "current", personal: "upgrade", business: "upgrade" }, "offer"],
+  ["free, trial used", view("free", { state: "none", canStartTrial: false, trialUsed: true }), { free: "current", personal: "upgrade", business: "upgrade" }, "used"],
+  ["free, trial refused", view("free", { state: "blocked", canStartTrial: false, trialUsed: true }), { free: "current", personal: "upgrade", business: "upgrade" }, "used"],
+  ["free, former subscriber", view("free", { state: "blocked", canStartTrial: false, trialUsed: false }), { free: "current", personal: "upgrade", business: "upgrade" }, null],
+  ["Pro trial", view("personal", { state: "trialing", canStartTrial: false, trialUsed: true }), { free: "included", personal: "current", business: "upgrade" }, "running"],
+  ["Business trial", view("business", { state: "trialing", canStartTrial: false, trialUsed: true }), { free: "included", personal: "included", business: "current" }, "running"],
+  ["Pro monthly or yearly", view("personal", { state: "active", canStartTrial: false, trialUsed: false }), { free: "included", personal: "current", business: "upgrade" }, null],
+  ["Business (team)", view("business", { state: "active", canStartTrial: false, trialUsed: true }), { free: "included", personal: "included", business: "current" }, null],
+  ["paused", view("free", { state: "blocked", canStartTrial: true, trialUsed: false }, { paused: true }), { free: "current", personal: "upgrade", business: "upgrade" }, null],
+  ["trial switched off", view("free", none, { trialOn: false }), { free: "current", personal: "upgrade", business: "upgrade" }, null],
+];
+for (const [name, got, cards, trial] of cases) {
+  assert.deepEqual(got.cards, cards, name);
+  assert.equal(got.trial, trial, name);
+}
+// A paying account is never offered the trial, whatever the server's eligibility flag says.
+assert.notEqual(view("business", { state: "active", canStartTrial: true, trialUsed: false }).trial, "offer");
+for (const [lang, words] of Object.entries(TRIAL_BANNER)) for (const key of Object.keys(TRIAL_BANNER.en)) assert.ok(words[key], `${lang}.${key}`);
+assert.match(TRIAL_BANNER.en.offerButton.replace("{days}", "3"), /^Start your 3-day free trial$/);
 console.log("Trial screens: choice lines from Stripe prices and the offer, five languages, server clock, defensive account parsing passed.");
