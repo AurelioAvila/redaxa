@@ -4,7 +4,7 @@ import { enableAppShell } from "./pwa.js";
 import { track } from "./growth.js";
 import { enableDesktopCompanion, openSupportEmail, shellCopyByLanguage, syncTrayLanguage } from "./desktop.js";
 import { PROMO_WORDS_EN, euro, mountPromo, promoPriceHtml, type PromoView, type PromoWords } from "./promo.js";
-import { TRIAL_UI, chargeDate, choiceCopy, fillTrial, loadPrices, longDay, priceFor, type PriceList } from "./trial.js";
+import { TRIAL_BANNER, TRIAL_UI, chargeDate, choiceCopy, fillTrial, loadPrices, longDay, planView, priceFor, type PriceList, type Tier } from "./trial.js";
 
 type HistoryEntry = { id: string; createdAt: string; findings: number; preview: string; byKind: Record<string, number> };
 type Language = "en" | "it" | "es" | "fr" | "de";
@@ -764,6 +764,10 @@ export function mountDashboard(): void {
       <p id="plans-status-text"></p>
       <button type="button" class="secondary" id="plans-manage" hidden data-i18n="manageBtn">${w0.manageBtn}</button>
     </div>
+    <div class="plans-trial" id="plans-trial" hidden>
+      <div class="plans-trial-copy"><h2 id="plans-trial-title"></h2><p id="plans-trial-text"></p></div>
+      <button type="button" class="primary" id="plans-trial-start" hidden></button>
+    </div>
     <div class="billing-switch" role="group" aria-label="${w0.billingPeriod}" data-i18n-label="billingPeriod"><button type="button" data-billing="monthly" aria-pressed="false" data-i18n="billingMonthly">${w0.billingMonthly}</button><button type="button" data-billing="yearly" aria-pressed="true" data-i18n="billingYearly">${w0.billingYearly}</button></div>
     <div class="plan-grid">
       <article class="plan-card plan-free" data-plan-card="free" aria-labelledby="plan-free-name">
@@ -784,6 +788,7 @@ export function mountDashboard(): void {
           <button type="button" class="primary" data-plan="personal" data-interval="yearly" data-choice="">${w0.startTrial}</button>
           <button type="button" class="secondary plan-now" data-plan="personal" data-interval="yearly" data-choice="now" hidden></button>
           <button type="button" class="secondary plan-manage" hidden data-i18n="manageBtn">${w0.manageBtn}</button>
+          <button type="button" class="secondary plan-included" disabled hidden data-i18n="includedInPlan">${w0.includedInPlan}</button>
           <p class="plan-choice-line" hidden></p>
           <p class="plan-choice-note" role="status" hidden></p>
         </div>
@@ -902,6 +907,8 @@ export function mountDashboard(): void {
   // Every "Manage subscription" control reaches the one button auth.ts binds to the billing portal.
   [required<HTMLButtonElement>("#plans-manage"), ...plansView.querySelectorAll<HTMLButtonElement>(".plan-manage")]
     .forEach(button => button.addEventListener("click", () => required<HTMLButtonElement>("#manage-billing").click()));
+  // The banner's trial is Pro's own "Start free trial" button: same checkout, same consent.
+  required<HTMLButtonElement>("#plans-trial-start").addEventListener("click", () => planCard("personal").querySelector<HTMLButtonElement>("[data-plan]:not(.plan-now)")?.click());
 
   const teamSection = required<HTMLElement>("#team-section");
   const teamSeats = required<HTMLElement>("#team-seats");
@@ -1300,11 +1307,35 @@ export function mountDashboard(): void {
     const offerTrial = trial && (!accountState || billing?.canStartTrial === true);
     const trialDays = prices?.trialDays ?? billing?.trialDays ?? 3;
     const date = prices ? chargeDate(prices) : new Date(Date.now() + trialDays * 86_400_000);
+    const view = planView({ held, paused, trialOn: trial, signedIn: Boolean(accountState), billing });
+    const trialingNow = accountState?.status === "trialing" && accountState.currentPeriodEnd;
+    const daysLeft = trialingNow ? Math.max(0, Math.ceil((new Date(accountState!.currentPeriodEnd!).getTime() - Date.now()) / 86_400_000)) : 0;
+    const leftText = daysLeft <= 0 ? w.planEndsToday : plural(w.planDaysLeft, daysLeft);
+    const banner = TRIAL_BANNER[lang] ?? TRIAL_BANNER.en;
+    const trialBox = required<HTMLElement>("#plans-trial");
+    const trialStart = required<HTMLButtonElement>("#plans-trial-start");
+    trialBox.hidden = view.trial === null;
+    trialBox.dataset.state = view.trial ?? "";
+    trialStart.hidden = view.trial !== "offer";
+    trialStart.textContent = fillTrial(banner.offerButton, { days: trialDays });
+    required<HTMLElement>("#plans-trial-title").textContent = view.trial === "running" ? fillTrial(banner.runningTitle, { left: leftText })
+      : view.trial === "used" ? banner.usedTitle : fillTrial(banner.offerTitle, { days: trialDays });
+    required<HTMLElement>("#plans-trial-text").textContent = view.trial === "running" && billing?.trialEndsAt
+      ? fillTrial(billing.cancelAtPeriodEnd ? t.statusTrialCancelled : t.statusTrial, { plan: planName(billing.plan), date: longDay(billing.trialEndsAt, lang) })
+      : view.trial === "used" ? banner.usedText : fillTrial(banner.offerText, { days: trialDays });
+    // The main screen's entry point: the same offer, one click from anywhere.
+    const sideCta = required<HTMLAnchorElement>("#side-fill-cta");
+    sideCta.classList.toggle("is-trial", view.trial === "offer");
+    sideCta.textContent = view.trial === "offer" ? fillTrial(banner.sideOffer, { days: trialDays }) : w.seePlans;
     plansView.querySelectorAll<HTMLElement>("[data-plan-card]").forEach((card) => {
-      const plan = card.dataset.planCard ?? "free";
+      const plan = (card.dataset.planCard ?? "free") as Tier;
       const mine = plan === held;
       card.classList.toggle("is-current", mine);
-      card.querySelector<HTMLElement>("[data-current]")!.hidden = !mine;
+      const badge = card.querySelector<HTMLElement>("[data-current]")!;
+      badge.hidden = !mine;
+      badge.textContent = mine && view.trial === "running" ? fillTrial(banner.runningTitle, { left: leftText }) : w.currentPlan;
+      const included = card.querySelector<HTMLElement>(".plan-included");
+      if (included) included.hidden = view.cards[plan] !== "included";
       const manage = card.querySelector<HTMLElement>(".plan-manage");
       if (!manage) return;
       const primary = card.querySelector<HTMLButtonElement>("[data-plan]:not(.plan-now)")!;

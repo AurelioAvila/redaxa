@@ -115,6 +115,8 @@ html.rx-native .rx-shell .brand { display: none; }
 .rx-shell .side-fill { display: block; margin: 8px 0 0; padding: 0; border: 0; background: none; }
 .rx-shell .side-fill a { color: var(--theme-accent); font: 650 12.5px/1.3 var(--font-text); text-decoration: none; }
 .rx-shell .side-fill a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.rx-shell .side-fill a.is-trial { display: block; padding: 8px 10px; border-radius: 8px; background: var(--theme-accent); color: var(--theme-ink); text-align: center; }
+.rx-shell .side-fill a.is-trial:hover { text-decoration: none; filter: brightness(1.06); }
 .rx-shell .nav-foot { gap: 2px; overflow: visible; }
 
 /* Desktop title bar: its left cell continues the rail. */
