@@ -54,9 +54,25 @@ const ORG = { "@type": "Organization", "@id": `${ORIGIN}/#organization`, name: "
 const AUTHOR = { "@type": "Person", name: "Aurelio Avila", url: "https://github.com/AurelioAvila" };
 const crumbs = (items) => ({ "@type": "BreadcrumbList", itemListElement: items.map(([name, item], i) => ({ "@type": "ListItem", position: i + 1, name, item })) });
 
-function commitSha(root) {
-  if (process.env.VERCEL_GIT_COMMIT_SHA) return process.env.VERCEL_GIT_COMMIT_SHA;
-  try { return execFileSync("git", ["rev-parse", "HEAD"], { cwd: new URL(".", root), encoding: "utf8" }).trim(); } catch { return "main"; }
+// The commit the "Sources" links point to: the last one that changed the engine
+// files they cite. It is a fixed value, not HEAD or the deploy commit, so the
+// pages are byte-identical across unrelated commits and the signed web catalogue
+// can cover them. After a commit that changes scanner.ts or credential-context.ts
+// lands, set it to `git log -1 --format=%H -- scanner.ts credential-context.ts`;
+// the build refuses to run while the pin and the files disagree (where git can
+// see the pinned commit; the Vercel build has no history, the check ran before).
+const SOURCE_SHA = "fcc3701a3eb78a1be4fc546feac314250b231454";
+const lf = (t) => t.replace(/\r\n/g, "\n");
+
+function commitSha(root, scannerSrc, contextSrc) {
+  const git = (...args) => execFileSync("git", args, { cwd: new URL(".", root), encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+  try { git("cat-file", "-e", `${SOURCE_SHA}^{commit}`); } catch { return SOURCE_SHA; }
+  for (const [file, src] of [["scanner.ts", scannerSrc], ["credential-context.ts", contextSrc]]) {
+    if (lf(git("show", `${SOURCE_SHA}:${file}`)) !== lf(src)) {
+      throw new Error(`${file} changed since ${SOURCE_SHA.slice(0, 8)}: set SOURCE_SHA in scripts/site-detectors.mjs to \`git log -1 --format=%H -- scanner.ts credential-context.ts\` once that commit exists`);
+    }
+  }
+  return SOURCE_SHA;
 }
 
 /** Line (1-based) of the first line containing `needle`, or null. */
@@ -74,7 +90,7 @@ export async function evaluate(root) {
   const { inspectFile } = await import(new URL("dist/repository-scanner.js", root));
   const scannerSrc = readFileSync(new URL("scanner.ts", root), "utf8");
   const contextSrc = readFileSync(new URL("credential-context.ts", root), "utf8");
-  const sha = commitSha(root);
+  const sha = commitSha(root, scannerSrc, contextSrc);
   const problems = [];
   const slugs = new Set();
   const pages = DETECTORS.map((d) => {
