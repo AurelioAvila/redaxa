@@ -1,6 +1,6 @@
-Redaxa 0.6.7 is a routine maintenance update, and every screen now describes the free trial the same way.
+Redaxa 0.6.7 is a routine maintenance update that also makes the free trial read the same on every screen.
 
-- The account dialog and a few plan messages could still mention a 7-day trial. The free trial is 3 days: screens that cannot confirm the offer yet no longer quote a length, in English, Italian, Spanish, French and German.
+- The account dialog and some plan messages now describe the 3-day free trial like the rest of Redaxa, in English, Italian, Spanish, French and German. Where the offer is not confirmed yet, they no longer quote a length.
 - Current Tauri window and webview components and an updated set of trusted root certificates.
 
 Windows installers require verified Aurelio Avila publisher signatures, trusted timestamps and compatible updater signatures before publication.
