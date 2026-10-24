@@ -40,10 +40,11 @@ for (const env of [{ TRIAL_ENABLED: "true" }, {}]) {
       assert.ok(built.has(path) || existsSync(new URL(path, root)) || path.startsWith("outputs/"), `${f.path}: broken internal link ${href}`);
     }
   }
-  // Trial wording follows the switch on every generated page.
+  // Every generated page names the 3-day trial, switch on or off: a checkout without the choice carries it too.
+  // Only the Windows app 0.5.5 and older gets seven days, and no page offers them.
   const all = files.map((f) => f.html).join("\n");
-  assert.equal(/3-day free trial|prova gratuita di 3 giorni|prueba gratuita de 3 días|essai gratuit de 3 jours|Testphase von 3 Tagen/.test(all), facts.trial.enabled);
-  // hreflang: every localized page lists all languages and x-default; the home page gets the same set at build.
+  assert.match(all, /3-day (free )?trial|prova gratuita di 3 giorni|prueba gratuita de 3 días|essai gratuit de 3 jours|Testphase von 3 Tagen/);
+  assert.doesNotMatch(all, /\b7[\s-]?(day|giorn|d[ií]as?\b|jours?\b|Tage\b|tägig)|seven[- ]day/i);  // hreflang: every localized page lists all languages and x-default; the home page gets the same set at build.
   for (const f of languages.files) for (const a of alternates()) assert.ok(f.html.includes(`hreflang="${a.hreflang}" href="${a.href}"`), `${f.path}: missing ${a.hreflang}`);
   assert.equal(languages.files.length, LANGUAGES.length);
   for (const f of languages.files) assert.ok(f.html.includes(JSON.parse(read(`browser-extension/_locales/${f.code}/messages.json`)).extName.message.replace(/&/g, "&amp;")), `${f.code}: extension name differs from _locales`);

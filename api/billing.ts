@@ -1,4 +1,4 @@
-import { accountFor, billingAppUrl, corsHeaders, parseJson, releaseCheckout, requireUser, reserveCheckout, saveCustomer, stripe, supabaseUserById } from "./_billing.js";
+import { DESKTOP_ORIGINS, accountFor, billingAppUrl, corsHeaders, parseJson, releaseCheckout, requireUser, reserveCheckout, saveCustomer, stripe, supabaseUserById } from "./_billing.js";
 import { clientIp, rateLimited } from "./_rateLimit.js";
 import { promoCheckout, promoState } from "./_promo.js";
 import {
@@ -167,7 +167,7 @@ export default async function handler(request: RequestLike, response: ResponseLi
     const price = plan && interval ? priceFor(plan, interval) : null;
     if (!plan || !interval || !price || seats < 1 || seats > 3) { response.status(400).json({ error: "Invalid plan selection." }); return; }
     // The customer's choice: "Start 3-day free trial" (true) or "Subscribe
-    // now" (false). Absent is what clients from before the choice send.
+    // now" (false). Absent: a page showing no choice, or the Windows app 0.5.5 and older.
     const startTrial = body.start_trial;
     if (startTrial !== undefined && typeof startTrial !== "boolean") { response.status(400).json({ error: "start_trial must be true or false." }); return; }
     // Only to word the emails in the language the customer was using.
@@ -203,14 +203,21 @@ export default async function handler(request: RequestLike, response: ResponseLi
         customerId = customer.id;
         await saveCustomer(user.id, customerId);
       }
-      // Clients from before the choice (Windows app 0.5.5 and older) advertise
-      // a seven-day trial to eligible new subscribers and keep exactly that,
-      // always under the one-per-person rule: the mark makes the webhook claim
-      // it against the account, the mailbox and the card.
-      const legacyTrial = startTrial === undefined && await legacyTrialEligible(user.id, user.email, account);
-      const trial = startTrial === true
+      // No choice sent: a page that could not read the offer (it shows one
+      // "Go Pro" button) or the Windows app 0.5.5 and older, which never
+      // offers one. An eligible new subscriber still gets the trial, always
+      // under the one-per-person rule: the mark makes the webhook claim it
+      // against the account, the mailbox and the card. It lasts three days,
+      // like every other trial, except for that old app, whose screens and
+      // terms promise seven: it is the only client that calls from the
+      // desktop app's origin without `language`, which arrived with the
+      // choice in 0.6.0.
+      const automatic = startTrial === undefined && await legacyTrialEligible(user.id, user.email, account);
+      const origin = Array.isArray(request.headers?.origin) ? request.headers.origin[0] : request.headers?.origin;
+      const oldApp = body.language === undefined && DESKTOP_ORIGINS.has(origin ?? "");
+      const trial = startTrial === true || (automatic && !oldApp)
         ? { days: TRIAL_DAYS, mark: TRIAL_MARK }
-        : legacyTrial ? { days: LEGACY_TRIAL_DAYS, mark: LEGACY_TRIAL_MARK } : null;
+        : automatic ? { days: LEGACY_TRIAL_DAYS, mark: LEGACY_TRIAL_MARK } : null;
       // The discount follows the plan resolved above and the server's clock.
       // A once-only coupon skips the trial's zero invoice and comes off the
       // first paid one (checked on Stripe test clocks, 10 and 14 Oct 2026).

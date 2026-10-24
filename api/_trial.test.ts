@@ -156,9 +156,10 @@ function response() {
     json(value: unknown) { this.body = value; }, end() {} };
 }
 let ip = 0;
-async function checkout(userId: string, body: Row, expected = 200) {
+const DESKTOP = "https://tauri.localhost";
+async function checkout(userId: string, body: Row, expected = 200, origin?: string) {
   const res = response();
-  await billing({ method: "POST", body, headers: { authorization: `Bearer ${userId}`, "x-forwarded-for": `198.51.100.${ip++ % 250}` } }, res as any);
+  await billing({ method: "POST", body, headers: { authorization: `Bearer ${userId}`, "x-forwarded-for": `198.51.100.${ip++ % 250}`, ...(origin ? { origin } : {}) } }, res as any);
   assert.equal(res.statusCode, expected, JSON.stringify(res.body));
   return { res, params: res.statusCode === 200 ? sessions.at(-1)! as any : null };
 }
@@ -168,21 +169,40 @@ function newUser(id: string, email = `${id}@example.test`, accountRow?: Row) {
   return id;
 }
 
-// --- Switch off: no choice is offered. Old clients send no start_trial and
-// keep the seven-day trial they advertise, still one per person: unpoliced, a
-// new address and the same card bought another week every time.
+// --- Switch off: no choice is offered. A checkout without one still carries
+// the trial for an eligible account: three days, or seven for the Windows app
+// 0.5.5 and older, which promises seven (desktop origin, no `language`). Always
+// one per person: unpoliced, a new address and the same card bought another
+// trial every time.
 resetDb();
 {
   const id = newUser("user-legacy");
-  const { res, params } = await checkout(id, { plan: "personal", interval: "monthly" });
+  const { res, params } = await checkout(id, { plan: "personal", interval: "monthly" }, 200, DESKTOP);
   assert.equal(params.subscription_data.trial_period_days, 7);
   assert.equal(params.subscription_data.metadata.trial, "7d", "the webhook claims it like any policed trial");
   assert.equal(params.payment_method_collection, "always");
   assert.equal(params.metadata.lang, undefined);
   assert.equal(res.body.trial, true);
+  assert.equal(res.body.trialDays, 7);
+  // Every newer client without the choice: the same three days as everywhere else.
+  for (const [who, body, origin] of [
+    ["web page, offer unread", { plan: "personal", interval: "monthly", language: "it" }, "https://redaxa.getcertsprint.com"],
+    ["Windows app 0.6.x, offer unread", { plan: "personal", interval: "monthly", language: "en" }, DESKTOP],
+    ["request shaped like the old app, not from it", { plan: "personal", interval: "monthly" }, "https://redaxa.getcertsprint.com"],
+    ["no origin at all", { plan: "business", interval: "monthly", seats: 2 }, undefined],
+  ] as const) {
+    const fresh = newUser(`user-auto-${who.replace(/\W+/g, "-")}`);
+    const auto = await checkout(fresh, body, 200, origin);
+    assert.equal(auto.params.subscription_data.trial_period_days, 3, who);
+    assert.equal(auto.params.subscription_data.metadata.trial, "3d", who);
+    assert.equal(auto.params.payment_method_collection, "always", who);
+    assert.deepEqual(auto.params.subscription_data.trial_settings, { end_behavior: { missing_payment_method: "cancel" } }, who);
+    assert.equal(auto.res.body.trialDays, 3, who);
+  }
   db.claims.push({ subscription_id: "sub_legacy", user_id: id, email_hash: await trial.emailHash("user-legacy@example.test"), card_fingerprint: "fp_legacy", trial_end: null, reminded_for: null });
   const again = newUser("user-legacy-again", "user-legacy+2@example.test");
-  assert.equal((await checkout(again, { plan: "personal", interval: "monthly" })).params.subscription_data.trial_period_days, undefined, "switch off: the same mailbox gets no second week");
+  assert.equal((await checkout(again, { plan: "personal", interval: "monthly" }, 200, DESKTOP)).params.subscription_data.trial_period_days, undefined, "switch off: the same mailbox gets no second week");
+  assert.equal((await checkout(again, { plan: "personal", interval: "monthly", language: "en" })).params.subscription_data.trial_period_days, undefined, "nor a second trial from a newer client");
   newUser("user-subscribed-before", undefined, { has_used_trial: true });
   assert.equal((await checkout("user-subscribed-before", { plan: "personal", interval: "yearly" })).params.subscription_data.trial_period_days, undefined);
   const refused = await checkout(id, { plan: "personal", interval: "monthly", start_trial: true }, 409);
@@ -193,7 +213,8 @@ resetDb();
   // If the trial table cannot be read, an old client still buys, just without the week.
   db.trialTableMissing = true;
   const unreadable = newUser("user-legacy-unreadable");
-  assert.equal((await checkout(unreadable, { plan: "personal", interval: "monthly" })).params.subscription_data.trial_period_days, undefined);
+  assert.equal((await checkout(unreadable, { plan: "personal", interval: "monthly" }, 200, DESKTOP)).params.subscription_data.trial_period_days, undefined);
+  assert.equal((await checkout(unreadable, { plan: "personal", interval: "monthly", language: "en" })).params.subscription_data.trial_period_days, undefined);
   db.trialTableMissing = false;
 }
 
@@ -231,14 +252,20 @@ resetDb();
   assert.equal(unpaid.res.body.code, "manage_billing");
   assert.equal(sessions.length, opened, "no second checkout session");
   // Windows app 0.5.5 and older: seven days, under the same rule.
-  const legacy = await checkout(id, { plan: "personal", interval: "monthly" });
+  const legacy = await checkout(id, { plan: "personal", interval: "monthly" }, 200, DESKTOP);
   assert.equal(legacy.params.subscription_data.trial_period_days, 7);
   assert.equal(legacy.params.subscription_data.metadata.trial, "7d");
+  // A page that could not read the offer sends no choice: three days, like the button it replaces.
+  const fallback = await checkout(id, { plan: "personal", interval: "yearly", language: "de" }, 200, DESKTOP);
+  assert.equal(fallback.params.subscription_data.trial_period_days, 3);
+  assert.equal(fallback.params.subscription_data.metadata.trial, "3d");
+  assert.equal(fallback.params.metadata.lang, "de");
   // Another account on the same Gmail inbox, once the first trial is claimed.
   db.claims.push({ subscription_id: "sub_a", user_id: id, email_hash: await trial.emailHash("giulia.rossi@gmail.com"), card_fingerprint: "fp_x", trial_end: null, reminded_for: null });
   const twin = newUser("user-a-twin", "GiuliaRossi+2@googlemail.com");
   assert.equal((await checkout(twin, { plan: "personal", interval: "monthly", start_trial: true }, 409)).res.body.code, "trial_unavailable");
-  assert.equal((await checkout(twin, { plan: "personal", interval: "monthly" })).params.subscription_data.trial_period_days, undefined, "no trial for an old client either");
+  assert.equal((await checkout(twin, { plan: "personal", interval: "monthly" }, 200, DESKTOP)).params.subscription_data.trial_period_days, undefined, "no trial for an old client either");
+  assert.equal((await checkout(twin, { plan: "personal", interval: "monthly", language: "en" })).params.subscription_data.trial_period_days, undefined, "nor without a choice");
   newUser("user-live", undefined, { subscription_status: "past_due", has_used_trial: true });
   await checkout("user-live", { plan: "personal", interval: "monthly", start_trial: true }, 409);
 }

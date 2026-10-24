@@ -56,7 +56,7 @@ assert.equal(guides.length, 6);
 for (const env of [{ TRIAL_ENABLED: 'true' }, {}]) {
   const f = readFacts(new URL('../', import.meta.url), env);
   assert.equal(f.trial.enabled, env.TRIAL_ENABLED === 'true');
-  assert.match(f.trial.short, env.TRIAL_ENABLED ? /3-day free trial/ : /7-day trial/);
+  assert.match(f.trial.short, env.TRIAL_ENABLED ? /3-day free trial/ : /3-day trial/);
   if (env.TRIAL_ENABLED) assert.match(f.trial.long, /payment fails, the plan is paused/);
   for (const file of guides) {
     const source = read(file);

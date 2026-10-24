@@ -81,9 +81,8 @@ for (const [lang, words] of Object.entries(TRIAL_BANNER)) {
 assert.equal(keepArrow("Compare plans →"), "Compare plans →");
 assert.equal(keepArrow("Confronta i piani"), "Confronta i piani");
 
-// The trial is 3 days. Copy shown before the server confirms the offer (or with the switch off) names no
-// length at all, in any language: no screen, dialog or static page of the web, desktop or extension client
-// may promise the 7-day trial (only Windows app 0.5.5 and older still get it, as terms.html says).
+// The trial is 3 days. No screen, dialog or static page of the web, desktop or extension client may promise
+// the 7-day trial (only the Windows app 0.5.5 and older still gets it, as terms.html says).
 const client = ["auth.ts", "dashboard.ts", "landing.ts", "repository-ui.ts", "promo.ts", "trial.ts", "dashboard.html", "index.html", "github.html",
   "browser-extension/popup.html", "browser-extension/popup.js", ...["en", "it", "es", "fr", "de"].map((l) => `browser-extension/_locales/${l}/messages.json`)];
 const activity = /Last 7 days|Ultimi 7 giorni|Últimos 7 días|7 derniers jours|Letzte 7 Tage/g;
@@ -92,4 +91,13 @@ for (const file of client) {
   assert.doesNotMatch(text, /\b7[\s-]?(day|giorn|d[ií]as?\b|jours?\b|Tage\b|tägig)|seven[- ]day/i, file);
 }
 for (const [lang, words] of Object.entries(TRIAL_UI)) for (const key of ["plansIntro", "planNoneNote", "startTrialToInspect", "faqTrialQ"]) assert.match(words.copy[key], /\b3\b/, `${lang}.copy.${key}`);
+// Copy shown before the server confirms the offer, or with the switch off: no choice is sent, and the
+// server gives that checkout the same 3 days (api/billing.ts), so it says 3 days in every language.
+const source = (file) => readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
+for (const [file, pattern] of [["auth.ts", /try Redaxa free for 3 days[\s\S]*start with a 3-day free trial\."/], ["landing.ts", /start with a 3-day free trial\."\)/],
+  ["repository-ui.ts", /start with a 3-day free trial\.'/], ["promo.ts", /still start with the 3-day free trial\./], ["dashboard.html", /start with a 3-day free trial\.<\/p>/]]) assert.match(source(file), pattern, file);
+for (const phrase of ["3-day free trial", "prova gratuita di 3 giorni", "prueba gratuita de 3 días", "essai gratuit de 3 jours", "Testphase von 3 Tagen"]) {
+  assert.ok(source("dashboard.ts").split(phrase).length - 1 >= 4, `dashboard.ts fallback copy: ${phrase}`);
+}
+assert.doesNotMatch(source("dashboard.ts"), /(prova gratuita|prueba gratuita|essai gratuit|kostenlose[nr]? Testphase|(?<!3-day )free trial)\./, "no fallback sentence without its length");
 console.log("Trial screens: choice lines from Stripe prices and the offer, five languages, server clock, defensive account parsing, no 7-day promise anywhere passed.");

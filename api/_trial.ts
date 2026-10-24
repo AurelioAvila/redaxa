@@ -19,18 +19,21 @@ import { stripe, supabaseService, type BillingAccount } from "./_billing.js";
  *   Stripe creates the subscription, so several open checkouts cannot win
  *   several trials.
  *
- * The choice is off unless TRIAL_ENABLED=true. Clients that never send
- * `start_trial` (Windows app 0.5.5 and older) get the seven-day trial they
- * advertise either way, and it is always policed by the same one-per-person
- * claim: unpoliced, a new address plus the same card bought another week
- * every time. Subscriptions sold with a policed trial carry `trial` in their
- * metadata and keep these rules even if the switch is turned off again.
+ * The choice is off unless TRIAL_ENABLED=true. A checkout without
+ * `start_trial` (a page that shows no choice, switch off or offer unread)
+ * still carries the trial for an eligible account, three days like the
+ * others; only the Windows app 0.5.5 and older, which promises seven, keeps
+ * seven (billing.ts tells it apart). Both are always policed by the same
+ * one-per-person claim: unpoliced, a new address plus the same card bought
+ * another trial every time. Subscriptions sold with a policed trial carry
+ * `trial` in their metadata and keep these rules even if the switch is
+ * turned off again.
  */
 export const TRIAL_DAYS = 3;
 /** Metadata mark of a trial sold under the one-per-person rule. */
 export const TRIAL_MARK = "3d";
-/** Clients from before the choice (Windows app 0.5.5 and older) promise seven
- *  days; with the switch on they keep that length under the same rule. */
+/** The Windows app 0.5.5 and older promises seven days and keeps that length,
+ *  under the same rule, switch on or off. No other client gets it. */
 export const LEGACY_TRIAL_DAYS = 7;
 export const LEGACY_TRIAL_MARK = "7d";
 /** Our own status for a trial cancelled because the person already had one,
@@ -125,12 +128,12 @@ export async function trialEligible(userId: string, email: string, account: Pick
   return trialAvailable(userId, email);
 }
 
-/** Whether a checkout from a client that never offers the choice may carry
- *  its seven-day trial: the same one-per-person rule, switch on or off. */
+/** Whether a checkout sent without a choice may carry the trial: the same
+ *  one-per-person rule, switch on or off (billing.ts picks its length). */
 export async function legacyTrialEligible(userId: string, email: string, account: Pick<BillingAccount, "has_used_trial" | "subscription_status"> | null): Promise<boolean> {
   if (account?.has_used_trial || isLive(account?.subscription_status)) return false;
-  // These clients never asked for the trial table: if it cannot be read, the
-  // purchase goes ahead without the free week rather than failing.
+  // These checkouts never asked for the trial: if the table cannot be read,
+  // the purchase goes ahead without it rather than failing.
   try {
     return await trialAvailable(userId, email);
   } catch {
