@@ -23,8 +23,8 @@ For people preparing prompts and reviewing repositories before sharing them. Ins
 </p>
 
 <p align="center">
-  <a href="https://www.softpedia.com/get/Security/PromptShield.shtml"><img src="https://img.shields.io/badge/Softpedia-5%2F5%20%7C%2022%20votes-0078D4?style=for-the-badge" alt="Softpedia user rating: 5 out of 5 from 22 votes"></a>
-  <a href="https://www.majorgeeks.com/files/details/redaxa.html"><img src="https://img.shields.io/badge/MajorGeeks-5%2F5%20%7C%2017%20votes-C48B28?style=for-the-badge" alt="MajorGeeks user rating: 5 out of 5 from 17 votes"></a>
+  <a href="https://www.softpedia.com/get/Security/PromptShield.shtml"><img src="https://img.shields.io/badge/Softpedia-5%2F5%20user%20rating-0078D4?style=for-the-badge" alt="Softpedia user rating: 5 out of 5"></a>
+  <a href="https://www.majorgeeks.com/files/details/redaxa.html"><img src="https://img.shields.io/badge/MajorGeeks-5%2F5%20user%20rating-C48B28?style=for-the-badge" alt="MajorGeeks user rating: 5 out of 5"></a>
 </p>
 
 <p align="center"><sub>Want safer AI workflows? ⭐ Star Redaxa to follow new protections and help others find it.</sub></p>
@@ -104,10 +104,10 @@ On the Business plan, a workspace is a real organization:
 
 ## Reviews and distribution
 
-Ratings and reviews checked October 7, 2026. Feedback stays at its original source:
+Ratings and reviews checked October 24, 2026. Feedback stays at its original source:
 
-- [Softpedia](https://www.softpedia.com/get/Security/PromptShield.shtml): user rating **5.0/5 from 22 votes**; editorial review **4.0/5**, tested by Softpedia staff. The listing keeps the PromptShield address from before the rename and currently shows 0.4.8.
-- [MajorGeeks](https://www.majorgeeks.com/files/details/redaxa.html): user rating **5/5 from 17 votes**; lists 0.4.9.
+- [Softpedia](https://www.softpedia.com/get/Security/PromptShield.shtml): user rating **5.0/5**; editorial review **4.0/5**, tested by Softpedia staff. The listing keeps the PromptShield address from before the rename.
+- [MajorGeeks](https://www.majorgeeks.com/files/details/redaxa.html): user rating **5/5**; listing and reader reviews.
 - [WinGet](https://github.com/microsoft/winget-pkgs/tree/master/manifests/a/AurelioAvila/Redaxa): `winget install --id AurelioAvila.Redaxa --exact`.
 - [Chrome Web Store](https://chromewebstore.google.com/detail/redaxa/clkobbjoaegkgnmkibjghlboeoplpmok): the browser extension.
 
@@ -188,3 +188,11 @@ Proprietary — all rights reserved. Source is visible for transparency; see [LI
 
 For support or billing questions, email [redaxa@getcertsprint.com](mailto:redaxa@getcertsprint.com). Include the app version and steps to reproduce the problem. Never send passwords, access tokens, private keys or payment card details, and remove sensitive information from screenshots and logs.
 
+## More tools by Aurelio Avila
+
+- [PC Tweaker](https://pctweaker.app/): Windows tuning for performance, gaming and privacy, with hardware monitoring and restore tools for supported settings.
+- [PC Tweaker Uninstaller](https://pctweaker.app/uninstaller/): Windows uninstaller with evidence-based removal scores, rollback snapshots and a local removal ledger.
+- [Tweaky Driver](https://pctweaker.app/tweaky-driver/): Windows driver inventory and update review, showing detected devices, installed versions and available driver offers.
+- [Redexa Social](https://redexa.getcertsprint.com/): Private YouTube analytics for Windows, kept in a database on your PC.
+- [Glarion](https://glarion.app/): Verified website security checks and white-label reports for digital agencies.
+- [Frame Witness](https://framewitness.pages.dev/): Windows photo and video recovery with source offsets, SHA-256 hashes and dated findings.
