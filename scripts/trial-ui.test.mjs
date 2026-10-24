@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { TRIAL_BANNER, TRIAL_UI, chargeDate, choiceCopy, keepArrow, longDay, parseBilling, parsePrices, planView } from "../dist/trial.js";
 
 // What the plan cards say under "Start 3-day free trial" and "Subscribe now",
@@ -79,4 +80,16 @@ for (const [lang, words] of Object.entries(TRIAL_BANNER)) {
 }
 assert.equal(keepArrow("Compare plans →"), "Compare plans →");
 assert.equal(keepArrow("Confronta i piani"), "Confronta i piani");
-console.log("Trial screens: choice lines from Stripe prices and the offer, five languages, server clock, defensive account parsing passed.");
+
+// The trial is 3 days. Copy shown before the server confirms the offer (or with the switch off) names no
+// length at all, in any language: no screen, dialog or static page of the web, desktop or extension client
+// may promise the 7-day trial (only Windows app 0.5.5 and older still get it, as terms.html says).
+const client = ["auth.ts", "dashboard.ts", "landing.ts", "repository-ui.ts", "promo.ts", "trial.ts", "dashboard.html", "index.html", "github.html",
+  "browser-extension/popup.html", "browser-extension/popup.js", ...["en", "it", "es", "fr", "de"].map((l) => `browser-extension/_locales/${l}/messages.json`)];
+const activity = /Last 7 days|Ultimi 7 giorni|Últimos 7 días|7 derniers jours|Letzte 7 Tage/g;
+for (const file of client) {
+  const text = readFileSync(new URL(`../${file}`, import.meta.url), "utf8").replace(activity, "");
+  assert.doesNotMatch(text, /\b7[\s-]?(day|giorn|d[ií]as?\b|jours?\b|Tage\b|tägig)|seven[- ]day/i, file);
+}
+for (const [lang, words] of Object.entries(TRIAL_UI)) for (const key of ["plansIntro", "planNoneNote", "startTrialToInspect", "faqTrialQ"]) assert.match(words.copy[key], /\b3\b/, `${lang}.copy.${key}`);
+console.log("Trial screens: choice lines from Stripe prices and the offer, five languages, server clock, defensive account parsing, no 7-day promise anywhere passed.");

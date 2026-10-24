@@ -35,7 +35,7 @@ rebuild (`npm run build:web`) and `vercel deploy --prod`.
 > Redaxa is now on the Chrome Web Store. One click, and every prompt you
 > type into ChatGPT, Claude, Gemini, Copilot or Perplexity gets checked for
 > secrets and personal data before it sends — with a safe, redacted version one
-> click away. Free 7-day trial; team policies on Business.
+> click away. Free 3-day trial; team policies on Business.
 
 ## 4. Post-approval checklist
 - [ ] Swap landing link (step 1)

@@ -228,7 +228,7 @@ export const PROMO_WORDS_EN: PromoWords = {
   kicker: "Halloween offer",
   lead: "At least {percent} off your first month or year.",
   ends: "Ends {date}.",
-  fine: "Struck-through prices are our lowest in the 30 days before the offer. New subscriptions only; renewals are at the regular price, and eligible new subscribers still start with the 7-day trial. Prices exclude VAT.",
+  fine: "Struck-through prices are our lowest in the 30 days before the offer. New subscriptions only; renewals are at the regular price, and eligible new subscribers still start with the free trial. Prices exclude VAT.",
   endsIn: "Ends in",
   units: ["Days", "Hours", "Minutes", "Seconds"],
   thenMonth: "First month, then {price} a month",
