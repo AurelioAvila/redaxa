@@ -16,21 +16,22 @@ const unescapeHtml = (s) => s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replac
 // Plain text for llms.txt and JSON-LD: no angle brackets survive, whatever the markup was.
 const stripTags = (s) => unescapeHtml(s.split(/<[^>]*>/).join("")).split(/[<>]/).join("").replace(/\s+/g, " ").trim();
 
-/** The trial as checkout will give it: api/_trial.ts reads TRIAL_ENABLED === "true" and TRIAL_DAYS. */
+/** The trial as checkout will give it: api/_trial.ts reads TRIAL_ENABLED === "true" and TRIAL_DAYS. With the
+ *  switch off there is no choice, and a checkout without one still carries the same TRIAL_DAYS trial (only the
+ *  Windows app 0.5.5 and older gets LEGACY_TRIAL_DAYS, which no page offers). */
 export function trialFacts(root, env = process.env) {
   const source = readFileSync(new URL("api/_trial.ts", root), "utf8");
   const days = Number(source.match(/export const TRIAL_DAYS = (\d+);/)?.[1]);
-  const legacyDays = Number(source.match(/export const LEGACY_TRIAL_DAYS = (\d+);/)?.[1]);
-  if (!days || !legacyDays) throw new Error("api/_trial.ts lost TRIAL_DAYS or LEGACY_TRIAL_DAYS");
+  if (!days) throw new Error("api/_trial.ts lost TRIAL_DAYS");
   const enabled = env.TRIAL_ENABLED === "true";
   return enabled ? {
     enabled, days,
     short: `Pro and Business start with a ${days}-day free trial: a card or another payment method is needed, nothing is charged for ${days} days, and you can cancel before it ends from Manage subscription.`,
     long: `Pro and Business can start with a ${days}-day free trial, or you can subscribe straight away. A card or another payment method Stripe accepts is needed to start; nothing is charged during the ${days} days. When the trial ends the plan is charged automatically, unless you cancelled it before then from Account & team, Manage subscription. If a payment fails, the plan is paused until a payment goes through. There is one free trial per person (per account, email address and card).`,
   } : {
-    enabled, days: legacyDays,
-    short: `Eligible new subscribers get a ${legacyDays}-day trial; a card is required, and you can cancel before it ends to avoid a charge.`,
-    long: `Eligible new subscribers start with a ${legacyDays}-day trial. A card is required; cancel before the trial ends to avoid a charge.`,
+    enabled, days,
+    short: `Eligible new subscribers get a ${days}-day trial; a card is required, and you can cancel before it ends to avoid a charge.`,
+    long: `Eligible new subscribers start with a ${days}-day trial. A card is required; cancel before the trial ends to avoid a charge.`,
   };
 }
 

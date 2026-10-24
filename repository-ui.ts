@@ -60,7 +60,7 @@ async function scan(demo=false){
    $('results').scrollIntoView({block:'start',behavior:'auto'});
   }catch(e){
    const message=e instanceof Error?e.message:'';
-   if(message==='REPOSITORY_LIMIT'){const prices=await loadPrices();window.promptShieldAuth?.requestAccess(`You've used today's free repository checks. Choose a plan for 60 repository checks a day and full local reviews; ${prices?.trialEnabled?`you can try it free for ${prices.trialDays} days.`:'eligible new subscribers start with a free trial.'}`);$('status').textContent="Today's free repository checks are used up.";}
+   if(message==='REPOSITORY_LIMIT'){const prices=await loadPrices();window.promptShieldAuth?.requestAccess(`You've used today's free repository checks. Choose a plan for 60 repository checks a day and full local reviews; ${prices?.trialEnabled?`you can try it free for ${prices.trialDays} days.`:'eligible new subscribers start with a 3-day free trial.'}`);$('status').textContent="Today's free repository checks are used up.";}
    else $('status').textContent=message||'The repository could not be checked right now. Please try again.';
    $('empty').hidden=false;
   }finally{setScanBusy(false);}

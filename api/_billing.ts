@@ -195,16 +195,18 @@ function bearerToken(headers: Record<string, string | string[] | undefined> | un
 // (no Access-Control-Allow-Credentials, and session cookies are SameSite=Lax so they
 // never ride along on cross-site fetches) but an explicit allowlist is cheap insurance
 // against that assumption breaking later.
+// Tauri v2 on Windows/Linux serves the app over the https scheme
+// (https://tauri.localhost), not http -- macOS/iOS use the tauri://
+// custom scheme instead. A CORS preflight (triggered whenever
+// desktopAccessToken() sends Authorization/X-Refresh-Token headers to
+// refresh an expired access token) silently fails if the origin isn't
+// an exact match, which read as "have to click Log in, then it just
+// works" -- the app looked logged out until something (focus, a click)
+// happened to hit a code path that didn't need the cross-origin fetch.
+export const DESKTOP_ORIGINS: ReadonlySet<string> = new Set(["tauri://localhost", "https://tauri.localhost", "http://tauri.localhost"]);
+
 function allowedOrigins(): Set<string> {
-  // Tauri v2 on Windows/Linux serves the app over the https scheme
-  // (https://tauri.localhost), not http -- macOS/iOS use the tauri://
-  // custom scheme instead. A CORS preflight (triggered whenever
-  // desktopAccessToken() sends Authorization/X-Refresh-Token headers to
-  // refresh an expired access token) silently fails if the origin isn't
-  // an exact match, which read as "have to click Log in, then it just
-  // works" -- the app looked logged out until something (focus, a click)
-  // happened to hit a code path that didn't need the cross-origin fetch.
-  return new Set([appUrl(), ...WEB_ORIGINS, "tauri://localhost", "https://tauri.localhost", "http://tauri.localhost"]);
+  return new Set([appUrl(), ...WEB_ORIGINS, ...DESKTOP_ORIGINS]);
 }
 
 // The browser extension's background service worker runs at a
