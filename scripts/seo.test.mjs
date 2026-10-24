@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 const read = file => readFileSync(new URL('../' + file, import.meta.url), 'utf8');
 // Hand-maintained silos; /sitemap.xml is the index build-web.mjs writes over them and the generated silos.
 const entries = ['sitemap-pages.xml', 'sitemap-guides.xml'].flatMap(file => [...read(file).matchAll(/<url>\s*<loc>([^<]+)<\/loc><lastmod>([^<]+)<\/lastmod>/g)]);
-assert.equal(entries.length, 11);
+assert.equal(entries.length, 12);
 assert.equal(new Set(entries.map(entry => entry[1])).size, entries.length);
 const origin = new URL(entries[0][1]).origin;
 assert.equal(origin, 'https://redaxa.getcertsprint.com', 'Public metadata must use the verified branded domain.');
@@ -52,7 +52,7 @@ assert.ok(built.includes('"softwareVersion": "' + pkg.version + '"') && built.in
 // Guides: no hand-typed prices or trial lengths; markers are filled at build from the offers and the switch.
 const { applyMarkers } = await import('./site-generated.mjs');
 const guides = entries.map(([, url]) => new URL(url).pathname.slice(1)).filter(path => path.endsWith('.html') && !['github.html', 'api-docs.html', 'privacy.html', 'terms.html'].includes(path));
-assert.equal(guides.length, 6);
+assert.equal(guides.length, 7);
 for (const env of [{ TRIAL_ENABLED: 'true' }, {}]) {
   const f = readFacts(new URL('../', import.meta.url), env);
   assert.equal(f.trial.enabled, env.TRIAL_ENABLED === 'true');
@@ -95,4 +95,4 @@ for (const file of [...guides, 'github.html', 'api-docs.html']) {
   for (const page of ['/privacy.html', '/dashboard.html', '/sitemap.xml']) assert.ok(regex.test(page), page);
   for (const api of ['/api/account', '/api/auth/session', '/api/billing']) assert.ok(!regex.test(api), api);
 }
-console.log('SEO checks passed: eleven canonical sitemap URLs in two silos; guides take prices and the trial from the build; FAQ markup matches the pages; the personal workspace remains noindex; the legacy host redirects its pages.');
+console.log('SEO checks passed: twelve canonical sitemap URLs in two silos; guides take prices and the trial from the build; FAQ markup matches the pages; the personal workspace remains noindex; the legacy host redirects its pages.');
