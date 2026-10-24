@@ -90,6 +90,7 @@ export function renderLlms({ app, version, trust, faq, trial }, extra = {}) {
     `- [PII redaction browser extension: what runs on your device](${ORIGIN}/pii-redaction-browser-extension.html)`,
     `- [How to redact sensitive data before ChatGPT](${ORIGIN}/redact-sensitive-data-before-chatgpt.html)`,
     `- [Check a public GitHub repository for leaked API keys](${ORIGIN}/check-public-github-repo-for-leaked-api-keys.html)`,
+    `- [Free GitHub secret scanner: what the web check reads, its limits and what it does not do](${ORIGIN}/free-github-secret-scanner.html)`,
     `- [Protect client and project names in AI prompts](${ORIGIN}/protect-client-and-project-names-in-ai-prompts.html)`,
     `- [What not to paste into ChatGPT: a checklist](${ORIGIN}/what-not-to-paste-into-chatgpt-checklist.html)`,
     `- [API documentation](${ORIGIN}/api-docs.html)`,

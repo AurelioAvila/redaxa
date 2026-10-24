@@ -12,7 +12,7 @@ if(dirname(output)!==resolve(root)||basename(output)!=='public')throw new Error(
 rmSync(output, { recursive: true, force: true });
 mkdirSync(output, { recursive: true });
 
-for (const file of ["index.html", "dashboard.html", "github.html", "repository.css", "brand-system.css", "themes.css", "app.css", "plans.css", "dialogs.css", "theme-boot.js", "cf-beacon.js", "privacy.html", "terms.html", "api-docs.html", "redact-sensitive-data-before-chatgpt.html", "check-public-github-repo-for-leaked-api-keys.html", "protect-client-and-project-names-in-ai-prompts.html", "what-not-to-paste-into-chatgpt-checklist.html", "stop-api-keys-leaking-into-ai-prompts.html", "pii-redaction-browser-extension.html", "404.html", "lang-pref.js", "auth.css", "manifest.webmanifest", "service-worker.js", "robots.txt", "sitemap-pages.xml", "sitemap-guides.xml", "50dbe3a3e39c297a807eb935fcdaba29.txt"]) {
+for (const file of ["index.html", "dashboard.html", "github.html", "repository.css", "brand-system.css", "themes.css", "app.css", "plans.css", "dialogs.css", "theme-boot.js", "cf-beacon.js", "privacy.html", "terms.html", "api-docs.html", "redact-sensitive-data-before-chatgpt.html", "check-public-github-repo-for-leaked-api-keys.html", "free-github-secret-scanner.html", "protect-client-and-project-names-in-ai-prompts.html", "what-not-to-paste-into-chatgpt-checklist.html", "stop-api-keys-leaking-into-ai-prompts.html", "pii-redaction-browser-extension.html", "404.html", "lang-pref.js", "auth.css", "manifest.webmanifest", "service-worker.js", "robots.txt", "sitemap-pages.xml", "sitemap-guides.xml", "50dbe3a3e39c297a807eb935fcdaba29.txt"]) {
   cpSync(resolve(root, file), resolve(output, file));
 }
 
@@ -23,7 +23,7 @@ const indexFile = resolve(output, "index.html");
 const hreflang = alternates().map((a) => `<link rel="alternate" hreflang="${a.hreflang}" href="${a.href}" />`).join("\n    ");
 writeFileSync(indexFile, applyToIndex(readFileSync(indexFile, "utf8"), facts).replace(/(<link rel="canonical"[^>]*>)/, (m) => `${m}\n    ${hreflang}`));
 // Guides: prices from the offers and the trial wording for this build's switch.
-for (const file of ["redact-sensitive-data-before-chatgpt.html", "check-public-github-repo-for-leaked-api-keys.html", "protect-client-and-project-names-in-ai-prompts.html", "what-not-to-paste-into-chatgpt-checklist.html", "stop-api-keys-leaking-into-ai-prompts.html", "pii-redaction-browser-extension.html"]) {
+for (const file of ["redact-sensitive-data-before-chatgpt.html", "check-public-github-repo-for-leaked-api-keys.html", "free-github-secret-scanner.html", "protect-client-and-project-names-in-ai-prompts.html", "what-not-to-paste-into-chatgpt-checklist.html", "stop-api-keys-leaking-into-ai-prompts.html", "pii-redaction-browser-extension.html"]) {
   const path = resolve(output, file);
   writeFileSync(path, applyMarkers(readFileSync(path, "utf8"), facts));
 }
