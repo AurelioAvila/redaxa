@@ -80,7 +80,8 @@ for (const language of languages) for (const text of everyString(language)) asse
 for (const language of languages.slice(1)) for (const text of everyString(language)) {
   assert.doesNotMatch(String(text), /\p{L}'\p{L}/u, `${language}: straight apostrophe in "${text}"`);
 }
-for (const text of everyString('fr')) assert.doesNotMatch(String(text).replace(/<[^>]*>/g, ''), /(?<=\S) [?!:;](?=\s|$)/, `fr: regular space before ? ! : ; in "${text}"`);
+// Checked between tags (split, not stripped: the text is never rendered from here).
+for (const text of everyString('fr')) for (const part of String(text).split(/<[^>]*>/)) assert.doesNotMatch(part, /(?<=\S) [?!:;](?=\s|$)/, `fr: regular space before ? ! : ; in "${text}"`);
 for (const text of everyString('de')) assert.doesNotMatch(String(text), / - /, `de: hyphen used as a dash in "${text}"`);
 
 // Old dialog links keep landing on the matching page.
