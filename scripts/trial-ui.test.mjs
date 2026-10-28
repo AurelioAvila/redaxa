@@ -96,8 +96,14 @@ for (const [lang, words] of Object.entries(TRIAL_UI)) for (const key of ["plansI
 const source = (file) => readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
 for (const [file, pattern] of [["auth.ts", /try Redaxa free for 3 days[\s\S]*start with a 3-day free trial\."/], ["landing.ts", /start with a 3-day free trial\."\)/],
   ["repository-ui.ts", /start with a 3-day free trial\.'/], ["promo.ts", /still start with the 3-day free trial\./], ["dashboard.html", /start with a 3-day free trial\.<\/p>/]]) assert.match(source(file), pattern, file);
-for (const phrase of ["3-day free trial", "prova gratuita di 3 giorni", "prueba gratuita de 3 días", "essai gratuit de 3 jours", "Testphase von 3 Tagen"]) {
+for (const phrase of ["3-day free trial", "prova gratuita di 3 giorni", "prueba gratuita de 3 días", "essai gratuit de 3 jours", "3-Tage-Testphase"]) {
   assert.ok(source("dashboard.ts").split(phrase).length - 1 >= 4, `dashboard.ts fallback copy: ${phrase}`);
 }
 assert.doesNotMatch(source("dashboard.ts"), /(prova gratuita|prueba gratuita|essai gratuit|kostenlose[nr]? Testphase|(?<!3-day )free trial)\./, "no fallback sentence without its length");
+// French typography: a no-break space before : ; ! ? and a straight apostrophe never appears.
+const flat = (o) => Object.values(o).flatMap((v) => typeof v === "string" ? [v] : flat(v));
+for (const text of [...flat(TRIAL_UI.fr), ...flat(TRIAL_BANNER.fr)]) {
+  assert.doesNotMatch(text, /\S [:;!?]/u, `fr: regular space before punctuation in "${text}"`);
+  assert.doesNotMatch(text, /\p{L}'\p{L}/u, `fr: straight apostrophe in "${text}"`);
+}
 console.log("Trial screens: choice lines from Stripe prices and the offer, five languages, server clock, defensive account parsing, no 7-day promise anywhere passed.");
