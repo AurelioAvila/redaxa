@@ -127,7 +127,8 @@ const subscriptions = new Map<string, Row>();
 const s = stripe as any;
 s.checkout.sessions.create = async (params: Row) => { sessions.push(params); return { url: "https://checkout.stripe.test/fixture" }; };
 s.customers.create = async () => ({ id: "cus_fixture" });
-s.checkout.sessions.list = async () => ({ data: [{ id: "cs_mine", metadata: { redaxa_user_id: "user-a" } }, { id: "cs_other", metadata: { redaxa_user_id: "someone-else" } }] });
+const listed = { open: [] as Row[], complete: [] as Row[] };
+s.checkout.sessions.list = async (params: { status: "open" | "complete" }) => ({ data: listed[params.status] });
 s.checkout.sessions.expire = async (id: string) => { expired.push(id); return {}; };
 s.customers.retrieve = async () => ({ id: "cus_fixture", email: "giulia@example.test", name: "Giulia Rossi" });
 s.paymentMethods.retrieve = async (id: string) => ({ id, card: { fingerprint: `fp_${id}` } });
@@ -238,6 +239,7 @@ resetDb();
   assert.equal(direct.params.payment_method_collection, undefined, "Subscribe now: an ordinary subscription, charged at once");
   assert.equal(direct.res.body.trial, false);
   // Changing one's mind with a checkout still open replaces it; old clients keep the wait.
+  listed.open = [{ id: "cs_mine", metadata: { redaxa_user_id: "user-a" } }, { id: "cs_other", metadata: { redaxa_user_id: "someone-else" } }];
   db.locked = true;
   const again = await checkout(id, { plan: "personal", interval: "monthly", start_trial: true });
   assert.equal(again.params.subscription_data.trial_period_days, 3);
@@ -245,6 +247,24 @@ resetDb();
   db.locked = true;
   await checkout(id, { plan: "personal", interval: "monthly" }, 429);
   db.locked = false;
+  // After the ten-minute reservation an older session is still payable for a
+  // day: any client's new checkout closes it, so it cannot be paid twice.
+  expired.length = 0;
+  await checkout(id, { plan: "personal", interval: "monthly" });
+  assert.deepEqual(expired, ["cs_mine"], "an old client's checkout also closes the earlier session");
+  listed.open = [];
+  // Paid but not recorded yet: no second checkout until the webhook catches up.
+  subscriptions.set("sub_paying", { id: "sub_paying", status: "active" });
+  listed.complete = [{ id: "cs_paid", mode: "subscription", subscription: "sub_paying", metadata: { redaxa_user_id: "user-a" } }];
+  const before = sessions.length;
+  const paying = await checkout(id, { plan: "personal", interval: "yearly", start_trial: false }, 409);
+  assert.equal(paying.res.body.code, "payment_processing");
+  assert.equal(sessions.length, before, "no session next to a paid one");
+  // Once that subscription is gone (cancelled, refused trial) it blocks nothing.
+  subscriptions.set("sub_paying", { id: "sub_paying", status: "canceled" });
+  await checkout(id, { plan: "personal", interval: "yearly", start_trial: false });
+  listed.complete = [];
+  subscriptions.delete("sub_paying");
   // An unpaid, paused or incomplete subscription is settled in Manage billing, never doubled.
   const opened = sessions.length;
   db.refusal = "The existing subscription needs attention in billing management";

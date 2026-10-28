@@ -2,7 +2,7 @@ import { DESKTOP_ORIGINS, accountFor, billingAppUrl, corsHeaders, parseJson, rel
 import { clientIp, rateLimited } from "./_rateLimit.js";
 import { promoCheckout, promoState } from "./_promo.js";
 import {
-  LEGACY_TRIAL_DAYS, LEGACY_TRIAL_MARK, LANGUAGES, TRIAL_DAYS, TRIAL_MARK, dueReminders, isOurTrial, markReminded, publicPrices,
+  LEGACY_TRIAL_DAYS, LEGACY_TRIAL_MARK, LANGUAGES, TRIAL_DAYS, TRIAL_MARK, dueReminders, isLive, isOurTrial, markReminded, publicPrices,
   legacyTrialEligible, trialEligible, upcomingCharge, language as languageOf,
 } from "./_trial.js";
 import { sendTrialMail } from "./_trial-email.js";
@@ -95,7 +95,7 @@ export async function sendTrialReminders(now = Date.now()): Promise<{ due: numbe
         days: subscription.trial_start && subscription.trial_end ? Math.round((subscription.trial_end - subscription.trial_start) / 86_400) : TRIAL_DAYS,
         trialEnd: subscription.trial_end,
         charge: await upcomingCharge(subscription.id),
-        renew: price?.unit_amount != null ? { amount: price.unit_amount * (item?.quantity ?? 1), currency: price.currency, taxExclusive: price.tax_behavior === "exclusive" } : null,
+        renew: price?.unit_amount != null ? { amount: price.unit_amount * (item?.quantity ?? 1), currency: price.currency, taxExclusive: price.tax_behavior !== "inclusive" } : null,
       }, `redaxa-trial-ending/${subscription.id}/${subscription.trial_end}`);
       if (ok) { await markReminded(subscription.id, trialEnd); sent += 1; }
     } catch (error) {
@@ -103,6 +103,26 @@ export async function sendTrialReminders(now = Date.now()): Promise<{ due: numbe
     }
   }
   return { due: due.length, sent };
+}
+
+/**
+ * One payable checkout per account. The reservation lasts ten minutes but a
+ * Checkout session stays payable for 24 hours, so an older one left open in
+ * another tab or app could be paid next to the new one: two subscriptions,
+ * two charges. It is closed first. A session already paid whose subscription
+ * the webhook has not recorded yet (seconds, or a delayed payment method)
+ * stops the new checkout instead.
+ */
+export async function closeEarlierCheckouts(customerId: string, userId: string, recorded: string | null, now = Date.now()): Promise<void> {
+  const mine = (session: { metadata?: Record<string, string> | null }) => session.metadata?.redaxa_user_id === userId;
+  const completed = await stripe.checkout.sessions.list({ customer: customerId, status: "complete", created: { gte: Math.floor(now / 1000) - 86_400 }, limit: 20 });
+  for (const session of completed.data) {
+    const id = typeof session.subscription === "string" ? session.subscription : session.subscription?.id;
+    if (!mine(session) || session.mode !== "subscription" || !id || id === recorded) continue;
+    if (isLive((await stripe.subscriptions.retrieve(id)).status)) throw new Error("CHECKOUT_COMPLETING");
+  }
+  const open = await stripe.checkout.sessions.list({ customer: customerId, status: "open", limit: 20 });
+  for (const session of open.data) if (mine(session)) await stripe.checkout.sessions.expire(session.id);
 }
 
 export default async function handler(request: RequestLike, response: ResponseLike): Promise<void> {
@@ -188,16 +208,12 @@ export default async function handler(request: RequestLike, response: ResponseLi
       // closed and replaced, so only the latest one can be paid. Clients from
       // before the choice keep the ten-minute wait they know.
       if (!(error instanceof Error && error.message === "CHECKOUT_IN_PROGRESS") || startTrial === undefined) throw error;
-      const held = await accountFor(user.id);
-      if (held?.stripe_customer_id) {
-        const open = await stripe.checkout.sessions.list({ customer: held.stripe_customer_id, status: "open", limit: 10 });
-        for (const session of open.data) if (session.metadata?.redaxa_user_id === user.id) await stripe.checkout.sessions.expire(session.id);
-      }
       await releaseCheckout(user.id);
       account = await reserveCheckout(user.id);
     }
     let customerId = account.stripe_customer_id;
     try {
+      if (customerId) await closeEarlierCheckouts(customerId, user.id, account.stripe_subscription_id);
       if (!customerId) {
         const customer = await stripe.customers.create({ email: user.email, metadata: { redaxa_user_id: user.id } }, { idempotencyKey: `ps-customer-${user.id}` });
         customerId = customer.id;
@@ -261,6 +277,10 @@ export default async function handler(request: RequestLike, response: ResponseLi
     // An unpaid, paused or incomplete subscription still exists and can bill:
     // a second one would charge twice once the card is fixed. The customer
     // settles the first one in Manage billing instead.
+    if (message === "CHECKOUT_COMPLETING") {
+      response.status(409).json({ error: "Your last payment is still being confirmed. Give it a minute, then refresh your plan.", code: "payment_processing" });
+      return;
+    }
     if (message === "BILLING_ACTION_REQUIRED") {
       response.status(409).json({ error: "Your subscription has a payment to sort out. Update it in Manage billing instead of starting a new one.", code: "manage_billing" });
       return;

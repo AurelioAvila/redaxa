@@ -89,6 +89,12 @@ export async function syncSubscription(subscription: Stripe.Subscription, fallba
   const status = recordedStatus(subscription);
   // A late event for an old subscription must not end the plan that runs now.
   if (!ownsAccount(account, { id: subscription.id, status })) return userId;
+  // Two live subscriptions on one account bill twice: checkout closes earlier
+  // sessions to prevent it, so this should never print. If it does, the older
+  // one needs cancelling and refunding by hand.
+  if (account?.stripe_subscription_id && account.stripe_subscription_id !== subscription.id && isLive(account.subscription_status) && isLive(status)) {
+    console.error(`second live Redaxa subscription ${subscription.id} replaces ${account.stripe_subscription_id}: check for a double charge`);
+  }
   await patchAccount(userId, accountFields(subscription, status));
   return userId;
 }
@@ -135,7 +141,7 @@ async function mail(kind: TrialMailKind, userId: string, subscription: Stripe.Su
       seats: item?.quantity ?? 1,
       days: trialDays,
       trialEnd: subscription.trial_end ?? null,
-      renew: price?.unit_amount != null ? { amount: price.unit_amount * (item?.quantity ?? 1), currency: price.currency, taxExclusive: price.tax_behavior === "exclusive" } : null,
+      renew: price?.unit_amount != null ? { amount: price.unit_amount * (item?.quantity ?? 1), currency: price.currency, taxExclusive: price.tax_behavior !== "inclusive" /* unspecified = the account default, exclusive */ } : null,
       ...extra,
     }, key);
   } catch (error) {

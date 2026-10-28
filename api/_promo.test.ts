@@ -103,6 +103,7 @@ assert.equal(promoCheckout(ON, DURING, "personal", "monthly", 1)!.expiresAt, nul
 type Captured = Record<string, any>;
 const calls: Captured[] = [];
 (stripe.checkout.sessions as any).create = async (params: Captured) => { calls.push(params); return { url: "https://checkout.stripe.test/fixture" }; };
+(stripe.checkout.sessions as any).list = async () => ({ data: [] });
 const originalFetch = globalThis.fetch;
 globalThis.fetch = (async (input: RequestInfo | URL) => {
   const url = String(input);
