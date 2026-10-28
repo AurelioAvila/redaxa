@@ -58,6 +58,31 @@ const privacy = fs.readFileSync(new URL('../privacy.html', import.meta.url), 'ut
 assert.match(privacy, /protected terms[^<]*category policies[^<]*member list/i);
 for (const language of languages) assert.ok(base[language].orgLeave && base[language].orgLeaveConfirm, `${language}: leave workspace copy`);
 
+// Every localized table (workspace copy, views, settings, finding labels, shell, Halloween words)
+// keeps English's keys and placeholders, and the typography rules hold in each language.
+const settings = constant('settingsByLanguage');
+const labels = constant('findingLabelsByLanguage');
+const promoWords = constant('promoWordsByLanguage');
+const marks = text => (String(text).match(/\{\w+\}|<\/?strong>|\n/g) || []).sort().join() + '|' + String(text).split('|').length;
+const tables = { copy: base, views, shell, labels };
+for (const [name, table] of Object.entries(tables)) {
+  for (const language of languages.slice(1)) {
+    assert.deepEqual(Object.keys(table[language]).sort(), Object.keys(table.en).sort(), `${name}.${language}: keys differ from English`);
+    for (const key of Object.keys(table.en)) assert.equal(marks(table[language][key]), marks(table.en[key]), `${name}.${language}.${key}: placeholders, tags or plural forms differ from English`);
+  }
+}
+for (const language of languages.slice(1)) {
+  assert.equal(settings[language].length, settings.en.length, `settings.${language}: length differs from English`);
+  assert.deepEqual(Object.keys(promoWords[language]).sort(), Object.keys(promoWords.it).sort(), `promoWords.${language}: keys differ`);
+}
+const everyString = language => [base, views, shell, labels, promoWords].flatMap(table => Object.values(table[language])).concat(settings[language]).flat();
+for (const language of languages) for (const text of everyString(language)) assert.doesNotMatch(String(text), /illustrat/i, `${language}: banned word in "${text}"`);
+for (const language of languages.slice(1)) for (const text of everyString(language)) {
+  assert.doesNotMatch(String(text), /\p{L}'\p{L}/u, `${language}: straight apostrophe in "${text}"`);
+}
+for (const text of everyString('fr')) assert.doesNotMatch(String(text).replace(/<[^>]*>/g, ''), /(?<=\S) [?!:;](?=\s|$)/, `fr: regular space before ? ! : ; in "${text}"`);
+for (const text of everyString('de')) assert.doesNotMatch(String(text), / - /, `de: hyphen used as a dash in "${text}"`);
+
 // Old dialog links keep landing on the matching page.
 const routes = constant('viewForHash');
 for (const [hash, view] of [['', 'check'], ['#plans', 'plans'], ['#preferences', 'settings'], ['#api-keys', 'settings'], ['#history', 'activity'], ['#workspace', 'account'], ['#terms', 'terms']]) assert.equal(routes[hash], view, hash);

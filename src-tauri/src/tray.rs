@@ -32,14 +32,14 @@ pub fn texts(language: &str) -> Texts {
             background: "Resta attivo in background",
             exit: format!("Esci da {n}"),
             title: format!("{n} è attivo in background"),
-            notice: format!("{n} resta attivo nell'area di notifica accanto all'orologio. Fai clic sulla sua icona per riaprirlo, oppure scegli Esci da {n} per chiuderlo. Puoi disattivare l'esecuzione in background dal menu dell'icona."),
+            notice: format!("{n} resta attivo nell’area di notifica accanto all’orologio. Fai clic sulla sua icona per riaprirlo, oppure scegli Esci da {n} per chiuderlo. Puoi disattivare l'esecuzione in background dal menu dell'icona."),
         },
         "fr" => Texts {
             open: format!("Ouvrir {n}"),
             background: "Continuer en arrière-plan",
             exit: format!("Quitter {n}"),
             title: format!("{n} fonctionne en arrière-plan"),
-            notice: format!("{n} reste actif dans la zone de notification, près de l'horloge. Cliquez sur son icône pour le rouvrir, ou choisissez Quitter {n} pour le fermer. Vous pouvez désactiver le fonctionnement en arrière-plan depuis le menu de l'icône."),
+            notice: format!("{n} reste actif dans la zone de notification, près de l’horloge. Cliquez sur son icône pour le rouvrir, ou choisissez Quitter {n} pour le fermer. Vous pouvez désactiver le fonctionnement en arrière-plan depuis le menu de l'icône."),
         },
         "es" => Texts {
             open: format!("Abrir {n}"),
