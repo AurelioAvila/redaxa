@@ -54,7 +54,8 @@ function mountLanding(): void {
       if (offerTrial) {
         primary.dataset.choice = 'trial';
         primary.textContent = copy.trialLabel;
-        show(line, copy.trialLine);
+        // The terms next to the button: length and charge from choiceCopy, plus the payment method checkout asks for.
+        show(line, copy.trialLine && `${copy.trialLine} A card or another payment method is needed to start. Prices exclude VAT.`);
         show(note, copy.nowLine);
       } else if (trialOn()) {
         primary.dataset.choice = 'now';
@@ -64,7 +65,8 @@ function mountLanding(): void {
       } else {
         primary.dataset.choice = '';
         primary.textContent = plan === 'business' ? 'Get Business' : 'Go Pro';
-        show(line, null);
+        // Until the server confirms the trial switch, the trial terms the build wrote for the yearly default stay.
+        if (prices !== null || billing?.trialEnabled !== undefined || !yearly) show(line, null);
         show(note, null);
       }
     });

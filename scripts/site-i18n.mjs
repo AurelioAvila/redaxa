@@ -25,10 +25,10 @@ const WORDS = {
     eyebrow: "Redaxa – Oscura dati personali e chiavi API per ChatGPT, Claude, Gemini",
     title: "Dati sensibili e ChatGPT: oscurali prima dell’invio | Redaxa",
     description: "Redaxa controlla il prompt prima che arrivi a ChatGPT, Claude, Gemini o Perplexity e oscura chiavi API, password e dati personali. Controlli gratuiti sul tuo dispositivo.",
-    h1: "Condividi il lavoro con l’AI.<br>Tieni per te i dati sensibili.",
+    h1: "Oscura dati personali e chiavi API<br>prima di condividere un prompt",
     lead: "Prima di inserire dati sensibili su ChatGPT, lascia che Redaxa controlli il testo: email, numeri di telefono, IBAN, carte, chiavi API e password vengono segnalati e sostituiti in una versione oscurata. Decidi tu cosa inviare.",
-    ctaExt: "Aggiungi l’estensione per Chrome", ctaExtNote: "Gratis, senza account e senza limite giornaliero.",
-    ctaWin: "Scarica l’app per Windows", ctaWeb: "Apri lo spazio di lavoro web", ctaWebNote: "Si apre in italiano: 5 controlli gratuiti al giorno, senza account.",
+    ctaExt: "Aggiungi l’estensione per Chrome", ctaExtNote: "Gratis, senza account e senza limite giornaliero: i controlli gratuiti dell’estensione avvengono nel browser e il testo resta sul tuo dispositivo.",
+    ctaWin: "Scarica l’app per Windows", ctaWeb: "Apri lo spazio di lavoro web", ctaWebNote: "Lo spazio web si apre in italiano: 5 controlli gratuiti al giorno, senza account. I controlli sul web passano dai server di Redaxa e il testo viene eliminato dopo l’analisi.",
     findTitle: "Cosa trova",
     find: [
       "<strong>Dati personali:</strong> indirizzi email, numeri di telefono, nomi dopo un saluto, indirizzi in formato inglese, indirizzi IPv4, codici fiscali italiani, Social Security Number statunitensi e National Insurance number britannici.",
@@ -64,10 +64,10 @@ const WORDS = {
     eyebrow: "Redaxa – Oculta datos personales y claves API en ChatGPT, Claude, Gemini",
     title: "Datos sensibles y ChatGPT: ocúltalos antes de enviar | Redaxa",
     description: "Redaxa revisa el prompt antes de que llegue a ChatGPT, Claude, Gemini o Perplexity y oculta claves API, contraseñas y datos personales. Revisiones gratuitas en tu dispositivo.",
-    h1: "Comparte el trabajo con la IA.<br>Guarda los datos sensibles.",
+    h1: "Oculta datos personales y claves API<br>antes de compartir un prompt",
     lead: "Antes de que tus datos personales lleguen a ChatGPT, deja que Redaxa revise el texto: correos, teléfonos, IBAN, tarjetas, claves API y contraseñas se señalan y se sustituyen en una versión con los datos ocultos. Tú decides qué se envía.",
-    ctaExt: "Añadir la extensión para Chrome", ctaExtNote: "Gratis, sin cuenta y sin límite diario.",
-    ctaWin: "Descargar la app para Windows", ctaWeb: "Abrir el espacio de trabajo web", ctaWebNote: "Se abre en español: 5 revisiones gratuitas al día, sin cuenta.",
+    ctaExt: "Añadir la extensión para Chrome", ctaExtNote: "Gratis, sin cuenta y sin límite diario: las revisiones gratuitas de la extensión se hacen en el navegador y el texto no sale de tu dispositivo.",
+    ctaWin: "Descargar la app para Windows", ctaWeb: "Abrir el espacio de trabajo web", ctaWebNote: "El espacio web se abre en español: 5 revisiones gratuitas al día, sin cuenta. Las revisiones en la web pasan por los servidores de Redaxa y el texto se descarta tras el análisis.",
     findTitle: "Qué detecta",
     find: [
       "<strong>Datos personales:</strong> correos electrónicos, números de teléfono, nombres después de un saludo, direcciones en formato inglés, direcciones IPv4, números de la Seguridad Social de EE. UU., números de National Insurance del Reino Unido y códigos fiscales italianos.",
@@ -103,10 +103,10 @@ const WORDS = {
     eyebrow: "Redaxa – Masquez clés API et données personnelles : ChatGPT, Claude, Gemini",
     title: "Données sensibles et ChatGPT : masquez-les avant l’envoi | Redaxa",
     description: "Redaxa vérifie le prompt avant qu’il n’arrive à ChatGPT, Claude, Gemini ou Perplexity et masque clés API, mots de passe et données personnelles. Vérifications gratuites sur votre appareil.",
-    h1: "Partagez le travail avec l’IA.<br>Gardez les données sensibles.",
+    h1: "Masquez données personnelles et clés API<br>avant de partager un prompt",
     lead: "Avant que vos données personnelles n’arrivent dans ChatGPT, laissez Redaxa vérifier le texte : e-mails, numéros de téléphone, IBAN, cartes, clés API et mots de passe sont signalés et remplacés dans une version masquée. C’est vous qui décidez de ce qui part.",
-    ctaExt: "Ajouter l’extension Chrome", ctaExtNote: "Gratuite, sans compte et sans limite quotidienne.",
-    ctaWin: "Télécharger l’application Windows", ctaWeb: "Ouvrir l’espace de travail web", ctaWebNote: "Il s’ouvre en français : 5 vérifications gratuites par jour, sans compte.",
+    ctaExt: "Ajouter l’extension Chrome", ctaExtNote: "Gratuite, sans compte et sans limite quotidienne : les vérifications gratuites de l’extension ont lieu dans le navigateur et le texte reste sur votre appareil.",
+    ctaWin: "Télécharger l’application Windows", ctaWeb: "Ouvrir l’espace de travail web", ctaWebNote: "L’espace web s’ouvre en français : 5 vérifications gratuites par jour, sans compte. Les vérifications sur le web passent par les serveurs de Redaxa et le texte est supprimé après l’analyse.",
     findTitle: "Ce qu’il repère",
     find: [
       "<strong>Données personnelles :</strong> adresses e-mail, numéros de téléphone, noms après une formule de salutation, adresses postales au format anglais, adresses IPv4, numéros de sécurité sociale américains, numéros de National Insurance britanniques et codes fiscaux italiens.",
@@ -142,10 +142,10 @@ const WORDS = {
     eyebrow: "Redaxa – Schwärzt API-Keys & persönliche Daten: ChatGPT, Claude, Gemini",
     title: "Sensible Daten mit ChatGPT teilen? Erst schwärzen | Redaxa",
     description: "Redaxa prüft den Prompt, bevor er an ChatGPT, Claude, Gemini oder Perplexity geht, und schwärzt API-Schlüssel, Passwörter und personenbezogene Daten. Kostenlose Prüfungen auf Ihrem Gerät.",
-    h1: "Arbeit mit KI teilen.<br>Sensible Daten behalten.",
+    h1: "Personenbezogene Daten und API-Schlüssel schwärzen,<br>bevor Sie einen Prompt teilen",
     lead: "Bevor personenbezogene Daten in ChatGPT landen, prüft Redaxa den Text: E-Mail-Adressen, Telefonnummern, IBANs, Kartennummern, API-Schlüssel und Passwörter werden markiert und in einer geschwärzten Version ersetzt. Sie entscheiden, was gesendet wird.",
-    ctaExt: "Chrome-Erweiterung hinzufügen", ctaExtNote: "Kostenlos, ohne Konto und ohne Tageslimit.",
-    ctaWin: "Windows-App herunterladen", ctaWeb: "Web-Arbeitsbereich öffnen", ctaWebNote: "Öffnet sich auf Deutsch: 5 kostenlose Prüfungen pro Tag, ohne Konto.",
+    ctaExt: "Chrome-Erweiterung hinzufügen", ctaExtNote: "Kostenlos, ohne Konto und ohne Tageslimit: Die kostenlosen Prüfungen der Erweiterung laufen im Browser, der Text bleibt auf Ihrem Gerät.",
+    ctaWin: "Windows-App herunterladen", ctaWeb: "Web-Arbeitsbereich öffnen", ctaWebNote: "Der Web-Arbeitsbereich öffnet sich auf Deutsch: 5 kostenlose Prüfungen pro Tag, ohne Konto. Prüfungen im Web laufen über die Server von Redaxa; der Text wird nach der Analyse verworfen.",
     findTitle: "Was Redaxa findet",
     find: [
       "<strong>Personenbezogene Daten:</strong> E-Mail-Adressen, Telefonnummern, Namen nach einer Anrede, Adressen im englischen Format, IPv4-Adressen, US-Sozialversicherungsnummern, britische National-Insurance-Nummern und italienische Steuernummern (Codice fiscale).",
@@ -226,7 +226,7 @@ export async function buildLanguages(root, facts) {
 <p class="note">${esc(w.vat)}</p><p><a class="button" href="/dashboard.html#plans" data-workspace-lang="${code}">${esc(w.plansCta)}</a></p></section>
 <section class="faq"><h2>${esc(v.faqTitle)}</h2>${faq.map(([q, a]) => `<h3>${esc(q)}</h3><p>${esc(a)}</p>`).join("")}</section>
 <section><h2>${esc(w.verifyTitle)}</h2><p>${w.verify(facts.trust)}</p><p>${esc(w.winget)} <code>winget install --id AurelioAvila.Redaxa --exact</code></p></section>
-<section><h2>${esc(w.moreTitle)}</h2><ul><li><a href="/detectors/" hreflang="en">What Redaxa detects</a></li><li><a href="/redact-sensitive-data-before-chatgpt.html" hreflang="en">How to redact sensitive data before ChatGPT</a></li><li><a href="/pii-redaction-browser-extension.html" hreflang="en">PII redaction browser extension</a></li><li><a href="/github.html" hreflang="en">Public repository check</a></li></ul></section>
+<section><h2>${esc(w.moreTitle)}</h2><ul><li><a href="/redact-sensitive-data-before-ai.html" hreflang="en">Redact personal data and secrets before an AI prompt</a></li><li><a href="/detectors/" hreflang="en">What Redaxa detects</a></li><li><a href="/redact-sensitive-data-before-chatgpt.html" hreflang="en">How to redact sensitive data before ChatGPT</a></li><li><a href="/pii-redaction-browser-extension.html" hreflang="en">PII redaction browser extension</a></li><li><a href="/github.html" hreflang="en">Public repository check</a></li></ul></section>
 <p class="note"><a href="/privacy.html" hreflang="en">${esc(w.footer)}</a> · © 2026 Redaxa · Aurelio Avila</p>
 <script src="/lang-pref.js" defer></script><script src="/cf-beacon.js" defer></script>`;
     const graph = [

@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Redact Sensitive Data Before You Paste It Into AI | Redaxa</title>
+<meta name="description" content="How Redaxa removes emails, phone numbers, API keys, passwords and IBANs from a prompt before ChatGPT, Claude or Gemini sees it: an example, the detectors and the limits.">
+<link rel="canonical" href="https://redaxa.getcertsprint.com/redact-sensitive-data-before-ai.html">
+<meta property="og:type" content="article"><meta property="og:site_name" content="Redaxa"><meta property="og:title" content="Remove personal data and secrets from a prompt before AI sees it">
+<meta property="og:description" content="A made-up prompt before and after Redaxa, what it detects, where each check runs and what it can miss.">
+<meta property="og:url" content="https://redaxa.getcertsprint.com/redact-sensitive-data-before-ai.html">
+<meta property="og:image" content="https://redaxa.getcertsprint.com/og-redaxa-eb3e35858c.png"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://redaxa.getcertsprint.com/og-redaxa-eb3e35858c.png">
+<link rel="icon" type="image/svg+xml" href="/outputs/redaxa-mark.svg">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"Remove personal data and secrets from a prompt before AI sees it","description":"How Redaxa removes emails, phone numbers, API keys, passwords and IBANs from a prompt before an AI chat sees it: an example, the detectors, where each check runs and the limits.","url":"https://redaxa.getcertsprint.com/redact-sensitive-data-before-ai.html","inLanguage":"en","datePublished":"2026-10-30","dateModified":"2026-10-30","author":{"@type":"Person","name":"Aurelio Avila","url":"https://github.com/AurelioAvila"},"publisher":{"@type":"Organization","@id":"https://redaxa.getcertsprint.com/#organization","name":"Redaxa","url":"https://redaxa.getcertsprint.com/","logo":"https://redaxa.getcertsprint.com/outputs/redaxa-mark-128.png"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Redaxa","item":"https://redaxa.getcertsprint.com/"},{"@type":"ListItem","position":2,"name":"Redact sensitive data before AI","item":"https://redaxa.getcertsprint.com/redact-sensitive-data-before-ai.html"}]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Does Redaxa send my prompt to an AI provider?","acceptedAnswer":{"@type":"Answer","text":"No. Free checks in the Chrome extension run in your browser and the text stays on your device. Checks on the web, in the Windows app and with a Pro or Business plan run on Redaxa's servers: the text is sent over an encrypted connection, analyzed and discarded. It is not stored and not forwarded to an AI provider."}},{"@type":"Question","name":"Does it change my prompt without asking?","acceptedAnswer":{"@type":"Answer","text":"No. You see what was found and a redacted copy. In the extension you choose to replace the message with the redacted version, send it anyway, or close the notice and edit it. On the web you copy the redacted version yourself."}},{"@type":"Question","name":"Is it free?","acceptedAnswer":{"@type":"Answer","text":"Yes, for the basic checks. The Chrome extension's free checks have no daily limit and need no account. The web check and the Windows app give 5 free prompt checks a day without an account. Pro and Business remove the daily limit and add protected terms in the extension and team policies."}},{"@type":"Question","name":"Will it find every piece of sensitive data?","acceptedAnswer":{"@type":"Answer","text":"No tool can promise that. Detection can miss sensitive information or flag harmless text, so read the redacted version before you send it."}},{"@type":"Question","name":"Which AI chats does the extension work on?","acceptedAnswer":{"@type":"Answer","text":"ChatGPT, Claude, Gemini and Perplexity. For any other tool, check the text on the web or in the Windows app and paste the redacted copy."}}]}]}</script>
+<style>
+:root{color-scheme:light;font-family:system-ui,sans-serif;background:#f7f6f2;color:#1b1724;line-height:1.7}*{box-sizing:border-box}body{margin:0}header,main,footer{max-width:920px;margin:auto;padding:24px}header,footer{border-bottom:1px solid #e3dfd5}a{color:#a3471d}header a{font-weight:700}main{padding-top:60px}h1{font-size:clamp(2.4rem,6.5vw,4.4rem);line-height:1.04;letter-spacing:-.045em;max-width:820px}h2{line-height:1.2}p,li,td,th{color:#3a3446}section{margin:32px 0;padding:28px;border:1px solid #e3dfd5;border-radius:16px;background:#ffffff}.label{color:#a3471d;letter-spacing:.1em;font-size:.8rem;text-transform:uppercase}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f2f0ea;padding:20px;border-radius:10px;font-size:1rem}.button{display:inline-block;background:#a3471d;color:#ffffff;padding:12px 20px;border-radius:10px;text-decoration:none;font-weight:700;margin:6px 10px 6px 0}.button.ghost{background:transparent;color:#1b1724;border:1px solid #d9d4c8}:focus-visible{outline:3px solid #a3471d;outline-offset:4px}@media(max-width:500px){section{padding:20px}main{padding-top:28px}.button{display:block;text-align:center;margin-right:0}}
+code{background:#f2f0ea;padding:2px 6px;border-radius:6px;font-size:.92em;overflow-wrap:anywhere}ol,ul{padding-left:1.4em}.faq p{margin:.3em 0 1.1em}table{border-collapse:collapse;width:100%}th,td{text-align:left;vertical-align:top;padding:8px 10px;border-top:1px solid #e3dfd5}th{color:#1b1724}.wide{overflow-x:auto}.note{font-size:.92rem;color:#5a5466}
+</style></head><body>
+<header><a href="/">Redaxa</a> · Privacy, before AI</header><main>
+<p class="label">Product guide · By Aurelio Avila · October 30, 2026</p>
+<h1>Remove personal data and secrets from a prompt before AI sees it</h1>
+<p class="lead">You want an AI chat to rewrite an email, summarise a ticket or debug a log. It needs the problem, not your client's phone number or a live API key. Redaxa checks the text first, marks what looks sensitive and gives you a redacted copy. You read it and decide what to send.</p>
+<p><a class="button" href="https://chromewebstore.google.com/detail/redaxa/clkobbjoaegkgnmkibjghlboeoplpmok">Install the free Chrome extension</a><a class="button ghost" href="/#scanner">Try a free prompt check</a></p>
+<p class="note">The extension's free checks run in your browser: the text stays on your device. The web check runs on Redaxa's servers, with 5 free checks a day and no account.</p>
+<section><h2>Before and after: a made-up example</h2>
+<p>Every name, number and key below is invented. The redacted version is what Redaxa's engine returns for this text.</p>
+<h3>Before</h3>
+<pre>Hi Laura, can you summarise this for the client? Call me on +44 20 7946 0958 or email laura.bianchi@example.com. The test key is sk-proj-RedaxaDocsExampleNotARealKey1234567890 and the refund goes to IBAN GB82 WEST 1234 5698 7654 32.</pre>
+<h3>After</h3>
+<pre>Hi [NAME], can you summarise this for the client? Call me on [PHONE] or email [EMAIL]. The test key is [SECRET] and the refund goes to IBAN [IBAN].</pre>
+<p>Five findings: a personal name, a phone number, an email address, an API key and an IBAN. The request itself is untouched, so the AI can still do the job.</p>
+</section>
+<section><h2>What Redaxa detects</h2>
+<p>The Chrome extension, the web check and the Windows app share one engine. Each type below has its own page with real engine output, near misses and known false positives.</p>
+<ul>
+<li><strong>Personal data:</strong> <a href="/detectors/email-address.html">email addresses</a>, <a href="/detectors/phone-number.html">phone numbers</a>, <a href="/detectors/personal-name.html">names after a greeting</a>, <a href="/detectors/street-address.html">English-format street addresses</a>, <a href="/detectors/ipv4-address.html">IPv4 addresses</a>, <a href="/detectors/us-social-security-number.html">US Social Security numbers</a>, <a href="/detectors/uk-national-insurance-number.html">UK National Insurance numbers</a> and <a href="/detectors/italian-fiscal-code.html">Italian fiscal codes</a>.</li>
+<li><strong>Financial data:</strong> <a href="/detectors/payment-card-number.html">card numbers</a> (Luhn-checked), <a href="/detectors/iban.html">IBANs</a> (mod-97-checked) and <a href="/detectors/crypto-wallet-address.html">crypto wallet addresses</a>.</li>
+<li><strong>Credentials:</strong> API keys and tokens such as <a href="/detectors/openai-api-key.html">OpenAI</a>, <a href="/detectors/anthropic-api-key.html">Anthropic</a>, <a href="/detectors/github-token.html">GitHub</a>, <a href="/detectors/stripe-keys.html">Stripe</a> and <a href="/detectors/aws-access-keys.html">AWS</a>, plus <a href="/detectors/bearer-token.html">bearer tokens</a>, <a href="/detectors/jwt.html">JWTs</a>, <a href="/detectors/password-keyword.html">passwords</a>, <a href="/detectors/private-key.html">private keys</a> and <a href="/detectors/secret-in-config.html">secrets in configuration</a>.</li>
+<li><strong>Your own words:</strong> <a href="/detectors/protected-terms.html">protected terms</a> such as client and project names, which no generic pattern can know.</li>
+</ul>
+<p>The full list is in the <a href="/detectors/">detection reference</a>.</p>
+</section>
+<section><h2>Where each check runs</h2>
+<div class="wide"><table><thead><tr><th scope="col">Where you check</th><th scope="col">Where the text goes</th><th scope="col">Free use</th></tr></thead><tbody>
+<tr><th scope="row">Chrome extension, free checks</th><td>Nowhere. The check runs in your browser on ChatGPT, Claude, Gemini and Perplexity, before the message is sent.</td><td>No account, no daily limit.</td></tr>
+<tr><th scope="row">Web check and Windows app</th><td>Redaxa's servers, over an encrypted connection. The text is analyzed and discarded; it is not stored and not forwarded to an AI provider.</td><td>5 checks a day, no account.</td></tr>
+<tr><th scope="row">Extension with Pro or Business</th><td>Redaxa's servers, the same way, so your protected terms and team policies apply.</td><td>Paid plans, no daily limit.</td></tr>
+</tbody></table></div>
+<p class="note">Activity records, where enabled, hold metadata only: time, application, finding categories and counts. Never the text. See the <a href="/privacy.html">privacy policy</a>.</p>
+</section>
+<section><h2>Limits</h2>
+<ul>
+<li>Detection can miss sensitive information or flag harmless text. A clean result means the checks found nothing, not that the text is safe.</li>
+<li>A name is detected only after a greeting such as "Hi" or "Dear". Add the names that matter to you as protected terms.</li>
+<li>Street addresses are recognised only in the English house-number-first format.</li>
+<li>The phone rule also matches some order and invoice numbers.</li>
+<li>Redaxa finds possible credentials; it never tests whether a key works. If a real key was already shared, rotate it: redacting a copy does not revoke it.</li>
+</ul>
+</section>
+<section><h2>Start free</h2>
+<ol><li>Add <a href="https://chromewebstore.google.com/detail/redaxa/clkobbjoaegkgnmkibjghlboeoplpmok">Redaxa from the Chrome Web Store</a>, open your AI chat and press Enter as usual: Redaxa checks the message before it leaves.</li><li>Or paste text into the <a href="/#scanner">free prompt check</a> on the web and copy the redacted version.</li></ol>
+<p><a class="button" href="https://chromewebstore.google.com/detail/redaxa/clkobbjoaegkgnmkibjghlboeoplpmok">Install the free Chrome extension</a><a class="button ghost" href="/#scanner">Try a free prompt check</a></p>
+<p>Pro (<!--PRICE:Pro monthly--> a month or <!--PRICE:Pro yearly--> a year) removes the daily limit and adds protected terms in the extension. <!--TRIAL--> Prices exclude VAT. <a href="/#pricing">See plans</a>.</p>
+</section>
+<section class="faq"><h2>FAQ</h2>
+<h3>Does Redaxa send my prompt to an AI provider?</h3><p>No. Free checks in the Chrome extension run in your browser and the text stays on your device. Checks on the web, in the Windows app and with a Pro or Business plan run on Redaxa's servers: the text is sent over an encrypted connection, analyzed and discarded. It is not stored and not forwarded to an AI provider.</p>
+<h3>Does it change my prompt without asking?</h3><p>No. You see what was found and a redacted copy. In the extension you choose to replace the message with the redacted version, send it anyway, or close the notice and edit it. On the web you copy the redacted version yourself.</p>
+<h3>Is it free?</h3><p>Yes, for the basic checks. The Chrome extension's free checks have no daily limit and need no account. The web check and the Windows app give 5 free prompt checks a day without an account. Pro and Business remove the daily limit and add protected terms in the extension and team policies.</p>
+<h3>Will it find every piece of sensitive data?</h3><p>No tool can promise that. Detection can miss sensitive information or flag harmless text, so read the redacted version before you send it.</p>
+<h3>Which AI chats does the extension work on?</h3><p>ChatGPT, Claude, Gemini and Perplexity. For any other tool, check the text on the web or in the Windows app and paste the redacted copy.</p>
+</section>
+<section><h2>Related</h2><ul><li><a href="/redact-sensitive-data-before-chatgpt.html">How to redact sensitive data before ChatGPT: a practical checklist</a></li><li><a href="/pii-redaction-browser-extension.html">PII redaction browser extension: what runs on your device</a></li><li><a href="/stop-api-keys-leaking-into-ai-prompts.html">How to stop API keys leaking into AI prompts</a></li><li><a href="/protect-client-and-project-names-in-ai-prompts.html">Protecting client and project names in AI prompts</a></li></ul></section>
+</main><footer><a href="/">Redaxa home</a> · <a href="/detectors/">Detection reference</a> · <a href="/free-github-secret-scanner.html">Free GitHub secret scanner</a> · <a href="/privacy.html">Privacy</a> · <a href="https://github.com/AurelioAvila/redaxa">Source and releases</a></footer><script src="/cf-beacon.js" defer></script></body></html>

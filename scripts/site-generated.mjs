@@ -7,6 +7,9 @@
 //   - the free-trial wording, from the same TRIAL_ENABLED switch the API reads (api/_trial.ts),
 //     so pages served without JavaScript describe the trial that checkout will actually give.
 //   - prices in guides (<!--PRICE:Offer name-->), from the SoftwareApplication offers.
+//   - the Halloween strip and card (<!--PROMO:...-->) and the trial terms under the plan buttons
+//     (<!--TRIAL_TERMS:plan-->), from api/_promo.ts and the offers, so pages read without
+//     JavaScript show real prices instead of placeholders. landing.ts/promo.ts refine them live.
 // build-web.mjs applies them to public/; scripts/seo.test.mjs checks them without writing.
 import { readFileSync } from "node:fs";
 
@@ -35,6 +38,52 @@ export function trialFacts(root, env = process.env) {
   };
 }
 
+/** The Halloween offer as api/_promo.ts defines it: window and per-plan cents. */
+export function promoFacts(root) {
+  const source = readFileSync(new URL("api/_promo.ts", root), "utf8");
+  const startsAt = source.match(/startsAt: "([^"]+)"/)?.[1];
+  const endsAt = source.match(/endsAt: "([^"]+)"/)?.[1];
+  const offers = [...source.matchAll(/\{ plan: "(\w+)", interval: "(\w+)",[^}]*?regular: (\d+), reference: (\d+), price: (\d+) \}/g)]
+    .map(([, plan, interval, regular, reference, price]) => ({ plan, interval, regular: +regular, reference: +reference, price: +price }));
+  if (!startsAt || !endsAt || offers.length !== 4) throw new Error("api/_promo.ts lost its PROMO window or offers");
+  return { startsAt, endsAt, offers };
+}
+
+/** €39, €79.90: like promo.ts euro() in English. */
+const euroCents = (c) => "€" + (c / 100).toFixed(c % 100 ? 2 : 0);
+/** Rounded down, like promo.ts promoPercent(). */
+const percentOff = (o) => Math.floor(((o.reference - o.price) * 100) / o.reference);
+
+// ponytail: the build only knows the PROMO window, not the PROMO_ID/PROMO_DISABLED switches the API
+// reads; if the offer is switched off early, rebuild with the window over (or remove the blocks).
+/** Fills the <!--PROMO-->…<!--/PROMO--> blocks while the offer window is open at build time, drops them after. */
+export function applyPromo(html, promo, nowMs) {
+  const open = nowMs >= Date.parse(promo.startsAt) && nowMs < Date.parse(promo.endsAt);
+  if (!open) return html.replace(/<!--PROMO-->[\s\S]*?<!--\/PROMO-->/g, "");
+  return html.replace(/<!--\/?PROMO-->/g, "").replace(/<!--PROMO:(\w+)(?: (\w+) (\w+))?-->/g, (_, field, plan, interval) => {
+    if (field === "minpercent") return Math.min(...promo.offers.map(percentOff)) + "%";
+    const offer = promo.offers.find((o) => o.plan === plan && o.interval === interval);
+    if (!offer) throw new Error(`No promo offer ${plan} ${interval}`);
+    return field === "percent" ? percentOff(offer) + "%" : euroCents(offer[field]);
+  });
+}
+
+/** The trial terms under each plan button for the yearly default, as checkout implements them (api/_trial.ts,
+ *  api/_promo.ts): length, payment method, what is charged after the trial. landing.ts replaces them with the
+ *  dated line once prices load. */
+export function trialTermsLine(plan, facts, promoOpen) {
+  if (!facts.trial.enabled) return '<p class="plan-choice-line" hidden></p>';
+  const name = plan === "business" ? "Business yearly (per user)" : "Pro yearly";
+  const regular = facts.app.offers.find((o) => o.name === name);
+  if (!regular) throw new Error(`No offer named "${name}"`);
+  const per = plan === "business" ? " per user" : "";
+  const promo = promoOpen && facts.promo.offers.find((o) => o.plan === plan && o.interval === "yearly");
+  const then = promo
+    ? `${euroCents(promo.price)}${per} for the first year, and €${regular.price}${per} a year after that`
+    : `€${regular.price}${per} a year`;
+  return `<p class="plan-choice-line">Free for ${facts.trial.days} days, then ${then}. A card or another payment method is needed to start; cancel before the trial ends and you pay nothing. Prices exclude VAT.</p>`;
+}
+
 const attr = (tag, name) => tag.match(new RegExp(`${name}="([^"]*)"`))?.[1];
 
 export function readFacts(root, env = process.env) {
@@ -44,11 +93,12 @@ export function readFacts(root, env = process.env) {
   const version = JSON.parse(read("package.json")).version;
   const trust = JSON.parse(read("release-trust.json")).redaxa;
   const trial = trialFacts(root, env);
+  const promo = promoFacts(root);
   // Visible FAQ. The trial item carries the wording applyToIndex writes into the page for this build.
   const pick = (open, inner) => trial.enabled && attr(open, "data-trial-copy") ? withDays(unescapeHtml(attr(open, "data-trial-copy")), trial) : stripTags(inner);
   const faq = [...html.matchAll(/<details class="faq-item"><summary([^>]*)>([\s\S]*?)<\/summary><p([^>]*)>([\s\S]*?)<\/p><\/details>/g)]
     .map((m) => ({ q: pick(m[1], m[2]), a: pick(m[3], m[4]) }));
-  return { app, version, trust, faq, trial };
+  return { app, version, trust, faq, trial, promo };
 }
 
 export function renderLlms({ app, version, trust, faq, trial }, extra = {}) {
@@ -86,6 +136,7 @@ export function renderLlms({ app, version, trust, faq, trial }, extra = {}) {
     ...(extra.languages?.length ? ["## Other languages", "", ...extra.languages.map((l) => `- [${l.name}](${ORIGIN}/${l.code}/)`), ""] : []),
     "## Pages",
     "",
+    `- [Redact personal data and secrets before an AI prompt: example, detectors, where checks run, limits](${ORIGIN}/redact-sensitive-data-before-ai.html)`,
     `- [How to stop API keys leaking into AI prompts](${ORIGIN}/stop-api-keys-leaking-into-ai-prompts.html)`,
     `- [PII redaction browser extension: what runs on your device](${ORIGIN}/pii-redaction-browser-extension.html)`,
     `- [How to redact sensitive data before ChatGPT](${ORIGIN}/redact-sensitive-data-before-chatgpt.html)`,
@@ -139,10 +190,13 @@ export function applyMarkers(html, facts) {
 }
 
 /** Applies the derived parts to the html of public/index.html. */
-export function applyToIndex(html, facts) {
+export function applyToIndex(html, facts, nowMs = Date.now()) {
   if (!html.includes("<!--RELEASE_TRUST-->")) throw new Error("index.html lost its RELEASE_TRUST marker");
+  const promoOpen = nowMs >= Date.parse(facts.promo.startsAt) && nowMs < Date.parse(facts.promo.endsAt);
+  const filled = applyPromo(html, facts.promo, nowMs).replace(/<!--TRIAL_TERMS:(\w+)-->/g, (_, plan) => trialTermsLine(plan, facts, promoOpen));
+  if (/<!--(?:PROMO|TRIAL_TERMS)/.test(filled)) throw new Error("unreplaced promo or trial-terms marker");
   // softwareVersion follows package.json, so a version bump cannot leave the structured data behind.
-  return applyTrialCopy(html, facts.trial)
+  return applyTrialCopy(filled, facts.trial)
     .replace(/("softwareVersion":\s*")[^"]*(")/, (_, a, b) => a + facts.version + b)
     .replace("<!--RELEASE_TRUST-->", () => trustBlock(facts.trust))
     .replace("</head>", () => `${faqJsonLd(facts.faq)}\n</head>`);

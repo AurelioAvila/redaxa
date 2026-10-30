@@ -3,14 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Find and redact PII and secrets before sharing AI prompts. Review public GitHub repositories for exposed keys on the web or with local checks on Windows." />
+    <meta name="description" content="Redact personal data, API keys, passwords and client details before you paste a prompt into ChatGPT, Claude, Gemini or Perplexity. Free Chrome extension and web check." />
     <meta name="google-site-verification" content="A0iTA5gIcRJ88SPRMZ3xAvV7DIe_4YttqAAF9OUj0Mo" />
-    <title>Redaxa — AI Prompt Redaction &amp; GitHub Secret Scanner</title>
+    <title>Redaxa: Redact Personal Data &amp; Secrets Before AI Prompts</title>
     <link rel="canonical" href="https://redaxa.getcertsprint.com/" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Redaxa" />
-    <meta property="og:title" content="Redaxa — AI Prompt Redaction &amp; GitHub Secret Scanner" />
-    <meta property="og:description" content="Review sensitive data in AI prompts and exposed credentials in public GitHub repositories. Free Chrome extension, web checks and extended Windows reviews." />
+    <meta property="og:title" content="Redaxa: Redact Personal Data &amp; Secrets Before AI Prompts" />
+    <meta property="og:description" content="Redaxa flags emails, phone numbers, API keys, passwords, IBANs and client names in a prompt and gives you a redacted copy to review. Free Chrome extension and web check." />
     <meta property="og:url" content="https://redaxa.getcertsprint.com/" />
     <meta property="og:image" content="https://redaxa.getcertsprint.com/og-redaxa-eb3e35858c.png" />
     <meta property="og:image:type" content="image/png" />
@@ -19,8 +19,8 @@
     <meta property="og:image:alt" content="Redaxa prompt check flagging an email, a server address and a credential, with a safer version to copy" />
     <meta property="og:locale" content="en" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Redaxa — AI Prompt Redaction &amp; GitHub Secret Scanner" />
-    <meta name="twitter:description" content="Review sensitive data in AI prompts and exposed credentials in public GitHub repositories. Free Chrome extension, web checks and extended Windows reviews." />
+    <meta name="twitter:title" content="Redaxa: Redact Personal Data &amp; Secrets Before AI Prompts" />
+    <meta name="twitter:description" content="Redaxa flags emails, phone numbers, API keys, passwords, IBANs and client names in a prompt and gives you a redacted copy to review. Free Chrome extension and web check." />
     <meta name="twitter:image" content="https://redaxa.getcertsprint.com/og-redaxa-eb3e35858c.png" />
     <meta name="twitter:image:alt" content="Redaxa prompt check flagging an email, a server address and a credential, with a safer version to copy" />
     <link rel="icon" type="image/svg+xml" href="/outputs/redaxa-mark.svg" />
@@ -31,7 +31,7 @@
       "name": "Redaxa",
       "alternateName": "PromptShield",
       "url": "https://redaxa.getcertsprint.com/",
-      "description": "Detects and redacts sensitive data in AI prompts and reviews public GitHub repositories for possible exposed credentials. Free extension checks run in Chrome; extended repository reviews run locally on Windows.",
+      "description": "Finds and redacts personal data, credentials and financial details in AI prompts before you share them, with a redacted copy to review. Free extension checks run in Chrome; web and Windows prompt checks run on Redaxa's servers. Also checks public GitHub repositories for possible exposed credentials.",
       "applicationCategory": "SecurityApplication",
       "operatingSystem": "Web, Windows, Chrome",
       "image": "https://redaxa.getcertsprint.com/og-redaxa-eb3e35858c.png",
@@ -359,6 +359,9 @@
       .hero-paths{display:flex;flex-wrap:wrap;gap:.6rem 1.5rem;margin-top:1rem}
       .hero-paths a{display:inline-flex;align-items:center;gap:.4rem;min-height:44px;font-size:13px;font-weight:650;color:var(--acid);text-decoration:underline;text-underline-offset:4px}
       .hero-trial{color:var(--mut);font-size:13px;line-height:1.6;margin:.75rem 0 0}
+      .free-paths{align-items:stretch}.free-path{display:flex;flex-direction:column;gap:8px;flex:1 1 220px;max-width:280px}.free-path a{text-align:center}.free-path p{margin:0;color:var(--dim);font-size:12.5px;line-height:1.5}
+      .repo-ctas{display:flex;flex-wrap:wrap;gap:12px;margin:18px 0 0}
+      @media(max-width:700px){.free-path{max-width:none}}
       #processing{scroll-margin-top:6rem}
       .surface-intro{max-width:70ch;color:var(--theme-muted);font-size:15px;line-height:1.6;margin:0 0 1.5rem}
       .surface-table{width:100%;border-collapse:collapse;font-size:14px;line-height:1.65}
@@ -375,12 +378,13 @@
   <body class="redaxa-landing">
     <div class="frame">
       <a class="skip" href="#content">Skip to content</a>
-      <!-- Halloween strip: room kept from the first paint; dist/promo.js fills or removes it. -->
-      <div class="rx-strip rx-reserved" aria-hidden="true"><div class="rx-strip-inner"><span class="rx-strip-pumpkin" aria-hidden="true"></span><strong class="rx-strip-label"><span class="rx-strip-full">Halloween offer · 50% off</span><span class="rx-strip-short">Halloween · −50%</span></strong><span class="rx-strip-timer" role="timer" aria-live="off"><span class="rx-strip-ends" aria-hidden="true">Ends in</span> <span class="rx-strip-digits" aria-hidden="true">00d 00h 00m 00s</span></span><a class="rx-strip-cta" href="#pricing">See the offer</a><button type="button" class="rx-strip-close"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" focusable="false"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button></div></div>
+      <!-- Halloween strip: room kept from the first paint; dist/promo.js fills or removes it. The build
+           (scripts/site-generated.mjs) writes the real figures from api/_promo.ts, or drops the block after the offer. -->
+      <!--PROMO--><div class="rx-strip rx-reserved" aria-hidden="true"><div class="rx-strip-inner"><span class="rx-strip-pumpkin" aria-hidden="true"></span><strong class="rx-strip-label"><span class="rx-strip-full">Halloween offer · <!--PROMO:minpercent--> off</span><span class="rx-strip-short">Halloween · −<!--PROMO:minpercent--></span></strong><span class="rx-strip-timer" role="timer" aria-live="off"><span class="rx-strip-ends" aria-hidden="true">Ends</span> <span class="rx-strip-digits" aria-hidden="true">6 November, 23:59 CET</span></span><a class="rx-strip-cta" href="#pricing">See the offer</a><button type="button" class="rx-strip-close"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" focusable="false"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button></div></div><!--/PROMO-->
       <nav class="nav">
         <a class="brand" href="#top" aria-label="Redaxa home"><span class="mark"><img src="outputs/redaxa-mark.svg" alt="" width="30" height="30" /></span><span>Redaxa</span></a>
         <div class="nav-right">
-          <div class="navlinks"><a href="#scanner">Prompts</a><a href="#repository">Repositories</a><a href="#pricing">Pricing</a><a href="/privacy.html">Privacy</a></div>
+          <div class="navlinks"><a href="#scanner">Prompt check</a><a href="#pricing">Pricing</a><a href="#repository">GitHub scanner</a><a href="/privacy.html">Privacy</a></div>
           <button class="nav-install" id="pwa-install" hidden type="button" aria-label="Install Redaxa on this device">Install app</button>
           <!-- auth.js takes the FIRST .small-btn as its account trigger and
                adds a "Log in" next to it. Keep this anchor first in DOM order
@@ -394,15 +398,14 @@
       <header class="hero" id="top">
         <div>
           <div class="eyebrow"><span class="pulse"></span> Privacy, before AI</div>
-          <h1>Share the work.<br /><em>Keep the secrets.</em></h1>
-          <p class="sub">For people preparing prompts or reviewing repositories before sharing work. Redaxa flags possible sensitive values and shows a redacted preview, so you can inspect what changes before you copy or share it.</p>
-          <div class="cta-row">
-            <a class="btn-primary" href="https://chromewebstore.google.com/detail/redaxa/clkobbjoaegkgnmkibjghlboeoplpmok">Get the Chrome extension</a>
-            <a class="btn-ghost" href="#scanner">See a free example</a>
+          <h1>Redact personal data and secrets <em>before you share a prompt</em></h1>
+          <p class="sub">Redaxa finds emails, phone numbers, API keys, passwords, card numbers, IBANs and your own client or project names in the text you are about to paste into ChatGPT, Claude, Gemini or Perplexity. You get a redacted copy to review, and you decide what is sent.</p>
+          <div class="cta-row free-paths">
+            <div class="free-path"><a class="btn-primary" href="https://chromewebstore.google.com/detail/redaxa/clkobbjoaegkgnmkibjghlboeoplpmok">Install the free Chrome extension</a><p>Free, no account, no daily limit. Free checks run in your browser: the text stays on your device.</p></div>
+            <div class="free-path"><a class="btn-ghost" href="#scanner">Try a free prompt check</a><p>5 free checks a day, no account. Web checks run on Redaxa’s servers; the text is discarded after analysis.</p></div>
           </div>
-          <aside class="rx-hw-card rx-reserved" aria-hidden="true"><span class="rx-hw-card-mark" aria-hidden="true"></span><span class="rx-hw-card-tag">HALLOWEEN</span><div class="rx-hw-card-row"><span class="rx-hw-card-now">€00</span><s class="rx-hw-card-was">€00</s><span class="rx-hw-card-pct">−50%</span></div><span class="rx-hw-card-plan">Pro · first year, then €00 / year</span><div class="rx-hw-card-foot"><span class="rx-hw-card-note">Ends 6 November 2026 at 23:59 CET</span><a class="rx-hw-card-cta" href="#pricing"><span>See the offer</span><svg viewBox="0 0 14 10" width="14" height="10" aria-hidden="true" focusable="false"><path d="M1 5h11M8 1l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></a></div></aside>
-          <div class="hero-paths"><a href="/github.html">Check a public GitHub repository <span aria-hidden="true">→</span></a><a href="#processing">Compare where checks run</a></div>
-          <p class="hero-meta">Free extension checks stay on your device. Web and Windows prompt checks use Redaxa’s servers; prompt text is discarded after analysis.</p>
+          <!--PROMO--><aside class="rx-hw-card rx-reserved" aria-hidden="true"><span class="rx-hw-card-mark" aria-hidden="true"></span><span class="rx-hw-card-tag">HALLOWEEN</span><div class="rx-hw-card-row"><span class="rx-hw-card-now"><!--PROMO:price personal yearly--></span><s class="rx-hw-card-was"><!--PROMO:reference personal yearly--></s><span class="rx-hw-card-pct">−<!--PROMO:percent personal yearly--></span></div><span class="rx-hw-card-plan">Pro · first year, then <!--PROMO:regular personal yearly--> / year</span><div class="rx-hw-card-foot"><span class="rx-hw-card-note">Ends 6 November 2026 at 23:59 CET</span><a class="rx-hw-card-cta" href="#pricing"><span>See the offer</span><svg viewBox="0 0 14 10" width="14" height="10" aria-hidden="true" focusable="false"><path d="M1 5h11M8 1l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></a></div></aside><!--/PROMO-->
+          <div class="hero-paths"><a href="/redact-sensitive-data-before-ai.html">How redaction works <span aria-hidden="true">→</span></a><a href="#processing">Compare where checks run</a></div>
           <p class="hero-trial"><b data-trial-copy="Try Pro or Business free for {days} days; a card is needed to start.">Trial availability and duration are confirmed before checkout. Card required.</b></p>
         </div>
 
@@ -460,21 +463,12 @@
 
       <hr class="rule" />
 
-      <section class="rx-repository-story" id="repository" aria-labelledby="repository-heading">
-        <div><span class="rx-pro-badge">FREE · NO INSTALL</span><h2 id="repository-heading">Paste a GitHub link.<br />See what it exposes.</h2>
-          <p>Find exposed API keys, access tokens, passwords and personal data in a public repository, plus dependencies with known vulnerabilities and the version that fixes them. Results in seconds, values always hidden.</p>
-          <ul class="rx-benefits"><li><strong>Start with credentials.</strong> Repeated values are grouped; common examples, emails and public identifiers are excluded.</li><li><strong>Vulnerable dependencies.</strong> npm, yarn, pnpm, Cargo, Python, Go, PHP and Ruby lockfiles are checked against the public OSV database.</li><li><strong>Act with context.</strong> Review rotation guidance and export a report with values hidden.</li></ul>
-          <a class="btn-primary" href="/github.html">Check a repository free →</a><p class="rx-preview-note">3 free checks a day on the default branch of public repositories. Git history, archives and revealed values run on your PC in the Windows app with Pro or Business. Private repositories are not supported. Results identify possible exposures, not verified working keys or every code vulnerability. <a href="/free-github-secret-scanner.html">What the check reads and its limits</a>.</p>
-        </div>
-        <div class="rx-repo-visual" aria-label="Example repository review workflow"><div class="rx-repo-visual-label"><span>Repository check</span><span class="rx-pro-badge">EXAMPLE</span></div><h3>Less noise. A useful review.</h3>
-          <div class="rx-repo-example is-priority"><span>Likely keys &amp; access tokens</span><span>Review first</span></div><div class="rx-repo-example"><span>Probable service &amp; evidence</span><span>Understand</span></div><div class="rx-repo-example"><span>Rotation guidance</span><span>Take action</span></div><div class="rx-repo-example"><span>Checked &amp; skipped files</span><span>See coverage</span></div><p class="rx-preview-note">Example workflow. Values stay hidden until you reveal them. Key validity is never tested.</p>
-        </div>
-      </section><hr class="rule" />
+
 
       <!-- Functional scanner (ids consumed by dist/landing.js — do not rename) -->
       <section class="section" style="padding-bottom: 34px">
         <div class="section-kicker">Try it now</div>
-        <h2>Private prompt check.</h2>
+        <h2>Try a free prompt check.</h2>
         <p class="lede">Try a fictional example, or check your own prompt. Visitors get up to 5 free checks per day, shared across their network. No account or card required for these checks; scans run on Redaxa’s servers.</p>
       </section>
       <section class="scanner" id="scanner" aria-labelledby="scanner-title">
@@ -563,7 +557,7 @@
             <div class="plan-top"><h3 id="site-plan-pro">Pro</h3></div>
             <p class="plan-desc">For independent professionals and builders who want to review what they share.</p>
             <div class="plan-price" id="pro-plan-price">€79.90 <small>/ year</small><small class="price-equiv">€6.66 a month, billed yearly</small></div>
-            <div class="plan-actions"><button type="button" class="rx-plan-cta" data-plan="personal" data-interval="yearly" data-choice="">Go Pro</button><button type="button" class="rx-plan-cta ghost plan-now" data-plan="personal" data-interval="yearly" data-choice="now" hidden>Subscribe now</button><p class="plan-choice-line" hidden></p><p class="plan-choice-note" hidden></p></div>
+            <div class="plan-actions"><button type="button" class="rx-plan-cta" data-plan="personal" data-interval="yearly" data-choice="">Go Pro</button><button type="button" class="rx-plan-cta ghost plan-now" data-plan="personal" data-interval="yearly" data-choice="now" hidden>Subscribe now</button><!--TRIAL_TERMS:personal--><p class="plan-choice-note" hidden></p></div>
             <ul class="rx-benefits"><li><strong>Prompt checks with no daily limit</strong> across web, Windows and Chrome</li><li><strong>Your protected terms:</strong> flag client and project names</li><li><strong>Repository checks:</strong> 60 a day on the web, plus local reviews on Windows with accessible history and a prioritized recap</li><li><strong>Redacted text reports</strong> for repository reviews</li></ul>
             <p class="plan-footnote">Pro is the new name for Personal, at the same price. Repository checks require Redaxa 0.4.0 or later for Windows. Prompt checks remain available on web, Windows and Chrome.</p>
           </article>
@@ -573,7 +567,7 @@
             <p class="plan-desc">Everything in Pro, plus consistent rules and visibility for your team.</p>
             <div class="plan-price" id="business-plan-price">€149.90 <small>/ user / year</small><small class="price-equiv">€12.49 a month, billed yearly</small></div>
             <label class="seats-row">Seats <select id="business-seats"><option value="1">1 user</option><option value="2">2 users</option><option value="3">3 users</option></select></label>
-            <div class="plan-actions"><button type="button" class="rx-plan-cta" data-plan="business" data-interval="yearly" data-choice="">Get Business</button><button type="button" class="rx-plan-cta ghost plan-now" data-plan="business" data-interval="yearly" data-choice="now" hidden>Subscribe now</button><p class="plan-choice-line" hidden></p><p class="plan-choice-note" hidden></p></div>
+            <div class="plan-actions"><button type="button" class="rx-plan-cta" data-plan="business" data-interval="yearly" data-choice="">Get Business</button><button type="button" class="rx-plan-cta ghost plan-now" data-plan="business" data-interval="yearly" data-choice="now" hidden>Subscribe now</button><!--TRIAL_TERMS:business--><p class="plan-choice-note" hidden></p></div>
             <ul class="rx-benefits"><li><strong>Everything in Pro</strong></li><li><strong>Shared protected terms</strong> for every member</li><li><strong>Category policies:</strong> warn, redact, or block sending in the extension</li><li><strong>Metadata-only activity</strong> and CSV export for admins</li></ul>
           </article>
         </div>
@@ -630,6 +624,20 @@
 
       <hr class="rule" />
 
+      <!-- A separate tool from prompt redaction: the public repository check. -->
+      <section class="rx-repository-story" id="repository" aria-labelledby="repository-heading">
+        <div><span class="rx-pro-badge">ALSO FREE · FOR DEVELOPERS</span><h2 id="repository-heading">A separate free tool:<br />GitHub secret scanner.</h2>
+          <p>Find exposed API keys, access tokens, passwords and personal data in a public repository, plus dependencies with known vulnerabilities and the version that fixes them. Results in seconds, values always hidden.</p>
+          <ul class="rx-benefits"><li><strong>Start with credentials.</strong> Repeated values are grouped; common examples, emails and public identifiers are excluded.</li><li><strong>Vulnerable dependencies.</strong> npm, yarn, pnpm, Cargo, Python, Go, PHP and Ruby lockfiles are checked against the public OSV database.</li><li><strong>Act with context.</strong> Review rotation guidance and export a report with values hidden.</li></ul>
+          <a class="btn-primary" href="/github.html">Check a repository free →</a><p class="rx-preview-note">3 free checks a day on the default branch of public repositories. Git history, archives and revealed values run on your PC in the Windows app with Pro or Business. Private repositories are not supported. Results identify possible exposures, not verified working keys or every code vulnerability. <a href="/free-github-secret-scanner.html">What the check reads and its limits</a>.</p>
+        </div>
+        <div class="rx-repo-visual" aria-label="Example repository review workflow"><div class="rx-repo-visual-label"><span>Repository check</span><span class="rx-pro-badge">EXAMPLE</span></div><h3>Less noise. A useful review.</h3>
+          <div class="rx-repo-example is-priority"><span>Likely keys &amp; access tokens</span><span>Review first</span></div><div class="rx-repo-example"><span>Probable service &amp; evidence</span><span>Understand</span></div><div class="rx-repo-example"><span>Rotation guidance</span><span>Take action</span></div><div class="rx-repo-example"><span>Checked &amp; skipped files</span><span>See coverage</span></div><p class="rx-preview-note">Example workflow. Values stay hidden until you reveal them. Key validity is never tested.</p>
+        </div>
+      </section>
+
+      <hr class="rule" />
+
       <!-- Published extension and Windows download paths. -->
       <div class="suite-line" id="extension">
         <span><b>Runs where you prompt</b> — a browser extension that checks your message inside ChatGPT, Claude, Gemini and Perplexity before it sends, free and on your device, plus a Windows desktop app with signed auto-updates.</span>
@@ -650,7 +658,7 @@
         <div class="label">Before you paste</div>
         <h2 id="workflow-guide">Keep the context.<br />Remove the identifiers.</h2>
         <p>A client email or debugging log can carry more than your question. Learn what to remove, what to keep and why a clean scan still needs your review. For automated checks before a prompt reaches an AI tool, the <a href="/api-docs.html">Scan API guide</a> covers authentication, limits and response decisions. Every key, token and data type Redaxa recognises, with real output from its engine, is in <a href="/detectors/">what Redaxa detects</a>; for keys in pasted logs and commands, see <a href="/stop-api-keys-leaking-into-ai-prompts.html">how to stop API keys leaking into AI prompts</a>.</p>
-        <a class="btn-ghost" href="/redact-sensitive-data-before-chatgpt.html">Read the practical prompt privacy guide →</a>
+        <p class="repo-ctas"><a class="btn-ghost" href="/redact-sensitive-data-before-ai.html">How Redaxa redacts a prompt →</a> <a class="btn-ghost" href="/redact-sensitive-data-before-chatgpt.html">Practical prompt privacy guide →</a></p>
       </section>
       </main>
       <footer>
