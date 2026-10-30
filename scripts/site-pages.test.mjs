@@ -55,6 +55,11 @@ assert.equal(inspectPrompt('curl -H "Authorization: Bearer RedaxaDocsSampleNotRe
   'curl -H "Authorization: [SECRET]" https://api.example.com/v1/me returns 401');
 assert.ok(read("stop-api-keys-leaking-into-ai-prompts.html").includes('After:  curl -H "Authorization: [SECRET]" https://api.example.com/v1/me returns 401'));
 assert.equal(inspectPrompt("Email the contract to maria.rossi@example.com").redactedText, "Email the contract to [EMAIL]");
+{
+  const pre = [...read("redact-sensitive-data-before-ai.html").matchAll(/<pre>([^<]*)<\/pre>/g)].map((m) => m[1]);
+  assert.equal(pre.length, 2);
+  assert.equal(inspectPrompt(pre[0]).redactedText, pre[1], "the before/after example on the redaction page is real engine output");
+}
 // The extension facts quoted in the PII guide match the manifest that ships.
 const manifest = JSON.parse(read("browser-extension/manifest.json"));
 assert.deepEqual(manifest.permissions, ["storage", "clipboardWrite"]);

@@ -41,7 +41,7 @@
 .redaxa-landing .brand {font-size:23px;gap:12px}
 .redaxa-landing .mark {width:34px;height:34px}
 .redaxa-landing .hero {gap:54px;padding-top:88px;padding-bottom:84px;background:radial-gradient(ellipse at 80% 25%,color-mix(in srgb,var(--theme-accent) 5%,transparent),transparent 65%)}
-.redaxa-landing .hero h1 {font-size:clamp(45px,5.4vw,76px);line-height:1.04;letter-spacing:-.025em;font-weight:600}
+.redaxa-landing .hero h1 {font-size:clamp(38px,4vw,58px);line-height:1.06;text-wrap:balance;letter-spacing:-.025em;font-weight:600}
 .redaxa-landing .hero .sub {font-size:16px;max-width:510px}
 .redaxa-landing .hero-meta {font-size:12.5px;line-height:1.8;max-width:510px;color:var(--theme-muted)}
 .redaxa-landing .hero-meta b {color:var(--theme-text)}
@@ -291,7 +291,7 @@
 }
 @media(max-width:650px){
  .redaxa-landing .hero{padding:45px 22px;grid-template-columns:1fr;gap:35px}
- .redaxa-landing .hero h1{font-size:46px}
+ .redaxa-landing .hero h1{font-size:38px}
  .redaxa-landing .shield-card{transform:none;padding:22px}
  .rx-repository-story{padding:42px 22px;grid-template-columns:1fr;gap:25px}
  .redaxa-landing .nav{padding-inline:20px}.redaxa-landing .brand{font-size:20px}

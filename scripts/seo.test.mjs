@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 const read = file => readFileSync(new URL('../' + file, import.meta.url), 'utf8');
 // Hand-maintained silos; /sitemap.xml is the index build-web.mjs writes over them and the generated silos.
 const entries = ['sitemap-pages.xml', 'sitemap-guides.xml'].flatMap(file => [...read(file).matchAll(/<url>\s*<loc>([^<]+)<\/loc><lastmod>([^<]+)<\/lastmod>/g)]);
-assert.equal(entries.length, 12);
+assert.equal(entries.length, 13);
 assert.equal(new Set(entries.map(entry => entry[1])).size, entries.length);
 const origin = new URL(entries[0][1]).origin;
 assert.equal(origin, 'https://redaxa.getcertsprint.com', 'Public metadata must use the verified branded domain.');
@@ -49,10 +49,26 @@ assert.ok(rendered.llms.includes(facts.trust.sha256) && rendered.llms.includes('
 assert.doesNotMatch(rendered.full, /illustrative|anti-?cheat/i);
 const built = applyToIndex(read('index.html'), facts);
 assert.ok(built.includes('"softwareVersion": "' + pkg.version + '"') && built.includes(facts.trust.sha256) && built.includes('"@type":"FAQPage"') && !built.includes('RELEASE_TRUST'));
+// Pages read without JavaScript (crawlers, link previews) never see zero placeholders: during the offer the
+// strip and card carry api/_promo.ts's prices, after it they are gone; the trial terms sit under the plan buttons.
+{
+  const during = applyToIndex(read('index.html'), readFacts(new URL('../', import.meta.url), { TRIAL_ENABLED: 'true' }), Date.parse('2026-10-30T12:00:00Z'));
+  assert.doesNotMatch(during, /€00|00d 00h|<!--(?:\/?PROMO|TRIAL_TERMS)/);
+  assert.match(during, /rx-hw-card-now">€39<\/span><s class="rx-hw-card-was">€79\.90<\/s><span class="rx-hw-card-pct">−51%</);
+  assert.match(during, /Pro · first year, then €79\.90 \/ year/);
+  assert.match(during, /Halloween offer · 50% off/);
+  assert.match(during, /<p class="plan-choice-line">Free for 3 days, then €39 for the first year, and €79\.90 a year after that\. A card or another payment method is needed to start/);
+  assert.match(during, /then €74 per user for the first year, and €149\.90 per user a year after that/);
+  const after = applyToIndex(read('index.html'), readFacts(new URL('../', import.meta.url), { TRIAL_ENABLED: 'true' }), Date.parse('2026-11-06T23:00:00Z'));
+  assert.doesNotMatch(after, /class="rx-strip |class="rx-hw-card |€39/);
+  assert.match(after, /<p class="plan-choice-line">Free for 3 days, then €79\.90 a year\./);
+  const off = applyToIndex(read('index.html'), readFacts(new URL('../', import.meta.url), {}), Date.parse('2026-11-07T00:00:00Z'));
+  assert.equal((off.match(/<p class="plan-choice-line" hidden><\/p>/g) ?? []).length, 2, 'no trial terms when the trial is off');
+}
 // Guides: no hand-typed prices or trial lengths; markers are filled at build from the offers and the switch.
 const { applyMarkers } = await import('./site-generated.mjs');
 const guides = entries.map(([, url]) => new URL(url).pathname.slice(1)).filter(path => path.endsWith('.html') && !['github.html', 'api-docs.html', 'privacy.html', 'terms.html'].includes(path));
-assert.equal(guides.length, 7);
+assert.equal(guides.length, 8);
 for (const env of [{ TRIAL_ENABLED: 'true' }, {}]) {
   const f = readFacts(new URL('../', import.meta.url), env);
   assert.equal(f.trial.enabled, env.TRIAL_ENABLED === 'true');
@@ -95,4 +111,4 @@ for (const file of [...guides, 'github.html', 'api-docs.html']) {
   for (const page of ['/privacy.html', '/dashboard.html', '/sitemap.xml']) assert.ok(regex.test(page), page);
   for (const api of ['/api/account', '/api/auth/session', '/api/billing']) assert.ok(!regex.test(api), api);
 }
-console.log('SEO checks passed: twelve canonical sitemap URLs in two silos; guides take prices and the trial from the build; FAQ markup matches the pages; the personal workspace remains noindex; the legacy host redirects its pages.');
+console.log('SEO checks passed: thirteen canonical sitemap URLs in two silos; guides take prices and the trial from the build; FAQ markup matches the pages; the personal workspace remains noindex; the legacy host redirects its pages.');

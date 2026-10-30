@@ -322,14 +322,17 @@ export function mountOfferExtras(words: OfferWords, lang: string, placeStrip: (s
   } catch { /* storage blocked: room is kept */ }
   if (lastSeen !== "off" && Date.now() < PROMO_LAYOUT_UNTIL) {
     for (const el of [strip, card]) reserve(el);
-    label(strip, ".rx-strip-full", words.strip.replace("{percent}", "50%"));
-    label(strip, ".rx-strip-digits", "00d 00h 00m 00s");
-    label(strip, ".rx-strip-cta", words.cta);
-    label(card, ".rx-hw-card-now", "€00");
-    label(card, ".rx-hw-card-was", "€00");
-    label(card, ".rx-hw-card-plan", words.plan.replace("{price}", "€00"));
-    label(card, ".rx-hw-card-note", words.ends.replace("{date}", promoEndLabel({ endsAt: new Date(PROMO_LAYOUT_UNTIL).toISOString() }, lang)));
-    label(card, ".rx-hw-card-cta span", words.cta);
+    // Placeholders only hold the room of a strip or card built here; the landing's own copies
+    // arrive with the real prices from the build (scripts/site-generated.mjs) and keep them.
+    const hold = (el: Element, selector: string, text: string) => { if (!el.querySelector(selector)!.textContent) label(el, selector, text); };
+    hold(strip, ".rx-strip-full", words.strip.replace("{percent}", "50%"));
+    hold(strip, ".rx-strip-digits", "00d 00h 00m 00s");
+    hold(strip, ".rx-strip-cta", words.cta);
+    hold(card, ".rx-hw-card-now", "€00");
+    hold(card, ".rx-hw-card-was", "€00");
+    hold(card, ".rx-hw-card-plan", words.plan.replace("{price}", "€00"));
+    hold(card, ".rx-hw-card-note", words.ends.replace("{date}", promoEndLabel({ endsAt: new Date(PROMO_LAYOUT_UNTIL).toISOString() }, lang)));
+    hold(card, ".rx-hw-card-cta span", words.cta);
     if (dismissed) strip.remove();
     else if (!strip.isConnected) placeStrip(strip);
     if (!card.isConnected) placeCard(card);
