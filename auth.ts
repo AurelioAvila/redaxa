@@ -48,6 +48,10 @@ declare global {
       scanPrompt(text: string, options?: ScanRequestOptions): Promise<{ findings: Finding[]; redactedText: string; decision?: ScanDecision }>;
       request(path: string, body?: Record<string, unknown>, method?: "GET" | "POST"): Promise<Record<string, unknown>>;
       download(path: string): Promise<Blob>;
+      /** The signed-in address, or null. */
+      email(): string | null;
+      /** What the Sign out button does: ends the session here and forgets it. */
+      signOut(): Promise<void>;
     };
   }
 }
@@ -742,7 +746,9 @@ async function boot(): Promise<void> {
       return { findings: payload.findings ?? [], redactedText: payload.redactedText ?? "", decision: payload.decision };
     },
     request: (path, body, method) => apiRequest(path, body, method),
-    download: (path) => apiDownload(path)
+    download: (path) => apiDownload(path),
+    email: () => currentEmail,
+    signOut: () => signOut()
   };
   document.dispatchEvent(new Event("redaxa:auth-ready"));
   controls.trigger.addEventListener("click", (event) => { event.preventDefault(); if (!config?.configured) { setMessage("Account setup is being completed. Please try again shortly.", true); } setMode("signup"); show(); });
@@ -869,17 +875,19 @@ async function boot(): Promise<void> {
   }));
   dialog.backdrop.querySelector(".ps-auth-close")?.addEventListener("click", close);
   dialog.backdrop.addEventListener("click", (event) => { if (event.target === dialog.backdrop) close(); });
-  controls.signout.addEventListener("click", () => {
+  const signOut = async (): Promise<void> => {
     accountActive = false;
     if (desktop) {
       const session = cachedDesktopSession();
-      void clearDesktopSession();
+      await clearDesktopSession();
       renderAccount(null);
       if (session) void authFetch(`${apiBase}/api/auth/signout`, { method: "POST", headers: { Authorization: `Bearer ${session.access_token}` } }).catch(() => undefined);
     } else {
-      void apiRequest("/api/auth/signout").catch(() => undefined).finally(() => renderAccount(null));
+      await apiRequest("/api/auth/signout").catch(() => undefined);
+      renderAccount(null);
     }
-  });
+  };
+  controls.signout.addEventListener("click", () => void signOut());
   dialog.switcher.addEventListener("click", () => setMode(mode === "recovery" ? "signin" : mode === "signup" ? "signin" : "signup"));
   dialog.forgot.addEventListener("click", () => setMode("recovery"));
   dialog.backdrop.addEventListener("click", (event) => {

@@ -57,3 +57,11 @@ html[data-theme]:not([data-theme="paper"]) :is(.rx-shell, .redaxa-landing) .ps-a
 :is(.rx-shell, .redaxa-landing) .ps-auth-legal { color: var(--theme-muted) !important; }
 :is(.rx-shell, .redaxa-landing) .ps-auth-message { color: var(--theme-muted) !important; }
 :is(.rx-shell, .redaxa-landing) .ps-auth-message.error { color: var(--sev-critical) !important; }
+
+/* Delete account: the workspace's one destructive action, in the critical colour. */
+.rx-shell .delete-account #delete-account-open { color: var(--sev-critical); border-color: color-mix(in srgb, var(--sev-critical) 50%, var(--theme-strong)); }
+.rx-shell .delete-account-dialog > p { color: var(--theme-muted); font-size: 13.5px; line-height: 1.55; margin: 10px 0 4px; }
+.rx-shell .delete-account-dialog > p#delete-account-done { color: var(--theme-text); font-size: 14.5px; }
+.rx-shell .delete-account-dialog .ps-account-message.error { color: var(--sev-critical); }
+.rx-shell .delete-account-dialog .ps-account-actions .delete-account-confirm { border-color: var(--sev-critical); background: var(--sev-critical); color: var(--theme-bg); }
+.rx-shell .delete-account-dialog .ps-account-actions .delete-account-confirm:disabled { opacity: .6; cursor: progress; }

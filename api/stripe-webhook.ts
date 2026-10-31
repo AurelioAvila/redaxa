@@ -7,6 +7,7 @@ import {
   isLive, isOurTrial, language, ownsAccount, recordedStatus, upcomingCharge,
 } from "./_trial.js";
 import { sendTrialMail, type FailureKey, type TrialMailInput, type TrialMailKind } from "./_trial-email.js";
+import { ACCOUNT_DELETED } from "./_account-delete.js";
 
 type ResponseLike = { setHeader(name: string, value: string): void; status(code: number): ResponseLike; json(value: unknown): void; end(): void };
 type WebhookRequest = IncomingMessage & { method?: string; headers: Record<string, string | string[] | undefined> };
@@ -279,7 +280,8 @@ export default async function handler(request: WebhookRequest, response: Respons
         if (ownsAccount(await accountFor(userId), { id: subscription.id, status })) {
           await patchAccount(userId, { subscription_status: status === TRIAL_REJECTED ? TRIAL_REJECTED : "canceled", cancel_at_period_end: false, current_period_end: null, checkout_lock_at: null });
         }
-        if (isOurTrial(subscription) && status !== TRIAL_REJECTED && endedDuringTrial(subscription)) {
+        // An account deletion sends its own confirmation; the account is gone.
+        if (isOurTrial(subscription) && status !== TRIAL_REJECTED && subscription.cancellation_details?.comment !== ACCOUNT_DELETED && endedDuringTrial(subscription)) {
           await mail("trial_ended", userId, subscription, `redaxa-trial-ended/${subscription.id}`, { endedOn: subscription.ended_at ?? subscription.trial_end ?? null });
         }
       }

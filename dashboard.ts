@@ -291,6 +291,7 @@ const viewCopyByLanguage: Record<Language, Record<string, string>> = {
     settingsTitle: "Settings", settingsAppearance: "Appearance and language", settingsDetection: "Detection", settingsDevice: "On this device", themeLabel: "Theme", prefsSaved: "Preferences saved.",
     apiTitle: "Developer API keys", apiHint: "For scripts and pipelines.", apiDocs: "API documentation", apiSignIn: "Sign in to manage API keys.", apiNone: "No API keys yet.", apiCreate: "Create API key", apiCopy: "Copy", apiOnce: "This key is shown once. Store it now — it cannot be recovered.", apiNewKey: "New API key",
     accountTitle: "Account & team", accountSub: "Manage your subscription, members and shared protection.", accountEmpty: "Sign in to manage your workspace. Team controls are available with Business.",
+    deleteTitle: "Delete account", deleteDesc: "Removes your Redaxa account for good: settings, protected terms, API keys, activity history and, if you own one, your Business workspace. A running subscription ends at once, including any time already paid for.", deleteOpen: "Delete account…", deleteDialogTitle: "Delete your account?", deleteDialogIntro: "This cannot be undone. Your subscription ends immediately, including any time already paid for, and nothing more is charged. Your settings, protected terms, API keys and activity history are deleted; a Business workspace you own is deleted too, and its members lose access. Stripe keeps your invoices, as tax law requires.", deleteConfirmLabel: "Type {email} to confirm", deleteConfirmBtn: "Delete account permanently", deleteDoneTitle: "Account deleted", deleteCancel: "Cancel", deleteWorking: "Deleting your account…", deleteMismatch: "That is not the address of this account.", deleteDone: "Your account has been deleted. A confirmation is on its way to {email}.", deleteDoneKept: "Your Redaxa account has been deleted. The sign-in stays because Frame Witness uses it. A confirmation is on its way to {email}.", deleteFailed: "We could not delete your account. Please try again.", deleteClose: "Close",
     plansHeadline: "Choose how much Redaxa checks for you.", billingPeriod: "Billing period", billingMonthly: "Monthly", billingYearly: "Yearly · 2 months free",
     recommended: "Recommended", currentPlan: "Current plan", equivYearly: "{price} a month, billed yearly",
     freeName: "Free", freeDesc: "Check what you share, with no account needed.", freeNote: "No card needed", freeCta: "Start checking",
@@ -314,6 +315,7 @@ const viewCopyByLanguage: Record<Language, Record<string, string>> = {
     settingsTitle: "Impostazioni", settingsAppearance: "Aspetto e lingua", settingsDetection: "Rilevamento", settingsDevice: "Su questo dispositivo", themeLabel: "Tema", prefsSaved: "Preferenze salvate.",
     apiTitle: "Chiavi API per sviluppatori", apiHint: "Per script e pipeline.", apiDocs: "Documentazione API", apiSignIn: "Accedi per gestire le chiavi API.", apiNone: "Ancora nessuna chiave API.", apiCreate: "Crea chiave API", apiCopy: "Copia", apiOnce: "Questa chiave viene mostrata una sola volta. Conservala ora: non può essere recuperata.", apiNewKey: "Nuova chiave API",
     accountTitle: "Account e team", accountSub: "Gestisci abbonamento, membri e protezione condivisa.", accountEmpty: "Accedi per gestire il tuo spazio di lavoro. I controlli del team sono disponibili con Business.",
+    deleteTitle: "Elimina account", deleteDesc: "Rimuove definitivamente il tuo account Redaxa: impostazioni, termini protetti, chiavi API, cronologia attività e, se ne possiedi uno, lo spazio di lavoro Business. Un abbonamento in corso termina subito, compreso il periodo già pagato.", deleteOpen: "Elimina account…", deleteDialogTitle: "Eliminare il tuo account?", deleteDialogIntro: "L’operazione non si può annullare. L’abbonamento termina subito, compreso il periodo già pagato, e non verrà addebitato altro. Impostazioni, termini protetti, chiavi API e cronologia attività vengono eliminati; anche lo spazio di lavoro Business di cui sei proprietario viene eliminato e i suoi membri perdono l’accesso. Le fatture restano presso Stripe, come richiede la normativa fiscale.", deleteConfirmLabel: "Digita {email} per confermare", deleteConfirmBtn: "Elimina definitivamente l’account", deleteDoneTitle: "Account eliminato", deleteCancel: "Annulla", deleteWorking: "Eliminazione dell’account in corso…", deleteMismatch: "Non è l’indirizzo di questo account.", deleteDone: "Il tuo account è stato eliminato. Ti abbiamo inviato una conferma a {email}.", deleteDoneKept: "Il tuo account Redaxa è stato eliminato. L’accesso resta attivo perché lo usa Frame Witness. Ti abbiamo inviato una conferma a {email}.", deleteFailed: "Non è stato possibile eliminare il tuo account. Riprova.", deleteClose: "Chiudi",
     plansHeadline: "Scegli quanto Redaxa controlla per te.", billingPeriod: "Periodo di fatturazione", billingMonthly: "Mensile", billingYearly: "Annuale · 2 mesi gratis",
     recommended: "Consigliato", currentPlan: "Piano attuale", equivYearly: "{price} al mese, fatturati annualmente",
     freeName: "Free", freeDesc: "Controlla ciò che condividi, senza bisogno di un account.", freeNote: "Nessuna carta richiesta", freeCta: "Inizia a controllare",
@@ -337,6 +339,7 @@ const viewCopyByLanguage: Record<Language, Record<string, string>> = {
     settingsTitle: "Ajustes", settingsAppearance: "Apariencia e idioma", settingsDetection: "Detección", settingsDevice: "En este dispositivo", themeLabel: "Tema", prefsSaved: "Preferencias guardadas.",
     apiTitle: "Claves API para desarrolladores", apiHint: "Para scripts y pipelines.", apiDocs: "Documentación de la API", apiSignIn: "Inicia sesión para gestionar las claves API.", apiNone: "Aún no hay claves API.", apiCreate: "Crear clave API", apiCopy: "Copiar", apiOnce: "Esta clave se muestra una sola vez. Guárdala ahora: no se puede recuperar.", apiNewKey: "Nueva clave API",
     accountTitle: "Cuenta y equipo", accountSub: "Gestiona tu suscripción, los miembros y la protección compartida.", accountEmpty: "Inicia sesión para gestionar tu espacio de trabajo. Los controles de equipo están disponibles con Business.",
+    deleteTitle: "Eliminar cuenta", deleteDesc: "Elimina definitivamente tu cuenta de Redaxa: ajustes, términos protegidos, claves de API, historial de actividad y, si tienes uno, tu espacio de trabajo Business. Una suscripción activa termina al momento, incluido el tiempo ya pagado.", deleteOpen: "Eliminar cuenta…", deleteDialogTitle: "¿Eliminar tu cuenta?", deleteDialogIntro: "No se puede deshacer. Tu suscripción termina de inmediato, incluido el tiempo ya pagado, y no se cobrará nada más. Se eliminan tus ajustes, términos protegidos, claves de API e historial de actividad; si eres propietario de un espacio de trabajo Business, también se elimina y sus miembros pierden el acceso. Stripe conserva tus facturas, como exige la normativa fiscal.", deleteConfirmLabel: "Escribe {email} para confirmar", deleteConfirmBtn: "Eliminar la cuenta definitivamente", deleteDoneTitle: "Cuenta eliminada", deleteCancel: "Cancelar", deleteWorking: "Eliminando tu cuenta…", deleteMismatch: "Esa no es la dirección de esta cuenta.", deleteDone: "Tu cuenta se ha eliminado. Te hemos enviado una confirmación a {email}.", deleteDoneKept: "Tu cuenta de Redaxa se ha eliminado. El acceso se mantiene porque lo usa Frame Witness. Te hemos enviado una confirmación a {email}.", deleteFailed: "No hemos podido eliminar tu cuenta. Inténtalo de nuevo.", deleteClose: "Cerrar",
     plansHeadline: "Elige cuánto revisa Redaxa por ti.", billingPeriod: "Periodo de facturación", billingMonthly: "Mensual", billingYearly: "Anual · 2 meses gratis",
     recommended: "Recomendado", currentPlan: "Plan actual", equivYearly: "{price} al mes, facturado anualmente",
     freeName: "Free", freeDesc: "Revisa lo que compartes, sin necesidad de cuenta.", freeNote: "Sin tarjeta", freeCta: "Empezar a revisar",
@@ -360,6 +363,7 @@ const viewCopyByLanguage: Record<Language, Record<string, string>> = {
     settingsTitle: "Réglages", settingsAppearance: "Apparence et langue", settingsDetection: "Détection", settingsDevice: "Sur cet appareil", themeLabel: "Thème", prefsSaved: "Préférences enregistrées.",
     apiTitle: "Clés API pour développeurs", apiHint: "Pour les scripts et les pipelines.", apiDocs: "Documentation de l’API", apiSignIn: "Connectez-vous pour gérer les clés API.", apiNone: "Aucune clé API pour l’instant.", apiCreate: "Créer une clé API", apiCopy: "Copier", apiOnce: "Cette clé n’est affichée qu’une seule fois. Conservez-la maintenant : elle ne peut pas être récupérée.", apiNewKey: "Nouvelle clé API",
     accountTitle: "Compte et équipe", accountSub: "Gérez votre abonnement, vos membres et la protection partagée.", accountEmpty: "Connectez-vous pour gérer votre espace de travail. Les contrôles d’équipe sont disponibles avec Business.",
+    deleteTitle: "Supprimer le compte", deleteDesc: "Supprime définitivement votre compte Redaxa : réglages, termes protégés, clés API, historique d’activité et, si vous en possédez un, votre espace de travail Business. Un abonnement en cours prend fin immédiatement, y compris la période déjà payée.", deleteOpen: "Supprimer le compte…", deleteDialogTitle: "Supprimer votre compte ?", deleteDialogIntro: "Cette action est irréversible. Votre abonnement prend fin immédiatement, y compris la période déjà payée, et plus rien ne sera prélevé. Vos réglages, termes protégés, clés API et historique d’activité sont supprimés ; l’espace de travail Business dont vous êtes propriétaire est également supprimé et ses membres perdent l’accès. Stripe conserve vos factures, comme l’exige la législation fiscale.", deleteConfirmLabel: "Saisissez {email} pour confirmer", deleteConfirmBtn: "Supprimer définitivement le compte", deleteDoneTitle: "Compte supprimé", deleteCancel: "Annuler", deleteWorking: "Suppression de votre compte…", deleteMismatch: "Ce n’est pas l’adresse de ce compte.", deleteDone: "Votre compte a été supprimé. Une confirmation a été envoyée à {email}.", deleteDoneKept: "Votre compte Redaxa a été supprimé. L’identifiant de connexion reste actif, car Frame Witness l’utilise. Une confirmation a été envoyée à {email}.", deleteFailed: "Nous n’avons pas pu supprimer votre compte. Veuillez réessayer.", deleteClose: "Fermer",
     plansHeadline: "Choisissez l’étendue des vérifications de Redaxa.", billingPeriod: "Période de facturation", billingMonthly: "Mensuel", billingYearly: "Annuel · 2 mois offerts",
     recommended: "Recommandé", currentPlan: "Offre actuelle", equivYearly: "{price} par mois, facturé annuellement",
     freeName: "Free", freeDesc: "Vérifiez ce que vous partagez, sans compte.", freeNote: "Aucune carte requise", freeCta: "Commencer à vérifier",
@@ -383,6 +387,7 @@ const viewCopyByLanguage: Record<Language, Record<string, string>> = {
     settingsTitle: "Einstellungen", settingsAppearance: "Darstellung und Sprache", settingsDetection: "Erkennung", settingsDevice: "Auf diesem Gerät", themeLabel: "Design", prefsSaved: "Einstellungen gespeichert.",
     apiTitle: "API-Schlüssel für Entwickler", apiHint: "Für Skripte und Pipelines.", apiDocs: "API-Dokumentation", apiSignIn: "Melden Sie sich an, um API-Schlüssel zu verwalten.", apiNone: "Noch keine API-Schlüssel.", apiCreate: "API-Schlüssel erstellen", apiCopy: "Kopieren", apiOnce: "Dieser Schlüssel wird nur einmal angezeigt. Speichern Sie ihn jetzt – er lässt sich nicht wiederherstellen.", apiNewKey: "Neuer API-Schlüssel",
     accountTitle: "Konto & Team", accountSub: "Verwalten Sie Ihr Abonnement, Ihre Mitglieder und den gemeinsamen Schutz.", accountEmpty: "Melden Sie sich an, um Ihren Arbeitsbereich zu verwalten. Team-Funktionen gibt es mit Business.",
+    deleteTitle: "Konto löschen", deleteDesc: "Entfernt Ihr Redaxa-Konto endgültig: Einstellungen, geschützte Begriffe, API-Schlüssel, Aktivitätsverlauf und, falls Sie einen besitzen, Ihren Business-Arbeitsbereich. Ein laufendes Abonnement endet sofort, einschließlich der bereits bezahlten Zeit.", deleteOpen: "Konto löschen…", deleteDialogTitle: "Ihr Konto löschen?", deleteDialogIntro: "Dies lässt sich nicht rückgängig machen. Ihr Abonnement endet sofort, einschließlich der bereits bezahlten Zeit, und es wird nichts mehr abgebucht. Ihre Einstellungen, geschützten Begriffe, API-Schlüssel und Ihr Aktivitätsverlauf werden gelöscht; ein Business-Arbeitsbereich, dessen Inhaber Sie sind, wird ebenfalls gelöscht, und seine Mitglieder verlieren den Zugriff. Stripe bewahrt Ihre Rechnungen auf, wie es das Steuerrecht verlangt.", deleteConfirmLabel: "Geben Sie zur Bestätigung {email} ein", deleteConfirmBtn: "Konto endgültig löschen", deleteDoneTitle: "Konto gelöscht", deleteCancel: "Abbrechen", deleteWorking: "Ihr Konto wird gelöscht…", deleteMismatch: "Das ist nicht die Adresse dieses Kontos.", deleteDone: "Ihr Konto wurde gelöscht. Eine Bestätigung ist an {email} unterwegs.", deleteDoneKept: "Ihr Redaxa-Konto wurde gelöscht. Die Anmeldung bleibt bestehen, weil Frame Witness sie verwendet. Eine Bestätigung ist an {email} unterwegs.", deleteFailed: "Ihr Konto konnte nicht gelöscht werden. Bitte versuchen Sie es erneut.", deleteClose: "Schließen",
     plansHeadline: "Wählen Sie, wie viel Redaxa für Sie prüft.", billingPeriod: "Abrechnungszeitraum", billingMonthly: "Monatlich", billingYearly: "Jährlich · 2 Monate gratis",
     recommended: "Empfohlen", currentPlan: "Aktueller Tarif", equivYearly: "{price} pro Monat, jährlich abgerechnet",
     freeName: "Free", freeDesc: "Prüfen Sie, was Sie teilen – ganz ohne Konto.", freeNote: "Keine Karte nötig", freeCta: "Jetzt prüfen",
@@ -864,6 +869,11 @@ export function mountDashboard(): void {
       <h3 data-i18n="orgPoliciesLabel">${w0.orgPoliciesLabel}</h3>
       <p class="card-note" data-i18n="orgPoliciesHint">${w0.orgPoliciesHint}</p>
       <ul id="org-policy-list"></ul>
+    </section>
+    <section id="delete-account-section" class="card delete-account" hidden aria-labelledby="delete-account-heading">
+      <div class="card-head"><h2 id="delete-account-heading" data-i18n="deleteTitle">${w0.deleteTitle}</h2></div>
+      <p class="card-note" data-i18n="deleteDesc">${w0.deleteDesc}</p>
+      <div class="card-actions"><button type="button" class="secondary" id="delete-account-open" data-i18n="deleteOpen">${w0.deleteOpen}</button></div>
     </section>`;
   // The workspace's shared terms are edited on the Protected terms page.
   required<HTMLElement>("#org-terms-slot").innerHTML = `<ul id="org-term-list"></ul>
@@ -1042,6 +1052,94 @@ export function mountDashboard(): void {
       button.disabled = false;
     }
   });
+  // Delete account: the server checks everything again (api/_account-delete.ts);
+  // typing the address here only stops a slip of the mouse.
+  const deleteSection = required<HTMLElement>("#delete-account-section");
+  const deleteDialog = document.createElement("dialog");
+  deleteDialog.className = "ps-account-sheet delete-account-dialog";
+  deleteDialog.setAttribute("aria-labelledby", "delete-account-title");
+  deleteDialog.innerHTML = `<header><h2 id="delete-account-title" data-i18n="deleteDialogTitle">${w0.deleteDialogTitle}</h2><button type="button" data-sheet-close data-i18n-label="deleteClose" aria-label="${w0.deleteClose}">×</button></header>
+    <p id="delete-account-intro" data-i18n="deleteDialogIntro">${w0.deleteDialogIntro}</p>
+    <p id="delete-account-done" role="status" hidden></p>
+    <div class="ps-account-actions" id="delete-account-done-actions" hidden><button type="button" data-delete-cancel data-i18n="deleteClose">${w0.deleteClose}</button></div>
+    <form id="delete-account-form" novalidate>
+      <label class="ps-auth-field" for="delete-account-email"><span id="delete-account-label"></span><input id="delete-account-email" type="email" autocomplete="off" autocapitalize="off" spellcheck="false" required aria-describedby="delete-account-message"></label>
+      <p class="ps-account-message" id="delete-account-message" role="status"></p>
+      <div class="ps-account-actions"><button type="submit" class="delete-account-confirm" data-i18n="deleteConfirmBtn">${w0.deleteConfirmBtn}</button><button type="button" data-delete-cancel data-i18n="deleteCancel">${w0.deleteCancel}</button></div>
+    </form>`;
+  document.body.append(deleteDialog);
+  const deleteForm = required<HTMLFormElement>("#delete-account-form");
+  const deleteEmail = required<HTMLInputElement>("#delete-account-email");
+  const deleteMessage = required<HTMLElement>("#delete-account-message");
+  const deleteConfirm = deleteDialog.querySelector<HTMLButtonElement>(".delete-account-confirm")!;
+  let deleteBusy = false;
+  let accountDeleted = false;
+  // Any signed-in account, whatever its plan. The first account event comes
+  // before auth.ts has published promptShieldAuth, hence auth-ready as well.
+  const syncDeleteSection = (): void => { deleteSection.hidden = !window.promptShieldAuth?.hasAccount(); };
+  document.addEventListener("redaxa:account", syncDeleteSection);
+  document.addEventListener("redaxa:auth-ready", syncDeleteSection);
+  syncDeleteSection();
+  const closeDelete = (): void => {
+    if (deleteBusy) return;
+    deleteDialog.close();
+    // Signed out already: a fresh load shows the workspace as a visitor sees it.
+    if (accountDeleted) location.reload();
+  };
+  deleteDialog.querySelectorAll("[data-sheet-close], [data-delete-cancel]").forEach(button => button.addEventListener("click", closeDelete));
+  deleteDialog.addEventListener("cancel", event => { event.preventDefault(); closeDelete(); });
+  required<HTMLButtonElement>("#delete-account-open").addEventListener("click", () => {
+    const email = window.promptShieldAuth?.email();
+    if (!email) return;
+    required<HTMLElement>("#delete-account-label").textContent = format(words().deleteConfirmLabel, { email });
+    deleteEmail.value = "";
+    deleteEmail.removeAttribute("aria-invalid");
+    deleteMessage.textContent = "";
+    deleteMessage.classList.remove("error");
+    deleteDialog.showModal();
+    deleteEmail.focus();
+  });
+  deleteForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const email = window.promptShieldAuth?.email();
+    if (deleteBusy || !email) return;
+    const typed = deleteEmail.value.trim();
+    if (typed.toLowerCase() !== email.toLowerCase()) {
+      deleteEmail.setAttribute("aria-invalid", "true");
+      deleteMessage.classList.add("error");
+      deleteMessage.textContent = words().deleteMismatch;
+      deleteEmail.focus();
+      return;
+    }
+    deleteBusy = true;
+    deleteConfirm.disabled = deleteEmail.disabled = true;
+    deleteEmail.removeAttribute("aria-invalid");
+    deleteMessage.classList.remove("error");
+    deleteMessage.textContent = words().deleteWorking;
+    try {
+      const result = await window.promptShieldAuth!.request("/api/account?action=delete", { email: typed }, "POST") as { signInKept?: boolean };
+      accountDeleted = true;
+      await window.promptShieldAuth!.signOut().catch(() => undefined);
+      deleteForm.hidden = true;
+      required<HTMLElement>("#delete-account-intro").hidden = true;
+      const title = required<HTMLElement>("#delete-account-title");
+      title.dataset.i18n = "deleteDoneTitle";
+      title.textContent = words().deleteDoneTitle;
+      const done = required<HTMLElement>("#delete-account-done");
+      done.textContent = format(result.signInKept ? words().deleteDoneKept : words().deleteDone, { email });
+      done.hidden = false;
+      const doneActions = required<HTMLElement>("#delete-account-done-actions");
+      doneActions.hidden = false;
+      doneActions.querySelector<HTMLButtonElement>("button")!.focus();
+    } catch (error) {
+      deleteMessage.classList.add("error");
+      deleteMessage.textContent = error instanceof Error && error.message && error.message !== "UNAUTHORIZED" ? error.message : words().deleteFailed;
+      deleteConfirm.disabled = deleteEmail.disabled = false;
+    } finally {
+      deleteBusy = false;
+    }
+  });
+
   required<HTMLButtonElement>("#org-name-save").addEventListener("click", async () => {
     const name = orgNameInput.value.trim();
     if (!name) return;
@@ -2021,6 +2119,8 @@ declare global {
       scanPrompt(text: string, options?: ScanRequestOptions): Promise<{ findings: Finding[]; redactedText: string; decision?: ScanDecision }>;
       request(path: string, body?: Record<string, unknown>, method?: "GET" | "POST"): Promise<Record<string, unknown>>;
       download(path: string): Promise<Blob>;
+      email(): string | null;
+      signOut(): Promise<void>;
     };
   }
 }

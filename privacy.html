@@ -43,7 +43,7 @@
     <main class="shell">
       <a class="back" href="/">← Redaxa</a>
       <h1>Privacy policy</h1>
-      <p class="updated">Last updated 21 October 2026</p>
+      <p class="updated">Last updated 31 October 2026</p>
 
       <p>Redaxa is operated by Aurelio Avila, a private individual who is the controller of your personal data ("we", "us"). No data protection officer has been appointed. This page explains what we collect, why, and how you can control it. If anything here is unclear, email <a href="mailto:redaxa@getcertsprint.com">redaxa@getcertsprint.com</a>.</p>
 
@@ -53,7 +53,7 @@
       <h2>What we collect</h2>
       <table>
         <tr><th>Data</th><th>Why</th></tr>
-        <tr><td>Email and optional first name (older accounts may retain previously supplied profile information)</td><td>Create and secure your account (via Supabase Auth)</td></tr>
+        <tr><td>Email and optional first name (older accounts may retain previously supplied profile information)</td><td>Create and secure your account (via Supabase Auth). The sign-in is shared with Frame Witness, another product from the same controller: one email address and password open both</td></tr>
         <tr><td>Prompt text you scan — which may contain personally identifiable information (names, email addresses, phone numbers, physical addresses), financial and payment information (card numbers, IBANs, crypto wallet addresses), and authentication information (passwords, API keys, tokens, private keys)</td><td>Sent over an encrypted connection to compute the scan result, then discarded — never stored, logged, or used for any other purpose. Free checks in the browser extension run in your browser and are not sent to us</td></tr>
         <tr><td>Subscription status, Stripe customer ID, and the language of the workspace when you subscribe</td><td>Billing, and writing subscription emails in your language. We never see or store your card number — Stripe collects that directly</td></tr>
         <tr><td>Free-trial record: a one-way hash (SHA-256) of your email address, normalised so that variations of the same mailbox match; the fingerprint Stripe gives the card used; the subscription ID and when the trial ends</td><td>Give each person one free trial and send the reminder before it ends. It holds no email address and no card number, and it is kept after an account is deleted: otherwise deleting and re-creating an account would start another trial</td></tr>
@@ -97,10 +97,20 @@
       <p>We do not share your data with advertisers, data brokers, or any other third party.</p>
 
       <h2>How long we keep it</h2>
-      <p>Account data is kept while your account is active. The free-trial record described above is kept for as long as Redaxa offers free trials. Prompt text is never stored in the first place — there's nothing to retain or delete. To delete your account and associated billing/account data, email <a href="mailto:redaxa@getcertsprint.com">redaxa@getcertsprint.com</a>; we'll confirm once it's done.</p>
+      <p>Account data is kept while your account is active. The free-trial record described above is kept for as long as Redaxa offers free trials. Prompt text is never stored in the first place — there's nothing to retain or delete.</p>
+
+      <h2>Deleting your account</h2>
+      <p>You can delete your account yourself, on the web or in the Windows app, under <strong>Account &amp; team</strong> &gt; <strong>Delete account</strong>. After you type your email address to confirm:</p>
+      <ul>
+        <li>a running subscription ends immediately, including any time already paid for, and nothing more is charged;</li>
+        <li>your settings, protected terms, API keys, activity history, team invitations and workspace memberships are deleted at once, and a Business workspace you own is deleted with its protected terms and policies, so its members lose access to it;</li>
+        <li>your sign-in is deleted and every app and browser signed in to the account is signed out. If the same sign-in still holds a Frame Witness licence or trial, it is kept so Frame Witness keeps working, and every session is signed out all the same;</li>
+        <li>we send one email confirming what was deleted.</li>
+      </ul>
+      <p>The customer record Stripe held for your Redaxa subscription, with its saved payment method, is deleted too. What stays: invoices and payments, which Stripe keeps for as long as tax and accounting law requires; the pseudonymous free-trial record described above, which holds no email address or card number; and what Redaxa saved on your own devices, such as recent check summaries or a profile photo in your browser, until you clear it or uninstall the app. The server log that records a deletion names nobody. You can also ask us to delete your account by writing to <a href="mailto:redaxa@getcertsprint.com">redaxa@getcertsprint.com</a>.</p>
 
       <h2>Your rights</h2>
-      <p>Depending on where you live, you may have the right to access, correct, export, or delete your personal data, and to object to or restrict its processing. Contact <a href="mailto:redaxa@getcertsprint.com">redaxa@getcertsprint.com</a> to exercise any of these. You also have the right to lodge a complaint with the Italian data protection authority, the <a href="https://www.garanteprivacy.it">Garante per la protezione dei dati personali</a>, or with the supervisory authority of the EU country where you live or work.</p>
+      <p>Depending on where you live, you may have the right to access, correct, export, or delete your personal data, and to object to or restrict its processing. You can delete your account yourself, as described above; for anything else, contact <a href="mailto:redaxa@getcertsprint.com">redaxa@getcertsprint.com</a>. You also have the right to lodge a complaint with the Italian data protection authority, the <a href="https://www.garanteprivacy.it">Garante per la protezione dei dati personali</a>, or with the supervisory authority of the EU country where you live or work.</p>
 
       <h2>Age</h2>
       <p>Redaxa is not directed at children. You must be at least 16 years old, or the age of digital consent in your country if higher, to create an account.</p>

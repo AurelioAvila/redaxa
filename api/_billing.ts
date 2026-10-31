@@ -41,7 +41,7 @@ function required(name: string): string {
   return value;
 }
 
-function supabaseUrl(): string { return required("SUPABASE_URL").replace(/\/$/, ""); }
+export function supabaseUrl(): string { return required("SUPABASE_URL").replace(/\/$/, ""); }
 function serviceKey(): string { return required("SUPABASE_SERVICE_ROLE_KEY"); }
 
 // The browser never holds the Supabase access/refresh tokens directly. They are set as
@@ -294,6 +294,17 @@ export async function requireUser(
   response?: { setHeader(name: string, value: string | string[]): void },
   allowApiKey = false
 ): Promise<BillingUser> {
+  return (await requireSession(request, response, allowApiKey)).user;
+}
+
+/** requireUser, plus the Supabase access token that proved it (null for an
+ *  API key). Account deletion needs the token itself: it may be the one
+ *  requireUser has just refreshed, which the request never carried. */
+export async function requireSession(
+  request: { headers?: Record<string, string | string[] | undefined> },
+  response?: { setHeader(name: string, value: string | string[]): void },
+  allowApiKey = false
+): Promise<{ user: BillingUser; accessToken: string | null }> {
   const bearer = bearerToken(request.headers);
   if (bearer) {
     // Dedicated API keys are distinguishable by prefix and never sent to
@@ -302,11 +313,11 @@ export async function requireUser(
     // mint more keys, open billing or change organization policies.
     if (bearer.startsWith(API_KEY_PREFIX)) {
       const user = allowApiKey ? await apiKeyUser(bearer) : null;
-      if (user) return user;
+      if (user) return { user, accessToken: null };
       throw new Error("UNAUTHORIZED");
     }
     const user = await supabaseAuthUser(bearer);
-    if (user) return user;
+    if (user) return { user, accessToken: bearer };
   }
   // Cookie sessions only for the product's own pages. SameSite=Lax does not
   // stop sibling getcertsprint.com subdomains, which count as the same site.
@@ -317,7 +328,7 @@ export async function requireUser(
   const accessToken = cookies[ACCESS_COOKIE];
   if (accessToken) {
     const user = await supabaseAuthUser(accessToken);
-    if (user) return user;
+    if (user) return { user, accessToken };
   }
   const refreshToken = cookies[REFRESH_COOKIE];
   if (refreshToken && response) {
@@ -326,7 +337,7 @@ export async function requireUser(
       const user = await supabaseAuthUser(refreshed.access_token);
       if (user) {
         setSessionCookies(response, refreshed.access_token, refreshed.refresh_token, refreshed.expires_in, cookies[REMEMBER_COOKIE] === "1");
-        return user;
+        return { user, accessToken: refreshed.access_token };
       }
     }
   }
