@@ -39,8 +39,8 @@ export function pageShell({ lang = "en", title, description, url, graph, body, a
 <link rel="canonical" href="${url}">${alt}
 <meta property="og:type" content="article"><meta property="og:site_name" content="Redaxa"><meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(description)}"><meta property="og:url" content="${url}"><meta property="og:locale" content="${lang}">
-<meta property="og:image" content="${ORIGIN}/og-redaxa-eb3e35858c.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
-<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${esc(title)}"><meta name="twitter:description" content="${esc(description)}"><meta name="twitter:image" content="${ORIGIN}/og-redaxa-eb3e35858c.png">
+<meta property="og:image" content="${ORIGIN}/og-redaxa-c973e06e63.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${esc(title)}"><meta name="twitter:description" content="${esc(description)}"><meta name="twitter:image" content="${ORIGIN}/og-redaxa-c973e06e63.png">
 <link rel="icon" type="image/svg+xml" href="/outputs/redaxa-mark.svg">
 <script type="application/ld+json">${ld({ "@context": "https://schema.org", "@graph": graph })}</script>
 <style>${BASE_CSS}${css}</style></head><body>

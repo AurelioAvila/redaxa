@@ -36,7 +36,7 @@ env:
   AVATAR: https://raw.githubusercontent.com/AurelioAvila/redaxa/7cb4a81dd7e8e48940e77626f4e4dcef1e06dbdf/src-tauri/icons/128x128@2x.png
   # The site's link card. Site deploys rename it (content hash, 404 for the old
   # name): the job then uses the og:image the site names now.
-  BANNER: https://redaxa.getcertsprint.com/og-redaxa-eb3e35858c.png
+  BANNER: https://redaxa.getcertsprint.com/og-redaxa-c973e06e63.png
 
 jobs:
   announce:

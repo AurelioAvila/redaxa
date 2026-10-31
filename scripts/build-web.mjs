@@ -65,7 +65,7 @@ cpSync(resolve(root, "outputs", "redaxa-mark-128.png"), resolve(output, "outputs
 // The 1200x630 link-preview card: a real capture of the prompt check, with no
 // price or version inside. The hash in the name changes with the image, so
 // Discord, X, Facebook and LinkedIn fetch the new card instead of a cached one.
-cpSync(resolve(root, "brand", "og-redaxa-eb3e35858c.png"), resolve(output, "og-redaxa-eb3e35858c.png"));
+cpSync(resolve(root, "brand", "og-redaxa-c973e06e63.png"), resolve(output, "og-redaxa-c973e06e63.png"));
 
 for(const file of ["redaxa-inter.woff2", "Inter-LICENSE.txt"]) cpSync(resolve(root,"outputs",file),resolve(output,"outputs",file));
 // Windows and Linux checkouts must produce identical bytes for publisher verification.
