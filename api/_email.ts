@@ -576,6 +576,8 @@ export type AccountDeletedInput = {
   cancelled: number;
   /** The shared sign-in stayed because Frame Witness still uses it. */
   signInKept: boolean;
+  /** Whether the Stripe customer, with its saved card, was deleted; null when there was none. */
+  paymentDetailsDeleted: boolean | null;
 };
 
 /**
@@ -584,7 +586,8 @@ export type AccountDeletedInput = {
  * deleted the account, and a reply is the one safe thing to ask of them.
  */
 function accountDeletedEmail(input: AccountDeletedInput): { subject: string; html: string; text: string } {
-  const { email, when, cancelled, signInKept } = input;
+  const { email, when, cancelled, signInKept, paymentDetailsDeleted } = input;
+  const invoices = "Your invoices stay with Stripe, our payment processor, for as long as tax law requires.";
   return renderEmail({
     subject: "Your Redaxa account has been deleted",
     kind: "account",
@@ -598,9 +601,9 @@ function accountDeletedEmail(input: AccountDeletedInput): { subject: string; htm
       { p: `The Redaxa account for ${email} was deleted on ${when}, from the account settings.` },
       { rows: [
         ["Subscription", cancelled ? "Ended immediately. Nothing more will be charged." : "None was running."],
-        ["Account data", "Deleted: settings, protected terms, API keys, activity history and workspace."],
+        ["Account data", "Deleted: settings, protected terms, API keys, activity history and team access."],
         ["Sign-in", signInKept ? "Kept, because Frame Witness uses it." : "Deleted."],
-        ["Invoices", "Kept by Stripe, our payment processor, for as long as tax law requires."],
+        ...(paymentDetailsDeleted === null ? [] : [["Billing", paymentDetailsDeleted ? `Payment details deleted. ${invoices}` : invoices] as [string, string]]),
       ] },
       ...(signInKept
         ? [{ p: "Redaxa and Frame Witness, our other product, share one sign-in. This address still holds a Frame Witness licence or trial, so its email and password keep opening Frame Witness. Reply to this message if you want the sign-in removed as well." }]

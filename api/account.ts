@@ -110,7 +110,7 @@ export default async function handler(request: RequestLike, response: ResponseLi
       const message = error instanceof Error ? error.message : "";
       const [status, text] = message === "UNAUTHORIZED" ? [401, "UNAUTHORIZED"]
         : message === "FRAME_WITNESS_UNAVAILABLE" ? [503, "We could not finish the checks needed to delete your account, so nothing has changed. Please try again in a few minutes."]
-        : message === "BILLING_ERROR" ? [502, "We could not end your subscription, so the account was not deleted. Please try again in a few minutes."]
+        : message === "BILLING_ERROR" ? [502, "We could not finish ending your subscription, so the account was not deleted. Please try again in a few minutes."]
         : [500, "We could not finish deleting your account. Please try again: anything already removed stays removed."];
       if (status === 500) console.error("account deletion failed:", message.slice(0, 200));
       response.status(status).json({ error: text });
