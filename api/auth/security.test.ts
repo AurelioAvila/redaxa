@@ -7,6 +7,7 @@ process.env.STRIPE_SECRET_KEY = "sk_test_dummy";
 process.env.APP_URL = "https://redaxa.example";
 const {default: callback} = await import("./callback.js");
 const {default: signin} = await import("./signin.js");
+const {default: signout} = await import("./signout.js");
 type Headers = Record<string, string | string[] | undefined>;
 async function invoke(handler: typeof signin, method: string, headers: Headers = {}, body: unknown = {}) {
   const written = new Map<string, string | string[]>();
@@ -50,11 +51,26 @@ try {
     const result = await invoke(signin,'POST',{'content-type':'application/json; charset=UTF-8',origin},body);
     assert.equal(result.status,200);
     assert.equal(result.written.has('Set-Cookie'),true);
+    // The web page holds httpOnly cookies only; the apps and the extension need the tokens.
+    const tokens = result.result as {access_token?: string; refresh_token?: string};
+    assert.equal(Boolean(tokens.access_token && tokens.refresh_token), origin !== 'https://redaxa.example', `tokens in the body for ${origin}`);
   }
   assert.equal(calls,4);
   // Counted across every instance: the shared counter refuses before Supabase is asked.
   sharedLimited = true;
   assert.equal((await invoke(signin,'POST',{'content-type':'application/json'},{email:'other@example.test',password:'fixture-password'})).status,429);
   assert.equal(calls,4,'a limited sign-in never reaches the credential exchange');
+  // Sign-out: a cross-site form (a sibling subdomain is same-site) cannot end the visitor's session.
+  for (const origin of ['https://attacker.example','https://other.getcertsprint.com','null']) {
+    const result = await invoke(signout,'POST',{origin,cookie:'ps_at=fixture-access'});
+    assert.equal(result.status,403);
+    assert.equal(result.written.has('Set-Cookie'),false);
+  }
+  assert.equal(calls,4,'a refused sign-out never reaches upstream');
+  for (const origin of [undefined,'https://redaxa.example','https://tauri.localhost','chrome-extension://fixture']) {
+    const result = await invoke(signout,'POST',{origin,cookie:'ps_at=fixture-access'});
+    assert.equal(result.status,200);
+    assert.equal(result.written.has('Set-Cookie'),true);
+  }
 } finally { globalThis.fetch=originalFetch; }
-console.log('Retired callback and JSON/origin sign-in boundaries passed without live requests.');
+console.log('Retired callback, JSON/origin sign-in and sign-out boundaries, and web pages without tokens passed without live requests.');
