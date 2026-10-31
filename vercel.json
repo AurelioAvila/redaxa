@@ -70,6 +70,9 @@
   "functions": {
     "api/scan.ts": {
       "maxDuration": 60
+    },
+    "api/account.ts": {
+      "maxDuration": 30
     }
   },
   "crons": [

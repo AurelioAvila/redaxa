@@ -103,4 +103,30 @@ for (const [claim, status] of [["in_progress", 500], ["completed", 200]] as cons
   assert.equal(res.code, status, claim);
 }
 
+// A subscription an account deletion ended gets no "trial ended" email: the
+// deletion sends the one confirmation. Any other trial ending still gets it.
+{
+  const { stripe } = await import("./_billing.js");
+  const { ACCOUNT_DELETED } = await import("./_account-delete.js");
+  const now = Math.floor(Date.now() / 1000);
+  for (const comment of [ACCOUNT_DELETED, null]) {
+    const ended = { id: "sub_gone", object: "subscription", customer: "cus_gone", status: "canceled", metadata: { redaxa_user_id: "user-9", trial: "3d" },
+      trial_start: now - 3600, trial_end: now + 2 * 86_400, ended_at: now, canceled_at: now, cancellation_details: { comment }, items: { data: [] } };
+    const payload = JSON.stringify({ id: `evt_gone_${comment}`, object: "event", type: "customer.subscription.deleted", data: { object: ended } });
+    const signature = new Stripe("sk_test_dummy").webhooks.generateTestHeaderString({ payload, secret: "whsec_test_fixture" });
+    const request = Object.assign(Readable.from([Buffer.from(payload)]), { method: "POST", headers: { "stripe-signature": signature } });
+    const res = { code: 0, body: undefined as unknown, setHeader() {}, status(code: number) { this.code = code; return this; }, json(value: unknown) { this.body = value; }, end() {} };
+    const retrieve = stripe.customers.retrieve;
+    let mailed = 0;
+    stripe.customers.retrieve = (async () => { mailed += 1; return { id: "cus_gone", deleted: true }; }) as never;
+    try {
+      await withMockFetch(async (url) => ok(url.includes("/rpc/claim_stripe_event") ? "claimed" : url.includes("/auth/v1/admin/users/") ? { email: "gone@example.test" } : []), async () => {
+        await webhook(request as never, res as never);
+      });
+    } finally { stripe.customers.retrieve = retrieve; }
+    assert.equal(res.code, 200);
+    assert.equal(mailed, comment ? 0 : 1, comment ? "no trial-ended email after an account deletion" : "a trial cancelled otherwise is still told");
+  }
+}
+
 console.log("_stripe-webhook.test.ts ok");

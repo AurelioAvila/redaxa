@@ -569,6 +569,55 @@ export async function sendMemberLeftEmail(to: string, memberEmail: string, works
   return send(to, mail.subject, mail.html, mail.text);
 }
 
+export type AccountDeletedInput = {
+  email: string;
+  when: string;
+  /** Subscriptions cancelled by the deletion; zero when none was running. */
+  cancelled: number;
+  /** The shared sign-in stayed because Frame Witness still uses it. */
+  signInKept: boolean;
+};
+
+/**
+ * The last message about an account: what went, what stays and why. No link,
+ * like the password notice: whoever reads it is not necessarily the person who
+ * deleted the account, and a reply is the one safe thing to ask of them.
+ */
+function accountDeletedEmail(input: AccountDeletedInput): { subject: string; html: string; text: string } {
+  const { email, when, cancelled, signInKept } = input;
+  return renderEmail({
+    subject: "Your Redaxa account has been deleted",
+    kind: "account",
+    preheader: `Deleted on ${when}.${cancelled ? " The subscription ended at the same time, and nothing more will be charged." : ""}`,
+    footer: "You received this email because the Redaxa account for this address was deleted. It is the last message we send about it.",
+    help: ["Did not delete it?", "Reply to this message straight away from this address, and we will help you find out what happened."],
+    noLinks: true,
+    blocks: [
+      { kicker: "Account deleted" },
+      { h1: "Your Redaxa account has been deleted." },
+      { p: `The Redaxa account for ${email} was deleted on ${when}, from the account settings.` },
+      { rows: [
+        ["Subscription", cancelled ? "Ended immediately. Nothing more will be charged." : "None was running."],
+        ["Account data", "Deleted: settings, protected terms, API keys, activity history and workspace."],
+        ["Sign-in", signInKept ? "Kept, because Frame Witness uses it." : "Deleted."],
+        ["Invoices", "Kept by Stripe, our payment processor, for as long as tax law requires."],
+      ] },
+      ...(signInKept
+        ? [{ p: "Redaxa and Frame Witness, our other product, share one sign-in. This address still holds a Frame Witness licence or trial, so its email and password keep opening Frame Witness. Reply to this message if you want the sign-in removed as well." }]
+        : []),
+      { p: "Prompt text was never stored, so there was none to delete. Copies Redaxa kept on your own devices, such as recent check summaries in a browser, stay there until you clear them or uninstall the app.", muted: true },
+    ],
+  });
+}
+export function accountDeletedHtml(input: AccountDeletedInput): string { return accountDeletedEmail(input).html; }
+export function accountDeletedText(input: AccountDeletedInput): string { return accountDeletedEmail(input).text; }
+
+/** Sends the confirmation. Never throws; the account is already gone. */
+export async function sendAccountDeletedEmail(input: AccountDeletedInput): Promise<boolean> {
+  const mail = accountDeletedEmail(input);
+  return send(input.email, mail.subject, mail.html, mail.text);
+}
+
 /** Sends the welcome. Never throws; the caller has already succeeded. */
 export async function sendWelcomeEmail(to: string, firstName: string | null | undefined, appUrl: string, userId?: string): Promise<boolean> {
   const mail = welcomeEmail(firstName, appUrl);

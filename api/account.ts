@@ -1,6 +1,7 @@
-import { accountFor, corsHeaders, createApiKey, effectiveEntitlement, listApiKeys, requireUser, revokeApiKey, supabaseService } from "./_billing.js";
-import { clientIp, rateLimited } from "./_rateLimit.js";
+import { accountFor, billingAppUrl, clearSessionCookies, corsHeaders, createApiKey, effectiveEntitlement, listApiKeys, requireSession, requireUser, revokeApiKey, supabaseService } from "./_billing.js";
+import { clientIp, rateLimited, rateLimitedEverywhere } from "./_rateLimit.js";
 import { billingView } from "./_trial.js";
+import { deleteAccount } from "./_account-delete.js";
 
 type RequestLike = { method?: string; body?: unknown; query?: Record<string, string | string[] | undefined>; headers?: Record<string, string | string[] | undefined> };
 type ResponseLike = { setHeader(name: string, value: string | string[]): void; status(code: number): ResponseLike; json(value: unknown): void; end(): void };
@@ -66,6 +67,53 @@ export default async function handler(request: RequestLike, response: ResponseLi
     } catch (error) {
       const message = error instanceof Error ? error.message : "";
       response.status(message === "UNAUTHORIZED" ? 401 : 500).json({ error: message === "UNAUTHORIZED" ? "UNAUTHORIZED" : "We could not complete that key operation." });
+    }
+    return;
+  }
+
+  // POST ?action=delete: the account deletes itself (api/_account-delete.ts).
+  if (action === "delete") {
+    if (request.method !== "POST") { response.setHeader("Allow", "POST"); response.status(405).end(); return; }
+    const contentType = request.headers?.["content-type"];
+    if (typeof contentType !== "string" || contentType.split(";", 1)[0].trim().toLowerCase() !== "application/json") {
+      response.status(415).json({ error: "Send a JSON request." }); return;
+    }
+    // Cross-site request forgery: a cookie session counts only from the site
+    // itself, with the Origin every browser sends on a POST; a sibling
+    // getcertsprint.com page is same-site and would carry the cookies. The
+    // apps send their own Bearer token, which no other page can attach.
+    const origin = request.headers?.origin;
+    const authorization = request.headers?.authorization;
+    const bearer = typeof authorization === "string" && authorization.startsWith("Bearer ");
+    if (bearer ? origin !== undefined && origin !== cors["Access-Control-Allow-Origin"] : origin !== billingAppUrl(request)) {
+      response.status(403).json({ error: "This request must come from Redaxa itself." }); return;
+    }
+    try {
+      if (await rateLimitedEverywhere(supabaseService, `account-delete:ip:${clientIp(request.headers)}`, 10, 60 * 60_000)) {
+        response.status(429).json({ error: "Too many attempts. Please wait an hour and try again." }); return;
+      }
+      // No API key: one leaked from a CI log must not be able to delete the account.
+      const { user, accessToken } = await requireSession(request, response);
+      if (!accessToken) throw new Error("UNAUTHORIZED");
+      // Per account in memory, like the other account limits: the shared counters hold hashes only.
+      if (rateLimited(`account-delete:user:${user.id}`, 5, 60 * 60_000)) {
+        response.status(429).json({ error: "Too many attempts. Please wait an hour and try again." }); return;
+      }
+      const typed = (request.body as { email?: unknown } | undefined)?.email;
+      if (typeof typed !== "string" || typed.trim().toLowerCase() !== user.email.trim().toLowerCase()) {
+        response.status(400).json({ error: "Type the email address of this account to confirm.", code: "confirm_email" }); return;
+      }
+      const result = await deleteAccount(user, accessToken);
+      clearSessionCookies(response);
+      response.status(200).json({ ok: true, signInKept: result.signInKept, subscriptionsEnded: result.subscriptionsEnded });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      const [status, text] = message === "UNAUTHORIZED" ? [401, "UNAUTHORIZED"]
+        : message === "FRAME_WITNESS_UNAVAILABLE" ? [503, "We could not finish the checks needed to delete your account, so nothing has changed. Please try again in a few minutes."]
+        : message === "BILLING_ERROR" ? [502, "We could not end your subscription, so the account was not deleted. Please try again in a few minutes."]
+        : [500, "We could not finish deleting your account. Please try again: anything already removed stays removed."];
+      if (status === 500) console.error("account deletion failed:", message.slice(0, 200));
+      response.status(status).json({ error: text });
     }
     return;
   }
