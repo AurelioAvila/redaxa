@@ -20,6 +20,13 @@ export default async function handler(request: RequestLike, response: ResponseLi
   for (const [name, value] of Object.entries(cors)) response.setHeader(name, value);
   if (request.method === "OPTIONS") { response.status(204).end(); return; }
   if (request.method !== "POST") { response.setHeader("Allow", "POST"); response.status(405).end(); return; }
+  // Same rule as sign-in: a page on another origin (a sibling getcertsprint.com
+  // subdomain counts as same-site, so SameSite=Lax lets the cookies ride along)
+  // must not be able to sign a visitor out with a cross-site form.
+  const origin = request.headers?.origin;
+  if (origin !== undefined && (typeof origin !== "string" || origin !== cors["Access-Control-Allow-Origin"])) {
+    response.status(403).json({ error: "Sign-out request origin is not allowed." }); return;
+  }
   const cookies = parseCookies(request.headers?.cookie);
   let accessToken: string | undefined = bearerToken(request.headers) ?? cookies[ACCESS_COOKIE];
   // The short-lived access cookie may already be gone while the 30-day

@@ -1,4 +1,4 @@
-import { corsHeaders, setSessionCookies, supabaseService } from "../_billing.js";
+import { DESKTOP_ORIGINS, corsHeaders, setSessionCookies, supabaseService } from "../_billing.js";
 import { welcomeOnce } from "../_welcome.js";
 import { clientIp, keyedHash, rateLimitedEverywhere } from "../_rateLimit.js";
 
@@ -63,9 +63,13 @@ export default async function handler(request: RequestLike, response: ResponseLi
     if (payload.user?.id && payload.user.email) {
       await welcomeOnce({ id: payload.user.id, email: payload.user.email, emailConfirmedAt: payload.user.email_confirmed_at, createdAt: payload.user.created_at, metadata: payload.user.user_metadata });
     }
-    // Cookies drive the web dashboard; the desktop app has no cookie jar of its
-    // own, so it reads the tokens from the body instead and holds them itself.
-    response.status(200).json({
+    // Cookies drive the web dashboard; the desktop app and the extension have
+    // no cookie jar of their own, so they read the tokens from the body and
+    // hold them themselves. A web page gets the httpOnly cookies only: tokens
+    // in the body would hand script on the page the session the cookies keep
+    // out of its reach.
+    const webPage = typeof origin === "string" && origin.startsWith("https://") && !DESKTOP_ORIGINS.has(origin);
+    response.status(200).json(webPage ? { email: payload.user?.email ?? email } : {
       email: payload.user?.email ?? email,
       access_token: payload.access_token,
       refresh_token: payload.refresh_token,
