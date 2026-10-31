@@ -1,5 +1,5 @@
-const CACHE_NAME = "redaxa-shell-v11";
-const APP_SHELL = ["/", "/index.html", "/dashboard.html", "/github.html", "/manifest.webmanifest", "/outputs/redaxa-mark.svg", "/outputs/redaxa-inter.woff2", "/themes.css", "/theme-boot.js", "/dist/themes.js", "/auth.css", "/brand-system.css", "/app.css", "/plans.css", "/dialogs.css", "/repository.css", "/dist/dashboard.js", "/dist/auth.js", "/dist/desktop.js", "/dist/promo.js", "/dist/halloween-decor.js", "/dist/pwa.js", "/dist/repository-ui.js", "/dist/repository-report.js", "/dist/repository-example.js", "/dist/growth.js", "/dist/trial.js"];
+const CACHE_NAME = "redaxa-shell-v12";
+const APP_SHELL = ["/", "/index.html", "/dashboard.html", "/github.html", "/manifest.webmanifest", "/outputs/redaxa-mark.svg", "/outputs/redaxa-inter.woff2", "/themes.css", "/theme-boot.js", "/dist/themes.js", "/auth.css", "/brand-system.css", "/app.css", "/plans.css", "/dialogs.css", "/repository.css", "/dist/dashboard.js", "/dist/auth.js", "/dist/desktop.js", "/dist/promo.js", "/dist/halloween-decor.js", "/dist/pwa.js", "/dist/repository-ui.js", "/dist/repository-report.js", "/dist/repository-example.js", "/dist/growth.js", "/dist/trial.js", "/dist/prompt-limit.js"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));

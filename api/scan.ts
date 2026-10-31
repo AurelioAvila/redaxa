@@ -3,12 +3,12 @@ import { clientIp, rateLimited, rateLimitedShared } from "./_rateLimit.js";
 import { handleRepositoryCheck } from "./_repository.js";
 import { auditBoundary, auditCsv, defaultAuditRows, maxAuditRows, type AuditEvent } from "./_audit.js";
 import { inspectPrompt, type ScanOptions } from "../scanner.js";
+import { maxPromptLength } from "../prompt-limit.js";
 import { buildOrganizationPolicy, defaultPersonalPolicy, evaluatePolicy, type PolicyRule } from "../policy.js";
 
 type RequestLike = { method?: string; body?: unknown; headers?: Record<string, string | string[] | undefined> };
 type ResponseLike = { setHeader(name: string, value: string | string[]): void; status(code: number): ResponseLike; json(value: unknown): void; send?(body: string): void; end(body?: string): void };
 
-const maxPromptLength = 20_000;
 
 /** Real scans a visitor gets per day before an account is required. Small
  *  enough that the detection engine is not a free public API, large enough

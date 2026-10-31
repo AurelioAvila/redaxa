@@ -8,13 +8,13 @@ import { TRIAL_BANNER, TRIAL_UI, chargeDate, choiceCopy, fillTrial, keepArrow, l
 
 type HistoryEntry = { id: string; createdAt: string; findings: number; preview: string; byKind: Record<string, number> };
 type Language = "en" | "it" | "es" | "fr" | "de";
+import { maxPromptLength } from "./prompt-limit.js";
 import { themes, restoreTheme, applyTheme, chosenTheme, type ThemeName } from "./themes.js";
 type Preferences = ScanOptions & { language: Language; theme: ThemeName; themeChosen: boolean; scanMode: "standard" | "strict"; saveHistory: boolean; autoClearAfterCopy: boolean; showRawValues: boolean; customTerms: string[] };
 type RiskLevel = "none" | "medium" | "high";
 
 const storageKey = "redaxa.personal-history.v1";
 const preferencesKey = "redaxa.personal-preferences.v1";
-const maxPromptLength = 10_000;
 
 const defaultPreferences: Preferences = { language: "en", theme: "paper", themeChosen: false, scanMode: "standard", includePersonalData: true, includeCredentials: true, includeFinancialData: true, saveHistory: true, autoClearAfterCopy: false, showRawValues: true, customTerms: [] };
 

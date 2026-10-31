@@ -52,7 +52,7 @@ writeFileSync(resolve(output, "llms-full.txt"), full);
 // straight from the browser console, fully bypassing the trial/subscription
 // gate that api/scan.ts enforces server-side.
 mkdirSync(resolve(output, 'dist'), {recursive:true});
-for(const module of ['themes','auth','dashboard','desktop','pwa','landing','growth','promo','trial','halloween-decor','repository-ui','repository-report','repository-example']) {
+for(const module of ['themes','auth','dashboard','desktop','pwa','landing','growth','promo','trial','prompt-limit','halloween-decor','repository-ui','repository-report','repository-example']) {
   cpSync(resolve(root,'dist',module+'.js'),resolve(output,'dist',module+'.js'));
 }
 // RFC 9116: where to report a vulnerability, at the standard path.

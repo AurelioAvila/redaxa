@@ -421,8 +421,8 @@ html:is(:not([data-theme]), [data-theme="paper"]) .rx-shell .api-key-alert :is(s
   .rx-shell .side { position: static; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 16px; border-right: 0; border-bottom: 1px solid var(--theme-line); overflow: visible; }
   .rx-shell .brand { padding: 0; }
   .rx-shell .rx-brand-name small { display: none; }
-  .rx-shell .side > .nav { flex: 1 1 100%; flex-direction: row; gap: 4px; overflow-x: auto; }
-  .rx-shell .nav-group { display: flex; gap: 4px; }
+  .rx-shell .side > .nav { flex: 1 1 100%; flex-direction: row; flex-wrap: wrap; gap: 4px; overflow: visible; }
+  .rx-shell .nav-group { display: flex; flex-wrap: wrap; gap: 4px; }
   .rx-shell .nav-label, .rx-shell .usage { display: none; }
   /* The free trial offer stays in the top strip: the one part of the plan box shown on phones. */
   .rx-shell .usage:has(> .side-fill .is-trial) { display: block; flex: 1 1 100%; padding: 0; border: 0; background: none; }
@@ -430,7 +430,7 @@ html:is(:not([data-theme]), [data-theme="paper"]) .rx-shell .api-key-alert :is(s
   .rx-shell .nav-item { width: auto; min-height: 36px; white-space: nowrap; }
   .rx-shell .nav-item.active::before { left: 50%; top: auto; bottom: -1px; width: 18px; height: 3px; border-radius: 3px 3px 0 0; transform: translateX(-50%); }
   .rx-shell .side-foot { flex: 1 1 100%; padding: 0; border: 0; }
-  .rx-shell .nav-foot { flex-direction: row; overflow-x: auto; }
+  .rx-shell .nav-foot { flex-direction: row; flex-wrap: wrap; overflow: visible; }
   .rx-shell .page-bar { position: static; }
   .rx-shell .crumbs { display: none; }
   .rx-shell .view { padding-top: 20px; }
@@ -446,3 +446,9 @@ html:is(:not([data-theme]), [data-theme="paper"]) .rx-shell .api-key-alert :is(s
 @media (prefers-reduced-motion: reduce) {
   .rx-shell *, .rx-shell *::before, .rx-shell *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
+
+/* "Try an example" on the repository check: a visible secondary button, not plain text. */
+.rx-shell #demo { display: inline-flex; align-items: center; min-height: 36px; padding: 6px 14px; border: 1px solid var(--theme-accent); border-radius: 8px; background: transparent; color: var(--theme-accent); font-size: 13px; font-weight: 650; text-decoration: none; cursor: pointer; transition: background-color .15s ease; }
+.rx-shell #demo:hover:not(:disabled) { background: color-mix(in srgb, var(--theme-accent) 12%, transparent); text-decoration: none; }
+.rx-shell #demo:focus-visible { outline: 2px solid var(--theme-accent); outline-offset: 2px; }
+.rx-shell #demo:disabled { opacity: .5; cursor: not-allowed; }
