@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 const read = file => readFileSync(new URL('../' + file, import.meta.url), 'utf8');
 // Hand-maintained silos; /sitemap.xml is the index build-web.mjs writes over them and the generated silos.
 const entries = ['sitemap-pages.xml', 'sitemap-guides.xml'].flatMap(file => [...read(file).matchAll(/<url>\s*<loc>([^<]+)<\/loc><lastmod>([^<]+)<\/lastmod>/g)]);
-assert.equal(entries.length, 13);
+assert.equal(entries.length, 14);
 assert.equal(new Set(entries.map(entry => entry[1])).size, entries.length);
 const origin = new URL(entries[0][1]).origin;
 assert.equal(origin, 'https://redaxa.getcertsprint.com', 'Public metadata must use the verified branded domain.');
@@ -67,7 +67,7 @@ assert.ok(built.includes('"softwareVersion": "' + pkg.version + '"') && built.in
 }
 // Guides: no hand-typed prices or trial lengths; markers are filled at build from the offers and the switch.
 const { applyMarkers } = await import('./site-generated.mjs');
-const guides = entries.map(([, url]) => new URL(url).pathname.slice(1)).filter(path => path.endsWith('.html') && !['github.html', 'api-docs.html', 'privacy.html', 'terms.html'].includes(path));
+const guides = entries.map(([, url]) => new URL(url).pathname.slice(1)).filter(path => path.endsWith('.html') && !['github.html', 'api-docs.html', 'privacy.html', 'terms.html', 'linux.html'].includes(path));
 assert.equal(guides.length, 8);
 for (const env of [{ TRIAL_ENABLED: 'true' }, {}]) {
   const f = readFacts(new URL('../', import.meta.url), env);
