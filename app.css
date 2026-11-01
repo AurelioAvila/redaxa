@@ -482,3 +482,17 @@ html:is(:not([data-theme]), [data-theme="paper"]) .rx-shell .api-key-alert :is(s
 .rx-shell #demo:hover:not(:disabled) { background: color-mix(in srgb, var(--theme-accent) 12%, transparent); text-decoration: none; }
 .rx-shell #demo:focus-visible { outline: 2px solid var(--theme-accent); outline-offset: 2px; }
 .rx-shell #demo:disabled { opacity: .5; cursor: not-allowed; }
+/* App chrome is not document text: a drag, a double-click or Ctrl+A no longer paints the
+   rail, buttons, headings and icons, and links and images are not dragged out of the window.
+   What people copy stays selectable: fields, the redacted text, findings, codes and errors.
+   Modal dialogs are listed because the browser makes them selectable again. */
+.rx-shell, .rx-shell dialog { -webkit-user-select: none; user-select: none; }
+.rx-shell :is(input, textarea, [contenteditable="true"], pre, code, kbd, samp, dd, td, .snippet, [role="alert"], .ps-account-email) { -webkit-user-select: text; user-select: text; }
+.rx-shell :is(a, img, svg) { -webkit-user-drag: none; }
+/* No word left alone on the last line of a paragraph. */
+.rx-shell p { text-wrap: pretty; }
+/* A long hint wraps beside the severity; the count stays on the same row, at the end. */
+.rx-shell .fgroup-hint { flex-basis: 0; }
+.rx-shell .fgroup-count { margin-left: auto; }
+/* "Offrez-moi un café", "Kaffee spendieren" and "Invítame a un café" fit beside the chevron. */
+.rx-shell .coffee-row { gap: 7px; padding-right: 6px; }

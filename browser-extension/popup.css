@@ -125,3 +125,7 @@ body.welcome-page > footer { border: 1px solid var(--line); border-radius: 0 0 1
   .brand, main { padding-left: 16px; padding-right: 16px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+/* Popup chrome is not text to select; the text, its redacted version, the findings and the account email are. */
+body { -webkit-user-select: none; user-select: none; }
+:is(input, textarea, #finding-list, #status-email, #check-message, .msg) { -webkit-user-select: text; user-select: text; }
+img, a { -webkit-user-drag: none; }

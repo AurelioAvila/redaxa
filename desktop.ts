@@ -30,6 +30,13 @@ export function usesDesktopPreviewTransport(desktop: boolean, origin: string): b
   catch { return false; }
 }
 
+// Ctrl+A outside a field would paint every selectable line of the workspace;
+// like a native app it selects only inside fields. Marketing pages keep it.
+if (typeof document !== "undefined") document.addEventListener("keydown", (event) => {
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "a" && document.body?.classList.contains("rx-shell")
+    && !(event.target as Element | null)?.closest?.("input, textarea, [contenteditable='true']")) event.preventDefault();
+});
+
 export function installDesktopTitlebar(): void {
   const invoke = tauriInvoke();
   if (!invoke || document.querySelector(".rx-titlebar")) return;

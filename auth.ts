@@ -533,7 +533,7 @@ function mountSubscriptionPanel(deps: { menu: HTMLElement; desktop: boolean; man
     const date = subDate(subEnds(s));
     const text = s.status === "trialing" ? subFill(w.confirmTrial, { date }) : subFill(w.confirmText, { plan: subPlanName(s), date });
     subFrame(`<section class="ps-sub-card ps-sub-confirm" role="alertdialog" aria-labelledby="ps-sub-confirm-title" aria-describedby="ps-sub-confirm-text"><p class="ps-sub-step">${subEscape(subFill(w.step, { n: 2 }))}</p><h3 id="ps-sub-confirm-title">${subEscape(w.confirmTitle)}</h3><p id="ps-sub-confirm-text">${subEscape(text)}</p></section>
-      <div class="ps-account-actions ps-sub-actions"><button type="button" data-sub="keep">${subEscape(w.keep)}</button><button type="button" class="ps-sub-cancel" data-sub="confirm">${subEscape(w.cancel)}</button></div>`);
+      <div class="ps-account-actions ps-sub-actions"><button type="button" class="ps-sub-keep" data-sub="keep">${subEscape(w.keep)}</button><button type="button" class="ps-sub-cancel ps-sub-confirm" data-sub="confirm">${subEscape(w.cancel)}</button></div>`);
     subSheet.querySelector<HTMLButtonElement>('[data-sub="keep"]')!.focus();
   };
   subSheet.addEventListener("change", (event) => {

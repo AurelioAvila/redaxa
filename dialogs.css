@@ -88,6 +88,9 @@ html[data-theme]:not([data-theme="paper"]) :is(.rx-shell, .redaxa-landing) .ps-s
 :is(.rx-shell, .redaxa-landing) .ps-sub-actions { align-items: center; }
 :is(.rx-shell, .redaxa-landing) .ps-sub-actions .ps-sub-cancel, :is(.rx-shell, .redaxa-landing) .ps-sub-actions .ps-sub-cancel:first-child { border-color: color-mix(in srgb, var(--sub-alert) 55%, var(--theme-line)); background: transparent; color: var(--sub-alert); }
 :is(.rx-shell, .redaxa-landing) .ps-sub-actions .ps-sub-cancel:hover { background: color-mix(in srgb, var(--sub-alert) 8%, transparent); filter: none; }
+/* Step 2 of cancelling: "Keep" is a plain choice, not the highlighted one, and the confirmation is tinted like the other apps' danger button. */
+:is(.rx-shell, .redaxa-landing) .ps-sub-actions .ps-sub-keep:first-child { border-color: var(--theme-strong); background: transparent; color: var(--theme-text); }
+:is(.rx-shell, .redaxa-landing) .ps-sub-actions .ps-sub-confirm { margin-left: auto; background: color-mix(in srgb, var(--sub-alert) 10%, transparent); }
 :is(.rx-shell, .redaxa-landing) .ps-sub-actions .ps-sub-link, :is(.rx-shell, .redaxa-landing) .ps-sub-actions .ps-sub-link:first-child { margin-left: auto; padding: 0 4px; border-color: transparent; background: transparent; color: var(--theme-text); text-decoration: underline; text-underline-offset: 3px; }
 :is(.rx-shell, .redaxa-landing) .ps-sub-actions button:disabled { opacity: .55; cursor: progress; }
 :is(.rx-shell, .redaxa-landing) .ps-sub-loading { margin: 0; padding: 22px 0; color: var(--theme-muted); font-size: 13.5px; }
