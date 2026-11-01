@@ -39,7 +39,7 @@
 .plans-page .hw-offer-slim .hw-offer-timer { flex: none; margin-left: auto; }
 .plans-page .hw-offer-slim .hw-offer-compact { display: block; padding: 4px 9px; border: 1px solid color-mix(in srgb, var(--hw-orange) 30%, var(--hw-line)); border-radius: 7px; background: color-mix(in oklab, black 38%, var(--hw-surface)); color: #fff; font: 700 13px/1.2 var(--font-text); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
-.billing-switch { display: inline-flex; gap: 2px; margin: 0 0 16px; padding: 3px; border: 1px solid var(--theme-line); border-radius: 10px; background: var(--theme-inset); }
+.billing-switch { display: inline-flex; -webkit-user-select: none; user-select: none; gap: 2px; margin: 0 0 16px; padding: 3px; border: 1px solid var(--theme-line); border-radius: 10px; background: var(--theme-inset); }
 .billing-switch button { min-height: 34px; padding: 0 14px; border: 0; border-radius: 7px; background: transparent; color: var(--theme-muted); font-size: 13px; font-weight: 650; cursor: pointer; }
 .billing-switch button:hover { color: var(--theme-text); }
 .billing-switch button[aria-pressed="true"] { background: var(--theme-accent); color: var(--theme-ink); }
@@ -223,7 +223,11 @@ html:is(:not([data-theme]), [data-theme="paper"]) .plans-page, html:is(:not([dat
   /* Business at its regular price: the per-seat unit as one line under the price. */
   .plans-page .plan-price:not(:has(.rx-deal)):has(.price-per-line) > small:not(.price-equiv, .price-per-line) { display: none; }
   .plans-page .plan-price:not(:has(.rx-deal)) > .price-per-line { display: block; order: 1; flex-basis: 100%; margin-top: -2px; color: var(--theme-muted); font: 550 12.5px/1.3 var(--font-text); letter-spacing: 0; }
-  /* Free has no offer: its "No card needed" fills the reduction badge's line. */
+}
+/* Three across but narrow: Free has no offer, so its "No card needed" fills the
+   reduction badge's line above the price. Only here: below 640 px the price has
+   no badge-line spacer and the note would sit on top of "€0". */
+@container plans (min-width: 640px) and (max-width: 899px) {
   .plan-grid:has(.rx-deal) .plan-free > .plan-note { grid-row: 4; grid-column: 1; align-self: start; display: flex; align-items: center; min-height: 30px; margin-top: 10px; }
 }
 /* Phones: the offer strip may take two lines rather than cut its sentence. */

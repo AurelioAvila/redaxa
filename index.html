@@ -116,6 +116,10 @@
       button, textarea, select { font: inherit; } button { cursor: pointer; }
       a { color: inherit; text-decoration: none; }
       ::selection { background: color-mix(in srgb,var(--acid) 20%,transparent); }
+      /* Images and icons are not text: no tinted block over the screenshot or the mark when text is selected. */
+      img::selection, svg::selection, video::selection { background: transparent; }
+      /* Controls are pressed, not read: a double-click or a drag never paints their labels. */
+      button, .small-btn, .nav-cta, .nav-install, .btn-primary, .btn-ghost, .rx-plan-cta, .billing-switch, .hero-paths a { -webkit-user-select: none; user-select: none; }
       :focus-visible { outline: 2px solid var(--acid); outline-offset: 2px; border-radius: 4px; }
       .skip { position: fixed; left: -9999px; }
       .skip:focus { left: 56px; top: 12px; z-index: 60; background: var(--s2); color: var(--ink); border: 1px solid var(--line-2); border-radius: 8px; padding: 9px 14px; font-size: 13px; font-weight: 650; }
@@ -312,6 +316,7 @@
       .footer-brand img { width: 20px; height: 20px; border-radius: 5px; }
       .footer-tag { color: var(--dim); font-weight: 400; margin-left: 4px; }
       footer nav.flinks { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+      footer nav.flinks .lang-current { color: var(--ink); font-weight: 650; }
       .source-actions { display: flex; flex-wrap: wrap; gap: 10px; }
       .source-actions a { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); font-weight: 600; }
       .source-actions a:hover { border-color: var(--accent); }
@@ -361,7 +366,7 @@
       .hero-trial{color:var(--mut);font-size:13px;line-height:1.6;margin:.75rem 0 0}
       .free-paths{align-items:stretch}.free-path{display:flex;flex-direction:column;gap:8px;flex:1 1 220px;max-width:280px}.free-path a{text-align:center}.free-path p{margin:0;color:var(--dim);font-size:12.5px;line-height:1.5}
       .repo-ctas{display:flex;flex-wrap:wrap;gap:12px;margin:18px 0 0}
-      @media(max-width:700px){.free-path{max-width:none}}
+      @media(max-width:700px){.free-path{max-width:none;flex-basis:auto}}
       #processing{scroll-margin-top:6rem}
       .surface-intro{max-width:70ch;color:var(--theme-muted);font-size:15px;line-height:1.6;margin:0 0 1.5rem}
       .surface-table{width:100%;border-collapse:collapse;font-size:14px;line-height:1.65}
@@ -665,7 +670,7 @@
       <footer>
         <span class="footer-brand"><img src="outputs/redaxa-mark.svg" alt="" width="20" height="20" />Redaxa<span class="footer-tag">· Privacy, before AI</span></span>
         <nav class="flinks" aria-label="Footer"><a href="/detectors/">What it detects</a><a href="/api-docs.html">API</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="https://pctweaker.app" target="_blank" rel="noopener">PC Tweaker</a></nav>
-        <nav class="flinks" aria-label="Languages"><a href="/it/" hreflang="it" lang="it">Italiano</a><a href="/es/" hreflang="es" lang="es">Español</a><a href="/fr/" hreflang="fr" lang="fr">Français</a><a href="/de/" hreflang="de" lang="de">Deutsch</a></nav>
+        <nav class="flinks" aria-label="Languages"><span class="lang-current" lang="en" aria-current="page">English</span><a href="/it/" hreflang="it" lang="it">Italiano</a><a href="/es/" hreflang="es" lang="es">Español</a><a href="/fr/" hreflang="fr" lang="fr">Français</a><a href="/de/" hreflang="de" lang="de">Deutsch</a></nav>
         <nav class="source-actions" aria-label="Project source"><a href="https://github.com/AurelioAvila/redaxa">Star on GitHub</a><a href="https://github.com/AurelioAvila/.github/blob/master/CODE_SIGNING.md">Verify release</a></nav>
         <span>© 2026 Redaxa · Anonymous action counts, no tracking cookies. <a href="/privacy.html">Measurement details</a></span>
       </footer>

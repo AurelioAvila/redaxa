@@ -211,7 +211,7 @@ export async function buildLanguages(root, facts) {
     const plansIntro = facts.trial.enabled ? t.copy.plansIntro : v.faqTrialA;
     const faq = [[trialQ, trialA], [v.faqCancelQ, v.faqCancelA], [v.faqBizQ, v.faqBizA], [v.faqStoredQ, v.faqStoredA], [v.faqMissQ, v.faqMissA]];
     const card = (title, price, note, items, featured) => `<article class="plan"${featured ? ' style="border-color:#a3471d"' : ""}><h3>${esc(title)}${featured ? ` <span class="tag">${esc(v.recommended)}</span>` : ""}</h3><p class="price">${esc(price)}</p>${note ? `<p class="note">${esc(note)}</p>` : ""}<ul>${items.map((i) => `<li>${i}</li>`).join("")}</ul></article>`;
-    const langs = `<nav class="langs" aria-label="Language"><a href="/" hreflang="en" lang="en">English</a>${LANGUAGES.map((l) => l.code === code ? `<strong style="margin-left:10px">${l.name}</strong>` : `<a href="/${l.code}/" hreflang="${l.code}" lang="${l.code}">${l.name}</a>`).join("")}</nav>`;
+    const langs = `<nav class="langs" aria-label="Language"><a href="/" hreflang="en" lang="en">English</a>${LANGUAGES.map((l) => l.code === code ? `<strong style="margin-left:10px" aria-current="page">${l.name}</strong>` : `<a href="/${l.code}/" hreflang="${l.code}" lang="${l.code}">${l.name}</a>`).join("")}</nav>`;
     const body = `${langs}
 <p class="label">${esc(w.eyebrow)}</p>
 <h1>${w.h1}</h1>
