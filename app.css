@@ -469,8 +469,10 @@ html:is(:not([data-theme]), [data-theme="paper"]) .rx-shell .api-key-alert :is(s
   .rx-shell .actions { flex-direction: column-reverse; align-items: stretch; }
   .rx-shell .kbd-hint { display: none; }
   .rx-shell .metrics { grid-template-columns: minmax(0, 1fr); }
-  .rx-shell .fitem { grid-template-columns: minmax(0, 1fr) auto; }
   .rx-shell .fitem .fkind { grid-column: 1 / -1; }
+  /* The value gets the full width and wraps evenly at any character; "→ [REPLACEMENT]" follows on its own line. */
+  .rx-shell .fitem { grid-template-columns: auto minmax(0, 1fr); }
+  .rx-shell .fitem code { grid-column: 1 / -1; overflow-wrap: anywhere; word-break: break-all; }
   .rx-shell .analytics-label { flex-basis: 96px; }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -496,3 +498,8 @@ html:is(:not([data-theme]), [data-theme="paper"]) .rx-shell .api-key-alert :is(s
 .rx-shell .fgroup-count { margin-left: auto; }
 /* "Offrez-moi un café", "Kaffee spendieren" and "Invítame a un café" fit beside the chevron. */
 .rx-shell .coffee-row { gap: 7px; padding-right: 6px; }
+/* Phones: the avatar (or "Create account") sits on the brand row instead of a row of its own;
+   the breadcrumb is already hidden at this width. */
+@media (max-width: 540px) {
+  .rx-shell .page-bar { position: absolute; top: 0; right: 16px; z-index: 5; min-height: 0; padding: 0; border: 0; background: none; }
+}
