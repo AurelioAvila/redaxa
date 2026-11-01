@@ -94,6 +94,26 @@ html[data-theme]:not([data-theme="paper"]) :is(.rx-shell, .redaxa-landing) .ps-s
 :is(.rx-shell, .redaxa-landing) .ps-sub-message:empty { display: none; }
 :is(.rx-shell, .redaxa-landing) .ps-sub-message { margin: 12px 0 0; color: var(--theme-text); font-size: 13px; line-height: 1.5; }
 @media (max-width: 420px) { :is(.rx-shell, .redaxa-landing) .ps-sub-actions .ps-sub-link { margin-left: 0; } }
+/* Cancel, step 1: the optional reason, as one-tap tiles in two columns, and the comment it opens. */
+:is(.rx-shell, .redaxa-landing) .ps-sub-card .ps-sub-step { margin: 0 0 4px; color: var(--theme-muted); font: 650 11px/1.3 var(--font-text, inherit); letter-spacing: .06em; text-transform: uppercase; }
+:is(.rx-shell, .redaxa-landing) .ps-sub-reasons { padding-bottom: 14px; }
+/* A little wider than the other account sheets, so each reason fits on one line in two columns. */
+:is(.rx-shell, .redaxa-landing) .ps-account-sheet.ps-sub-sheet { width: min(540px, calc(100vw - 32px)); }
+:is(.rx-shell, .redaxa-landing) .ps-sub-reasons fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
+:is(.rx-shell, .redaxa-landing) .ps-sub-reasons legend { padding: 0; }
+:is(.rx-shell, .redaxa-landing) .ps-sub-reason-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 10px; }
+:is(.rx-shell, .redaxa-landing) .ps-sub-reason { position: relative; display: flex; align-items: center; gap: 9px; min-height: 36px; padding: 6px 10px; border: 1px solid var(--theme-line); border-radius: 8px; background: var(--theme-surface, var(--card)); color: var(--theme-text); font-size: 13px; line-height: 1.3; cursor: pointer; }
+:is(.rx-shell, .redaxa-landing) .ps-sub-reason:hover { border-color: var(--theme-strong); }
+:is(.rx-shell, .redaxa-landing) .ps-sub-reason input { flex: none; width: 15px; height: 15px; margin: 0; accent-color: var(--theme-accent); }
+:is(.rx-shell, .redaxa-landing) .ps-sub-reason:has(input:checked) { border-color: var(--theme-accent); box-shadow: 0 0 0 1px var(--theme-accent); }
+:is(.rx-shell, .redaxa-landing) .ps-sub-reason:has(input:focus-visible) { outline: 2px solid var(--theme-accent); outline-offset: 2px; }
+:is(.rx-shell, .redaxa-landing) .ps-sub-comment { position: relative; margin-top: 10px; }
+:is(.rx-shell, .redaxa-landing) .ps-sub-comment[hidden] { display: none; }
+:is(.rx-shell, .redaxa-landing) .ps-sub-comment label { display: block; margin-bottom: 6px; color: var(--theme-text); font-size: 13px; font-weight: 600; }
+:is(.rx-shell, .redaxa-landing) .ps-sub-comment textarea { display: block; box-sizing: border-box; width: 100%; min-height: 52px; padding: 8px 10px 18px; border: 1px solid var(--theme-line); border-radius: 8px; background: var(--theme-surface, var(--card)); color: var(--theme-text); font: 13px/1.45 var(--font-text, inherit); resize: vertical; }
+:is(.rx-shell, .redaxa-landing) .ps-sub-comment textarea:focus { border-color: var(--theme-accent); outline: 0; box-shadow: 0 0 0 1px var(--theme-accent); }
+:is(.rx-shell, .redaxa-landing) .ps-sub-count { position: absolute; right: 10px; bottom: 5px; color: var(--theme-muted); font-size: 11px; font-variant-numeric: tabular-nums; pointer-events: none; }
+@media (max-width: 480px) { :is(.rx-shell, .redaxa-landing) .ps-sub-reason-grid { grid-template-columns: minmax(0, 1fr); } }
 /* One type for every row of the account menu, links and buttons alike, and a
    close button large enough to hit. */
 .rx-shell .ps-account-menu .ps-menu-link, .redaxa-landing .ps-account-menu .ps-menu-link { font: 450 13.5px/1.3 var(--font-text, inherit); }

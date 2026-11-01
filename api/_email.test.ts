@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { formatChargedAmount, notifyOwnerOfSale, passwordChangedHtml, passwordChangedText, planLabel, sendWelcomeEmail, subscriptionHtml, subscriptionSubject, subscriptionText, welcomeHtml, welcomeText } from "./_email.js";
+import { cancellationNoticeEmail, formatChargedAmount, notifyOwnerOfCancellation, notifyOwnerOfSale, passwordChangedHtml, passwordChangedText, planLabel, sendWelcomeEmail, subscriptionHtml, subscriptionSubject, subscriptionText, welcomeHtml, welcomeText } from "./_email.js";
 
 const base = {
   to: "buyer@example.com",
@@ -277,6 +277,34 @@ assert.equal(formatChargedAmount(null, "eur", "month"), null);
     if (saved.key === undefined) delete process.env.RESEND_API_KEY; else process.env.RESEND_API_KEY = saved.key;
     if (saved.from === undefined) delete process.env.REDAXA_MAIL_FROM; else process.env.REDAXA_MAIL_FROM = saved.from;
     if (saved.s2g === undefined) delete process.env.SMTP2GO_API_KEY; else process.env.SMTP2GO_API_KEY = saved.s2g;
+  }
+}
+
+{
+  // Cancellation notice: one subject line with plan, end date and reference; reason label and comment in the body, escaped.
+  const base = { subscriptionId: "sub_123", customerId: "cus_1", plan: "pro" as const, interval: "year" as const, seats: 1, endsAt: "2027-03-12T10:00:00.000Z", trialing: false, email: "buyer@example.com", country: "it" };
+  const mail = cancellationNoticeEmail({ ...base, reason: "missing_features", comment: "<b>SSO</b> please" });
+  assert.equal(mail.subject, "Cancellation scheduled · Redaxa Pro — Yearly · ends 12 Mar 2027 · sub_123");
+  for (const part of ["Missing a feature I need", "&lt;b&gt;SSO&lt;/b&gt; please", "buyer@example.com", "Italy (IT)", "12 March 2027"]) assert.ok(mail.html.includes(part), part);
+  assert.ok(!mail.html.includes("<b>SSO"), "the comment is escaped");
+  assert.ok(mail.text.includes("Missing a feature I need") && mail.text.includes("<b>SSO</b> please"));
+  const bare = cancellationNoticeEmail({ ...base, plan: "business", seats: 3, interval: "month", reason: null, comment: null, email: null, country: null, trialing: true });
+  assert.ok(bare.subject.startsWith("Cancellation scheduled · Redaxa Business — Monthly · 3 seats · ends 12 Mar 2027"));
+  for (const part of ["No reason given", "Not on file", "free trial, never charged"]) assert.ok(bare.text.includes(part), part);
+
+  const keys: Array<string | undefined> = [];
+  const realFetch = globalThis.fetch;
+  const saved = { key: process.env.RESEND_API_KEY, from: process.env.REDAXA_MAIL_FROM };
+  globalThis.fetch = (async (_url: string, init: { body: string; headers: Record<string, string> }) => { keys.push(init.headers["Idempotency-Key"]); return new Response("{}", { status: 200 }); }) as typeof globalThis.fetch;
+  try {
+    process.env.RESEND_API_KEY = "re_test";
+    process.env.REDAXA_MAIL_FROM = "Redaxa <noreply@example.com>";
+    assert.equal(await notifyOwnerOfCancellation({ ...base, reason: "unused", comment: null }, "redaxa-cancel/sub_123/2027-03-12T10:00:00.000Z"), true);
+    assert.deepEqual(keys, ["redaxa-cancel/sub_123/2027-03-12T10:00:00.000Z"]);
+  } finally {
+    globalThis.fetch = realFetch;
+    if (saved.key === undefined) delete process.env.RESEND_API_KEY; else process.env.RESEND_API_KEY = saved.key;
+    if (saved.from === undefined) delete process.env.REDAXA_MAIL_FROM; else process.env.REDAXA_MAIL_FROM = saved.from;
   }
 }
 
