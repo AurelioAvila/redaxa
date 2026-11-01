@@ -369,7 +369,7 @@
 .repository-page .credential-response{padding:14px 16px;border:0;border-radius:6px;background:var(--theme-inset)}
 .repository-page .section-heading{position:relative;padding-block:12px}
 @media(max-width:740px){.repository-page .triage-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.repository-page .scan-card{padding:16px}}
-:is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-account-menu{padding:8px;width:276px;max-height:min(76vh,510px);border:0;border-radius:12px;background:var(--theme-surface);box-shadow:0 16px 45px #0006}
+:is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-account-menu{padding:8px;width:276px;max-height:min(calc(100vh - 96px),640px);border:0;border-radius:12px;background:var(--theme-surface);box-shadow:0 16px 45px #0006}
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-menu-link{padding:8px 10px;font-family:var(--rx-font-ui);font-size:13px;font-weight:450;min-height:33px;border-radius:6px}
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-menu-link span{display:none}
 :is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-account-menu-head{padding:8px 7px 13px;gap:10px}
@@ -1290,3 +1290,5 @@ html.rx-native .repository-page .download-app{display:none}
     transform: none;
   }
 }
+/* Short windows (820x600): the whole menu, Sign out included, fits without scrolling. */
+@media (max-height:640px){:is(.repository-page,.redaxa-workspace,.redaxa-landing) .ps-menu-link{min-height:28px;padding-block:4px}}

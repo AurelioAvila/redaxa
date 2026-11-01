@@ -88,12 +88,17 @@ html[data-theme]:not([data-theme="paper"]) :is(.rx-shell, .redaxa-landing) .ps-s
 :is(.rx-shell, .redaxa-landing) .ps-sub-actions { align-items: center; }
 :is(.rx-shell, .redaxa-landing) .ps-sub-actions .ps-sub-cancel, :is(.rx-shell, .redaxa-landing) .ps-sub-actions .ps-sub-cancel:first-child { border-color: color-mix(in srgb, var(--sub-alert) 55%, var(--theme-line)); background: transparent; color: var(--sub-alert); }
 :is(.rx-shell, .redaxa-landing) .ps-sub-actions .ps-sub-cancel:hover { background: color-mix(in srgb, var(--sub-alert) 8%, transparent); filter: none; }
+/* Step 2 of cancelling: Back on the left, then "Keep" as a plain choice (not the highlighted one) and the confirmation tinted like the other apps' danger button. */
+:is(.rx-shell, .redaxa-landing) .ps-sub-actions .ps-sub-back:first-child { margin-right: auto; border-color: var(--theme-strong); background: transparent; color: var(--theme-text); }
+:is(.rx-shell, .redaxa-landing) .ps-sub-actions .ps-sub-confirm { background: color-mix(in srgb, var(--sub-alert) 10%, transparent); }
 :is(.rx-shell, .redaxa-landing) .ps-sub-actions .ps-sub-link, :is(.rx-shell, .redaxa-landing) .ps-sub-actions .ps-sub-link:first-child { margin-left: auto; padding: 0 4px; border-color: transparent; background: transparent; color: var(--theme-text); text-decoration: underline; text-underline-offset: 3px; }
 :is(.rx-shell, .redaxa-landing) .ps-sub-actions button:disabled { opacity: .55; cursor: progress; }
 :is(.rx-shell, .redaxa-landing) .ps-sub-loading { margin: 0; padding: 22px 0; color: var(--theme-muted); font-size: 13.5px; }
 :is(.rx-shell, .redaxa-landing) .ps-sub-message:empty { display: none; }
 :is(.rx-shell, .redaxa-landing) .ps-sub-message { margin: 12px 0 0; color: var(--theme-text); font-size: 13px; line-height: 1.5; }
 @media (max-width: 420px) { :is(.rx-shell, .redaxa-landing) .ps-sub-actions .ps-sub-link { margin-left: 0; } }
+/* Phones: step 2 reads Back | Keep, then the cancellation across the full width. */
+@media (max-width: 480px) { :is(.rx-shell, .redaxa-landing) .ps-sub-actions:has(.ps-sub-back) { display: grid; grid-template-columns: 1fr 1fr; } :is(.rx-shell, .redaxa-landing) .ps-sub-actions .ps-sub-back:first-child { margin-right: 0; } :is(.rx-shell, .redaxa-landing) .ps-sub-actions .ps-sub-confirm { grid-column: 1 / -1; } }
 /* Cancel, step 1: the optional reason, as one-tap tiles in two columns, and the comment it opens. */
 :is(.rx-shell, .redaxa-landing) .ps-sub-card .ps-sub-step { margin: 0 0 4px; color: var(--theme-muted); font: 650 11px/1.3 var(--font-text, inherit); letter-spacing: .06em; text-transform: uppercase; }
 :is(.rx-shell, .redaxa-landing) .ps-sub-reasons { padding-bottom: 14px; }
