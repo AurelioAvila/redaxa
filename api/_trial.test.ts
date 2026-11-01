@@ -28,6 +28,7 @@ const { trialMail, TRIAL_WORDS } = await import("./_trial-email.js");
 const { default: billing, sendTrialReminders } = await import("./billing.js");
 const { default: webhook, syncSubscription } = await import("./stripe-webhook.js");
 const { default: account } = await import("./account.js");
+const { sendCheckoutRecovery } = await import("./_checkout-recovery.js");
 
 // --- One trial per mailbox: the same Gmail inbox written differently is one person.
 assert.equal(trial.normalizeEmail("  Mario.Rossi+redaxa@GoogleMail.com "), "mariorossi@gmail.com");
@@ -60,6 +61,8 @@ const db = {
   locked: false,
   refusal: null as string | null,
   trialTableMissing: false,
+  recovery: new Map<string, number>(),
+  recoveryTableMissing: false,
 };
 function resetDb(): void { db.accounts.clear(); db.claims = []; db.users.clear(); db.calls = []; }
 const json = (value: unknown, status = 200) => new Response(JSON.stringify(value), { status, headers: { "Content-Type": "application/json" } });
@@ -84,6 +87,14 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const row = db.accounts.get(id) ?? { user_id: id, stripe_customer_id: "cus_fixture", has_used_trial: false, subscription_status: null };
     db.accounts.set(id, row);
     return json(row);
+  }
+  if (url.includes("/rpc/claim_redaxa_checkout_recovery")) {
+    if (db.recoveryTableMissing) return json({ message: "function not found" }, 404);
+    const key = `${body?.p_user_id}:${body?.p_plan}`;
+    const last = db.recovery.get(key);
+    if (last !== undefined && Date.now() - last < 86_400_000) return json(false);
+    db.recovery.set(key, Date.now());
+    return json(true);
   }
   if (url.includes("/rpc/redaxa_trial_available") && db.trialTableMissing) return json({ message: "function not found" }, 404);
   if (url.includes("/rpc/redaxa_trial_available")) return json(!db.claims.some((c) => c.user_id === body?.p_user_id || c.email_hash === body?.p_email_hash));
@@ -129,6 +140,9 @@ s.checkout.sessions.create = async (params: Row) => { sessions.push(params); ret
 s.customers.create = async () => ({ id: "cus_fixture" });
 const listed = { open: [] as Row[], complete: [] as Row[] };
 s.checkout.sessions.list = async (params: { status: "open" | "complete" }) => ({ data: listed[params.status] });
+// Payment and setup failures read from the Events API by the recovery sweep; none unless a test adds them.
+let failures: Row[] = [];
+s.events.list = () => (async function* () { for (const event of failures) yield event; })();
 s.checkout.sessions.expire = async (id: string) => { expired.push(id); return {}; };
 s.customers.retrieve = async () => ({ id: "cus_fixture", email: "giulia@example.test", name: "Giulia Rossi" });
 s.paymentMethods.retrieve = async (id: string) => ({ id, card: { fingerprint: `fp_${id}` } });
@@ -182,6 +196,7 @@ resetDb();
   assert.equal(params.subscription_data.trial_period_days, 7);
   assert.equal(params.subscription_data.metadata.trial, "7d", "the webhook claims it like any policed trial");
   assert.equal(params.payment_method_collection, "always");
+  assert.equal(params.billing_address_collection, "required", "the full address, for Stripe's fraud screening");
   assert.equal(params.metadata.lang, undefined);
   assert.equal(res.body.trial, true);
   assert.equal(res.body.trialDays, 7);
@@ -468,7 +483,7 @@ resetDb(); clearMails();
   const cron = response();
   await billing({ method: "GET", headers: { "x-vercel-cron-schedule": "0 7 * * *", authorization: "Bearer cron-fixture-secret-0123456789" } }, cron as any);
   assert.equal(cron.statusCode, 200, JSON.stringify(cron.body));
-  assert.deepEqual(cron.body, { due: 1, sent: 1 });
+  assert.deepEqual(cron.body, { due: 1, sent: 1, recovery: { failed: 0, sent: 0 } });
   assert.equal(db.claims[0].reminded_for, new Date(trialEnd * 1000).toISOString());
   const reminder = mails().find((m) => m.startsWith("Ihre Testphase endet am 17. Oktober, Giulia."));
   assert.ok(reminder, mails().join("\n----\n"));
@@ -485,13 +500,13 @@ resetDb(); clearMails();
   const base = { to: "x@example.test", firstName: "Ana", plan: "business", interval: "yearly", seats: 3, days: 3, trialEnd, renewsOn: trialEnd + 365 * 86_400, endedOn: trialEnd,
     charge: { amount: 22200, currency: "eur" }, renew: { amount: 44970, currency: "eur", taxExclusive: true }, failure: "expired_card" as const };
   for (const lang of Object.keys(TRIAL_WORDS) as Array<keyof typeof TRIAL_WORDS>) {
-    for (const kind of ["trial_started", "trial_ending", "trial_paid", "payment_failed", "trial_ended", "trial_rejected"] as const) {
+    for (const kind of ["trial_started", "trial_ending", "trial_paid", "payment_failed", "trial_ended", "trial_rejected", "checkout_failed"] as const) {
       const mail = trialMail(kind, { ...base, lang });
       for (const part of [mail.subject, mail.text, mail.html]) {
         assert.doesNotMatch(part, /\bundefined\b|\bnull\b|NaN|\$\{|\{[a-z]+\}/, `${lang}/${kind}`);
       }
       assert.match(mail.html, new RegExp(`<html lang="${lang}"`), `${lang}/${kind}`);
-      if (kind !== "trial_rejected" && kind !== "trial_ended") assert.match(mail.text, /222/, `${lang}/${kind} quotes the charge`);
+      if (kind !== "trial_rejected" && kind !== "trial_ended" && kind !== "checkout_failed") assert.match(mail.text, /222/, `${lang}/${kind} quotes the charge`);
       assert.doesNotMatch(mail.text, /refund|rimbors|reembols|rembours|Rückerstatt/i, `${lang}/${kind} never mentions refunds`);
     }
   }
@@ -499,6 +514,68 @@ resetDb(); clearMails();
   const bare = trialMail("trial_ending", { to: "x@example.test", lang: "en", plan: "personal", interval: "monthly", seats: 1, days: 3, trialEnd });
   assert.match(bare.text, /the plan's price is charged/);
   assert.doesNotMatch(bare.text, /First charge:/);
+}
+
+// --- A checkout payment that failed or was blocked: one email, with the way back.
+resetDb(); clearMails();
+{
+  const U = "6f1c2a3b-4d5e-4f60-8a71-92b3c4d5e6f7";
+  newUser(U, "lena@example.test", { stripe_customer_id: "cus_lena", subscription_status: null });
+  const now = Date.now();
+  const at = Math.floor(now / 1000);
+  const session = (id: string, extra: Row = {}) => ({ id, mode: "subscription", status: "expired", created: at - 2 * 3600, customer: "cus_lena",
+    metadata: { redaxa_user_id: U, plan: "personal", interval: "yearly", seats: "1", lang: "it" }, ...extra });
+  let open: Row[] = [session("cs_lena")];
+  const saved = s.checkout.sessions.list;
+  const asked: Row[] = [];
+  s.checkout.sessions.list = async (params: Row) => { asked.push(params); return { data: open }; };
+  const blocked = { type: "payment_intent.payment_failed", data: { object: { id: "pi_blocked", customer: "cus_lena", description: "Subscription creation", created: at - 3600 } } };
+  failures = [blocked];
+
+  assert.deepEqual(await sendCheckoutRecovery(now), { failed: 1, sent: 1 });
+  const sent = mails();
+  assert.equal(sent.length, 1);
+  assert.match(sent[0], /^Il tuo pagamento non è andato a buon fine./, "in the language of the checkout");
+  assert.match(sent[0], /Apple Pay, Google Pay o Link/);
+  assert.match(sent[0], /Piano: Pro — Annuale/);
+  assert.match(sent[0], /dashboard.html#plans/, "the button goes back to the plans");
+  assert.doesNotMatch(sent[0], /rischio|risk|blocked|bloccato/i, "never tells a buyer they looked risky");
+  const window = asked[0].created as { gte: number; lte: number };
+  assert.equal(window.lte, at - 3600, "only checkouts opened before the attempt");
+
+  // The same failure seen by the next run, or another attempt the same day: no second email.
+  failures = [blocked, { ...blocked, data: { object: { ...blocked.data.object, id: "pi_again" } } }];
+  assert.deepEqual(await sendCheckoutRecovery(now + 6 * 3600_000), { failed: 2, sent: 0 });
+  assert.equal(mails().length, 1);
+
+  // Never: a renewal, a checkout that went through, an account that subscribed since,
+  // a checkout that is not a Redaxa plan (tips carry no account), or with no claim recorded.
+  clearMails(); db.recovery.clear();
+  failures = [{ type: "payment_intent.payment_failed", data: { object: { id: "pi_renewal", customer: "cus_lena", description: "Subscription update", created: at - 3600 } } }];
+  assert.deepEqual(await sendCheckoutRecovery(now), { failed: 0, sent: 0 });
+  failures = [blocked];
+  open = [session("cs_paid", { status: "complete" })];
+  assert.deepEqual(await sendCheckoutRecovery(now), { failed: 0, sent: 0 });
+  open = [session("cs_tip", { mode: "payment", metadata: { tip_product: "redaxa" } })];
+  assert.deepEqual(await sendCheckoutRecovery(now), { failed: 0, sent: 0 });
+  open = [session("cs_lena")];
+  db.accounts.get(U)!.subscription_status = "active";
+  assert.deepEqual(await sendCheckoutRecovery(now), { failed: 1, sent: 0 });
+  db.accounts.get(U)!.subscription_status = "canceled";
+  db.recoveryTableMissing = true;
+  assert.deepEqual(await sendCheckoutRecovery(now), { failed: 1, sent: 0 }, "no table yet: nothing is sent");
+  db.recoveryTableMissing = false;
+  assert.equal(mails().length, 0);
+
+  // A trial checkout whose card could not be set up is the same failure, in English by default.
+  failures = [{ type: "setup_intent.setup_failed", data: { object: { id: "seti_lena", customer: "cus_lena", created: at - 3600 } } }];
+  open = [session("cs_trial", { metadata: { redaxa_user_id: U, plan: "business", interval: "monthly", seats: "2" } })];
+  assert.deepEqual(await sendCheckoutRecovery(now), { failed: 1, sent: 1 });
+  assert.match(mails()[0], /^Your payment didn't go through./);
+  assert.match(mails()[0], /Plan: Business — Monthly, 2 users/);
+  assert.match(mails()[0], /Charged: Nothing/);
+  s.checkout.sessions.list = saved;
+  failures = [];
 }
 
 rmSync(sinkDir, { recursive: true, force: true });

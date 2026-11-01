@@ -5,6 +5,7 @@ import {
   LEGACY_TRIAL_DAYS, LEGACY_TRIAL_MARK, LANGUAGES, TRIAL_DAYS, TRIAL_MARK, dueReminders, isLive, isOurTrial, markReminded, publicPrices,
   legacyTrialEligible, trialEligible, upcomingCharge, language as languageOf,
 } from "./_trial.js";
+import { sendCheckoutRecovery } from "./_checkout-recovery.js";
 import { sendTrialMail } from "./_trial-email.js";
 import { SubscriptionError, setCancelAtPeriodEnd, subscriptionState, type SubscriptionDeps } from "./_subscription.js";
 
@@ -14,7 +15,8 @@ type ResponseLike = { setHeader(name: string, value: string | string[]): void; s
 // Consolidated with the portal action (Vercel's Hobby plan caps a deployment
 // at 12 serverless functions): ?action=portal opens the Stripe billing
 // portal, GET ?action=promo publishes the current offer, GET ?action=prices
-// the plan prices as Stripe has them, the cron sweep sends trial reminders,
+// the plan prices as Stripe has them, the cron sweep sends trial reminders
+// and the one "your payment didn't go through" email (_checkout-recovery.ts),
 // anything else starts a checkout session.
 const priceFor = (plan: string, interval: string): string | null => {
   const prices: Record<string, string | undefined> = {
@@ -197,7 +199,10 @@ export default async function handler(request: RequestLike, response: ResponseLi
     try {
       // Also makes the portal configuration exist before a customer needs it.
       await portalConfiguration();
-      response.status(200).json(await sendTrialReminders());
+      const reminders = await sendTrialReminders();
+      // Never in the way of the reminders: a failure here is logged and the sweep reports null.
+      const recovery = await sendCheckoutRecovery().catch((error: unknown) => { console.error("checkout recovery sweep failed:", String(error).slice(0, 300)); return null; });
+      response.status(200).json({ ...reminders, recovery });
     } catch (error) {
       console.error("trial reminder sweep failed:", String(error).slice(0, 300));
       response.status(500).json({ error: "Reminder sweep failed." });
@@ -297,6 +302,10 @@ export default async function handler(request: RequestLike, response: ResponseLi
         // Payments on (the newer default), which rejects an explicit list
         // and picks methods itself.
         line_items: [{ price, quantity: seats }],
+        // The full billing address, not only the country Managed Payments asks
+        // for in most of Europe: more for Stripe's fraud screening to match, so
+        // fewer genuine buyers blocked. Accepted with Managed Payments.
+        billing_address_collection: "required",
         // Checkout refuses promotion codes alongside a discount.
         ...(promo
           ? { discounts: [{ coupon: promo.coupon }], ...(promo.expiresAt ? { expires_at: promo.expiresAt } : {}) }
