@@ -2,7 +2,7 @@ import type { Finding, FindingSeverity, ScanOptions } from "./scanner.js";
 import type { AccountState } from "./auth.js";
 import { enableAppShell } from "./pwa.js";
 import { track } from "./growth.js";
-import { enableDesktopCompanion, openSupportEmail, shellCopyByLanguage, syncTrayLanguage } from "./desktop.js";
+import { enableDesktopCompanion, mountCoffee, openSupportEmail, shellCopyByLanguage, syncTrayLanguage } from "./desktop.js";
 import { PROMO_WORDS_EN, euro, mountPromo, promoPriceHtml, type PromoView, type PromoWords } from "./promo.js";
 import { TRIAL_BANNER, TRIAL_UI, chargeDate, choiceCopy, fillTrial, keepArrow, loadPrices, longDay, planView, priceFor, type PriceList, type Tier } from "./trial.js";
 
@@ -909,8 +909,8 @@ export function mountDashboard(): void {
     required<HTMLElement>("#free-plan-price").textContent = euro(0, preferences.language);
     const proAmount = listAmount("personal", yearly ? 7990 : 799);
     const businessAmount = listAmount("business", yearly ? 14990 : 1499);
-    planCard("personal").querySelector(".plan-price")!.innerHTML = pro ? promoPriceHtml(pro, promoWords, preferences.language) : yearly ? regularPrice(proAmount, promoWords.perYear, Math.round(proAmount / 12)) : regularPrice(proAmount, promoWords.perMonth);
-    planCard("business").querySelector(".plan-price")!.innerHTML = business ? promoPriceHtml(business, promoWords, preferences.language) : yearly ? regularPrice(businessAmount, promoWords.perUserYear, Math.round(businessAmount / 12)) : regularPrice(businessAmount, promoWords.perUserMonth);
+    planCard("personal").querySelector(".plan-price")!.innerHTML = pro ? promoPriceHtml(pro, promoWords, preferences.language, promoView?.promo?.endsAt) : yearly ? regularPrice(proAmount, promoWords.perYear, Math.round(proAmount / 12)) : regularPrice(proAmount, promoWords.perMonth);
+    planCard("business").querySelector(".plan-price")!.innerHTML = business ? promoPriceHtml(business, promoWords, preferences.language, promoView?.promo?.endsAt) : yearly ? regularPrice(businessAmount, promoWords.perUserYear, Math.round(businessAmount / 12)) : regularPrice(businessAmount, promoWords.perUserMonth);
     renderPlanChoice();
   };
   plansView.querySelectorAll<HTMLElement>("[data-billing]").forEach(button => button.addEventListener("click", () => { billingInterval = button.dataset.billing === "monthly" ? "monthly" : "yearly"; renderBilling(); }));
@@ -1239,6 +1239,7 @@ export function mountDashboard(): void {
   document.addEventListener("redaxa:need-upgrade", () => { if (location.hash === "#plans") showView("#plans", true); else location.hash = "#plans"; });
   document.addEventListener("redaxa:auth-ready", () => { if (currentView === "settings") void loadApiKeys(); });
   required<HTMLButtonElement>("#help-link").addEventListener("click", openSupportEmail);
+  mountCoffee();
 
   const languageSelect = required<HTMLSelectElement>("#language");
   const scanModeSelect = required<HTMLSelectElement>("#scan-mode");

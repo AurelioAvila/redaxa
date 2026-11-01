@@ -3,8 +3,9 @@ import type { DependencyReport, DependencyAdvisory } from './repository-deps.js'
 import { aggregateRepositoryReport, reportToText, apiKeyCandidates, type FindingGroup } from './repository-report.js';
 import { repositoryRequest, repositoryProgress, nativeRepositoryEngine, type AccountState } from './auth.js';
 import { repositoryExample } from './repository-example.js';
-import { applyShellLanguage, openInSystemBrowser, openSupportEmail } from './desktop.js';
+import { applyShellLanguage, mountCoffee, openInSystemBrowser, openSupportEmail } from './desktop.js';
 import { loadPrices } from './trial.js';
+mountCoffee();
 applyShellLanguage();
 document.getElementById('help-link')?.addEventListener('click', openSupportEmail);
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;

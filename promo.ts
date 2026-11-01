@@ -216,12 +216,22 @@ export function mountPromo(place: ((banner: HTMLElement) => void) | null, words:
 
 /** Struck reference, offer price, unit, the real percentage and what renews,
  *  as markup for a price slot. Every value is formatted here from numbers. */
-export function promoPriceHtml(offer: PromoOffer, words: PromoWords, lang = "en"): string {
+export function promoPriceHtml(offer: PromoOffer, words: PromoWords, lang = "en", endsAt?: string): string {
   const escape = (value: string) => value.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
   const v = variant(offer);
   const then = words[`then${v}`].replace("{price}", euro(offer.regular, lang));
+  // The discount and its deadline sit on the price itself (drawn above it by
+  // plans.css), not only in the banner: the badge is the real, rounded-down
+  // reduction from the struck price, and appears only with a live offer.
+  const when = endsAt ? `<span class="rx-deal-when"><b>${escape(words.kicker)}</b><span>${escape(words.ends.replace("{date}", promoShortEnd(endsAt, lang)).replace(/\.$/, ""))}</span></span>` : "";
   return `<s class="rx-was">${euro(offer.reference, lang)}</s> ${euro(offer.price, lang)} <small>${escape(words[`per${v}`])}</small>`
-    + `<span class="rx-off">−${percentLabel(promoPercent(offer), lang)}</span><small class="price-equiv">${escape(then)}</small>`;
+    + `<span class="rx-deal"><span class="rx-off">−${percentLabel(promoPercent(offer), lang)}</span>${when}</span><small class="price-equiv">${escape(then)}</small>`;
+}
+
+/** "6 Nov, 23:59 CET": the short form of promoEndLabel for the plan cards. */
+function promoShortEnd(endsAt: string, lang: string): string {
+  return new Intl.DateTimeFormat(lang === "en" ? "en-GB" : lang, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZoneName: "short" })
+    .format(new Date(Date.parse(endsAt) - 60_000));
 }
 
 export const PROMO_WORDS_EN: PromoWords = {

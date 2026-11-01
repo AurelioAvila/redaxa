@@ -119,6 +119,28 @@ html.rx-native .rx-shell .brand { display: none; }
 .rx-shell .side-fill a.is-trial:hover { text-decoration: none; filter: brightness(1.06); }
 .rx-shell .nav-foot { gap: 2px; overflow: visible; }
 
+/* "Buy me a coffee" (desktop.ts mountCoffee): a nav row at rest, a stepper
+   and one outlined button when unfolded. Quieter than the plan entry above. */
+.rx-shell .coffee-row .ico { font-size: 14px; line-height: 1; transition: transform .18s var(--ease); }
+.rx-shell .coffee-row:hover .ico { transform: rotate(-8deg) scale(1.08); }
+.rx-shell .coffee-chevron { width: 12px; height: 12px; flex: 0 0 12px; margin-left: auto; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; opacity: .55; transition: transform .2s var(--ease); }
+.rx-shell .coffee-row[aria-expanded="true"] { color: var(--theme-text); }
+.rx-shell .coffee-row[aria-expanded="true"] .coffee-chevron { transform: rotate(180deg); }
+.rx-shell .coffee-reveal { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .26s var(--ease); }
+.rx-shell .coffee-reveal > div { min-height: 0; overflow: hidden; opacity: 0; transform: translateY(-4px); transition: opacity .18s var(--ease), transform .18s var(--ease); }
+.rx-shell .coffee-reveal[data-open="true"] { grid-template-rows: 1fr; }
+/* The fade lands after the height has opened, not through it. */
+.rx-shell .coffee-reveal[data-open="true"] > div { opacity: 1; transform: none; transition-delay: 60ms; }
+.rx-shell .coffee-stepper { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 6px 8px 0; }
+.rx-shell .coffee-step { display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 1px solid var(--theme-line); border-radius: var(--r-sm); background: transparent; color: var(--theme-muted); font: 500 15px/1 var(--font-text); cursor: pointer; transition: border-color .12s var(--ease), color .12s var(--ease), transform .12s var(--ease); }
+.rx-shell .coffee-step:hover:not(:disabled) { border-color: color-mix(in srgb, var(--theme-accent) 50%, var(--theme-line)); color: var(--theme-text); }
+.rx-shell .coffee-step:active:not(:disabled) { transform: scale(.9); }
+.rx-shell .coffee-step:disabled { opacity: .4; cursor: default; }
+.rx-shell .coffee-count { color: var(--theme-text); font: 650 13px/1 var(--font-text); font-variant-numeric: tabular-nums; animation: coffee-pop .18s var(--ease) both; }
+@keyframes coffee-pop { from { transform: scale(.82); opacity: .4; } to { transform: none; opacity: 1; } }
+.rx-shell .coffee-cta { display: block; width: calc(100% - 16px); min-height: 32px; margin: 8px 8px 4px; padding: 6px 10px; border: 1px solid color-mix(in srgb, var(--theme-accent) 45%, var(--theme-line)); border-radius: var(--r-sm); background: transparent; color: var(--theme-text); font: 650 12.5px/1.25 var(--font-text); text-wrap: balance; cursor: pointer; transition: background-color .12s var(--ease), border-color .12s var(--ease); }
+.rx-shell .coffee-cta:hover:not(:disabled) { border-color: var(--theme-accent); background: color-mix(in srgb, var(--theme-accent) 10%, transparent); }
+
 /* Desktop title bar: its left cell continues the rail. */
 .rx-shell .rx-titlebar { background: var(--theme-bg); border-bottom: 1px solid var(--theme-line); }
 .rx-shell .rx-window-title { background: var(--rail-bg); border-right-color: var(--theme-line); }
@@ -431,6 +453,10 @@ html:is(:not([data-theme]), [data-theme="paper"]) .rx-shell .api-key-alert :is(s
   .rx-shell .nav-item.active::before { left: 50%; top: auto; bottom: -1px; width: 18px; height: 3px; border-radius: 3px 3px 0 0; transform: translateX(-50%); }
   .rx-shell .side-foot { flex: 1 1 100%; padding: 0; border: 0; }
   .rx-shell .nav-foot { flex-direction: row; flex-wrap: wrap; overflow: visible; }
+  /* The coffee row sits in the strip like its neighbours; its stepper opens on a line of its own. */
+  .rx-shell .coffee { display: contents; }
+  .rx-shell .coffee-reveal { flex: 1 1 100%; }
+  .rx-shell .coffee-reveal > div { max-width: 300px; }
   .rx-shell .page-bar { position: static; }
   .rx-shell .crumbs { display: none; }
   .rx-shell .view { padding-top: 20px; }

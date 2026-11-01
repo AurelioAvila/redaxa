@@ -36,23 +36,32 @@
 
 /* Room above the cards for the ribbon that sits across the Pro card's edge. */
 .plan-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: stretch; margin: 0; padding-top: 12px; }
-.plan-card { position: relative; display: flex; flex-direction: column; gap: 10px; min-width: 0; height: auto; padding: 22px; border: 1px solid var(--theme-line); border-radius: 16px; background: var(--theme-surface); text-align: left; overflow: visible; transform: none; transition: border-color .12s ease; }
-.plan-card:hover { transform: none; }
-.plan-card.featured { border-color: color-mix(in srgb, var(--theme-accent) 70%, var(--theme-line)); background: linear-gradient(180deg, color-mix(in srgb, var(--theme-accent) 7%, var(--theme-surface)), var(--theme-surface) 42%); box-shadow: 0 0 0 1px color-mix(in srgb, var(--theme-accent) 25%, transparent), 0 14px 34px -22px color-mix(in srgb, var(--theme-accent) 70%, transparent); }
+.plan-card { position: relative; display: flex; flex-direction: column; gap: 10px; min-width: 0; height: auto; padding: 24px; border: 1px solid var(--theme-line); border-radius: 18px; background: var(--theme-surface); box-shadow: 0 1px 2px rgb(0 0 0 / .05), 0 16px 32px -26px rgb(0 0 0 / .35); text-align: left; overflow: visible; transform: none; transition: border-color .12s ease, box-shadow .12s ease; }
+.plan-card:hover { transform: none; border-color: color-mix(in srgb, var(--theme-text) 22%, var(--theme-line)); }
+/* The recommended plan stands forward: accent edge, warmer fill, deeper shadow. */
+.plan-card.featured, .plan-card.featured:hover { border-color: var(--theme-accent); background: linear-gradient(180deg, color-mix(in srgb, var(--theme-accent) 11%, var(--theme-surface)), var(--theme-surface) 48%); box-shadow: 0 0 0 1px var(--theme-accent), 0 26px 50px -26px color-mix(in srgb, var(--theme-accent) 75%, transparent), 0 2px 6px rgb(0 0 0 / .06); }
 /* The same ribbon as PC Tweaker's plan cards, across the top edge of the highlighted plan. */
-.plan-ribbon { position: absolute; top: -12px; left: 50%; display: inline-flex; align-items: center; gap: 6px; padding: 5px 13px; border-radius: 999px; background: var(--theme-accent); color: var(--theme-ink); box-shadow: 0 6px 18px -8px var(--theme-accent); font: 700 11px/1.2 var(--font-text); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; transform: translateX(-50%); }
+.plan-ribbon { position: absolute; top: -13px; left: 50%; display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 999px; background: var(--theme-accent); color: var(--theme-ink); box-shadow: 0 6px 18px -8px var(--theme-accent); font: 700 11px/1.2 var(--font-text); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; transform: translateX(-50%); }
 .plan-ribbon svg { width: 12px; height: 12px; fill: currentColor; }
 
 .plan-card.is-current { border-color: color-mix(in srgb, var(--theme-text) 34%, var(--theme-line)); }
 .plan-top { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-height: 28px; }
-.plan-top :is(h2, h3) { margin: 0 auto 0 0; color: var(--theme-text); font: 600 21px/1.2 var(--font-display); }
+.plan-top :is(h2, h3) { margin: 0 auto 0 0; color: var(--theme-text); font: 650 22px/1.2 var(--font-display); }
 .plan-tagline { margin: -4px 0 0; color: var(--theme-accent); font-size: 12.5px; font-weight: 650; }
 .plan-desc { margin: 0; min-height: 3.2em; color: var(--theme-muted); font-size: 13.5px; line-height: 1.6; }
-.plan-price { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 7px; min-height: 0; margin-top: 4px; color: var(--theme-text); font: 600 32px/1.1 var(--font-display); font-variant-numeric: tabular-nums; }
-.plan-price small { color: var(--theme-muted); font: 500 13px/1.3 var(--font-text); }
-.plan-price .price-equiv { flex-basis: 100%; margin-top: 2px; font-size: 12.5px; }
-.plan-price .rx-was { color: var(--theme-muted); font-size: 18px; font-weight: 500; text-decoration-thickness: 1.5px; }
-.plan-price .rx-off { align-self: center; padding: 3px 7px; border: 1px solid color-mix(in srgb, #ff6a3d 55%, var(--theme-line)); border-radius: 999px; background: color-mix(in srgb, #ff6a3d 16%, transparent); color: var(--theme-text); font: 700 12px/1 var(--font-text); }
+/* The price is the hero of every card: the largest, heaviest text in it. */
+.plan-price { display: flex; align-items: baseline; align-content: flex-start; flex-wrap: wrap; gap: 6px 8px; min-height: 0; margin-top: 4px; color: var(--theme-text); font: 750 42px/1.05 var(--font-display); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.plan-price small { color: var(--theme-muted); font: 550 14px/1.3 var(--font-text); letter-spacing: 0; }
+.plan-price .price-equiv { flex-basis: 100%; margin-top: 2px; font-size: 13px; font-weight: 500; }
+.plan-price .rx-was { color: var(--theme-muted); font: 500 20px/1.2 var(--font-display); letter-spacing: 0; text-decoration-thickness: 2px; text-decoration-color: color-mix(in srgb, var(--rx-promo) 75%, var(--theme-muted)); }
+/* A live offer (promo.ts promoPriceHtml): one bold badge with the real
+   reduction, and the offer's name and deadline beside it, drawn above the
+   price. White on this orange is 5.2:1, on every palette. */
+.plans-page, .rx-shell { --rx-promo: #c2410c; }
+.plan-price .rx-deal { order: -1; display: flex; flex-basis: 100%; align-items: center; gap: 10px; min-height: 38px; margin-bottom: 2px; letter-spacing: 0; }
+.plan-price .rx-off { flex: none; margin: 0; padding: 7px 11px 6px; border: 0; border-radius: 10px; background: var(--rx-promo); color: #fff; font: 800 22px/1 var(--font-display); letter-spacing: -.01em; box-shadow: 0 8px 18px -10px var(--rx-promo); }
+.plan-price .rx-deal-when { display: grid; gap: 2px; min-width: 0; color: var(--theme-muted); font: 500 12.5px/1.3 var(--font-text); }
+.plan-price .rx-deal-when b { color: var(--rx-promo-text, var(--rx-promo)); font-weight: 750; letter-spacing: .04em; text-transform: uppercase; font-size: 11.5px; }
 .plan-note { margin: 0; color: var(--theme-muted); font-size: 12.5px; }
 .plan-note:empty { display: none; }
 .seats-row { margin: 2px 0 0; }
@@ -65,6 +74,31 @@
 .plan-card > .seats-row { order: 3; margin-top: auto; padding-top: 14px; }
 .plan-card > .plan-actions { order: 4; margin-top: auto; padding-top: 14px; }
 .plan-card > .seats-row + .plan-actions { margin-top: 0; padding-top: 8px; }
+/* Where subgrid exists, the cards share one set of rows: every plan's name,
+   description, price, benefits and button sit on the same lines across the
+   row, whichever card has a tagline, a longer description or a seat picker.
+   Each part keeps its row, so a part a card lacks leaves its row empty. */
+@supports (grid-template-rows: subgrid) {
+  .plan-grid { row-gap: 0; }
+  .plan-card { display: grid; grid-template-rows: subgrid; grid-row: span 9; row-gap: 0; margin-bottom: 16px; }
+  .plan-card > .plan-top { grid-row: 1; }
+  .plan-card > .plan-tagline { grid-row: 2; margin: 4px 0 0; }
+  .plan-card > .plan-desc { grid-row: 3; margin-top: 10px; }
+  .plan-card > .plan-price { grid-row: 4; margin-top: 14px; }
+  .plan-card > .plan-note { grid-row: 5; margin-top: 6px; }
+  .plan-card > .rx-benefits { grid-row: 6; margin-top: 16px; }
+  .plan-card > .plan-footnote { grid-row: 7; margin-top: 14px; }
+  .plan-card > .seats-row { grid-row: 8; margin-top: 0; padding-top: 18px; align-self: end; }
+  .plan-card > .plan-actions { grid-row: 9; align-content: start; margin-top: 0; padding-top: 14px; }
+  .plan-card > .seats-row + .plan-actions { padding-top: 14px; }
+  /* The last card's spacing is the grid's own bottom edge. */
+  .plan-grid { margin-bottom: -16px; }
+}
+/* Three across, an offer on some cards only (never on Free): the others keep
+   the badge's line empty, so every price still sits on one line. */
+@container plans (min-width: 880px) {
+  .plan-grid:has(.rx-deal) .plan-price:not(:has(.rx-deal))::before { content: ""; order: -1; flex-basis: 100%; height: 38px; margin-bottom: 2px; }
+}
 .plan-actions > * { width: 100%; }
 /* One plan button for every product: full width, 42 px, 8 px corners. */
 .plan-card .plan-actions > :is(button, a) { min-height: 42px; border-radius: 8px; font-size: 13.5px; font-weight: 650; }
@@ -79,6 +113,9 @@
    alternative, then what each one charges, from the prices Stripe holds. */
 .plans-page, .rx-shell { --rx-alert: var(--danger, #ff9ca7); }
 html:is(:not([data-theme]), [data-theme="paper"]) .plans-page, html:is(:not([data-theme]), [data-theme="paper"]) .rx-shell { --rx-alert: #b4232f; }
+/* The offer's name in text: the badge orange on light pages, a lighter one on dark palettes. */
+.plans-page, .rx-shell { --rx-promo-text: #ff9a6b; }
+html:is(:not([data-theme]), [data-theme="paper"]) .plans-page, html:is(:not([data-theme]), [data-theme="paper"]) .rx-shell { --rx-promo-text: #b23c0b; }
 .plan-card .plan-actions > .plan-now { border: 1px solid var(--theme-strong); background: transparent; color: var(--theme-text); }
 .plan-card .plan-actions > .plan-now:hover:not(:disabled) { background: var(--theme-hover); }
 .plan-choice-line, .plan-choice-note { margin: 2px 0 0; color: var(--theme-muted); font-size: 12.5px; line-height: 1.55; text-wrap: pretty; }
@@ -168,3 +205,5 @@ html:is(:not([data-theme]), [data-theme="paper"]) .plans-page, html:is(:not([dat
 /* The shared Halloween banner is drawn for dark surfaces; on the light Paper
    theme it keeps its night palette instead of washing out. */
 html[data-theme="paper"] .hw-offer { --hw-surface: #181330; --hw-text: #f4f3ef; --hw-muted: #b5acd6; --hw-line: #2d2650; }
+/* The site puts the switch right under its lede: give it the same breathing room as the workspace. */
+.plans-page > .lede + .billing-switch { margin-top: 14px; }

@@ -119,22 +119,18 @@ export function enableDesktopCompanion(onPrompt: (value: string) => void): void 
 // so their labels live here, where both pages already import from.
 export type ShellLanguage = "en" | "it" | "es" | "fr" | "de";
 export const shellCopyByLanguage: Record<ShellLanguage, Record<string, string>> = {
-  en: { brandTag: "Check before you send", groupProtect: "Protect", groupConfigure: "Configure", navCheck: "Check text", navRepository: "Repository check", navActivity: "Activity", navTerms: "Protected terms", navSettings: "Settings", navAccount: "Account & team", navHelp: "Help & support", navPlans: "Plans & pricing", crumbWorkspace: "Workspace", repoNoteTitle: "Values stay hidden", repoNoteText: "Matched values are masked until you choose to reveal them." },
-  it: { brandTag: "Controlla prima di inviare", groupProtect: "Proteggi", groupConfigure: "Configura", navCheck: "Controlla testo", navRepository: "Controllo repository", navActivity: "Attività", navTerms: "Termini protetti", navSettings: "Impostazioni", navAccount: "Account e team", navHelp: "Aiuto e supporto", navPlans: "Piani e prezzi", crumbWorkspace: "Spazio di lavoro", repoNoteTitle: "I valori restano nascosti", repoNoteText: "I valori trovati sono mascherati finché non scegli di mostrarli." },
-  es: { brandTag: "Revisa antes de enviar", groupProtect: "Proteger", groupConfigure: "Configurar", navCheck: "Revisar texto", navRepository: "Revisión de repositorios", navActivity: "Actividad", navTerms: "Términos protegidos", navSettings: "Ajustes", navAccount: "Cuenta y equipo", navHelp: "Ayuda y soporte", navPlans: "Planes y precios", crumbWorkspace: "Espacio de trabajo", repoNoteTitle: "Los valores quedan ocultos", repoNoteText: "Los valores encontrados se enmascaran hasta que decides mostrarlos." },
-  fr: { brandTag: "Vérifiez avant d’envoyer", groupProtect: "Protéger", groupConfigure: "Configurer", navCheck: "Vérifier un texte", navRepository: "Vérification de dépôt", navActivity: "Activité", navTerms: "Termes protégés", navSettings: "Réglages", navAccount: "Compte et équipe", navHelp: "Aide et support", navPlans: "Offres et tarifs", crumbWorkspace: "Espace de travail", repoNoteTitle: "Les valeurs restent masquées", repoNoteText: "Les valeurs trouvées restent masquées tant que vous ne choisissez pas de les afficher." },
-  de: { brandTag: "Erst prüfen, dann senden", groupProtect: "Schützen", groupConfigure: "Einrichten", navCheck: "Text prüfen", navRepository: "Repository-Prüfung", navActivity: "Aktivität", navTerms: "Geschützte Begriffe", navSettings: "Einstellungen", navAccount: "Konto & Team", navHelp: "Hilfe und Support", navPlans: "Tarife & Preise", crumbWorkspace: "Arbeitsbereich", repoNoteTitle: "Werte bleiben verborgen", repoNoteText: "Gefundene Werte bleiben maskiert, bis Sie sie bewusst einblenden." }
+  en: { brandTag: "Check before you send", groupProtect: "Protect", groupConfigure: "Configure", navCheck: "Check text", navRepository: "Repository check", navActivity: "Activity", navTerms: "Protected terms", navSettings: "Settings", navAccount: "Account & team", navHelp: "Help & support", navPlans: "Plans & pricing", crumbWorkspace: "Workspace", repoNoteTitle: "Values stay hidden", repoNoteText: "Matched values are masked until you choose to reveal them.", coffeeNav: "Buy me a coffee", coffeeCta: "Fuel the next release", coffeeFewer: "One fewer coffee", coffeeMore: "One more coffee" },
+  it: { brandTag: "Controlla prima di inviare", groupProtect: "Proteggi", groupConfigure: "Configura", navCheck: "Controlla testo", navRepository: "Controllo repository", navActivity: "Attività", navTerms: "Termini protetti", navSettings: "Impostazioni", navAccount: "Account e team", navHelp: "Aiuto e supporto", navPlans: "Piani e prezzi", crumbWorkspace: "Spazio di lavoro", repoNoteTitle: "I valori restano nascosti", repoNoteText: "I valori trovati sono mascherati finché non scegli di mostrarli.", coffeeNav: "Offrimi un caffè", coffeeCta: "Sostieni la prossima versione", coffeeFewer: "Un caffè in meno", coffeeMore: "Un caffè in più" },
+  es: { brandTag: "Revisa antes de enviar", groupProtect: "Proteger", groupConfigure: "Configurar", navCheck: "Revisar texto", navRepository: "Revisión de repositorios", navActivity: "Actividad", navTerms: "Términos protegidos", navSettings: "Ajustes", navAccount: "Cuenta y equipo", navHelp: "Ayuda y soporte", navPlans: "Planes y precios", crumbWorkspace: "Espacio de trabajo", repoNoteTitle: "Los valores quedan ocultos", repoNoteText: "Los valores encontrados se enmascaran hasta que decides mostrarlos.", coffeeNav: "Invítame a un café", coffeeCta: "Apoya la próxima versión", coffeeFewer: "Un café menos", coffeeMore: "Un café más" },
+  fr: { brandTag: "Vérifiez avant d’envoyer", groupProtect: "Protéger", groupConfigure: "Configurer", navCheck: "Vérifier un texte", navRepository: "Vérification de dépôt", navActivity: "Activité", navTerms: "Termes protégés", navSettings: "Réglages", navAccount: "Compte et équipe", navHelp: "Aide et support", navPlans: "Offres et tarifs", crumbWorkspace: "Espace de travail", repoNoteTitle: "Les valeurs restent masquées", repoNoteText: "Les valeurs trouvées restent masquées tant que vous ne choisissez pas de les afficher.", coffeeNav: "Offrez-moi un café", coffeeCta: "Soutenir la prochaine version", coffeeFewer: "Un café de moins", coffeeMore: "Un café de plus" },
+  de: { brandTag: "Erst prüfen, dann senden", groupProtect: "Schützen", groupConfigure: "Einrichten", navCheck: "Text prüfen", navRepository: "Repository-Prüfung", navActivity: "Aktivität", navTerms: "Geschützte Begriffe", navSettings: "Einstellungen", navAccount: "Konto & Team", navHelp: "Hilfe und Support", navPlans: "Tarife & Preise", crumbWorkspace: "Arbeitsbereich", repoNoteTitle: "Werte bleiben verborgen", repoNoteText: "Gefundene Werte bleiben maskiert, bis Sie sie bewusst einblenden.", coffeeNav: "Einen Kaffee spendieren", coffeeCta: "Nächste Version unterstützen", coffeeFewer: "Ein Kaffee weniger", coffeeMore: "Ein Kaffee mehr" }
 };
 
 /** Translates the shared rail and page bar on pages that do not load the
  *  workspace, in the language picked in Settings. Only those two regions
  *  change language, so they carry their own lang attribute. */
 export function applyShellLanguage(): void {
-  let language: ShellLanguage = "en";
-  try {
-    const saved: unknown = JSON.parse(localStorage.getItem("redaxa.personal-preferences.v1") ?? "{}")?.language;
-    if (typeof saved === "string" && saved in shellCopyByLanguage) language = saved as ShellLanguage;
-  } catch { /* storage unavailable: English */ }
+  const language = savedShellLanguage();
   const copy = shellCopyByLanguage[language];
   document.querySelectorAll<HTMLElement>(".side, .page-bar .crumbs").forEach((region) => {
     region.lang = language;
@@ -142,5 +138,80 @@ export function applyShellLanguage(): void {
       const value = copy[element.dataset.i18n ?? ""];
       if (value !== undefined) element.textContent = value;
     });
+    region.querySelectorAll<HTMLElement>("[data-i18n-label]").forEach((element) => {
+      const value = copy[element.dataset.i18nLabel ?? ""];
+      if (value !== undefined) element.setAttribute("aria-label", value);
+    });
   });
+}
+
+function savedShellLanguage(): ShellLanguage {
+  try {
+    const saved: unknown = JSON.parse(localStorage.getItem("redaxa.personal-preferences.v1") ?? "{}")?.language;
+    if (typeof saved === "string" && saved in shellCopyByLanguage) return saved as ShellLanguage;
+  } catch { /* storage unavailable: English */ }
+  return "en";
+}
+
+/** Matches TIP_MAX_QUANTITY on the shared tip API, which clamps to it anyway. */
+const MAX_COFFEES = 10;
+/** The shared, account-less tip checkout (one Stripe account for every product).
+ *  Its GET launcher answers with a redirect to Stripe Checkout, so nothing here
+ *  needs CORS: the browser simply opens it. Only product and quantity are sent. */
+export const coffeeUrl = (quantity: number): string =>
+  `https://api.pctweaker.app/api/tip/start?product=redaxa&quantity=${Math.min(MAX_COFFEES, Math.max(1, Math.trunc(quantity) || 1))}`;
+
+/**
+ * "Buy me a coffee", the last row of the rail's footer on the workspace and the
+ * repository page, in the browser and in the Windows app. At rest it is one
+ * quiet row, the size of a navigation row and quieter than the plan entry above
+ * it; pressing it unfolds a 1–10 stepper and the button that opens the tip
+ * checkout. Never a dialog, never a nag, nowhere near a plan's checkout.
+ *
+ * The panel stays mounted so it can animate shut, so every control inside is
+ * disabled (and the panel inert) while it is closed: interactivity hangs on this
+ * state, never on a transition finishing, which once let a hidden PC Tweaker
+ * tip button take a real click under reduced motion.
+ */
+export function mountCoffee(): void {
+  const foot = document.querySelector(".nav-foot");
+  if (!foot || document.getElementById("coffee")) return;
+  const copy = shellCopyByLanguage[savedShellLanguage()];
+  const box = document.createElement("div");
+  box.className = "coffee"; box.id = "coffee";
+  box.innerHTML = `<button class="nav-item coffee-row" type="button" aria-expanded="false" aria-controls="coffee-panel"><i class="ico coffee-mark" aria-hidden="true">☕</i><span data-i18n="coffeeNav"></span><svg class="coffee-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.5l6 6 6-6"/></svg></button><div class="coffee-reveal" id="coffee-panel" data-open="false" inert aria-hidden="true"><div><div class="coffee-stepper"><button type="button" class="coffee-step" data-step="-1" data-i18n-label="coffeeFewer" disabled>−</button><span class="coffee-count" aria-live="polite"></span><button type="button" class="coffee-step" data-step="1" data-i18n-label="coffeeMore" disabled>+</button></div><button type="button" class="coffee-cta" data-i18n="coffeeCta" disabled></button></div></div>`;
+  box.querySelectorAll<HTMLElement>("[data-i18n]").forEach((element) => { element.textContent = copy[element.dataset.i18n!]; });
+  box.querySelectorAll<HTMLElement>("[data-i18n-label]").forEach((element) => { element.setAttribute("aria-label", copy[element.dataset.i18nLabel!]); });
+  foot.append(box);
+
+  const row = box.querySelector<HTMLButtonElement>(".coffee-row")!;
+  const panel = box.querySelector<HTMLElement>(".coffee-reveal")!;
+  const [fewer, more] = box.querySelectorAll<HTMLButtonElement>(".coffee-step");
+  const cta = box.querySelector<HTMLButtonElement>(".coffee-cta")!;
+  const countLabel = box.querySelector<HTMLElement>(".coffee-count")!;
+  let open = false, count = 1;
+  const render = (): void => {
+    row.setAttribute("aria-expanded", String(open));
+    panel.dataset.open = String(open); panel.inert = !open; panel.setAttribute("aria-hidden", String(!open));
+    fewer.disabled = !open || count <= 1; more.disabled = !open || count >= MAX_COFFEES; cta.disabled = !open;
+  };
+  const show = (value: number): void => {
+    count = value;
+    countLabel.textContent = `${count} ☕`;
+    // The live region itself stays put so the new count is announced; only its pop is replayed.
+    countLabel.style.animation = "none"; void countLabel.offsetWidth; countLabel.style.animation = "";
+    render();
+  };
+  row.addEventListener("click", () => { open = !open; render(); });
+  fewer.addEventListener("click", () => show(Math.max(1, count - 1)));
+  more.addEventListener("click", () => show(Math.min(MAX_COFFEES, count + 1)));
+  cta.addEventListener("click", () => {
+    if (!open) return;
+    const url = coffeeUrl(count);
+    // The Windows app hands checkout to the default browser, like billing does;
+    // the web workspace opens it in a new tab so the page keeps its text.
+    if (isTauri()) void openInSystemBrowser(url).catch(() => {});
+    else window.open(url, "_blank", "noopener");
+  });
+  show(1);
 }
