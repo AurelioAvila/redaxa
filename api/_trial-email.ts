@@ -10,7 +10,7 @@
 import { renderEmail, send, SITE_URL, type Block, type EmailFrame } from "./_email.js";
 import type { Language } from "./_trial.js";
 
-export type TrialMailKind = "trial_started" | "trial_ending" | "trial_paid" | "payment_failed" | "trial_ended" | "trial_rejected";
+export type TrialMailKind = "trial_started" | "trial_ending" | "trial_paid" | "payment_failed" | "trial_ended" | "trial_rejected" | "checkout_failed";
 export type FailureKey = "insufficient_funds" | "card_declined" | "expired_card" | "authentication_required" | "processing_error" | "generic";
 type Money = { amount: number; currency: string };
 
@@ -166,6 +166,18 @@ const EN: Words = {
       footer: "You received this email because a Redaxa trial was started with this address. There is one free trial per person.",
       help: ["Think this is a mistake?", "Reply to this email from the address on the account."], reply: true,
     }),
+    checkout_failed: (v) => ({
+      subject: "Your Redaxa payment didn't go through",
+      preheader: "Nothing was charged. Try another card, Apple Pay, Google Pay or Link.",
+      kicker: "Payment not completed",
+      h1: "Your payment didn't go through",
+      intro: `Your payment for Redaxa ${v.tier} didn't go through, so nothing was charged and no subscription was started. This can happen when a card issuer or a security check declines an online payment. Try another card, Apple Pay, Google Pay or Link.`,
+      rows: [["Plan", v.plan], ["Charged", "Nothing"]],
+      button: b("Resume checkout", PLANS),
+      after: `On Plans & pricing, choose ${v.tier} again: checkout opens in a new session. If you have subscribed in the meantime, ignore this email.`,
+      footer: "You received this email because a Redaxa checkout with this address did not go through.",
+      help: ["Declined again?", "Reply to this email and we will help you complete the purchase."], reply: true,
+    }),
   },
 };
 
@@ -277,6 +289,18 @@ const IT: Words = {
       after: `Per usare ${v.tier}, scegli Abbonati subito in Piani e prezzi: il piano parte subito, al prezzo indicato.`,
       footer: "Hai ricevuto questa email perché con questo indirizzo è stata avviata una prova di Redaxa. È prevista una sola prova gratuita per persona.",
       help: ["Pensi che sia un errore?", "Rispondi a questa email dall'indirizzo dell'account."], reply: true,
+    }),
+    checkout_failed: (v) => ({
+      subject: "Il tuo pagamento per Redaxa non è andato a buon fine",
+      preheader: "Non ti è stato addebitato nulla. Prova con un'altra carta, Apple Pay, Google Pay o Link.",
+      kicker: "Pagamento non completato",
+      h1: "Il tuo pagamento non è andato a buon fine",
+      intro: `Il pagamento per Redaxa ${v.tier} non è andato a buon fine: non ti è stato addebitato nulla e nessun abbonamento è stato attivato. Può succedere quando l'emittente della carta o un controllo di sicurezza rifiuta un pagamento online. Prova con un'altra carta, Apple Pay, Google Pay o Link.`,
+      rows: [["Piano", v.plan], ["Addebitato", "Niente"]],
+      button: b("Riprendi l'acquisto", PLANS),
+      after: `In Piani e prezzi scegli di nuovo ${v.tier}: il pagamento si apre in una nuova sessione. Se nel frattempo ti sei già abbonato, ignora questa email.`,
+      footer: "Ricevi questa email perché un pagamento per Redaxa con questo indirizzo non è andato a buon fine.",
+      help: ["Il pagamento viene rifiutato di nuovo?", "Rispondi a questa email e ti aiutiamo a completare l'acquisto."], reply: true,
     }),
   },
 };
@@ -390,6 +414,18 @@ const ES: Words = {
       footer: "Has recibido este correo porque se empezó una prueba de Redaxa con esta dirección. Hay una sola prueba gratuita por persona.",
       help: ["¿Crees que es un error?", "Responde a este correo desde la dirección de la cuenta."], reply: true,
     }),
+    checkout_failed: (v) => ({
+      subject: "Tu pago de Redaxa no se ha completado",
+      preheader: "No se ha cobrado nada. Prueba con otra tarjeta, Apple Pay, Google Pay o Link.",
+      kicker: "Pago no completado",
+      h1: "Tu pago no se ha completado",
+      intro: `Tu pago de Redaxa ${v.tier} no se ha completado, así que no se ha cobrado nada ni se ha iniciado ninguna suscripción. Puede ocurrir cuando el emisor de la tarjeta o un control de seguridad rechaza un pago en línea. Prueba con otra tarjeta, Apple Pay, Google Pay o Link.`,
+      rows: [["Plan", v.plan], ["Cobrado", "Nada"]],
+      button: b("Retomar la compra", PLANS),
+      after: `En Planes y precios, vuelve a elegir ${v.tier}: el pago se abre en una sesión nueva. Si ya te has suscrito mientras tanto, ignora este correo.`,
+      footer: "Recibes este correo porque un pago de Redaxa con esta dirección no se ha completado.",
+      help: ["¿Te lo han vuelto a rechazar?", "Responde a este correo y te ayudamos a completar la compra."], reply: true,
+    }),
   },
 };
 
@@ -502,6 +538,18 @@ const FR: Words = {
       footer: "Vous recevez cet e-mail parce qu’un essai de Redaxa a été commencé avec cette adresse. Chaque personne a droit à un seul essai gratuit.",
       help: ["Vous pensez qu’il s’agit d’une erreur ?", "Répondez à cet e-mail depuis l’adresse du compte."], reply: true,
     }),
+    checkout_failed: (v) => ({
+      subject: "Votre paiement Redaxa n’a pas abouti",
+      preheader: "Rien n’a été prélevé. Essayez une autre carte, Apple Pay, Google Pay ou Link.",
+      kicker: "Paiement non abouti",
+      h1: "Votre paiement n’a pas abouti",
+      intro: `Votre paiement pour Redaxa ${v.tier} n’a pas abouti : rien n’a été prélevé et aucun abonnement n’a démarré. Cela peut arriver lorsque l’émetteur de la carte ou un contrôle de sécurité refuse un paiement en ligne. Essayez une autre carte, Apple Pay, Google Pay ou Link.`,
+      rows: [["Offre", v.plan], ["Prélevé", "Rien"]],
+      button: b("Reprendre l’achat", PLANS),
+      after: `Dans Offres et tarifs, choisissez à nouveau ${v.tier} : le paiement s’ouvre dans une nouvelle session. Si vous vous êtes abonné entre-temps, ignorez cet e-mail.`,
+      footer: "Vous recevez cet e-mail parce qu’un paiement Redaxa avec cette adresse n’a pas abouti.",
+      help: ["De nouveau refusé ?", "Répondez à cet e-mail et nous vous aiderons à finaliser l’achat."], reply: true,
+    }),
   },
 };
 
@@ -613,6 +661,18 @@ const DE: Words = {
       after: `Um ${v.tier} zu nutzen, wählen Sie unter Tarife & Preise „Jetzt abonnieren“: Der Tarif beginnt sofort zum dort angezeigten Preis.`,
       footer: "Sie erhalten diese E-Mail, weil mit dieser Adresse eine Testphase für Redaxa gestartet wurde. Pro Person gibt es eine kostenlose Testphase.",
       help: ["Halten Sie das für einen Fehler?", "Antworten Sie auf diese E-Mail von der Adresse des Kontos."], reply: true,
+    }),
+    checkout_failed: (v) => ({
+      subject: "Ihre Zahlung für Redaxa wurde nicht abgeschlossen",
+      preheader: "Es wurde nichts abgebucht. Versuchen Sie eine andere Karte, Apple Pay, Google Pay oder Link.",
+      kicker: "Zahlung nicht abgeschlossen",
+      h1: "Ihre Zahlung wurde nicht abgeschlossen",
+      intro: `Ihre Zahlung für Redaxa ${v.tier} wurde nicht abgeschlossen: Es wurde nichts abgebucht und kein Abonnement gestartet. Das kann passieren, wenn der Kartenaussteller oder eine Sicherheitsprüfung eine Online-Zahlung ablehnt. Versuchen Sie eine andere Karte, Apple Pay, Google Pay oder Link.`,
+      rows: [["Tarif", v.plan], ["Abgebucht", "Nichts"]],
+      button: b("Kauf fortsetzen", PLANS),
+      after: `Wählen Sie unter Tarife & Preise erneut ${v.tier}: Die Zahlung öffnet sich in einer neuen Sitzung. Falls Sie inzwischen abonniert haben, ignorieren Sie diese E-Mail.`,
+      footer: "Sie erhalten diese E-Mail, weil eine Zahlung für Redaxa mit dieser Adresse nicht abgeschlossen wurde.",
+      help: ["Erneut abgelehnt?", "Antworten Sie auf diese E-Mail, dann helfen wir Ihnen, den Kauf abzuschließen."], reply: true,
     }),
   },
 };
