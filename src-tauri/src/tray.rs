@@ -192,6 +192,11 @@ pub fn window_event(window: &tauri::Window, event: &tauri::WindowEvent) {
     if window.label() != "main" {
         return;
     }
+    match event {
+        tauri::WindowEvent::Resized(s) => crate::window_state::remember(window, Some(*s), None),
+        tauri::WindowEvent::Moved(p) => crate::window_state::remember(window, None, Some(*p)),
+        _ => {}
+    }
     if let tauri::WindowEvent::CloseRequested { api, .. } = event {
         let app = window.app_handle();
         let Some(state) = app.try_state::<BackgroundState>() else {

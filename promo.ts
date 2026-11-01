@@ -120,6 +120,8 @@ export function watchPromo(render: (view: PromoView) => void): void {
 
 export type PromoWords = {
   kicker: string; lead: string; ends: string; fine: string; endsIn: string; units: [string, string, string, string];
+  /** The slim strip's one line ("{percent}+ off your first month or year") and its countdown's day letter. */
+  slim: string; dayShort: string;
   thenMonth: string; thenYear: string; thenUserMonth: string; thenUserYear: string;
   perMonth: string; perYear: string; perUserMonth: string; perUserYear: string;
 };
@@ -145,10 +147,10 @@ function bannerElement(): HTMLElement {
   banner.innerHTML = `<div class="hw-offer-inner">`
     + `<span class="hw-offer-decor hw-offer-decor-left" aria-hidden="true">${HALLOWEEN_DECOR_LEFT}</span>`
     + `<span class="hw-offer-decor hw-offer-decor-right" aria-hidden="true">${HALLOWEEN_DECOR_RIGHT}</span>`
-    + `<div class="hw-offer-copy"><h3 class="hw-offer-kicker" id="redaxa-promo-title"></h3><p class="hw-offer-heading"></p><p class="hw-offer-fine"></p></div>`
+    + `<div class="hw-offer-copy"><h3 class="hw-offer-kicker" id="redaxa-promo-title"></h3><p class="hw-offer-heading"><span class="hw-offer-lead"></span> <span class="hw-offer-ends"></span><span class="hw-offer-slim-lead"></span><span class="hw-offer-ends-short"></span></p><p class="hw-offer-fine"></p></div>`
     + `<div class="hw-offer-timer"><span aria-hidden="true"></span><div class="hw-offer-cells" role="timer" aria-live="off">`
     + [0, 1, 2, 3].map(() => `<div class="hw-offer-cell" aria-hidden="true"><strong>00</strong><small></small></div>`).join("")
-    + `</div></div></div>`;
+    + `</div><span class="hw-offer-compact" aria-hidden="true"></span></div></div>`;
   return banner;
 }
 
@@ -156,7 +158,11 @@ function fillBanner(banner: HTMLElement, promo: Promo | null, words: PromoWords,
   const percent = promo ? Math.min(...promo.offers.map(promoPercent)) : 50;
   const end = promoEndLabel(promo ?? { endsAt: new Date(PROMO_LAYOUT_UNTIL).toISOString() }, lang);
   banner.querySelector(".hw-offer-kicker")!.textContent = words.kicker;
-  banner.querySelector(".hw-offer-heading")!.textContent = `${words.lead.replace("{percent}", percentLabel(percent, lang))} ${words.ends.replace("{date}", end)}`;
+  banner.querySelector(".hw-offer-lead")!.textContent = words.lead.replace("{percent}", percentLabel(percent, lang));
+  banner.querySelector(".hw-offer-ends")!.textContent = words.ends.replace("{date}", end);
+  // The slim strip (workspace plans page) says the deadline the way the plan cards do.
+  banner.querySelector(".hw-offer-ends-short")!.textContent = words.ends.replace("{date}", promoShortEnd(promo?.endsAt ?? new Date(PROMO_LAYOUT_UNTIL).toISOString(), lang)).replace(/\.$/, "");
+  banner.querySelector(".hw-offer-slim-lead")!.textContent = words.slim.replace("{percent}", percentLabel(percent, lang));
   banner.querySelector(".hw-offer-fine")!.textContent = words.fine;
   banner.querySelector(".hw-offer-timer > span")!.textContent = words.endsIn;
   banner.querySelectorAll(".hw-offer-cell small").forEach((unit, i) => { unit.textContent = words.units[i]; });
@@ -165,6 +171,8 @@ function fillBanner(banner: HTMLElement, promo: Promo | null, words: PromoWords,
 function clockBanner(banner: HTMLElement, remaining: number, words: PromoWords): void {
   const values = promoClock(remaining);
   banner.querySelectorAll(".hw-offer-cell strong").forEach((cell, i) => { if (cell.textContent !== values[i]) cell.textContent = values[i]; });
+  // The slim strip's countdown on one line: "5d 09:12:33".
+  banner.querySelector(".hw-offer-compact")!.textContent = `${Number(values[0])}${words.dayShort} ${values[1]}:${values[2]}:${values[3]}`;
   banner.querySelector(".hw-offer-cells")!.setAttribute("aria-label", `${words.endsIn} ${values.slice(0, 3).map((v, i) => `${Number(v)} ${words.units[i]}`).join(", ")}`);
 }
 
@@ -241,6 +249,7 @@ export const PROMO_WORDS_EN: PromoWords = {
   fine: "Struck-through prices are our lowest in the 30 days before the offer. New subscriptions only; renewals are at the regular price, and eligible new subscribers still start with the 3-day free trial. Prices exclude VAT.",
   endsIn: "Ends in",
   units: ["Days", "Hours", "Minutes", "Seconds"],
+  slim: "{percent}+ off your first month or year", dayShort: "d",
   thenMonth: "First month, then {price} a month",
   thenYear: "First year, then {price} a year",
   thenUserMonth: "First month, then {price} per user a month",

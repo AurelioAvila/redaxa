@@ -104,7 +104,7 @@ html.rx-native .rx-shell .brand { display: none; }
 .rx-shell .ico svg .ico-bar { fill: currentColor; stroke: none; }
 .rx-shell .nav-item > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.rx-shell .side-foot { display: grid; gap: 10px; margin: 0; padding: 12px 0 0; border-top: 1px solid var(--theme-line); }
+.rx-shell .side-foot { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; margin: 0; padding: 12px 0 0; border-top: 1px solid var(--theme-line); }
 .rx-shell .usage { margin: 0 2px; padding: 12px 12px 11px; border: 1px solid var(--theme-line); border-radius: var(--r); background: var(--card); }
 .rx-shell .usage-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .rx-shell .usage-head span { color: var(--theme-text); font: 650 12.5px/1.3 var(--font-text); }
@@ -140,6 +140,10 @@ html.rx-native .rx-shell .brand { display: none; }
 @keyframes coffee-pop { from { transform: scale(.82); opacity: .4; } to { transform: none; opacity: 1; } }
 .rx-shell .coffee-cta { display: block; width: calc(100% - 16px); min-height: 32px; margin: 8px 8px 4px; padding: 6px 10px; border: 1px solid color-mix(in srgb, var(--theme-accent) 45%, var(--theme-line)); border-radius: var(--r-sm); background: transparent; color: var(--theme-text); font: 650 12.5px/1.25 var(--font-text); text-wrap: balance; cursor: pointer; transition: background-color .12s var(--ease), border-color .12s var(--ease); }
 .rx-shell .coffee-cta:hover:not(:disabled) { border-color: var(--theme-accent); background: color-mix(in srgb, var(--theme-accent) 10%, transparent); }
+/* Paying the same coffees in crypto: a quiet text link under the button, only when offered. */
+.rx-shell .coffee-crypto { display: block; width: calc(100% - 16px); margin: 0 8px 4px; padding: 3px 0; border: 0; background: none; color: var(--theme-muted); font: 500 12px/1.35 var(--font-text); text-align: center; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.rx-shell .coffee-crypto:hover:not(:disabled) { color: var(--theme-text); }
+.rx-shell .coffee-crypto[hidden] { display: none; }
 
 /* Desktop title bar: its left cell continues the rail. */
 .rx-shell .rx-titlebar { background: var(--theme-bg); border-bottom: 1px solid var(--theme-line); }

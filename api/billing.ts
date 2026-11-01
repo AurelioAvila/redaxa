@@ -1,4 +1,4 @@
-import { DESKTOP_ORIGINS, accountFor, billingAppUrl, corsHeaders, parseJson, releaseCheckout, requireUser, reserveCheckout, saveCustomer, stripe, supabaseUserById } from "./_billing.js";
+import { DESKTOP_ORIGINS, accountFor, effectiveEntitlement, patchAccount, billingAppUrl, corsHeaders, parseJson, releaseCheckout, requireUser, reserveCheckout, saveCustomer, stripe, supabaseUserById } from "./_billing.js";
 import { clientIp, rateLimited } from "./_rateLimit.js";
 import { promoCheckout, promoState } from "./_promo.js";
 import {
@@ -6,6 +6,7 @@ import {
   legacyTrialEligible, trialEligible, upcomingCharge, language as languageOf,
 } from "./_trial.js";
 import { sendTrialMail } from "./_trial-email.js";
+import { SubscriptionError, setCancelAtPeriodEnd, subscriptionState, type SubscriptionDeps } from "./_subscription.js";
 
 type RequestLike = { method?: string; body?: unknown; query?: Record<string, string | string[] | undefined>; headers?: Record<string, string | string[] | undefined> };
 type ResponseLike = { setHeader(name: string, value: string | string[]): void; status(code: number): ResponseLike; json(value: unknown): void; end(): void };
@@ -24,6 +25,47 @@ const priceFor = (plan: string, interval: string): string | null => {
   };
   return prices[`${plan}:${interval}`] ?? null;
 };
+
+/** api/_subscription.ts on the live Stripe client and billing tables. */
+const subscriptionDeps: SubscriptionDeps = {
+  accountFor,
+  memberOf: async (userId) => { const e = await effectiveEntitlement(userId); return e.role === "member" ? e.ownerEmail : null; },
+  retrieve: (id) => stripe.subscriptions.retrieve(id, { expand: ["default_payment_method"] }),
+  update: (id, params) => stripe.subscriptions.update(id, { ...params, expand: ["default_payment_method"] }),
+  customerCard: async (customerId) => {
+    const customer = await stripe.customers.retrieve(customerId, { expand: ["invoice_settings.default_payment_method"] });
+    if ("deleted" in customer && customer.deleted) return null;
+    const method = customer.invoice_settings?.default_payment_method;
+    return method && typeof method !== "string" && method.card ? { brand: method.card.brand, last4: method.card.last4 } : null;
+  },
+  patchAccount,
+  portalCancelUrl: async (customerId, subscriptionId) => (await stripe.billingPortal.sessions.create({
+    customer: customerId, configuration: await portalConfiguration(),
+    flow_data: { type: "subscription_cancel", subscription_cancel: { subscription: subscriptionId } },
+  })).url,
+};
+
+/** GET ?action=subscription, POST ?action=subscription-cancel|subscription-resume
+ *  (vercel.json maps /api/billing/subscription[/cancel|/resume] here). */
+async function subscriptionAction(action: string, request: RequestLike, response: ResponseLike): Promise<void> {
+  response.setHeader("Cache-Control", "no-store");
+  try {
+    const user = await requireUser(request, response);
+    if (action === "subscription") { response.status(200).json(await subscriptionState(user.id, subscriptionDeps)); return; }
+    if (rateLimited(`subscription:user:${user.id}`, 10, 15 * 60_000) || rateLimited(`subscription:ip:${clientIp(request.headers)}`, 30, 15 * 60_000)) {
+      response.setHeader("Retry-After", "900");
+      response.status(429).json({ error: "rate_limited", code: "rate_limited", message: "Too many attempts. Please wait a few minutes and try again." });
+      return;
+    }
+    response.status(200).json(await setCancelAtPeriodEnd(user.id, action === "subscription-cancel", subscriptionDeps));
+  } catch (error) {
+    // Same error codes as api.pctweaker.app's subscription endpoints, with a readable message beside them.
+    if (error instanceof SubscriptionError) { response.status(error.status).json({ error: error.code, code: error.code, message: error.message, ...(error.portalUrl ? { url: error.portalUrl } : {}) }); return; }
+    const unauthorized = error instanceof Error && error.message === "UNAUTHORIZED";
+    if (!unauthorized) console.error("subscription request failed:", String((error as Error)?.message ?? error).slice(0, 200));
+    response.status(unauthorized ? 401 : 502).json(unauthorized ? { error: "UNAUTHORIZED" } : { error: "billing_unavailable", code: "billing_unavailable", message: "We could not reach billing. Please try again." });
+  }
+}
 
 const PORTAL_MARK = "redaxa-portal-v1";
 let portalConfigurationId: Promise<string | undefined> | null = null;
@@ -142,6 +184,10 @@ export default async function handler(request: RequestLike, response: ResponseLi
   if (request.method === "GET" && action === "prices") {
     response.setHeader("Cache-Control", "public, max-age=300");
     response.status(200).json(await publicPrices());
+    return;
+  }
+  if ((request.method === "GET" && action === "subscription") || (request.method === "POST" && (action === "subscription-cancel" || action === "subscription-resume"))) {
+    await subscriptionAction(action, request, response);
     return;
   }
   if (request.method === "GET" && (action === "trial-reminders" || request.headers?.["x-vercel-cron-schedule"] !== undefined)) {

@@ -65,3 +65,37 @@ html[data-theme]:not([data-theme="paper"]) :is(.rx-shell, .redaxa-landing) .ps-a
 .rx-shell .delete-account-dialog .ps-account-message.error { color: var(--sev-critical); }
 .rx-shell .delete-account-dialog .ps-account-actions .delete-account-confirm { border-color: var(--sev-critical); background: var(--sev-critical); color: var(--theme-bg); }
 .rx-shell .delete-account-dialog .ps-account-actions .delete-account-confirm:disabled { opacity: .6; cursor: progress; }
+
+/* Manage subscription (auth.ts): the plan in one card, its dates as facts,
+   cancel quieter than resume, card and invoices as a plain link. */
+:is(.rx-shell, .redaxa-landing) .ps-menu-link b { font-weight: inherit; }
+:is(.rx-shell, .redaxa-landing) .ps-sub-sheet { --sub-alert: var(--rx-alert, #b4232f); --sub-ok: var(--ok, #146c45); }
+html[data-theme]:not([data-theme="paper"]) :is(.rx-shell, .redaxa-landing) .ps-sub-sheet { --sub-alert: #ff9ca7; --sub-ok: #6fdcae; }
+:is(.rx-shell, .redaxa-landing) .ps-sub-card { padding: 16px 16px 4px; border: 1px solid var(--theme-line); border-radius: 12px; background: var(--theme-inset); }
+:is(.rx-shell, .redaxa-landing) .ps-sub-empty { padding-bottom: 16px; }
+:is(.rx-shell, .redaxa-landing) .ps-sub-card h3 { margin: 0; color: var(--theme-text); font: 650 17px/1.3 var(--font-display, inherit); }
+:is(.rx-shell, .redaxa-landing) .ps-sub-card p { margin: 6px 0 0; color: var(--theme-muted); font-size: 13.5px; line-height: 1.55; }
+:is(.rx-shell, .redaxa-landing) .ps-sub-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+:is(.rx-shell, .redaxa-landing) .ps-sub-card .ps-sub-price { margin-top: 4px; color: var(--theme-text); font: 700 20px/1.2 var(--font-display, inherit); font-variant-numeric: tabular-nums; }
+:is(.rx-shell, .redaxa-landing) .ps-sub-price small { color: var(--theme-muted); font: 500 12px/1.2 var(--font-text, inherit); }
+:is(.rx-shell, .redaxa-landing) .ps-sub-pill { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 24px; padding: 0 10px; border: 1px solid var(--theme-line); border-radius: 999px; background: var(--theme-surface, var(--card)); color: var(--theme-text); font-size: 12px; font-weight: 650; white-space: nowrap; }
+:is(.rx-shell, .redaxa-landing) .ps-sub-pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--sub-ok); }
+:is(.rx-shell, .redaxa-landing) .ps-sub-pill.is-ending::before { background: var(--theme-accent); }
+:is(.rx-shell, .redaxa-landing) .ps-sub-pill.is-alert { border-color: color-mix(in srgb, var(--sub-alert) 50%, var(--theme-line)); }
+:is(.rx-shell, .redaxa-landing) .ps-sub-pill.is-alert::before { background: var(--sub-alert); }
+:is(.rx-shell, .redaxa-landing) .ps-sub-card .ps-sub-warn { margin: 0 0 10px; color: var(--sub-alert); font-weight: 600; }
+:is(.rx-shell, .redaxa-landing) .ps-sub-card .ps-account-facts > div { grid-template-columns: 130px minmax(0, 1fr); }
+:is(.rx-shell, .redaxa-landing) .ps-sub-actions { align-items: center; }
+:is(.rx-shell, .redaxa-landing) .ps-sub-actions .ps-sub-cancel, :is(.rx-shell, .redaxa-landing) .ps-sub-actions .ps-sub-cancel:first-child { border-color: color-mix(in srgb, var(--sub-alert) 55%, var(--theme-line)); background: transparent; color: var(--sub-alert); }
+:is(.rx-shell, .redaxa-landing) .ps-sub-actions .ps-sub-cancel:hover { background: color-mix(in srgb, var(--sub-alert) 8%, transparent); filter: none; }
+:is(.rx-shell, .redaxa-landing) .ps-sub-actions .ps-sub-link, :is(.rx-shell, .redaxa-landing) .ps-sub-actions .ps-sub-link:first-child { margin-left: auto; padding: 0 4px; border-color: transparent; background: transparent; color: var(--theme-text); text-decoration: underline; text-underline-offset: 3px; }
+:is(.rx-shell, .redaxa-landing) .ps-sub-actions button:disabled { opacity: .55; cursor: progress; }
+:is(.rx-shell, .redaxa-landing) .ps-sub-loading { margin: 0; padding: 22px 0; color: var(--theme-muted); font-size: 13.5px; }
+:is(.rx-shell, .redaxa-landing) .ps-sub-message:empty { display: none; }
+:is(.rx-shell, .redaxa-landing) .ps-sub-message { margin: 12px 0 0; color: var(--theme-text); font-size: 13px; line-height: 1.5; }
+@media (max-width: 420px) { :is(.rx-shell, .redaxa-landing) .ps-sub-actions .ps-sub-link { margin-left: 0; } }
+/* One type for every row of the account menu, links and buttons alike, and a
+   close button large enough to hit. */
+.rx-shell .ps-account-menu .ps-menu-link, .redaxa-landing .ps-account-menu .ps-menu-link { font: 450 13.5px/1.3 var(--font-text, inherit); }
+:is(.rx-shell, .redaxa-landing) .ps-account-sheet [data-sheet-close] { display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border-radius: 8px; font-size: 22px; line-height: 1; }
+:is(.rx-shell, .redaxa-landing) .ps-account-sheet [data-sheet-close]:hover { background: var(--theme-hover); color: var(--theme-text); }
