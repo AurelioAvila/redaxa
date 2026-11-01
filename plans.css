@@ -142,7 +142,11 @@ html:is(:not([data-theme]), [data-theme="paper"]) .plans-page, html:is(:not([dat
 /* Label and picker on one line, so the plan button stays in view. */
 .seats-row { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 10px; color: var(--theme-text); font-size: 13px; font-weight: 600; }
 .seats-row[hidden] { display: none; }
-.seats-row select { min-height: 34px; padding: 6px 10px; border: 1px solid var(--theme-strong); border-radius: 7px; background: var(--theme-inset); color: var(--theme-text); font: inherit; }
+/* Native arrow replaced by a chevron in the theme's muted ink, so it follows paper and the dark themes. */
+.seats-row select { -webkit-appearance: none; appearance: none; min-height: 34px; padding: 6px 32px 6px 10px; border: 1px solid var(--theme-strong); border-radius: 7px; color: var(--theme-text); font: inherit; cursor: pointer; transition: border-color .15s;
+  background: linear-gradient(45deg, transparent 50%, var(--theme-muted) 50%) calc(100% - 16px) 50% / 5px 5px no-repeat, linear-gradient(135deg, var(--theme-muted) 50%, transparent 50%) calc(100% - 11px) 50% / 5px 5px no-repeat, var(--theme-inset); }
+.seats-row select:hover { border-color: var(--theme-accent); }
+.seats-row select option { background: var(--theme-surface); color: var(--theme-text); }
 /* Plan buttons on pages without the workspace's own button styles (the site). */
 .plan-card .rx-plan-cta { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 0 18px; border: 1px solid var(--theme-accent); border-radius: 8px; background: var(--theme-accent); color: var(--theme-ink); font-size: 13.5px; font-weight: 700; text-decoration: none; cursor: pointer; transition: filter .12s ease, background-color .12s ease; }
 .plan-card .rx-plan-cta:hover { filter: brightness(1.08); }
