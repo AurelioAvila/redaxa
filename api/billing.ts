@@ -7,7 +7,9 @@ import {
 } from "./_trial.js";
 import { sendCheckoutRecovery } from "./_checkout-recovery.js";
 import { sendTrialMail } from "./_trial-email.js";
-import { SubscriptionError, setCancelAtPeriodEnd, subscriptionState, type SubscriptionDeps } from "./_subscription.js";
+import { SubscriptionError, cancelFeedback, setCancelAtPeriodEnd, subscriptionState, type SubscriptionDeps } from "./_subscription.js";
+import { notifyOwnerOfCancellation } from "./_email.js";
+import type Stripe from "stripe";
 
 type RequestLike = { method?: string; body?: unknown; query?: Record<string, string | string[] | undefined>; headers?: Record<string, string | string[] | undefined> };
 type ResponseLike = { setHeader(name: string, value: string | string[]): void; status(code: number): ResponseLike; json(value: unknown): void; end(): void };
@@ -45,6 +47,11 @@ const subscriptionDeps: SubscriptionDeps = {
     customer: customerId, configuration: await portalConfiguration(),
     flow_data: { type: "subscription_cancel", subscription_cancel: { subscription: subscriptionId } },
   })).url,
+  notifyCancellation: async (notice) => {
+    const customer = await stripe.customers.retrieve(notice.customerId).catch(() => null);
+    const live = customer && !("deleted" in customer && customer.deleted) ? customer as Stripe.Customer : null;
+    return notifyOwnerOfCancellation({ ...notice, email: live?.email ?? null, country: live?.address?.country ?? null }, `redaxa-cancel/${notice.subscriptionId}/${notice.endsAt ?? ""}`);
+  },
 };
 
 /** GET ?action=subscription, POST ?action=subscription-cancel|subscription-resume
@@ -59,7 +66,10 @@ async function subscriptionAction(action: string, request: RequestLike, response
       response.status(429).json({ error: "rate_limited", code: "rate_limited", message: "Too many attempts. Please wait a few minutes and try again." });
       return;
     }
-    response.status(200).json(await setCancelAtPeriodEnd(user.id, action === "subscription-cancel", subscriptionDeps));
+    const cancel = action === "subscription-cancel";
+    // The optional "why" of the cancel dialog; validated before Stripe is touched.
+    const feedback = cancel ? cancelFeedback(request.body) : undefined;
+    response.status(200).json(await setCancelAtPeriodEnd(user.id, cancel, subscriptionDeps, feedback));
   } catch (error) {
     // Same error codes as api.pctweaker.app's subscription endpoints, with a readable message beside them.
     if (error instanceof SubscriptionError) { response.status(error.status).json({ error: error.code, code: error.code, message: error.message, ...(error.portalUrl ? { url: error.portalUrl } : {}) }); return; }

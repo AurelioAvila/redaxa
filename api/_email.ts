@@ -11,6 +11,7 @@
  */
 
 import { readyProviders, sendEmail } from "./_email-relay.js";
+import { CANCEL_REASONS, type CancellationNotice } from "./_subscription.js";
 
 // Sale notices go to Redaxa's own support alias (forwarded to the owner), never
 // a personal inbox written into a public repository.
@@ -650,5 +651,45 @@ export async function notifyOwnerOfSale(
       { p: "Stripe has the details; this is only the heads-up.", muted: true },
     ],
   });
+  return send(OWNER_INBOX, mail.subject, mail.html, mail.text, idempotencyKey);
+}
+
+export type CancellationNoticeInput = CancellationNotice & { email: string | null; country: string | null };
+
+/** The owner's notice of a scheduled cancellation, with the reason the
+ *  customer chose (if any). Rendered apart from sending so tests can read it. */
+export function cancellationNoticeEmail(input: CancellationNoticeInput): { subject: string; html: string; text: string } {
+  const label = `${planLabel(input.plan, input.interval)}${input.plan === "business" && input.seats > 1 ? ` · ${input.seats} seats` : ""}`;
+  const time = input.endsAt ? Date.parse(input.endsAt) : NaN;
+  const short = Number.isFinite(time) ? new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(time) : "unknown date";
+  const long = Number.isFinite(time) ? new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(time) : "unknown date";
+  const country = input.country ? `${new Intl.DisplayNames(["en"], { type: "region" }).of(input.country.toUpperCase()) ?? input.country} (${input.country.toUpperCase()})` : "Not on file";
+  const reason = input.reason ? CANCEL_REASONS[input.reason] : "No reason given";
+  return renderEmail({
+    subject: `Cancellation scheduled · Redaxa ${label} · ends ${short} · ${input.subscriptionId}`,
+    kind: "internal",
+    preheader: `Redaxa ${label} won’t renew. Reason: ${reason}.`,
+    footer: "Internal notice for the Redaxa team. The reason and comment are also on the subscription in Stripe.",
+    blocks: [
+      { kicker: "Cancellation scheduled" },
+      { h1: `Redaxa ${label} won’t renew` },
+      { rows: [
+        ["Product", "Redaxa"],
+        ["Plan", input.trialing ? `${label} (free trial, never charged)` : label],
+        ["Customer", input.email || "(no address in Stripe)"],
+        ["Country", country],
+        ["Access until", long],
+        ["Reason", reason],
+        ["Comment", input.comment || "—"],
+        ["Subscription", input.subscriptionId],
+      ] },
+      { p: "Nothing to do: access runs to the date above, then Stripe ends the subscription. No refund is due.", muted: true },
+    ],
+  });
+}
+
+/** Sends the cancellation notice to the owner. Never throws. */
+export async function notifyOwnerOfCancellation(input: CancellationNoticeInput, idempotencyKey?: string): Promise<boolean> {
+  const mail = cancellationNoticeEmail(input);
   return send(OWNER_INBOX, mail.subject, mail.html, mail.text, idempotencyKey);
 }

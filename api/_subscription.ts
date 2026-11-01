@@ -16,6 +16,10 @@
  * is allowed on Managed Payments subscriptions (only default_payment_method is
  * locked to the portal); if Stripe refuses anyway, the answer carries a billing
  * portal link that opens straight on the cancel flow.
+ *
+ * Cancel may carry an optional { reason, comment } (Stripe's own
+ * cancellation_details feedback codes): stored on the subscription with the
+ * same update, and sent to the owner in one notice per cancellation.
  */
 import type Stripe from "stripe";
 import type { BillingAccount } from "./_billing.js";
@@ -28,10 +32,33 @@ export type SubscriptionDeps = {
   memberOf(userId: string): Promise<string | null>;
   retrieve(id: string): Promise<Sub>;
   /** cancel_at_period_end, or clearing a dated cancel_at the portal may have set. */
-  update(id: string, params: { cancel_at_period_end: boolean } | { cancel_at: "" }): Promise<Sub>;
+  update(id: string, params: { cancel_at_period_end: boolean; cancellation_details?: { feedback?: CancelReason; comment?: string } } | { cancel_at: "" }): Promise<Sub>;
   customerCard(customerId: string): Promise<{ brand: string; last4: string } | null>;
   patchAccount(userId: string, updates: Record<string, unknown>): Promise<void>;
   portalCancelUrl(customerId: string, subscriptionId: string): Promise<string>;
+  /** The owner's notice of a scheduled cancellation. Best-effort; never blocks the answer. */
+  notifyCancellation(notice: CancellationNotice): Promise<unknown>;
+};
+
+/** Stripe's cancellation_details.feedback codes, with the label the owner reads. */
+export const CANCEL_REASONS = {
+  too_expensive: "Too expensive",
+  unused: "I don’t use it enough",
+  missing_features: "Missing a feature I need",
+  switched_service: "Switching to another tool",
+  low_quality: "Technical problems / bugs",
+  too_complex: "Too complicated to use",
+  customer_service: "Problems with support",
+  other: "Other",
+} as const;
+export type CancelReason = keyof typeof CANCEL_REASONS;
+export type CancelFeedback = { reason: CancelReason | null; comment: string | null };
+export const COMMENT_MAX = 500;
+
+export type CancellationNotice = {
+  subscriptionId: string; customerId: string; plan: "pro" | "business"; interval: "month" | "year" | null; seats: number;
+  /** ISO: the last day of access (cancel_at, or the period / trial end). */
+  endsAt: string | null; trialing: boolean; reason: CancelReason | null; comment: string | null;
 };
 
 export type SubscriptionState = {
@@ -61,6 +88,26 @@ const RUNNING = new Set(["trialing", "active", "past_due", "unpaid", "incomplete
 
 export class SubscriptionError extends Error {
   constructor(readonly status: number, readonly code: string, message: string, readonly portalUrl?: string) { super(message); }
+}
+
+/** The optional { reason, comment } of a cancel request. Absent or empty is
+ *  fine (no reason given); an unknown reason or an over-long comment is a 400.
+ *  Control and bidirectional-override characters never reach Stripe or the
+ *  owner's mail: line breaks become spaces, the rest is dropped. */
+export function cancelFeedback(body: unknown): CancelFeedback {
+  const input = body && typeof body === "object" && !Array.isArray(body) ? body as Record<string, unknown> : {};
+  const rawReason = input.reason;
+  if (rawReason != null && rawReason !== "" && (typeof rawReason !== "string" || !Object.hasOwn(CANCEL_REASONS, rawReason))) {
+    throw new SubscriptionError(400, "invalid_reason", "Choose one of the listed reasons, or none.");
+  }
+  if (input.comment != null && typeof input.comment !== "string") throw new SubscriptionError(400, "invalid_comment", "The comment must be text.");
+  const comment = String(input.comment ?? "")
+    .replace(/[\r\n\t]+/g, " ")
+    .replace(/[\u0000-\u001F\u007F-\u009F\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, "")
+    .replace(/ {2,}/g, " ")
+    .trim();
+  if (comment.length > COMMENT_MAX) throw new SubscriptionError(400, "comment_too_long", `Keep the comment under ${COMMENT_MAX} characters.`);
+  return { reason: rawReason ? rawReason as CancelReason : null, comment: comment || null };
 }
 
 function none(memberOf: string | null): SubscriptionState {
@@ -122,7 +169,7 @@ export async function subscriptionState(userId: string, deps: SubscriptionDeps):
 
 /** Sets or clears cancel_at_period_end on the caller's own subscription.
  *  Idempotent: asking for the state it is already in changes nothing. */
-export async function setCancelAtPeriodEnd(userId: string, cancel: boolean, deps: SubscriptionDeps): Promise<SubscriptionState> {
+export async function setCancelAtPeriodEnd(userId: string, cancel: boolean, deps: SubscriptionDeps, feedback: CancelFeedback = { reason: null, comment: null }): Promise<SubscriptionState> {
   const found = await own(userId, deps);
   if (!found || !RUNNING.has(found.sub.status)) {
     throw new SubscriptionError(404, "no_subscription", cancel ? "There is no subscription to cancel on this account." : "This subscription has already ended. Choose a plan to subscribe again.");
@@ -132,7 +179,10 @@ export async function setCancelAtPeriodEnd(userId: string, cancel: boolean, deps
   if (ending === cancel) return describe(sub, deps);
   let updated: Sub;
   try {
-    updated = await deps.update(sub.id, !cancel && !sub.cancel_at_period_end ? { cancel_at: "" } : { cancel_at_period_end: cancel });
+    const details = cancel && (feedback.reason || feedback.comment)
+      ? { cancellation_details: { ...(feedback.reason ? { feedback: feedback.reason } : {}), ...(feedback.comment ? { comment: feedback.comment } : {}) } }
+      : {};
+    updated = await deps.update(sub.id, !cancel && !sub.cancel_at_period_end ? { cancel_at: "" } : { cancel_at_period_end: cancel, ...details });
   } catch (error) {
     // Stripe refused the change (e.g. a Managed Payments restriction): the
     // portal can still do it, opened on the cancellation itself.
@@ -145,5 +195,15 @@ export async function setCancelAtPeriodEnd(userId: string, cancel: boolean, deps
   // The webhook records the same within seconds; this keeps the app's own
   // account view right in the meantime.
   await deps.patchAccount(userId, { cancel_at_period_end: updated.cancel_at_period_end || Boolean(updated.cancel_at) }).catch(() => undefined);
-  return describe(updated, deps);
+  const state = await describe(updated, deps);
+  // Only a real change reaches here (asking again returned above), so one
+  // cancellation is one notice; the mail's idempotency key covers a retry.
+  if (cancel) {
+    await deps.notifyCancellation({
+      subscriptionId: sub.id, customerId: account.stripe_customer_id!, plan: state.plan ?? "pro", interval: state.interval, seats: state.seats ?? 1,
+      endsAt: state.status === "trialing" ? (state.cancel_at ?? state.trial_end ?? state.current_period_end) : (state.cancel_at ?? state.current_period_end),
+      trialing: state.status === "trialing", reason: feedback.reason, comment: feedback.comment,
+    }).catch(() => undefined);
+  }
+  return state;
 }

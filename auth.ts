@@ -339,9 +339,10 @@ export const subscriptionCopyByLanguage: Record<SubLanguage, Record<string, stri
     planPro: "Redaxa Pro", planBusiness: "Redaxa Business", users: "{n} user|{n} users", perMonth: "{price} a month", perYear: "{price} a year", exVat: "excl. VAT",
     stActive: "Active", stTrial: "Free trial", stCancels: "Won’t renew", stPastDue: "Payment failed", stPaused: "Paused",
     cancel: "Cancel subscription", resume: "Resume subscription", portal: "Payment method & invoices",
-    confirmTitle: "Cancel your subscription?", confirmText: "You keep {plan} until {date}. You won’t be charged again.", confirmTrial: "Your free trial continues until {date}. You won’t be charged.", keep: "Keep subscription", confirmCancel: "Yes, cancel",
+    confirmTitle: "Cancel your subscription?", confirmText: "You keep {plan} until {date}. You won’t be charged again.", confirmTrial: "Your free trial continues until {date}. You won’t be charged.", keep: "Keep subscription",
     cancelled: "Cancelled. You keep {plan} until {date} and won’t be charged again.", resumed: "Your subscription is back on. It renews on {date}.",
-    pastDue: "Your last payment didn’t go through. Update the payment method to keep {plan}.", portalFallback: "Continue in the billing portal", working: "Saving…", signIn: "Please sign in again to manage your subscription."
+    pastDue: "Your last payment didn’t go through. Update the payment method to keep {plan}.", portalFallback: "Continue in the billing portal", working: "Saving…", signIn: "Please sign in again to manage your subscription.",
+    reasonsTitle: "Before you go — what’s the main reason?", reasonsIntro: "Optional. It helps us improve Redaxa.", rTooExpensive: "Too expensive", rUnused: "I don’t use it enough", rMissingFeatures: "Missing a feature I need", rSwitchedService: "Switching to another tool", rLowQuality: "Technical problems / bugs", rTooComplex: "Too complicated to use", rCustomerService: "Problems with support", rOther: "Other", comment: "Anything we could do better?", commentOther: "Tell us more (optional)", commentHint: "Optional", skip: "Skip", next: "Continue", step: "Step {n} of 2"
   },
   it: {
     menu: "Gestisci abbonamento", menuNote: "Piano, rinnovo e disdetta", menuPlans: "Piani e prezzi", menuPlansNote: "Confronta i piani",
@@ -352,9 +353,10 @@ export const subscriptionCopyByLanguage: Record<SubLanguage, Record<string, stri
     planPro: "Redaxa Pro", planBusiness: "Redaxa Business", users: "{n} utente|{n} utenti", perMonth: "{price} al mese", perYear: "{price} all’anno", exVat: "IVA esclusa",
     stActive: "Attivo", stTrial: "Prova gratuita", stCancels: "Non si rinnova", stPastDue: "Pagamento non riuscito", stPaused: "In pausa",
     cancel: "Disdici abbonamento", resume: "Riattiva abbonamento", portal: "Metodo di pagamento e fatture",
-    confirmTitle: "Disdire l’abbonamento?", confirmText: "Mantieni {plan} fino al {date}. Non ti verrà addebitato altro.", confirmTrial: "La prova gratuita continua fino al {date}. Non ti verrà addebitato nulla.", keep: "Mantieni abbonamento", confirmCancel: "Sì, disdici",
+    confirmTitle: "Disdire l’abbonamento?", confirmText: "Mantieni {plan} fino al {date}. Non ti verrà addebitato altro.", confirmTrial: "La prova gratuita continua fino al {date}. Non ti verrà addebitato nulla.", keep: "Mantieni abbonamento",
     cancelled: "Disdetto. Mantieni {plan} fino al {date} e non ti verrà addebitato altro.", resumed: "L’abbonamento è di nuovo attivo. Si rinnova il {date}.",
-    pastDue: "L’ultimo pagamento non è andato a buon fine. Aggiorna il metodo di pagamento per mantenere {plan}.", portalFallback: "Continua nel portale di fatturazione", working: "Salvataggio…", signIn: "Accedi di nuovo per gestire l’abbonamento."
+    pastDue: "L’ultimo pagamento non è andato a buon fine. Aggiorna il metodo di pagamento per mantenere {plan}.", portalFallback: "Continua nel portale di fatturazione", working: "Salvataggio…", signIn: "Accedi di nuovo per gestire l’abbonamento.",
+    reasonsTitle: "Prima di andare: qual è il motivo principale?", reasonsIntro: "Facoltativo. Ci aiuta a migliorare Redaxa.", rTooExpensive: "Troppo caro", rUnused: "Non lo uso abbastanza", rMissingFeatures: "Manca una funzione che mi serve", rSwitchedService: "Passo a un altro strumento", rLowQuality: "Problemi tecnici / bug", rTooComplex: "Troppo complicato da usare", rCustomerService: "Problemi con l’assistenza", rOther: "Altro", comment: "C’è qualcosa che potremmo fare meglio?", commentOther: "Raccontaci di più (facoltativo)", commentHint: "Facoltativo", skip: "Salta", next: "Continua", step: "Passo {n} di 2"
   },
   es: {
     menu: "Gestionar suscripción", menuNote: "Plan, renovación y cancelación", menuPlans: "Planes y precios", menuPlansNote: "Comparar planes",
@@ -365,9 +367,10 @@ export const subscriptionCopyByLanguage: Record<SubLanguage, Record<string, stri
     planPro: "Redaxa Pro", planBusiness: "Redaxa Business", users: "{n} usuario|{n} usuarios", perMonth: "{price} al mes", perYear: "{price} al año", exVat: "IVA no incluido",
     stActive: "Activa", stTrial: "Prueba gratuita", stCancels: "No se renovará", stPastDue: "Pago fallido", stPaused: "En pausa",
     cancel: "Cancelar suscripción", resume: "Reanudar suscripción", portal: "Método de pago y facturas",
-    confirmTitle: "¿Cancelar tu suscripción?", confirmText: "Conservas {plan} hasta el {date}. No se te volverá a cobrar.", confirmTrial: "Tu prueba gratuita continúa hasta el {date}. No se te cobrará nada.", keep: "Mantener suscripción", confirmCancel: "Sí, cancelar",
+    confirmTitle: "¿Cancelar tu suscripción?", confirmText: "Conservas {plan} hasta el {date}. No se te volverá a cobrar.", confirmTrial: "Tu prueba gratuita continúa hasta el {date}. No se te cobrará nada.", keep: "Mantener suscripción",
     cancelled: "Cancelada. Conservas {plan} hasta el {date} y no se te volverá a cobrar.", resumed: "Tu suscripción vuelve a estar activa. Se renueva el {date}.",
-    pastDue: "Tu último pago no se ha completado. Actualiza el método de pago para conservar {plan}.", portalFallback: "Continuar en el portal de facturación", working: "Guardando…", signIn: "Vuelve a iniciar sesión para gestionar tu suscripción."
+    pastDue: "Tu último pago no se ha completado. Actualiza el método de pago para conservar {plan}.", portalFallback: "Continuar en el portal de facturación", working: "Guardando…", signIn: "Vuelve a iniciar sesión para gestionar tu suscripción.",
+    reasonsTitle: "Antes de irte: ¿cuál es el motivo principal?", reasonsIntro: "Opcional. Nos ayuda a mejorar Redaxa.", rTooExpensive: "Demasiado caro", rUnused: "No lo uso lo suficiente", rMissingFeatures: "Falta una función que necesito", rSwitchedService: "Me cambio a otra herramienta", rLowQuality: "Problemas técnicos / errores", rTooComplex: "Demasiado complicado de usar", rCustomerService: "Problemas con el soporte", rOther: "Otro", comment: "¿Hay algo que podríamos hacer mejor?", commentOther: "Cuéntanos más (opcional)", commentHint: "Opcional", skip: "Omitir", next: "Continuar", step: "Paso {n} de 2"
   },
   fr: {
     menu: "Gérer l’abonnement", menuNote: "Offre, renouvellement et résiliation", menuPlans: "Offres et tarifs", menuPlansNote: "Comparer les offres",
@@ -378,9 +381,10 @@ export const subscriptionCopyByLanguage: Record<SubLanguage, Record<string, stri
     planPro: "Redaxa Pro", planBusiness: "Redaxa Business", users: "{n} utilisateur|{n} utilisateurs", perMonth: "{price} par mois", perYear: "{price} par an", exVat: "HT",
     stActive: "Actif", stTrial: "Essai gratuit", stCancels: "Sans renouvellement", stPastDue: "Échec du paiement", stPaused: "En pause",
     cancel: "Résilier l’abonnement", resume: "Réactiver l’abonnement", portal: "Moyen de paiement et factures",
-    confirmTitle: "Résilier votre abonnement ?", confirmText: "Vous conservez {plan} jusqu’au {date}. Vous ne serez plus prélevé.", confirmTrial: "Votre essai gratuit continue jusqu’au {date}. Vous ne serez pas prélevé.", keep: "Garder l’abonnement", confirmCancel: "Oui, résilier",
+    confirmTitle: "Résilier votre abonnement ?", confirmText: "Vous conservez {plan} jusqu’au {date}. Vous ne serez plus prélevé.", confirmTrial: "Votre essai gratuit continue jusqu’au {date}. Vous ne serez pas prélevé.", keep: "Garder l’abonnement",
     cancelled: "Résilié. Vous conservez {plan} jusqu’au {date} et ne serez plus prélevé.", resumed: "Votre abonnement est réactivé. Il se renouvelle le {date}.",
-    pastDue: "Votre dernier paiement n’a pas abouti. Mettez à jour le moyen de paiement pour conserver {plan}.", portalFallback: "Continuer dans le portail de facturation", working: "Enregistrement…", signIn: "Reconnectez-vous pour gérer votre abonnement."
+    pastDue: "Votre dernier paiement n’a pas abouti. Mettez à jour le moyen de paiement pour conserver {plan}.", portalFallback: "Continuer dans le portail de facturation", working: "Enregistrement…", signIn: "Reconnectez-vous pour gérer votre abonnement.",
+    reasonsTitle: "Avant de partir : quelle est la raison principale ?", reasonsIntro: "Facultatif. Cela nous aide à améliorer Redaxa.", rTooExpensive: "Trop cher", rUnused: "Je ne l’utilise pas assez", rMissingFeatures: "Une fonction me manque", rSwitchedService: "Je passe à un autre outil", rLowQuality: "Problèmes techniques / bugs", rTooComplex: "Trop compliqué à utiliser", rCustomerService: "Problèmes avec le support", rOther: "Autre", comment: "Que pourrions-nous améliorer ?", commentOther: "Dites-nous-en plus (facultatif)", commentHint: "Facultatif", skip: "Passer", next: "Continuer", step: "Étape {n} sur 2"
   },
   de: {
     menu: "Abonnement verwalten", menuNote: "Tarif, Verlängerung und Kündigung", menuPlans: "Tarife & Preise", menuPlansNote: "Tarife vergleichen",
@@ -391,9 +395,10 @@ export const subscriptionCopyByLanguage: Record<SubLanguage, Record<string, stri
     planPro: "Redaxa Pro", planBusiness: "Redaxa Business", users: "{n} Nutzer|{n} Nutzer", perMonth: "{price} pro Monat", perYear: "{price} pro Jahr", exVat: "zzgl. MwSt.",
     stActive: "Aktiv", stTrial: "Kostenlose Testphase", stCancels: "Wird nicht verlängert", stPastDue: "Zahlung fehlgeschlagen", stPaused: "Pausiert",
     cancel: "Abonnement kündigen", resume: "Abonnement fortsetzen", portal: "Zahlungsmethode & Rechnungen",
-    confirmTitle: "Abonnement kündigen?", confirmText: "Sie behalten {plan} bis zum {date}. Es wird nichts mehr abgebucht.", confirmTrial: "Ihre kostenlose Testphase läuft bis zum {date}. Es wird nichts abgebucht.", keep: "Abonnement behalten", confirmCancel: "Ja, kündigen",
+    confirmTitle: "Abonnement kündigen?", confirmText: "Sie behalten {plan} bis zum {date}. Es wird nichts mehr abgebucht.", confirmTrial: "Ihre kostenlose Testphase läuft bis zum {date}. Es wird nichts abgebucht.", keep: "Abonnement behalten",
     cancelled: "Gekündigt. Sie behalten {plan} bis zum {date}; es wird nichts mehr abgebucht.", resumed: "Ihr Abonnement läuft wieder. Es verlängert sich am {date}.",
-    pastDue: "Ihre letzte Zahlung ist fehlgeschlagen. Aktualisieren Sie die Zahlungsmethode, um {plan} zu behalten.", portalFallback: "Im Abrechnungsportal fortfahren", working: "Wird gespeichert…", signIn: "Bitte melden Sie sich erneut an, um Ihr Abonnement zu verwalten."
+    pastDue: "Ihre letzte Zahlung ist fehlgeschlagen. Aktualisieren Sie die Zahlungsmethode, um {plan} zu behalten.", portalFallback: "Im Abrechnungsportal fortfahren", working: "Wird gespeichert…", signIn: "Bitte melden Sie sich erneut an, um Ihr Abonnement zu verwalten.",
+    reasonsTitle: "Bevor Sie gehen: Was ist der Hauptgrund?", reasonsIntro: "Optional. Es hilft uns, Redaxa zu verbessern.", rTooExpensive: "Zu teuer", rUnused: "Ich nutze es zu selten", rMissingFeatures: "Mir fehlt eine Funktion", rSwitchedService: "Ich nutze ein anderes Tool", rLowQuality: "Technische Probleme / Fehler", rTooComplex: "Zu kompliziert in der Nutzung", rCustomerService: "Probleme mit dem Support", rOther: "Sonstiges", comment: "Was könnten wir besser machen?", commentOther: "Erzählen Sie uns mehr (optional)", commentHint: "Optional", skip: "Überspringen", next: "Weiter", step: "Schritt {n} von 2"
   }
 };
 const subLanguage = (): SubLanguage => { const l = (typeof document !== "undefined" ? document.documentElement.lang : "en").slice(0, 2); return (["en", "it", "es", "fr", "de"] as const).includes(l as SubLanguage) ? l as SubLanguage : "en"; };
@@ -412,6 +417,14 @@ const subMoney = (cents: number, currency: string): string => {
 };
 const cardBrand = (brand: string): string => ({ visa: "Visa", mastercard: "Mastercard", amex: "American Express", discover: "Discover", jcb: "JCB", diners: "Diners Club", unionpay: "UnionPay", cartes_bancaires: "Cartes Bancaires", link: "Link" } as Record<string, string>)[brand] ?? brand.charAt(0).toUpperCase() + brand.slice(1);
 
+/** The cancel dialog's reasons: Stripe's cancellation_details.feedback codes
+ *  (api/_subscription.ts CANCEL_REASONS) and their copy keys, in display order. */
+const SUB_REASONS: ReadonlyArray<[string, string]> = [
+  ["too_expensive", "rTooExpensive"], ["unused", "rUnused"], ["missing_features", "rMissingFeatures"], ["switched_service", "rSwitchedService"],
+  ["low_quality", "rLowQuality"], ["too_complex", "rTooComplex"], ["customer_service", "rCustomerService"], ["other", "rOther"],
+];
+const SUB_COMMENT_MAX = 500;
+
 /** The "Manage subscription" panel, opened from the account menu, the
  *  account page and the current plan's card. Returns the function that opens it. */
 function mountSubscriptionPanel(deps: { menu: HTMLElement; desktop: boolean; manageBilling: () => Promise<void>; signIn: (message: string) => void }): () => void {
@@ -424,6 +437,8 @@ function mountSubscriptionPanel(deps: { menu: HTMLElement; desktop: boolean; man
   document.body.append(subSheet);
   let subState: SubscriptionInfo | null = null;
   let subBusy = false;
+  let cancelReason: string | null = null;
+  let cancelComment = "";
   const subEscape = (value: string): string => value.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
   const subPlanName = (s: SubscriptionInfo): string => { const w = subWords(); return s.plan === "business" ? w.planBusiness : w.planPro; };
   const subEnds = (s: SubscriptionInfo): string | null => s.status === "trialing" ? (s.cancel_at ?? s.trial_end ?? s.current_period_end) : (s.cancel_at ?? s.current_period_end);
@@ -487,7 +502,9 @@ function mountSubscriptionPanel(deps: { menu: HTMLElement; desktop: boolean; man
     const message = subSheet.querySelector<HTMLElement>(".ps-sub-message");
     if (message) message.textContent = w.working;
     try {
-      const payload = await apiRequest(`/api/billing/subscription/${cancel ? "cancel" : "resume"}`, {}) as Record<string, unknown>;
+      const comment = cancelComment.trim();
+      const feedback = cancel ? { ...(cancelReason ? { reason: cancelReason } : {}), ...(comment ? { comment } : {}) } : {};
+      const payload = await apiRequest(`/api/billing/subscription/${cancel ? "cancel" : "resume"}`, feedback) as Record<string, unknown>;
       subState = payload as unknown as SubscriptionInfo;
       subPaint(cancel ? subFill(w.cancelled, { plan: subPlanName(subState), date: subDate(subEnds(subState)) }) : subFill(w.resumed, { date: subDate(subState.current_period_end) }));
       void refreshEntitlement();
@@ -496,20 +513,50 @@ function mountSubscriptionPanel(deps: { menu: HTMLElement; desktop: boolean; man
       subFailure(error, () => void loadSubscription());
     } finally { subBusy = false; }
   };
+  // Step 1 of cancelling: the main reason, optional and one tap (Stripe's own
+  // cancellation_details codes). Skip and Continue with nothing chosen both
+  // go straight to step 2; nothing here makes cancelling harder.
+  const askReason = (): void => {
+    const w = subWords();
+    cancelReason = null; cancelComment = "";
+    const options = SUB_REASONS.map(([code, key]) => `<label class="ps-sub-reason"><input type="radio" name="ps-sub-reason" value="${code}"><span>${subEscape(w[key])}</span></label>`).join("");
+    subFrame(`<section class="ps-sub-card ps-sub-reasons"><p class="ps-sub-step">${subEscape(subFill(w.step, { n: 1 }))}</p>
+      <fieldset aria-describedby="ps-sub-reasons-intro"><legend><h3>${subEscape(w.reasonsTitle)}</h3></legend><p id="ps-sub-reasons-intro">${subEscape(w.reasonsIntro)}</p>
+      <div class="ps-sub-reason-grid">${options}</div></fieldset>
+      <div class="ps-sub-comment" hidden><label for="ps-sub-comment">${subEscape(w.comment)}</label><textarea id="ps-sub-comment" rows="2" maxlength="${SUB_COMMENT_MAX}" aria-describedby="ps-sub-count"></textarea><span class="ps-sub-count" id="ps-sub-count">0/${SUB_COMMENT_MAX}</span></div></section>
+      <div class="ps-account-actions ps-sub-actions"><button type="button" data-sub="next">${subEscape(w.next)}</button><button type="button" data-sub="keep">${subEscape(w.keep)}</button><button type="button" class="ps-sub-link" data-sub="skip">${subEscape(w.skip)}</button></div>`);
+    subSheet.querySelector<HTMLInputElement>('input[name="ps-sub-reason"]')!.focus();
+  };
   const confirmCancel = (): void => {
     const w = subWords();
     const s = subState!;
     const date = subDate(subEnds(s));
     const text = s.status === "trialing" ? subFill(w.confirmTrial, { date }) : subFill(w.confirmText, { plan: subPlanName(s), date });
-    subFrame(`<section class="ps-sub-card ps-sub-confirm" role="alertdialog" aria-labelledby="ps-sub-confirm-title" aria-describedby="ps-sub-confirm-text"><h3 id="ps-sub-confirm-title">${subEscape(w.confirmTitle)}</h3><p id="ps-sub-confirm-text">${subEscape(text)}</p></section>
-      <div class="ps-account-actions ps-sub-actions"><button type="button" data-sub="keep">${subEscape(w.keep)}</button><button type="button" class="ps-sub-cancel" data-sub="confirm">${subEscape(w.confirmCancel)}</button></div>`);
+    subFrame(`<section class="ps-sub-card ps-sub-confirm" role="alertdialog" aria-labelledby="ps-sub-confirm-title" aria-describedby="ps-sub-confirm-text"><p class="ps-sub-step">${subEscape(subFill(w.step, { n: 2 }))}</p><h3 id="ps-sub-confirm-title">${subEscape(w.confirmTitle)}</h3><p id="ps-sub-confirm-text">${subEscape(text)}</p></section>
+      <div class="ps-account-actions ps-sub-actions"><button type="button" data-sub="keep">${subEscape(w.keep)}</button><button type="button" class="ps-sub-cancel" data-sub="confirm">${subEscape(w.cancel)}</button></div>`);
     subSheet.querySelector<HTMLButtonElement>('[data-sub="keep"]')!.focus();
   };
+  subSheet.addEventListener("change", (event) => {
+    const input = event.target as HTMLInputElement;
+    if (input.name !== "ps-sub-reason") return;
+    cancelReason = input.value;
+    const box = subSheet.querySelector<HTMLElement>(".ps-sub-comment")!;
+    box.hidden = false;
+    box.querySelector("textarea")!.placeholder = subWords()[input.value === "other" ? "commentOther" : "commentHint"];
+  });
+  subSheet.addEventListener("input", (event) => {
+    const area = event.target as HTMLTextAreaElement;
+    if (area.id !== "ps-sub-comment") return;
+    cancelComment = area.value;
+    subSheet.querySelector<HTMLElement>("#ps-sub-count")!.textContent = `${area.value.length}/${SUB_COMMENT_MAX}`;
+  });
   subSheet.addEventListener("click", (event) => {
     if (event.target === subSheet) { const r = subSheet.getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) subSheet.close(); return; }
     const action = (event.target as HTMLElement).closest<HTMLButtonElement>("button[data-sub]")?.dataset.sub;
     if (action === "plans") { subSheet.close(); if (document.body.matches(".redaxa-workspace")) location.hash = "#plans"; else location.assign("/dashboard.html#plans"); }
-    else if (action === "cancel") confirmCancel();
+    else if (action === "cancel") askReason();
+    else if (action === "next") confirmCancel();
+    else if (action === "skip") { cancelReason = null; cancelComment = ""; confirmCancel(); }
     else if (action === "keep") subPaint();
     else if (action === "confirm") void changeSubscription(true);
     else if (action === "resume") void changeSubscription(false);
