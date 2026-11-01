@@ -3,9 +3,12 @@
    palette the page uses. The Halloween banner keeps its own shared styles
    (brand-system.css, from PC Tweaker); only its spacing is set here. */
 
-.plans-head .eyebrow { margin: 0 0 8px; color: var(--theme-accent); font: 650 11.5px/1.2 var(--font-text); letter-spacing: .12em; text-transform: uppercase; }
-.plans-head h1 { max-width: 22ch; }
-.plans-intro { max-width: 72ch; }
+/* A compact header: title and one line on the left, Monthly/Yearly on the
+   right, then the offer strip and straight to the cards. */
+.plans-page .plans-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 20px; margin: 0 0 14px; }
+.plans-page .plans-head h1 { font-size: 26px; }
+.plans-page .plans-head .plans-sub { margin-top: 4px; font-size: 14px; }
+.plans-page .plans-head .billing-switch { margin: 0; }
 
 /* One badge for every label: plan, state, recommendation. */
 .rx-badge { display: inline-flex; align-items: center; gap: 5px; min-height: 22px; padding: 0 9px; border: 1px solid var(--theme-line); border-radius: 999px; background: var(--theme-inset); color: var(--theme-muted); font-size: 11.5px; font-weight: 650; line-height: 1; letter-spacing: .02em; white-space: nowrap; }
@@ -14,20 +17,31 @@
 .rx-badge-current { border-color: color-mix(in srgb, var(--theme-text) 30%, var(--theme-line)); background: var(--theme-hover); color: var(--theme-text); }
 .rx-badge-current::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--ok, #6fdcae); }
 
-.plans-status { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 12px; margin: 0 0 18px; padding: 12px 16px; border: 1px solid var(--theme-line); border-radius: 12px; background: var(--theme-surface); }
-.plans-status p { flex: 1; min-width: 220px; margin: 0; color: var(--theme-muted); font-size: 13.5px; line-height: 1.5; }
-.plans-status .rx-badge { color: var(--theme-text); }
-.plans-status.is-paid .rx-badge { border-color: color-mix(in srgb, var(--theme-accent) 50%, var(--theme-line)); background: color-mix(in srgb, var(--theme-accent) 16%, var(--theme-inset)); }
+/* Only for what no card can say (a trial refused at checkout): one slim line. */
+.plans-status { margin: 0 0 12px; padding: 9px 14px; border: 1px solid color-mix(in srgb, var(--rx-alert) 40%, var(--theme-line)); border-radius: 10px; background: color-mix(in srgb, var(--rx-alert) 6%, var(--theme-surface)); color: var(--theme-text); font-size: 13px; line-height: 1.5; }
+.plans-status[hidden] { display: none; }
 
-.plans-status + .hw-offer, .plans-head + .hw-offer { margin: 0 0 20px; }
-
-/* The free trial, offered, running or used: one band above the cards. */
-.plans-trial { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 20px; margin: 0 0 18px; padding: 16px 18px; border: 1px solid color-mix(in srgb, var(--theme-accent) 45%, var(--theme-line)); border-radius: 12px; background: color-mix(in srgb, var(--theme-accent) 9%, var(--theme-surface)); }
-.plans-trial[hidden] { display: none; }
-.plans-trial-copy { flex: 1; min-width: 240px; }
-.plans-trial h2 { margin: 0 0 4px; color: var(--theme-text); font-size: 16px; line-height: 1.3; }
-.plans-trial p { margin: 0; color: var(--theme-muted); font-size: 13.5px; line-height: 1.5; }
-.plans-trial[data-state="used"] { border-color: var(--theme-line); background: var(--theme-surface); }
+/* The Halloween offer as one slim line right above the cards: name, real
+   reduction, deadline and a small countdown. Its fine print sits under the
+   cards. Specific enough to win over the full banner's container rules. */
+.plans-bar:empty { display: none; }
+.plans-bar { margin: 0 0 6px; }
+.hw-offer-ends-short { display: none; }
+.plans-page .plans-bar > .hw-offer-slim { margin: 0; }
+.plans-page .hw-offer-slim .hw-offer-inner { flex-direction: row; flex-wrap: wrap; align-items: center; min-height: 0; gap: 6px 14px; padding: 6px 8px 6px 14px; border-radius: 10px; background: linear-gradient(100deg, color-mix(in oklab, var(--hw-violet) 55%, var(--hw-surface)), var(--hw-surface) 70%); }
+.plans-page .hw-offer-slim :is(.hw-offer-decor, .hw-offer-fine, .hw-offer-ends, .hw-offer-timer > span) { display: none; }
+.plans-page .hw-offer-slim .hw-offer-copy { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; flex: 1 1 300px; min-width: 0; padding: 0; }
+.plans-page .hw-offer-slim .hw-offer-kicker { margin: 0; font-size: 10.5px; letter-spacing: .14em; }
+.plans-page .hw-offer-slim .hw-offer-heading { flex: 1 1 240px; min-width: 0; font-size: 13px; font-weight: 600; line-height: 1.4; }
+.plans-page .hw-offer-slim .hw-offer-ends-short { display: inline; color: var(--hw-muted); font-weight: 500; }
+.plans-page .hw-offer-slim .hw-offer-ends-short::before { content: " · "; }
+.plans-page .hw-offer-slim .hw-offer-timer { flex: none; margin-left: auto; }
+.plans-page .hw-offer-slim .hw-offer-cells { justify-content: flex-end; }
+.plans-page .hw-offer-slim .hw-offer-cell { flex: none; min-width: 34px; margin-left: 10px; padding: 3px 4px 2px; border-radius: 6px; text-align: center; }
+.plans-page .hw-offer-slim .hw-offer-cell:first-child { margin-left: 0; }
+.plans-page .hw-offer-slim .hw-offer-cell + .hw-offer-cell::before { left: -8px; top: 2px; font-size: 13px; }
+.plans-page .hw-offer-slim .hw-offer-cell strong { font-size: 14px; }
+.plans-page .hw-offer-slim .hw-offer-cell small { margin-top: 1px; font-size: 7.5px; letter-spacing: .06em; }
 
 .billing-switch { display: inline-flex; gap: 2px; margin: 0 0 16px; padding: 3px; border: 1px solid var(--theme-line); border-radius: 10px; background: var(--theme-inset); }
 .billing-switch button { min-height: 34px; padding: 0 14px; border: 0; border-radius: 7px; background: transparent; color: var(--theme-muted); font-size: 13px; font-weight: 650; cursor: pointer; }
@@ -36,7 +50,7 @@
 
 /* Room above the cards for the ribbon that sits across the Pro card's edge. */
 .plan-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: stretch; margin: 0; padding-top: 12px; }
-.plan-card { position: relative; display: flex; flex-direction: column; gap: 10px; min-width: 0; height: auto; padding: 24px; border: 1px solid var(--theme-line); border-radius: 18px; background: var(--theme-surface); box-shadow: 0 1px 2px rgb(0 0 0 / .05), 0 16px 32px -26px rgb(0 0 0 / .35); text-align: left; overflow: visible; transform: none; transition: border-color .12s ease, box-shadow .12s ease; }
+.plan-card { position: relative; display: flex; flex-direction: column; gap: 10px; min-width: 0; height: auto; padding: 20px 20px 22px; border: 1px solid var(--theme-line); border-radius: 18px; background: var(--theme-surface); box-shadow: 0 1px 2px rgb(0 0 0 / .05), 0 16px 32px -26px rgb(0 0 0 / .35); text-align: left; overflow: visible; transform: none; transition: border-color .12s ease, box-shadow .12s ease; }
 .plan-card:hover { transform: none; border-color: color-mix(in srgb, var(--theme-text) 22%, var(--theme-line)); }
 /* The recommended plan stands forward: accent edge, warmer fill, deeper shadow. */
 .plan-card.featured, .plan-card.featured:hover { border-color: var(--theme-accent); background: linear-gradient(180deg, color-mix(in srgb, var(--theme-accent) 11%, var(--theme-surface)), var(--theme-surface) 48%); box-shadow: 0 0 0 1px var(--theme-accent), 0 26px 50px -26px color-mix(in srgb, var(--theme-accent) 75%, transparent), 0 2px 6px rgb(0 0 0 / .06); }
@@ -48,7 +62,7 @@
 .plan-top { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-height: 28px; }
 .plan-top :is(h2, h3) { margin: 0 auto 0 0; color: var(--theme-text); font: 650 22px/1.2 var(--font-display); }
 .plan-tagline { margin: -4px 0 0; color: var(--theme-accent); font-size: 12.5px; font-weight: 650; }
-.plan-desc { margin: 0; min-height: 3.2em; color: var(--theme-muted); font-size: 13.5px; line-height: 1.6; }
+.plan-desc { margin: 0; color: var(--theme-muted); font-size: 13px; line-height: 1.5; }
 /* The price is the hero of every card: the largest, heaviest text in it. */
 .plan-price { display: flex; align-items: baseline; align-content: flex-start; flex-wrap: wrap; gap: 6px 8px; min-height: 0; margin-top: 4px; color: var(--theme-text); font: 750 42px/1.05 var(--font-display); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 .plan-price small { color: var(--theme-muted); font: 550 14px/1.3 var(--font-text); letter-spacing: 0; }
@@ -67,13 +81,12 @@
 .seats-row { margin: 2px 0 0; }
 .seats-row select { width: 100%; max-width: none; }
 .plan-actions { display: grid; gap: 8px; margin: 6px 0 0; }
-/* Benefits first, then the plan button at the bottom of every card, so the
-   buttons line up across the row whatever each card holds. */
-.plan-card > .rx-benefits { order: 1; align-content: start; }
-.plan-card > .plan-footnote { order: 2; }
-.plan-card > .seats-row { order: 3; margin-top: auto; padding-top: 14px; }
-.plan-card > .plan-actions { order: 4; margin-top: auto; padding-top: 14px; }
-.plan-card > .seats-row + .plan-actions { margin-top: 0; padding-top: 8px; }
+/* Price, then the plan button, then what is included: the decision and its
+   button stay in view on a 1000x700 window, and the buttons line up. */
+.plan-card > .seats-row { order: 1; padding-top: 4px; }
+.plan-card > .plan-actions { order: 2; padding-top: 6px; }
+.plan-card > .rx-benefits { order: 3; align-content: start; }
+.plan-card > .plan-footnote { order: 4; }
 /* Where subgrid exists, the cards share one set of rows: every plan's name,
    description, price, benefits and button sit on the same lines across the
    row, whichever card has a tagline, a longer description or a seat picker.
@@ -82,21 +95,20 @@
   .plan-grid { row-gap: 0; }
   .plan-card { display: grid; grid-template-rows: subgrid; grid-row: span 9; row-gap: 0; margin-bottom: 16px; }
   .plan-card > .plan-top { grid-row: 1; }
-  .plan-card > .plan-tagline { grid-row: 2; margin: 4px 0 0; }
-  .plan-card > .plan-desc { grid-row: 3; margin-top: 10px; }
-  .plan-card > .plan-price { grid-row: 4; margin-top: 14px; }
-  .plan-card > .plan-note { grid-row: 5; margin-top: 6px; }
-  .plan-card > .rx-benefits { grid-row: 6; margin-top: 16px; }
-  .plan-card > .plan-footnote { grid-row: 7; margin-top: 14px; }
-  .plan-card > .seats-row { grid-row: 8; margin-top: 0; padding-top: 18px; align-self: end; }
-  .plan-card > .plan-actions { grid-row: 9; align-content: start; margin-top: 0; padding-top: 14px; }
-  .plan-card > .seats-row + .plan-actions { padding-top: 14px; }
+  .plan-card > .plan-tagline { grid-row: 2; margin: 2px 0 0; }
+  .plan-card > .plan-desc { grid-row: 3; margin-top: 6px; }
+  .plan-card > .plan-price { grid-row: 4; margin-top: 10px; }
+  .plan-card > .plan-note { grid-row: 5; margin-top: 4px; }
+  .plan-card > .seats-row { grid-row: 6; margin-top: 0; padding-top: 12px; align-self: end; }
+  .plan-card > .plan-actions { grid-row: 7; align-content: start; margin-top: 0; padding-top: 12px; }
+  .plan-card > .rx-benefits { grid-row: 8; margin-top: 16px; }
+  .plan-card > .plan-footnote { grid-row: 9; margin-top: 14px; }
   /* The last card's spacing is the grid's own bottom edge. */
   .plan-grid { margin-bottom: -16px; }
 }
 /* Three across, an offer on some cards only (never on Free): the others keep
    the badge's line empty, so every price still sits on one line. */
-@container plans (min-width: 880px) {
+@container plans (min-width: 640px) {
   .plan-grid:has(.rx-deal) .plan-price:not(:has(.rx-deal))::before { content: ""; order: -1; flex-basis: 100%; height: 38px; margin-bottom: 2px; }
 }
 .plan-actions > * { width: 100%; }
@@ -121,20 +133,18 @@ html:is(:not([data-theme]), [data-theme="paper"]) .plans-page, html:is(:not([dat
 .plan-choice-line, .plan-choice-note { margin: 2px 0 0; color: var(--theme-muted); font-size: 12.5px; line-height: 1.55; text-wrap: pretty; }
 .plan-choice-line { color: var(--theme-text); }
 .plan-choice-note.is-error, .billing-state.is-error { color: var(--rx-alert); font-weight: 600; }
-.plans-status.is-paused { border-color: color-mix(in srgb, var(--rx-alert) 45%, var(--theme-line)); background: color-mix(in srgb, var(--rx-alert) 6%, var(--theme-surface)); }
-.plans-status.is-paused .rx-badge { border-color: color-mix(in srgb, var(--rx-alert) 55%, var(--theme-line)); background: color-mix(in srgb, var(--rx-alert) 12%, var(--theme-inset)); color: var(--theme-text); }
-.plans-status.is-paused p { color: var(--theme-text); }
 .billing-state { margin: 6px 0 0; color: var(--theme-text); font-size: 13px; line-height: 1.55; }
 
-.plan-card .rx-benefits { display: grid; gap: 10px; margin: 6px 0 0; padding: 16px 0 0; border-top: 1px solid var(--theme-line); list-style: none; color: var(--theme-muted); font-size: 13px; line-height: 1.55; }
+.plan-card .rx-benefits { display: grid; gap: 8px; margin: 6px 0 0; padding: 14px 0 0; border-top: 1px solid var(--theme-line); list-style: none; color: var(--theme-muted); font-size: 13px; line-height: 1.55; }
 .plan-card .rx-benefits li { position: relative; padding-left: 24px; }
 .plan-card .rx-benefits li::before { content: ""; position: absolute; left: 2px; top: .38em; width: 10px; height: 5px; border-left: 2px solid var(--theme-accent); border-bottom: 2px solid var(--theme-accent); transform: rotate(-45deg); }
 .plan-card .rx-benefits strong { color: var(--theme-text); font-weight: 650; }
 
 .plan-footnote { margin: 4px 0 0; color: var(--theme-muted); font-size: 12px; line-height: 1.6; }
-.seats-row { display: grid; gap: 6px; color: var(--theme-text); font-size: 13px; font-weight: 600; }
+/* Label and picker on one line, so the plan button stays in view. */
+.seats-row { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 10px; color: var(--theme-text); font-size: 13px; font-weight: 600; }
 .seats-row[hidden] { display: none; }
-.seats-row select { min-height: 38px; padding: 6px 10px; border: 1px solid var(--theme-strong); border-radius: 7px; background: var(--theme-inset); color: var(--theme-text); font: inherit; }
+.seats-row select { min-height: 34px; padding: 6px 10px; border: 1px solid var(--theme-strong); border-radius: 7px; background: var(--theme-inset); color: var(--theme-text); font: inherit; }
 /* Plan buttons on pages without the workspace's own button styles (the site). */
 .plan-card .rx-plan-cta { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 0 18px; border: 1px solid var(--theme-accent); border-radius: 8px; background: var(--theme-accent); color: var(--theme-ink); font-size: 13.5px; font-weight: 700; text-decoration: none; cursor: pointer; transition: filter .12s ease, background-color .12s ease; }
 .plan-card .rx-plan-cta:hover { filter: brightness(1.08); }
@@ -142,6 +152,10 @@ html:is(:not([data-theme]), [data-theme="paper"]) .plans-page, html:is(:not([dat
 .plan-card .rx-plan-cta.ghost:hover { background: var(--theme-hover); filter: none; }
 .plans-page .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .plans-checkout-note { max-width: 90ch; margin: 14px 0 0; color: var(--theme-muted); font-size: 12.5px; line-height: 1.6; }
+/* Trial terms, the offer's fine print and how payment works: small print under the cards. */
+.plans-fine { display: grid; gap: 4px; max-width: 100ch; margin: 16px 0 0; }
+.plans-fine p { margin: 0; color: var(--theme-muted); font-size: 12px; line-height: 1.55; }
+.plans-fine p[hidden] { display: none; }
 
 .plans-section { margin-top: 36px; }
 .plans-section > :is(h2, h3) { margin: 0 0 14px; color: var(--theme-text); font: 600 21px/1.25 var(--font-display); }
@@ -186,16 +200,34 @@ html:is(:not([data-theme]), [data-theme="paper"]) .plans-page, html:is(:not([dat
   --font-display: "Bahnschrift", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
   --font-text: "Redaxa Inter", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
 }
-@container plans (max-width: 879px) {
+/* Three across down to 640 px of plans width (a 1000x700 window); the price
+   steps down so it still fits a narrower card. */
+@container plans (max-width: 899px) {
+  .plan-grid { gap: 12px; }
+  /* The strip right above names the offer and its deadline; each card keeps the bold reduction. */
+  .plans-page .plan-price .rx-deal-when { display: none; }
+  .plans-page .plan-price .rx-deal { min-height: 30px; }
+  .plan-grid:has(.rx-deal) .plan-price:not(:has(.rx-deal))::before { height: 30px; }
+  .plan-card { padding: 18px 16px 20px; }
+  .plan-desc { font-size: 12.5px; }
+  .plan-price { font-size: 34px; }
+  .plan-price .rx-was { font-size: 17px; }
+  .plan-price .rx-off { font-size: 19px; padding: 6px 9px 5px; }
+  .plan-top :is(h2, h3) { font-size: 20px; }
+}
+/* Narrower: the paid plans side by side first, Free under them. */
+@container plans (max-width: 639px) {
   .plan-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .plan-card.plan-free { grid-column: 1 / -1; }
+  .plan-card.plan-free { grid-column: 1 / -1; order: 1; }
+  .plan-card:not(.plan-free) { grid-column: auto; }
+}
+@container plans (max-width: 879px) {
   .trust-grid, .plans-trust .trust-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .plans-trust .trust-item, .plans-trust .trust-item:nth-child(n + 4) { grid-column: auto; }
   .plans-trust .trust-item:last-child { grid-column: 1 / -1; }
 }
-@container plans (max-width: 599px) {
+@container plans (max-width: 479px) {
   .plan-grid, .trust-grid, .plans-trust .trust-grid { grid-template-columns: minmax(0, 1fr); }
-  .plan-desc { min-height: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   .plan-card, .billing-switch button { transition: none; }

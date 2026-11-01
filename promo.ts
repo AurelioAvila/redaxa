@@ -145,7 +145,7 @@ function bannerElement(): HTMLElement {
   banner.innerHTML = `<div class="hw-offer-inner">`
     + `<span class="hw-offer-decor hw-offer-decor-left" aria-hidden="true">${HALLOWEEN_DECOR_LEFT}</span>`
     + `<span class="hw-offer-decor hw-offer-decor-right" aria-hidden="true">${HALLOWEEN_DECOR_RIGHT}</span>`
-    + `<div class="hw-offer-copy"><h3 class="hw-offer-kicker" id="redaxa-promo-title"></h3><p class="hw-offer-heading"></p><p class="hw-offer-fine"></p></div>`
+    + `<div class="hw-offer-copy"><h3 class="hw-offer-kicker" id="redaxa-promo-title"></h3><p class="hw-offer-heading"><span class="hw-offer-lead"></span> <span class="hw-offer-ends"></span><span class="hw-offer-ends-short"></span></p><p class="hw-offer-fine"></p></div>`
     + `<div class="hw-offer-timer"><span aria-hidden="true"></span><div class="hw-offer-cells" role="timer" aria-live="off">`
     + [0, 1, 2, 3].map(() => `<div class="hw-offer-cell" aria-hidden="true"><strong>00</strong><small></small></div>`).join("")
     + `</div></div></div>`;
@@ -156,7 +156,10 @@ function fillBanner(banner: HTMLElement, promo: Promo | null, words: PromoWords,
   const percent = promo ? Math.min(...promo.offers.map(promoPercent)) : 50;
   const end = promoEndLabel(promo ?? { endsAt: new Date(PROMO_LAYOUT_UNTIL).toISOString() }, lang);
   banner.querySelector(".hw-offer-kicker")!.textContent = words.kicker;
-  banner.querySelector(".hw-offer-heading")!.textContent = `${words.lead.replace("{percent}", percentLabel(percent, lang))} ${words.ends.replace("{date}", end)}`;
+  banner.querySelector(".hw-offer-lead")!.textContent = words.lead.replace("{percent}", percentLabel(percent, lang));
+  banner.querySelector(".hw-offer-ends")!.textContent = words.ends.replace("{date}", end);
+  // The slim strip (workspace plans page) says the deadline the way the plan cards do.
+  banner.querySelector(".hw-offer-ends-short")!.textContent = words.ends.replace("{date}", promoShortEnd(promo?.endsAt ?? new Date(PROMO_LAYOUT_UNTIL).toISOString(), lang));
   banner.querySelector(".hw-offer-fine")!.textContent = words.fine;
   banner.querySelector(".hw-offer-timer > span")!.textContent = words.endsIn;
   banner.querySelectorAll(".hw-offer-cell small").forEach((unit, i) => { unit.textContent = words.units[i]; });

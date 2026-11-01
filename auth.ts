@@ -178,7 +178,8 @@ async function apiRequest(path: string, body?: Record<string, unknown>, method: 
     const message = typeof payload === "object" && payload !== null && "error" in payload ? String((payload as { error?: unknown }).error) : "We could not complete that request.";
     // The machine-readable reason, when the API gives one (e.g. trial_unavailable).
     const code = typeof payload === "object" && payload !== null && "code" in payload ? String((payload as { code?: unknown }).code) : undefined;
-    throw Object.assign(new Error(message), { code });
+    const url = typeof payload === "object" && payload !== null && "url" in payload && typeof (payload as { url?: unknown }).url === "string" ? (payload as { url: string }).url : undefined;
+    throw Object.assign(new Error(message), { code, ...(url?.startsWith("https://billing.stripe.com/") ? { url } : {}) });
   }
   return payload as Record<string, unknown>;
 }
@@ -251,8 +252,8 @@ function accountControls(): { trigger: HTMLAnchorElement; login: HTMLAnchorEleme
       <div class="ps-menu-group">
         <button class="ps-menu-link" type="button" role="menuitem" data-account-action="overview">Your account <span>Photo, plan & access</span></button>
         <button class="ps-menu-link" type="button" role="menuitem" data-account-action="photo">Profile photo</button>
-        <a class="ps-menu-link" role="menuitem" href="/dashboard.html#plans">Plans & benefits <span>Compare options</span></a>
-        <button class="ps-menu-link" type="button" role="menuitem" data-account-action="billing">Subscription & invoices <span>Billing portal</span></button>
+        <button class="ps-menu-link" type="button" role="menuitem" data-account-action="subscription"><b data-sub-copy="menu">Manage subscription</b> <span data-sub-copy="menuNote">Plan, renewal and cancellation</span></button>
+        <a class="ps-menu-link" role="menuitem" href="/dashboard.html#plans"><b data-sub-copy="menuPlans">Plans & pricing</b> <span data-sub-copy="menuPlansNote">Compare plans</span></a>
       </div>
       <div class="ps-menu-group">
         <a class="ps-menu-link" role="menuitem" href="/dashboard.html#preferences">Preferences <span>Language, appearance, privacy</span></a>
@@ -313,6 +314,225 @@ function accountControls(): { trigger: HTMLAnchorElement; login: HTMLAnchorEleme
     avatars: Array.from(account.querySelectorAll<HTMLElement>(".ps-avatar")),
     closeMenu: () => setMenuOpen(false)
   };
+}
+
+/* ---------- Manage subscription (account menu) ----------
+ * The in-app panel behind "Manage subscription": what is active, when it
+ * renews or ends, and stopping or resuming the renewal. GET/POST
+ * /api/billing/subscription[/cancel|/resume] (api/_subscription.ts).
+ * Cancelling never ends access early: the plan runs to the end of the period
+ * already paid for. Card and invoices stay in Stripe's billing portal. */
+type SubscriptionInfo = {
+  plan: string | null; interval: "month" | "year" | null; amount: number | null; currency: string | null; seats: number | null;
+  status: string; trial_end: string | null; current_period_end: string | null; cancel_at_period_end: boolean; cancel_at: string | null;
+  payment_method: { brand: string; last4: string } | null; can_cancel: boolean; can_resume: boolean; member_of: string | null;
+};
+type SubLanguage = "en" | "it" | "es" | "fr" | "de";
+// French copy keeps a narrow no-break space before ? ! : ; as French typography requires.
+export const subscriptionCopyByLanguage: Record<SubLanguage, Record<string, string>> = {
+  en: {
+    menu: "Manage subscription", menuNote: "Plan, renewal and cancellation", menuPlans: "Plans & pricing", menuPlansNote: "Compare plans",
+    title: "Manage subscription", intro: "Your Redaxa plan, its renewal and payment.", close: "Close",
+    loading: "Loading your subscription…", offline: "You’re offline. Connect to the internet, then try again.", error: "We couldn’t load your subscription.", retry: "Try again",
+    noneTitle: "No active subscription", noneText: "You’re on the free plan: 5 prompt checks a day on the web and in the Windows app.", memberText: "Your access comes from {owner}’s Business workspace. The workspace owner manages the subscription.", seePlans: "See plans",
+    plan: "Plan", price: "Price", status: "Status", renews: "Renews on", trialEnds: "Free trial ends", accessUntil: "Access until", payment: "Payment method", paymentPortal: "Managed in the billing portal",
+    planPro: "Redaxa Pro", planBusiness: "Redaxa Business", users: "{n} user|{n} users", perMonth: "{price} a month", perYear: "{price} a year", exVat: "excl. VAT",
+    stActive: "Active", stTrial: "Free trial", stCancels: "Won’t renew", stPastDue: "Payment failed", stPaused: "Paused",
+    cancel: "Cancel subscription", resume: "Resume subscription", portal: "Payment method & invoices",
+    confirmTitle: "Cancel your subscription?", confirmText: "You keep {plan} until {date}. You won’t be charged again.", confirmTrial: "Your free trial continues until {date}. You won’t be charged.", keep: "Keep subscription", confirmCancel: "Yes, cancel",
+    cancelled: "Cancelled. You keep {plan} until {date} and won’t be charged again.", resumed: "Your subscription is back on. It renews on {date}.",
+    pastDue: "Your last payment didn’t go through. Update the payment method to keep {plan}.", portalFallback: "Continue in the billing portal", working: "Saving…", signIn: "Please sign in again to manage your subscription."
+  },
+  it: {
+    menu: "Gestisci abbonamento", menuNote: "Piano, rinnovo e disdetta", menuPlans: "Piani e prezzi", menuPlansNote: "Confronta i piani",
+    title: "Gestisci abbonamento", intro: "Il tuo piano Redaxa, il rinnovo e il pagamento.", close: "Chiudi",
+    loading: "Caricamento dell’abbonamento…", offline: "Sei offline. Connettiti a Internet e riprova.", error: "Non è stato possibile caricare l’abbonamento.", retry: "Riprova",
+    noneTitle: "Nessun abbonamento attivo", noneText: "Stai usando il piano gratuito: 5 controlli di prompt al giorno sul web e nell’app Windows.", memberText: "Il tuo accesso proviene dallo spazio di lavoro Business di {owner}. L’abbonamento è gestito dal proprietario dello spazio di lavoro.", seePlans: "Vedi i piani",
+    plan: "Piano", price: "Prezzo", status: "Stato", renews: "Si rinnova il", trialEnds: "La prova gratuita termina il", accessUntil: "Accesso fino al", payment: "Metodo di pagamento", paymentPortal: "Gestito nel portale di fatturazione",
+    planPro: "Redaxa Pro", planBusiness: "Redaxa Business", users: "{n} utente|{n} utenti", perMonth: "{price} al mese", perYear: "{price} all’anno", exVat: "IVA esclusa",
+    stActive: "Attivo", stTrial: "Prova gratuita", stCancels: "Non si rinnova", stPastDue: "Pagamento non riuscito", stPaused: "In pausa",
+    cancel: "Disdici abbonamento", resume: "Riattiva abbonamento", portal: "Metodo di pagamento e fatture",
+    confirmTitle: "Disdire l’abbonamento?", confirmText: "Mantieni {plan} fino al {date}. Non ti verrà addebitato altro.", confirmTrial: "La prova gratuita continua fino al {date}. Non ti verrà addebitato nulla.", keep: "Mantieni abbonamento", confirmCancel: "Sì, disdici",
+    cancelled: "Disdetto. Mantieni {plan} fino al {date} e non ti verrà addebitato altro.", resumed: "L’abbonamento è di nuovo attivo. Si rinnova il {date}.",
+    pastDue: "L’ultimo pagamento non è andato a buon fine. Aggiorna il metodo di pagamento per mantenere {plan}.", portalFallback: "Continua nel portale di fatturazione", working: "Salvataggio…", signIn: "Accedi di nuovo per gestire l’abbonamento."
+  },
+  es: {
+    menu: "Gestionar suscripción", menuNote: "Plan, renovación y cancelación", menuPlans: "Planes y precios", menuPlansNote: "Comparar planes",
+    title: "Gestionar suscripción", intro: "Tu plan de Redaxa, su renovación y el pago.", close: "Cerrar",
+    loading: "Cargando tu suscripción…", offline: "No tienes conexión. Conéctate a Internet y vuelve a intentarlo.", error: "No hemos podido cargar tu suscripción.", retry: "Reintentar",
+    noneTitle: "Ninguna suscripción activa", noneText: "Usas el plan gratuito: 5 revisiones de prompts al día en la web y en la app de Windows.", memberText: "Tu acceso procede del espacio de trabajo Business de {owner}. La suscripción la gestiona el propietario del espacio de trabajo.", seePlans: "Ver planes",
+    plan: "Plan", price: "Precio", status: "Estado", renews: "Se renueva el", trialEnds: "La prueba gratuita termina el", accessUntil: "Acceso hasta el", payment: "Método de pago", paymentPortal: "Se gestiona en el portal de facturación",
+    planPro: "Redaxa Pro", planBusiness: "Redaxa Business", users: "{n} usuario|{n} usuarios", perMonth: "{price} al mes", perYear: "{price} al año", exVat: "IVA no incluido",
+    stActive: "Activa", stTrial: "Prueba gratuita", stCancels: "No se renovará", stPastDue: "Pago fallido", stPaused: "En pausa",
+    cancel: "Cancelar suscripción", resume: "Reanudar suscripción", portal: "Método de pago y facturas",
+    confirmTitle: "¿Cancelar tu suscripción?", confirmText: "Conservas {plan} hasta el {date}. No se te volverá a cobrar.", confirmTrial: "Tu prueba gratuita continúa hasta el {date}. No se te cobrará nada.", keep: "Mantener suscripción", confirmCancel: "Sí, cancelar",
+    cancelled: "Cancelada. Conservas {plan} hasta el {date} y no se te volverá a cobrar.", resumed: "Tu suscripción vuelve a estar activa. Se renueva el {date}.",
+    pastDue: "Tu último pago no se ha completado. Actualiza el método de pago para conservar {plan}.", portalFallback: "Continuar en el portal de facturación", working: "Guardando…", signIn: "Vuelve a iniciar sesión para gestionar tu suscripción."
+  },
+  fr: {
+    menu: "Gérer l’abonnement", menuNote: "Offre, renouvellement et résiliation", menuPlans: "Offres et tarifs", menuPlansNote: "Comparer les offres",
+    title: "Gérer l’abonnement", intro: "Votre offre Redaxa, son renouvellement et le paiement.", close: "Fermer",
+    loading: "Chargement de votre abonnement…", offline: "Vous êtes hors ligne. Connectez-vous à Internet, puis réessayez.", error: "Nous n’avons pas pu charger votre abonnement.", retry: "Réessayer",
+    noneTitle: "Aucun abonnement actif", noneText: "Vous utilisez l’offre gratuite : 5 vérifications de prompt par jour sur le web et dans l’application Windows.", memberText: "Votre accès provient de l’espace de travail Business de {owner}. C’est le propriétaire de l’espace de travail qui gère l’abonnement.", seePlans: "Voir les offres",
+    plan: "Offre", price: "Prix", status: "État", renews: "Renouvellement le", trialEnds: "Fin de l’essai gratuit le", accessUntil: "Accès jusqu’au", payment: "Moyen de paiement", paymentPortal: "Géré dans le portail de facturation",
+    planPro: "Redaxa Pro", planBusiness: "Redaxa Business", users: "{n} utilisateur|{n} utilisateurs", perMonth: "{price} par mois", perYear: "{price} par an", exVat: "HT",
+    stActive: "Actif", stTrial: "Essai gratuit", stCancels: "Sans renouvellement", stPastDue: "Échec du paiement", stPaused: "En pause",
+    cancel: "Résilier l’abonnement", resume: "Réactiver l’abonnement", portal: "Moyen de paiement et factures",
+    confirmTitle: "Résilier votre abonnement ?", confirmText: "Vous conservez {plan} jusqu’au {date}. Vous ne serez plus prélevé.", confirmTrial: "Votre essai gratuit continue jusqu’au {date}. Vous ne serez pas prélevé.", keep: "Garder l’abonnement", confirmCancel: "Oui, résilier",
+    cancelled: "Résilié. Vous conservez {plan} jusqu’au {date} et ne serez plus prélevé.", resumed: "Votre abonnement est réactivé. Il se renouvelle le {date}.",
+    pastDue: "Votre dernier paiement n’a pas abouti. Mettez à jour le moyen de paiement pour conserver {plan}.", portalFallback: "Continuer dans le portail de facturation", working: "Enregistrement…", signIn: "Reconnectez-vous pour gérer votre abonnement."
+  },
+  de: {
+    menu: "Abonnement verwalten", menuNote: "Tarif, Verlängerung und Kündigung", menuPlans: "Tarife & Preise", menuPlansNote: "Tarife vergleichen",
+    title: "Abonnement verwalten", intro: "Ihr Redaxa-Tarif, seine Verlängerung und die Zahlung.", close: "Schließen",
+    loading: "Ihr Abonnement wird geladen…", offline: "Sie sind offline. Stellen Sie eine Internetverbindung her und versuchen Sie es erneut.", error: "Wir konnten Ihr Abonnement nicht laden.", retry: "Erneut versuchen",
+    noneTitle: "Kein aktives Abonnement", noneText: "Sie nutzen den kostenlosen Tarif: 5 Prompt-Prüfungen pro Tag im Web und in der Windows-App.", memberText: "Ihr Zugang stammt aus dem Business-Arbeitsbereich von {owner}. Das Abonnement verwaltet die Person, der der Arbeitsbereich gehört.", seePlans: "Tarife ansehen",
+    plan: "Tarif", price: "Preis", status: "Status", renews: "Verlängert sich am", trialEnds: "Testphase endet am", accessUntil: "Zugang bis", payment: "Zahlungsmethode", paymentPortal: "Wird im Abrechnungsportal verwaltet",
+    planPro: "Redaxa Pro", planBusiness: "Redaxa Business", users: "{n} Nutzer|{n} Nutzer", perMonth: "{price} pro Monat", perYear: "{price} pro Jahr", exVat: "zzgl. MwSt.",
+    stActive: "Aktiv", stTrial: "Kostenlose Testphase", stCancels: "Wird nicht verlängert", stPastDue: "Zahlung fehlgeschlagen", stPaused: "Pausiert",
+    cancel: "Abonnement kündigen", resume: "Abonnement fortsetzen", portal: "Zahlungsmethode & Rechnungen",
+    confirmTitle: "Abonnement kündigen?", confirmText: "Sie behalten {plan} bis zum {date}. Es wird nichts mehr abgebucht.", confirmTrial: "Ihre kostenlose Testphase läuft bis zum {date}. Es wird nichts abgebucht.", keep: "Abonnement behalten", confirmCancel: "Ja, kündigen",
+    cancelled: "Gekündigt. Sie behalten {plan} bis zum {date}; es wird nichts mehr abgebucht.", resumed: "Ihr Abonnement läuft wieder. Es verlängert sich am {date}.",
+    pastDue: "Ihre letzte Zahlung ist fehlgeschlagen. Aktualisieren Sie die Zahlungsmethode, um {plan} zu behalten.", portalFallback: "Im Abrechnungsportal fortfahren", working: "Wird gespeichert…", signIn: "Bitte melden Sie sich erneut an, um Ihr Abonnement zu verwalten."
+  }
+};
+const subLanguage = (): SubLanguage => { const l = (typeof document !== "undefined" ? document.documentElement.lang : "en").slice(0, 2); return (["en", "it", "es", "fr", "de"] as const).includes(l as SubLanguage) ? l as SubLanguage : "en"; };
+const subWords = (): Record<string, string> => subscriptionCopyByLanguage[subLanguage()];
+const subFill = (text: string, values: Record<string, string | number>): string => text.replace(/\{(\w+)\}/g, (_, key: string) => String(values[key] ?? ""));
+const subPlural = (text: string, n: number): string => subFill(text.split("|")[n === 1 ? 0 : 1] ?? text, { n });
+const subDate = (iso: string | null): string => {
+  const time = iso ? Date.parse(iso) : NaN;
+  if (!Number.isFinite(time)) return "";
+  const lang = subLanguage();
+  return new Intl.DateTimeFormat(lang === "en" ? "en-GB" : lang, { day: "numeric", month: "long", year: "numeric" }).format(new Date(time));
+};
+const subMoney = (cents: number, currency: string): string => {
+  const lang = subLanguage();
+  return new Intl.NumberFormat(lang === "en" ? "en-IE" : lang, { style: "currency", currency: currency.toUpperCase(), minimumFractionDigits: cents % 100 ? 2 : 0 }).format(cents / 100);
+};
+const cardBrand = (brand: string): string => ({ visa: "Visa", mastercard: "Mastercard", amex: "American Express", discover: "Discover", jcb: "JCB", diners: "Diners Club", unionpay: "UnionPay", cartes_bancaires: "Cartes Bancaires", link: "Link" } as Record<string, string>)[brand] ?? brand.charAt(0).toUpperCase() + brand.slice(1);
+
+/** The "Manage subscription" panel, opened from the account menu, the
+ *  account page and the current plan's card. Returns the function that opens it. */
+function mountSubscriptionPanel(deps: { menu: HTMLElement; desktop: boolean; manageBilling: () => Promise<void>; signIn: (message: string) => void }): () => void {
+  // Manage subscription: one dialog, four states (loading, error, nothing to
+  // manage, the subscription) plus the cancel confirmation. Every change is
+  // the server's answer redrawn, never a guess made here.
+  const subSheet = document.createElement("dialog");
+  subSheet.className = "ps-account-sheet ps-sub-sheet";
+  subSheet.setAttribute("aria-labelledby", "ps-sub-title");
+  document.body.append(subSheet);
+  let subState: SubscriptionInfo | null = null;
+  let subBusy = false;
+  const subEscape = (value: string): string => value.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+  const subPlanName = (s: SubscriptionInfo): string => { const w = subWords(); return s.plan === "business" ? w.planBusiness : w.planPro; };
+  const subEnds = (s: SubscriptionInfo): string | null => s.status === "trialing" ? (s.cancel_at ?? s.trial_end ?? s.current_period_end) : (s.cancel_at ?? s.current_period_end);
+  const subFrame = (body: string, message = ""): void => {
+    const w = subWords();
+    subSheet.innerHTML = `<header><div><h2 id="ps-sub-title">${subEscape(w.title)}</h2><p>${subEscape(w.intro)}</p></div><button type="button" data-sheet-close aria-label="${subEscape(w.close)}">×</button></header>${body}<p class="ps-account-message ps-sub-message" role="status">${subEscape(message)}</p>`;
+    subSheet.querySelector("[data-sheet-close]")!.addEventListener("click", () => subSheet.close());
+  };
+  const subPaint = (message = ""): void => {
+    const w = subWords();
+    const s = subState;
+    if (!s || s.status === "none") {
+      const text = s?.member_of ? subFill(w.memberText, { owner: s.member_of }) : w.noneText;
+      subFrame(`<section class="ps-sub-card ps-sub-empty"><h3>${subEscape(w.noneTitle)}</h3><p>${subEscape(text)}</p></section>
+        <div class="ps-account-actions">${s?.member_of ? "" : `<button type="button" data-sub="plans">${subEscape(w.seePlans)}</button>`}</div>`, message);
+    } else {
+      const ending = s.cancel_at_period_end;
+      const trial = s.status === "trialing";
+      const failed = ["past_due", "unpaid", "incomplete"].includes(s.status);
+      const pill = failed ? w.stPastDue : s.status === "paused" ? w.stPaused : ending ? w.stCancels : trial ? w.stTrial : w.stActive;
+      const tone = failed ? "is-alert" : ending ? "is-ending" : "is-ok";
+      const price = s.amount != null && s.currency ? `${subFill(s.interval === "year" ? w.perYear : w.perMonth, { price: subMoney(s.amount, s.currency) })} <small>${subEscape(w.exVat)}</small>` : "";
+      const seats = s.plan === "business" && s.seats ? ` · ${subEscape(subPlural(w.users, s.seats))}` : "";
+      const dateLabel = ending ? w.accessUntil : trial ? w.trialEnds : w.renews;
+      const date = subDate(ending ? subEnds(s) : trial ? s.trial_end : s.current_period_end);
+      const card = s.payment_method?.last4 ? `${cardBrand(s.payment_method.brand)} •••• ${s.payment_method.last4}` : s.payment_method ? cardBrand(s.payment_method.brand) : w.paymentPortal;
+      const actions = [
+        s.can_resume ? `<button type="button" data-sub="resume">${subEscape(w.resume)}</button>` : "",
+        failed ? `<button type="button" data-sub="portal">${subEscape(w.portal)}</button>` : "",
+        s.can_cancel ? `<button type="button" class="ps-sub-cancel" data-sub="cancel">${subEscape(w.cancel)}</button>` : "",
+        failed ? "" : `<button type="button" class="ps-sub-link" data-sub="portal">${subEscape(w.portal)}</button>`,
+      ].join("");
+      subFrame(`<section class="ps-sub-card"><div class="ps-sub-head"><div><h3>${subEscape(subPlanName(s))}${seats}</h3>${price ? `<p class="ps-sub-price">${price}</p>` : ""}</div><span class="ps-sub-pill ${tone}">${subEscape(pill)}</span></div>
+        ${failed ? `<p class="ps-sub-warn">${subEscape(subFill(w.pastDue, { plan: subPlanName(s) }))}</p>` : ""}
+        <dl class="ps-account-facts">${date ? `<div><dt>${subEscape(dateLabel)}</dt><dd>${subEscape(date)}</dd></div>` : ""}<div><dt>${subEscape(w.payment)}</dt><dd>${subEscape(card)}</dd></div></dl></section>
+        <div class="ps-account-actions ps-sub-actions">${actions}</div>`, message);
+    }
+    subSheet.querySelector<HTMLButtonElement>("[data-sub]")?.focus();
+  };
+  const subFailure = (error: unknown, retry: () => void): void => {
+    const w = subWords();
+    const err = error as Error & { code?: string };
+    if (err?.message === "UNAUTHORIZED") { subSheet.close(); deps.signIn(w.signIn); return; }
+    const offline = typeof navigator !== "undefined" && navigator.onLine === false || error instanceof TypeError;
+    const portal = (err as { url?: string })?.url;
+    subFrame(`<section class="ps-sub-card ps-sub-empty"><p>${subEscape(offline ? w.offline : w.error)}</p></section><div class="ps-account-actions"><button type="button" data-sub="retry">${subEscape(w.retry)}</button>${portal ? `<button type="button" data-sub="open-portal">${subEscape(w.portalFallback)}</button>` : ""}</div>`);
+    subSheet.querySelector<HTMLButtonElement>('[data-sub="retry"]')!.addEventListener("click", retry);
+    subSheet.querySelector<HTMLButtonElement>('[data-sub="open-portal"]')?.addEventListener("click", () => { if (deps.desktop) void openInSystemBrowser(portal!); else location.assign(portal!); });
+    subSheet.querySelector<HTMLButtonElement>('[data-sub="retry"]')!.focus();
+  };
+  const loadSubscription = async (): Promise<void> => {
+    subFrame(`<p class="ps-sub-loading" aria-busy="true">${subEscape(subWords().loading)}</p>`);
+    try { subState = await apiRequest("/api/billing/subscription", undefined, "GET") as unknown as SubscriptionInfo; subPaint(); }
+    catch (error) { subFailure(error, () => void loadSubscription()); }
+  };
+  const changeSubscription = async (cancel: boolean): Promise<void> => {
+    if (subBusy || !subState) return;
+    subBusy = true;
+    const w = subWords();
+    subSheet.querySelectorAll<HTMLButtonElement>("button[data-sub]").forEach((b) => { b.disabled = true; });
+    const message = subSheet.querySelector<HTMLElement>(".ps-sub-message");
+    if (message) message.textContent = w.working;
+    try {
+      const payload = await apiRequest(`/api/billing/subscription/${cancel ? "cancel" : "resume"}`, {}) as Record<string, unknown>;
+      subState = payload as unknown as SubscriptionInfo;
+      subPaint(cancel ? subFill(w.cancelled, { plan: subPlanName(subState), date: subDate(subEnds(subState)) }) : subFill(w.resumed, { date: subDate(subState.current_period_end) }));
+      void refreshEntitlement();
+    } catch (error) {
+      // A 502 from Stripe carries the portal's own cancel flow as the way out.
+      subFailure(error, () => void loadSubscription());
+    } finally { subBusy = false; }
+  };
+  const confirmCancel = (): void => {
+    const w = subWords();
+    const s = subState!;
+    const date = subDate(subEnds(s));
+    const text = s.status === "trialing" ? subFill(w.confirmTrial, { date }) : subFill(w.confirmText, { plan: subPlanName(s), date });
+    subFrame(`<section class="ps-sub-card ps-sub-confirm" role="alertdialog" aria-labelledby="ps-sub-confirm-title" aria-describedby="ps-sub-confirm-text"><h3 id="ps-sub-confirm-title">${subEscape(w.confirmTitle)}</h3><p id="ps-sub-confirm-text">${subEscape(text)}</p></section>
+      <div class="ps-account-actions ps-sub-actions"><button type="button" data-sub="keep">${subEscape(w.keep)}</button><button type="button" class="ps-sub-cancel" data-sub="confirm">${subEscape(w.confirmCancel)}</button></div>`);
+    subSheet.querySelector<HTMLButtonElement>('[data-sub="keep"]')!.focus();
+  };
+  subSheet.addEventListener("click", (event) => {
+    if (event.target === subSheet) { const r = subSheet.getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) subSheet.close(); return; }
+    const action = (event.target as HTMLElement).closest<HTMLButtonElement>("button[data-sub]")?.dataset.sub;
+    if (action === "plans") { subSheet.close(); if (document.body.matches(".redaxa-workspace")) location.hash = "#plans"; else location.assign("/dashboard.html#plans"); }
+    else if (action === "cancel") confirmCancel();
+    else if (action === "keep") subPaint();
+    else if (action === "confirm") void changeSubscription(true);
+    else if (action === "resume") void changeSubscription(false);
+    else if (action === "portal") { subSheet.close(); void deps.manageBilling(); }
+  });
+  subSheet.addEventListener("close", () => deps.menu.querySelector<HTMLButtonElement>(".ps-avatar-btn")?.focus());
+  const openSubscription = (): void => {
+    if (!currentEmail) { deps.signIn(subWords().signIn); return; }
+    if (!subSheet.open) subSheet.showModal();
+    void loadSubscription();
+  };
+  // The menu speaks the page's language; re-read when the workspace switches it.
+  const relabelMenu = (): void => { const w = subWords(); deps.menu.querySelectorAll<HTMLElement>("[data-sub-copy]").forEach((el) => { el.textContent = w[el.dataset.subCopy!] ?? el.textContent; }); };
+  relabelMenu();
+  new MutationObserver(relabelMenu).observe(document.documentElement, { attributes: true, attributeFilter: ["lang"] });
+  // Every "Manage subscription" button on the page opens this panel; a failed
+  // payment goes straight to the portal, where the card is fixed.
+  const manageButton = document.querySelector<HTMLButtonElement>("#manage-billing");
+  manageButton?.addEventListener("click", () => {
+    const paused = latestAccount?.billing?.state === "blocked" && latestAccount.billing.blockedReason === "payment_failed";
+    if (paused) void deps.manageBilling(); else openSubscription();
+  });
+  return openSubscription;
 }
 
 /** Display verified account state; an unavailable lookup is not a free plan. */
@@ -809,7 +1029,6 @@ async function boot(): Promise<void> {
     }
     finally { billingBusy = false; }
   };
-  document.querySelector<HTMLButtonElement>("#manage-billing")?.addEventListener("click", () => void manageBilling());
 
   const accountSheet = document.createElement("dialog");
   accountSheet.className = "ps-account-sheet";
@@ -817,7 +1036,7 @@ async function boot(): Promise<void> {
   accountSheet.innerHTML = `<header><div><h2 id="ps-account-title">Your account</h2><p>Subscription, access and account settings.</p></div><button type="button" data-sheet-close aria-label="Close account details">×</button></header>
     <section class="ps-profile-editor" aria-label="Profile photo"><span class="ps-avatar ps-profile-preview" aria-hidden="true"></span><div><label for="ps-profile-file">Profile photo</label><p>Saved on this device only. JPG, PNG or WebP, up to 5 MB.</p><input id="ps-profile-file" type="file" accept="image/jpeg,image/png,image/webp"><button type="button" data-photo-remove>Remove photo</button><p data-photo-message role="status"></p></div></section>
     <dl class="ps-account-facts"><div><dt>Email</dt><dd data-account-email></dd></div><div><dt>Plan</dt><dd data-account-plan></dd></div><div><dt data-account-period-label>Current period ends</dt><dd data-account-period></dd></div><div><dt>Repository access</dt><dd data-account-access></dd></div></dl>
-    <p class="ps-account-message" role="status"></p><div class="ps-account-actions"><button type="button" data-sheet-billing>Subscription & invoices</button><button type="button" data-sheet-refresh>Refresh account</button></div>`;
+    <p class="ps-account-message" role="status"></p><div class="ps-account-actions"><button type="button" data-sheet-billing>Manage subscription</button><button type="button" data-sheet-refresh>Refresh account</button></div>`;
   document.body.append(accountSheet);
   const paintAccountSheet = (): void => {
     void loadProfilePhoto(currentEmail);
@@ -827,7 +1046,7 @@ async function boot(): Promise<void> {
     const trialing = latestAccount?.status === "trialing";
     const paused = latestAccount?.billing?.state === "blocked" && latestAccount.billing.blockedReason === "payment_failed";
     accountSheet.querySelector<HTMLElement>("[data-account-period-label]")!.textContent = trialing ? "Free trial ends" : "Current period ends";
-    accountSheet.querySelector<HTMLElement>("[data-account-period]")!.textContent = paused ? "Paused until a payment goes through. Update the payment method under Subscription & invoices."
+    accountSheet.querySelector<HTMLElement>("[data-account-period]")!.textContent = paused ? "Paused until a payment goes through. Update the payment method under Manage subscription."
       : period && Number.isFinite(period.getTime()) ? period.toLocaleDateString(undefined, {year:"numeric",month:"long",day:"numeric"}) + (trialing && latestAccount?.billing?.cancelAtPeriodEnd ? " · cancelled, nothing will be charged" : "") : "Not available";
     accountSheet.querySelector<HTMLElement>("[data-account-access]")!.textContent = !latestAccount ? "Could not verify access" : latestAccount.repositoryAccess === true ? "Included · Windows app required" : latestAccount.repositoryAccess === false || !latestAccount.active ? "Not included in current access" : "Check your plan details";
   };
@@ -857,17 +1076,22 @@ async function boot(): Promise<void> {
   accountSheet.addEventListener("close", () => controls.account.querySelector<HTMLButtonElement>(".ps-avatar-btn")?.focus());
   accountSheet.querySelector("[data-sheet-close]")!.addEventListener("click", sheetClose);
   accountSheet.addEventListener("click", event => { if(event.target===accountSheet){const rect=accountSheet.getBoundingClientRect();if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)sheetClose();} });
-  accountSheet.querySelector("[data-sheet-billing]")!.addEventListener("click", () => { sheetClose(); void manageBilling(); });
+  accountSheet.querySelector("[data-sheet-billing]")!.addEventListener("click", () => { sheetClose(); openSubscription(); });
   accountSheet.querySelector("[data-sheet-refresh]")!.addEventListener("click", async event => {
     const button=event.currentTarget as HTMLButtonElement;button.disabled=true;
     await refreshEntitlement();paintAccountSheet();
     accountSheet.querySelector<HTMLElement>(".ps-account-message")!.textContent = latestAccount ? "Account status refreshed." : "Account service unavailable. Try again shortly.";
     button.disabled=false;
   });
+  const openSubscription = mountSubscriptionPanel({
+    menu: controls.account, desktop, manageBilling,
+    signIn: (message: string) => { renderAccount(null); void clearDesktopSession(); setMode("signin"); setMessage(message); show(); },
+  });
   controls.account.querySelectorAll<HTMLButtonElement>("[data-account-action]").forEach(button => button.addEventListener("click", event => {
     const action=(event.currentTarget as HTMLButtonElement).dataset.accountAction;
     if(!action)return;
     if(action==="overview" || action==="photo"){paintAccountSheet();accountSheet.showModal();if(action==="photo")photoInput.focus();return;}
+    if(action==="subscription"){openSubscription();return;}
     if(action==="billing"){void manageBilling();return;}
     if(action==="password"){setMode("recovery");dialog.email.value=currentEmail??"";show();return;}
     const target=action==="privacy"?webAppUrl+"/privacy.html":action==="support"?"mailto:redaxa@getcertsprint.com?subject=Redaxa%20support":null;

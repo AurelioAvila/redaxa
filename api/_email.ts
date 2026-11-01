@@ -390,11 +390,11 @@ function subscriptionEmail(input: SubscriptionEmailInput): { subject: string; ht
       { h2: "Three things to try first" },
       { list: firstSteps, numbered: true },
       ...(trialing
-        ? [{ p: `Cancel before ${until} from Your account, under Subscription & invoices, and nothing is charged.`, muted: true },
+        ? [{ p: `Cancel before ${until} from the account menu, under Manage subscription, and nothing is charged.`, muted: true },
           { moment: { kicker: "Trial", big: "Seven days, every feature", text: `Nothing is charged before ${until}, and you can cancel before then.` },
             text: `Trial: seven days, every feature. Nothing is charged before ${until}, and you can cancel before then.` }]
-        : [{ moment: { kicker: "Managing the plan", big: "Your account", text: "Change or cancel the plan from Your account, under Subscription & invoices." },
-          text: "Managing the plan: change or cancel the plan from Your account, under Subscription & invoices." }]),
+        : [{ moment: { kicker: "Managing the plan", big: "Manage subscription", text: "Cancel or resume the plan from the account menu, under Manage subscription." },
+          text: "Managing the plan: cancel or resume the plan from the account menu, under Manage subscription." }]),
     ],
   });
 }

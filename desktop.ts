@@ -119,11 +119,11 @@ export function enableDesktopCompanion(onPrompt: (value: string) => void): void 
 // so their labels live here, where both pages already import from.
 export type ShellLanguage = "en" | "it" | "es" | "fr" | "de";
 export const shellCopyByLanguage: Record<ShellLanguage, Record<string, string>> = {
-  en: { brandTag: "Check before you send", groupProtect: "Protect", groupConfigure: "Configure", navCheck: "Check text", navRepository: "Repository check", navActivity: "Activity", navTerms: "Protected terms", navSettings: "Settings", navAccount: "Account & team", navHelp: "Help & support", navPlans: "Plans & pricing", crumbWorkspace: "Workspace", repoNoteTitle: "Values stay hidden", repoNoteText: "Matched values are masked until you choose to reveal them.", coffeeNav: "Buy me a coffee", coffeeCta: "Fuel the next release", coffeeFewer: "One fewer coffee", coffeeMore: "One more coffee" },
-  it: { brandTag: "Controlla prima di inviare", groupProtect: "Proteggi", groupConfigure: "Configura", navCheck: "Controlla testo", navRepository: "Controllo repository", navActivity: "Attività", navTerms: "Termini protetti", navSettings: "Impostazioni", navAccount: "Account e team", navHelp: "Aiuto e supporto", navPlans: "Piani e prezzi", crumbWorkspace: "Spazio di lavoro", repoNoteTitle: "I valori restano nascosti", repoNoteText: "I valori trovati sono mascherati finché non scegli di mostrarli.", coffeeNav: "Offrimi un caffè", coffeeCta: "Sostieni la prossima versione", coffeeFewer: "Un caffè in meno", coffeeMore: "Un caffè in più" },
-  es: { brandTag: "Revisa antes de enviar", groupProtect: "Proteger", groupConfigure: "Configurar", navCheck: "Revisar texto", navRepository: "Revisión de repositorios", navActivity: "Actividad", navTerms: "Términos protegidos", navSettings: "Ajustes", navAccount: "Cuenta y equipo", navHelp: "Ayuda y soporte", navPlans: "Planes y precios", crumbWorkspace: "Espacio de trabajo", repoNoteTitle: "Los valores quedan ocultos", repoNoteText: "Los valores encontrados se enmascaran hasta que decides mostrarlos.", coffeeNav: "Invítame a un café", coffeeCta: "Apoya la próxima versión", coffeeFewer: "Un café menos", coffeeMore: "Un café más" },
-  fr: { brandTag: "Vérifiez avant d’envoyer", groupProtect: "Protéger", groupConfigure: "Configurer", navCheck: "Vérifier un texte", navRepository: "Vérification de dépôt", navActivity: "Activité", navTerms: "Termes protégés", navSettings: "Réglages", navAccount: "Compte et équipe", navHelp: "Aide et support", navPlans: "Offres et tarifs", crumbWorkspace: "Espace de travail", repoNoteTitle: "Les valeurs restent masquées", repoNoteText: "Les valeurs trouvées restent masquées tant que vous ne choisissez pas de les afficher.", coffeeNav: "Offrez-moi un café", coffeeCta: "Soutenir la prochaine version", coffeeFewer: "Un café de moins", coffeeMore: "Un café de plus" },
-  de: { brandTag: "Erst prüfen, dann senden", groupProtect: "Schützen", groupConfigure: "Einrichten", navCheck: "Text prüfen", navRepository: "Repository-Prüfung", navActivity: "Aktivität", navTerms: "Geschützte Begriffe", navSettings: "Einstellungen", navAccount: "Konto & Team", navHelp: "Hilfe und Support", navPlans: "Tarife & Preise", crumbWorkspace: "Arbeitsbereich", repoNoteTitle: "Werte bleiben verborgen", repoNoteText: "Gefundene Werte bleiben maskiert, bis Sie sie bewusst einblenden.", coffeeNav: "Einen Kaffee spendieren", coffeeCta: "Nächste Version unterstützen", coffeeFewer: "Ein Kaffee weniger", coffeeMore: "Ein Kaffee mehr" }
+  en: { brandTag: "Check before you send", groupProtect: "Protect", groupConfigure: "Configure", navCheck: "Check text", navRepository: "Repository check", navActivity: "Activity", navTerms: "Protected terms", navSettings: "Settings", navAccount: "Account & team", navHelp: "Help & support", navPlans: "Plans & pricing", crumbWorkspace: "Workspace", repoNoteTitle: "Values stay hidden", repoNoteText: "Matched values are masked until you choose to reveal them.", coffeeNav: "Buy me a coffee", coffeeCta: "Fuel the next release", coffeeFewer: "One fewer coffee", coffeeMore: "One more coffee", coffeeCrypto: "or pay ≈ {price} in crypto (USDC)" },
+  it: { brandTag: "Controlla prima di inviare", groupProtect: "Proteggi", groupConfigure: "Configura", navCheck: "Controlla testo", navRepository: "Controllo repository", navActivity: "Attività", navTerms: "Termini protetti", navSettings: "Impostazioni", navAccount: "Account e team", navHelp: "Aiuto e supporto", navPlans: "Piani e prezzi", crumbWorkspace: "Spazio di lavoro", repoNoteTitle: "I valori restano nascosti", repoNoteText: "I valori trovati sono mascherati finché non scegli di mostrarli.", coffeeNav: "Offrimi un caffè", coffeeCta: "Sostieni la prossima versione", coffeeFewer: "Un caffè in meno", coffeeMore: "Un caffè in più", coffeeCrypto: "oppure paga ≈ {price} in cripto (USDC)" },
+  es: { brandTag: "Revisa antes de enviar", groupProtect: "Proteger", groupConfigure: "Configurar", navCheck: "Revisar texto", navRepository: "Revisión de repositorios", navActivity: "Actividad", navTerms: "Términos protegidos", navSettings: "Ajustes", navAccount: "Cuenta y equipo", navHelp: "Ayuda y soporte", navPlans: "Planes y precios", crumbWorkspace: "Espacio de trabajo", repoNoteTitle: "Los valores quedan ocultos", repoNoteText: "Los valores encontrados se enmascaran hasta que decides mostrarlos.", coffeeNav: "Invítame a un café", coffeeCta: "Apoya la próxima versión", coffeeFewer: "Un café menos", coffeeMore: "Un café más", coffeeCrypto: "o paga ≈ {price} en cripto (USDC)" },
+  fr: { brandTag: "Vérifiez avant d’envoyer", groupProtect: "Protéger", groupConfigure: "Configurer", navCheck: "Vérifier un texte", navRepository: "Vérification de dépôt", navActivity: "Activité", navTerms: "Termes protégés", navSettings: "Réglages", navAccount: "Compte et équipe", navHelp: "Aide et support", navPlans: "Offres et tarifs", crumbWorkspace: "Espace de travail", repoNoteTitle: "Les valeurs restent masquées", repoNoteText: "Les valeurs trouvées restent masquées tant que vous ne choisissez pas de les afficher.", coffeeNav: "Offrez-moi un café", coffeeCta: "Soutenir la prochaine version", coffeeFewer: "Un café de moins", coffeeMore: "Un café de plus", coffeeCrypto: "ou payez ≈ {price} en crypto (USDC)" },
+  de: { brandTag: "Erst prüfen, dann senden", groupProtect: "Schützen", groupConfigure: "Einrichten", navCheck: "Text prüfen", navRepository: "Repository-Prüfung", navActivity: "Aktivität", navTerms: "Geschützte Begriffe", navSettings: "Einstellungen", navAccount: "Konto & Team", navHelp: "Hilfe und Support", navPlans: "Tarife & Preise", crumbWorkspace: "Arbeitsbereich", repoNoteTitle: "Werte bleiben verborgen", repoNoteText: "Gefundene Werte bleiben maskiert, bis Sie sie bewusst einblenden.", coffeeNav: "Einen Kaffee spendieren", coffeeCta: "Nächste Version unterstützen", coffeeFewer: "Ein Kaffee weniger", coffeeMore: "Ein Kaffee mehr", coffeeCrypto: "oder ≈ {price} in Krypto (USDC) zahlen" }
 };
 
 /** Translates the shared rail and page bar on pages that do not load the
@@ -158,8 +158,20 @@ const MAX_COFFEES = 10;
 /** The shared, account-less tip checkout (one Stripe account for every product).
  *  Its GET launcher answers with a redirect to Stripe Checkout, so nothing here
  *  needs CORS: the browser simply opens it. Only product and quantity are sent. */
-export const coffeeUrl = (quantity: number): string =>
-  `https://api.pctweaker.app/api/tip/start?product=redaxa&quantity=${Math.min(MAX_COFFEES, Math.max(1, Math.trunc(quantity) || 1))}`;
+export const coffeeUrl = (quantity: number, method?: "crypto"): string =>
+  `https://api.pctweaker.app/api/tip/start?product=redaxa&quantity=${Math.min(MAX_COFFEES, Math.max(1, Math.trunc(quantity) || 1))}${method ? `&method=${method}` : ""}`;
+
+/** One coffee in US cents when the shared API offers paying in crypto (USDC),
+ *  for the visitor's country; null while it is off, unreadable or refused by
+ *  CORS, so the choice simply is not shown. */
+export async function cryptoCoffeeCents(): Promise<number | null> {
+  try {
+    const response = await fetch("https://api.pctweaker.app/api/billing/prices", { cache: "no-store", signal: AbortSignal.timeout(8000) });
+    const crypto = response.ok ? (await response.json() as { crypto?: { available?: unknown; coffee?: { usd?: unknown } } }).crypto : null;
+    const usd = crypto?.coffee?.usd;
+    return crypto?.available === true && Number.isInteger(usd) && (usd as number) > 0 && (usd as number) < 10_000 ? usd as number : null;
+  } catch { return null; }
+}
 
 /**
  * "Buy me a coffee", the last row of the rail's footer on the workspace and the
@@ -179,7 +191,7 @@ export function mountCoffee(): void {
   const copy = shellCopyByLanguage[savedShellLanguage()];
   const box = document.createElement("div");
   box.className = "coffee"; box.id = "coffee";
-  box.innerHTML = `<button class="nav-item coffee-row" type="button" aria-expanded="false" aria-controls="coffee-panel"><i class="ico coffee-mark" aria-hidden="true">☕</i><span data-i18n="coffeeNav"></span><svg class="coffee-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.5l6 6 6-6"/></svg></button><div class="coffee-reveal" id="coffee-panel" data-open="false" inert aria-hidden="true"><div><div class="coffee-stepper"><button type="button" class="coffee-step" data-step="-1" data-i18n-label="coffeeFewer" disabled>−</button><span class="coffee-count" aria-live="polite"></span><button type="button" class="coffee-step" data-step="1" data-i18n-label="coffeeMore" disabled>+</button></div><button type="button" class="coffee-cta" data-i18n="coffeeCta" disabled></button></div></div>`;
+  box.innerHTML = `<button class="nav-item coffee-row" type="button" aria-expanded="false" aria-controls="coffee-panel"><i class="ico coffee-mark" aria-hidden="true">☕</i><span data-i18n="coffeeNav"></span><svg class="coffee-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.5l6 6 6-6"/></svg></button><div class="coffee-reveal" id="coffee-panel" data-open="false" inert aria-hidden="true"><div><div class="coffee-stepper"><button type="button" class="coffee-step" data-step="-1" data-i18n-label="coffeeFewer" disabled>−</button><span class="coffee-count" aria-live="polite"></span><button type="button" class="coffee-step" data-step="1" data-i18n-label="coffeeMore" disabled>+</button></div><button type="button" class="coffee-cta" data-i18n="coffeeCta" disabled></button><button type="button" class="coffee-crypto" hidden disabled></button></div></div>`;
   box.querySelectorAll<HTMLElement>("[data-i18n]").forEach((element) => { element.textContent = copy[element.dataset.i18n!]; });
   box.querySelectorAll<HTMLElement>("[data-i18n-label]").forEach((element) => { element.setAttribute("aria-label", copy[element.dataset.i18nLabel!]); });
   foot.append(box);
@@ -189,11 +201,16 @@ export function mountCoffee(): void {
   const [fewer, more] = box.querySelectorAll<HTMLButtonElement>(".coffee-step");
   const cta = box.querySelector<HTMLButtonElement>(".coffee-cta")!;
   const countLabel = box.querySelector<HTMLElement>(".coffee-count")!;
-  let open = false, count = 1;
+  const crypto = box.querySelector<HTMLButtonElement>(".coffee-crypto")!;
+  let open = false, count = 1, cryptoCents: number | null = null;
+  const language = savedShellLanguage();
+  const usd = (cents: number): string => new Intl.NumberFormat(language === "en" ? "en-US" : language, { style: "currency", currency: "USD" }).format(cents / 100);
   const render = (): void => {
     row.setAttribute("aria-expanded", String(open));
     panel.dataset.open = String(open); panel.inert = !open; panel.setAttribute("aria-hidden", String(!open));
     fewer.disabled = !open || count <= 1; more.disabled = !open || count >= MAX_COFFEES; cta.disabled = !open;
+    crypto.hidden = cryptoCents === null; crypto.disabled = !open || cryptoCents === null;
+    if (cryptoCents !== null) crypto.textContent = copy.coffeeCrypto.replace("{price}", usd(cryptoCents * count));
   };
   const show = (value: number): void => {
     count = value;
@@ -205,13 +222,18 @@ export function mountCoffee(): void {
   row.addEventListener("click", () => { open = !open; render(); });
   fewer.addEventListener("click", () => show(Math.max(1, count - 1)));
   more.addEventListener("click", () => show(Math.min(MAX_COFFEES, count + 1)));
-  cta.addEventListener("click", () => {
-    if (!open) return;
-    const url = coffeeUrl(count);
-    // The Windows app hands checkout to the default browser, like billing does;
-    // the web workspace opens it in a new tab so the page keeps its text.
+  // The Windows app hands checkout to the default browser, like billing does;
+  // the web workspace opens it in a new tab so the page keeps its text.
+  const openTip = (url: string): void => {
     if (isTauri()) void openInSystemBrowser(url).catch(() => {});
     else window.open(url, "_blank", "noopener");
+  };
+  // The same coffees in USDC, offered only while the shared API says so.
+  crypto.addEventListener("click", () => { if (open && cryptoCents !== null) openTip(coffeeUrl(count, "crypto")); });
+  void cryptoCoffeeCents().then((cents) => { cryptoCents = cents; render(); });
+  cta.addEventListener("click", () => {
+    if (!open) return;
+    openTip(coffeeUrl(count));
   });
   show(1);
 }

@@ -14,6 +14,7 @@ const KEYRING_USER: &str = "session";
 mod repository;
 mod tray;
 mod update_identity;
+mod window_state;
 
 #[tauri::command]
 fn secure_store_set(value: String) -> Result<(), String> {
@@ -130,8 +131,6 @@ pub fn run() {
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_shell::init())
-        // Reopens the window where and as large as it was left; saved on close.
-        .plugin(tauri_plugin_window_state::Builder::default().build())
         .invoke_handler(tauri::generate_handler![
             secure_store_set,
             secure_store_get,
@@ -142,6 +141,9 @@ pub fn run() {
             tray::set_tray_language
         ])
         .setup(|app| {
+            // PC Tweaker's rule: 75% of the work area (1000x700 to 1280x820),
+            // centred, or where the user left it (window-placement.json).
+            window_state::restore(app);
             use tauri_plugin_deep_link::DeepLinkExt;
             #[cfg(windows)]
             app.deep_link().register_all()?;

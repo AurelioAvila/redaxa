@@ -50,7 +50,7 @@ createServer(async (request, response) => {
   if (pathname.startsWith('/api/desktop-preview/')) {
     const origin = `http://127.0.0.1:${process.env.PORT ?? 4173}`;
     const target = pathname.slice('/api/desktop-preview'.length);
-    const allowed = /^\/api\/(?:auth-config|account|scan|billing|team|auth\/(?:session|signin|signup|signout|recover|callback))$/;
+    const allowed = /^\/api\/(?:auth-config|account|scan|billing(?:\/subscription(?:\/(?:cancel|resume))?)?|team|auth\/(?:session|signin|signup|signout|recover|callback))$/;
     const reject = (code:number,message:string) => {response.writeHead(code,securityHeaders('application/json'));response.end(JSON.stringify({error:message}));};
     if(process.env.REPO_SCAN_PREVIEW !== '1' || request.headers.host !== new URL(origin).host || request.headers['x-redaxa-desktop'] !== '1' || request.headers.origin && request.headers.origin !== origin || !allowed.test(target) || !['GET','POST'].includes(request.method ?? '')) {reject(403,'Desktop preview request denied.');return;}
     try {

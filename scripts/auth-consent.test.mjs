@@ -37,7 +37,7 @@ async function fixture({url='https://redaxa.example/dashboard.html',email=null,p
     mode:'signin',currentEmail:null,accountActive:false,config:null,latestAccount:null,webAppUrl:'https://redaxa.example',
     restoreTheme(){},installDesktopTitlebar(){},installStylesheet(){},isTauri:()=>false,
     accountControls:()=>controls,installDialog:()=>dialog,loadConfig:async()=>({configured:true}),loadSession:async()=>email,
-    refreshEntitlement:async()=>{},loadProfilePhoto:async()=>{},publishAccountState(){},accountPlanLabel:()=>'',
+    refreshEntitlement:async()=>{},mountSubscriptionPanel:()=>()=>{},loadProfilePhoto:async()=>{},publishAccountState(){},accountPlanLabel:()=>'',
     localStorage:{getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value),removeItem:key=>storage.delete(key)},
     window:{addEventListener(){},setTimeout(){}},
     document:{documentElement:new Element(),body:{append:element=>dialogs.push(element)},createElement:()=>new Element(),querySelectorAll:()=>[],querySelector:()=>null,dispatchEvent(){}},

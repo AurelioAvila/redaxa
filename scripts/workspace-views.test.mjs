@@ -64,7 +64,9 @@ const settings = constant('settingsByLanguage');
 const labels = constant('findingLabelsByLanguage');
 const promoWords = constant('promoWordsByLanguage');
 const marks = text => (String(text).match(/\{\w+\}|<\/?strong>|\n/g) || []).sort().join() + '|' + String(text).split('|').length;
-const tables = { copy: base, views, shell, labels };
+// The Manage subscription panel and its menu entries (auth.ts), in every language.
+const subscription = constant('subscriptionCopyByLanguage', parse('auth.ts'));
+const tables = { copy: base, views, shell, labels, subscription };
 for (const [name, table] of Object.entries(tables)) {
   for (const language of languages.slice(1)) {
     assert.deepEqual(Object.keys(table[language]).sort(), Object.keys(table.en).sort(), `${name}.${language}: keys differ from English`);
@@ -75,7 +77,7 @@ for (const language of languages.slice(1)) {
   assert.equal(settings[language].length, settings.en.length, `settings.${language}: length differs from English`);
   assert.deepEqual(Object.keys(promoWords[language]).sort(), Object.keys(promoWords.it).sort(), `promoWords.${language}: keys differ`);
 }
-const everyString = language => [base, views, shell, labels, promoWords].flatMap(table => Object.values(table[language])).concat(settings[language]).flat();
+const everyString = language => [base, views, shell, labels, promoWords, subscription].flatMap(table => Object.values(table[language])).concat(settings[language]).flat();
 for (const language of languages) for (const text of everyString(language)) assert.doesNotMatch(String(text), /illustrat/i, `${language}: banned word in "${text}"`);
 for (const language of languages.slice(1)) for (const text of everyString(language)) {
   assert.doesNotMatch(String(text), /\p{L}'\p{L}/u, `${language}: straight apostrophe in "${text}"`);
