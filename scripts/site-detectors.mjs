@@ -189,7 +189,7 @@ ${repo}${near}${fp}${after}${cta}${rel}${sources}`;
     { "@type": "TechArticle", "@id": `${url}#article`, headline: p.h1, description: p.description, url, inLanguage: "en", datePublished: UPDATED, dateModified: UPDATED, author: AUTHOR, publisher: { "@id": `${ORIGIN}/#organization` }, isPartOf: { "@type": "WebSite", "@id": `${ORIGIN}/#website`, name: "Redaxa", url: `${ORIGIN}/` }, about: p.name, mainEntityOfPage: url },
     crumbs([["Redaxa", `${ORIGIN}/`], ["Detection reference", `${ORIGIN}/detectors/`], [p.name, url]]),
   ];
-  return { path: `detectors/${p.slug}.html`, url, html: pageShell({ title: `${p.title} | Redaxa`, description: p.description, url, graph, body }) };
+  return { path: `detectors/${p.slug}.html`, url, html: pageShell({ title: `${p.title} | Redaxa`.length <= 60 ? `${p.title} | Redaxa` : p.title, description: p.description, url, graph, body }) };
 }
 
 function hub(pages, facts) {
@@ -210,7 +210,7 @@ ${groups}
     { "@type": "CollectionPage", "@id": `${url}#page`, name: "What Redaxa detects", description: "The detection reference for Redaxa's engine.", url, inLanguage: "en", dateModified: UPDATED, isPartOf: { "@type": "WebSite", "@id": `${ORIGIN}/#website`, name: "Redaxa", url: `${ORIGIN}/` }, mainEntity: { "@type": "ItemList", itemListElement: pages.map((p, i) => ({ "@type": "ListItem", position: i + 1, url: `${ORIGIN}/detectors/${p.slug}.html`, name: p.name })) } },
     crumbs([["Redaxa", `${ORIGIN}/`], ["Detection reference", url]]),
   ];
-  const description = "Every kind of sensitive data Redaxa detects in AI prompts and public repositories: API keys, tokens, passwords, personal and financial data, with real engine output.";
+  const description = "Every kind of sensitive data Redaxa detects in AI prompts and public repos: API keys, tokens, passwords, personal and financial data, with real output.";
   return { path: "detectors/index.html", url, html: pageShell({ title: "What Redaxa Detects: API Keys, Tokens, PII | Redaxa", description, url, graph, body }) };
 }
 
