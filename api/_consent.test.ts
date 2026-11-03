@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 
 // The Terms box before Stripe (api/_consent.ts). Nothing here reaches the
 // network: fetch (Supabase) and the Stripe methods used are replaced.
@@ -41,16 +40,16 @@ assert.equal(consent.userAgentFamily("Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 li
 assert.equal(consent.userAgentFamily(undefined), "Other/Other");
 assert.equal(consent.consentCutoff(Date.parse("2026-11-03T10:00:00Z")), "2025-10-03T10:00:00.000Z", "13 months");
 
-// The version is the date terms.html shows.
-const terms = readFileSync(new URL("../terms.html", import.meta.url), "utf8");
-const updated = /Last updated (\d+) (\w+) (\d{4})/.exec(terms)!;
-assert.equal(consent.TERMS_VERSION, new Date(`${updated[2]} ${updated[1]}, ${updated[3]} UTC`).toISOString().slice(0, 10), "bump TERMS_VERSION with terms.html");
+// The version stored on every row: the box text below with the terms.html it links to.
+assert.equal(consent.TERMS_VERSION, "2026-11-04");
 
-// --- The box says exactly what the owner approved (3 Nov 2026), in every language.
+// --- The box says exactly what the owner approved (4 Nov 2026), in every language, and nothing more.
 const box = (lang: keyof typeof consent.CONSENT_COPY) => { const c = consent.CONSENT_COPY[lang]; return `${c.before}${c.terms}${c.after}`; };
-assert.equal(box("en"), "I agree to the Terms. I ask for immediate access to this digital content and understand that I lose my 14-day right of withdrawal once access starts. Purchases are not refundable, except where Link’s buyer terms or the law require a refund. Subscriptions renew automatically until you cancel.");
-assert.equal(box("de"), "Ich stimme den Nutzungsbedingungen zu. Ich verlange ausdrücklich, dass der Zugang zu diesen digitalen Inhalten sofort beginnt, und mir ist bekannt, dass ich damit mein 14-tägiges Widerrufsrecht verliere. Käufe werden nicht erstattet, außer wenn die Käuferbedingungen von Link oder das Gesetz eine Erstattung vorsehen. Abos verlängern sich automatisch bis zur Kündigung.");
-assert.equal(box("it"), "Accetto i Termini. Chiedo di accedere subito a questo contenuto digitale e so che, una volta iniziato l’accesso, perdo il diritto di recesso di 14 giorni. Gli acquisti non sono rimborsabili, salvo quando lo prevedono i termini per gli acquirenti di Link o la legge. Gli abbonamenti si rinnovano automaticamente finché non li disdici.");
+assert.equal(box("en"), "I agree to the Terms.");
+assert.equal(box("de"), "Ich stimme den Nutzungsbedingungen zu.");
+assert.equal(box("it"), "Accetto i Termini.");
+assert.equal(box("es"), "Acepto los Términos.");
+assert.equal(box("fr"), "J’accepte les Conditions d’utilisation.");
 const keys = (value: object): string[] => Object.entries(value).flatMap(([k, v]) => typeof v === "object" ? keys(v).map((x) => `${k}.${x}`) : [k]).sort();
 for (const lang of Object.keys(consent.CONSENT_COPY) as Array<keyof typeof consent.CONSENT_COPY>) {
   assert.deepEqual(keys(consent.CONSENT_COPY[lang]), keys(consent.CONSENT_COPY.en), lang);
@@ -151,7 +150,7 @@ process.env.CHECKOUT_CONSENT = "required";
   assert.equal(shown.statusCode, 200);
   assert.equal(shown.headers["cache-control"], "no-store");
   assert.match(shown.body, /<html lang="de">/);
-  assert.match(shown.body, /Ich verlange ausdrücklich/);
+  assert.match(shown.body, /<span>Ich stimme den <a href="[^"]+\/terms\.html" target="_blank" rel="noopener">Nutzungsbedingungen<\/a> zu\.<\/span><\/label>/);
   assert.match(shown.body, /<label class="consent" id="consent-box"><input type="checkbox" name="agree" value="yes" id="agree" aria-describedby="consent-error">/);
   assert.match(shown.body, /Pro — Jährlich/);
   assert.match(shown.body, /3-tägigen kostenlosen Test/);
