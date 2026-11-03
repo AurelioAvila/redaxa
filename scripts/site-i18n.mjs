@@ -141,7 +141,7 @@ const WORDS = {
     // The extension's store name in this language (browser-extension/_locales; checked by site-pages.test.mjs).
     eyebrow: "Redaxa – Schwärzt API-Keys & persönliche Daten: ChatGPT, Claude, Gemini",
     title: "Sensible Daten mit ChatGPT teilen? Erst schwärzen | Redaxa",
-    description: "Redaxa prüft deinen Prompt, bevor er an ChatGPT, Claude oder Gemini geht, und schwärzt Schlüssel, Passwörter und persönliche Daten. Kostenlos, auf deinem Gerät.",
+    description: "Redaxa prüft deinen Prompt, bevor er an ChatGPT, Claude oder Gemini geht, und schwärzt Schlüssel, Passwörter und persönliche Daten. Kostenlos.",
     h1: "Personenbezogene Daten und API-Schlüssel schwärzen,<br>bevor du einen Prompt teilst",
     lead: "Bevor personenbezogene Daten in ChatGPT landen, prüft Redaxa den Text: E-Mail-Adressen, Telefonnummern, IBANs, Kartennummern, API-Schlüssel und Passwörter werden markiert und in einer geschwärzten Version ersetzt. Du entscheidest, was gesendet wird.",
     ctaExt: "Chrome-Erweiterung hinzufügen", ctaExtNote: "Kostenlos, ohne Konto und ohne Tageslimit: Die kostenlosen Prüfungen der Erweiterung laufen im Browser, der Text bleibt auf deinem Gerät.",
