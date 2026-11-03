@@ -10,7 +10,7 @@
 import { renderEmail, send, SITE_URL, type Block, type EmailFrame } from "./_email.js";
 import type { Language } from "./_trial.js";
 
-export type TrialMailKind = "trial_started" | "trial_ending" | "trial_paid" | "payment_failed" | "trial_ended" | "trial_rejected" | "checkout_failed" | "payment_reversed";
+export type TrialMailKind = "trial_started" | "subscription_started" | "trial_ending" | "trial_paid" | "payment_failed" | "trial_ended" | "trial_rejected" | "checkout_failed" | "payment_reversed";
 export type FailureKey = "insufficient_funds" | "card_declined" | "expired_card" | "authentication_required" | "processing_error" | "generic";
 type Money = { amount: number; currency: string };
 
@@ -83,6 +83,27 @@ const EN: Words = {
       after: `To keep ${v.tier}, there is nothing to do. To stop, open Account & team, then Manage subscription, and cancel before ${v.end}: nothing is charged and ${v.tier} stays on until the trial ends.`,
       moment: ["Trial ends", v.endShort, `Then ${v.charge} for ${v.plan}, unless you cancel before then.`],
       footer: "You received this email because you started a Redaxa trial with this address. There is one free trial per person.",
+      help: ["Billing question, or something not working?", "Reply to this email from the address on the account."], reply: true,
+    }),
+    subscription_started: (v, business) => ({
+      subject: `Your Redaxa ${v.tier} subscription is confirmed`,
+      preheader: `${v.plan}. Three things to try first.`,
+      kicker: "Subscription active",
+      h1: "You're all set",
+      intro: `Your Redaxa ${v.tier} subscription is active on this account, on the web, in the Windows app and in the Chrome extension. There is nothing else to set up.`,
+      rows: [["Plan", v.plan], ["Charged today", v.chargeOnly], ["After that", v.renew]],
+      key: ["Renews on", v.renewsOn],
+      button: b("Open Redaxa", OPEN),
+      h2: "Three things to try first",
+      list: business
+        ? ["Add the client and project names your team must never paste into a chat under Protected terms. They apply to every member.",
+          "Choose a policy per category (warn, redact or block sending in the Chrome extension) so everyone follows the same rule.",
+          "Invite your colleagues from Account & team. Admins see metadata-only activity, never the prompt text, and can export it as CSV."]
+        : ["Add your client and project names under Protected terms, so every check flags them.",
+          "Check a public repository on the web, or review one locally with its Git history in the Windows app.",
+          "Install the Chrome extension. It checks what you are about to send on ChatGPT, Claude, Gemini and Perplexity."],
+      moment: ["Managing the plan", "Manage subscription", "Cancel or resume the plan from Account & team, under Manage subscription."],
+      footer: "You received this email because you subscribed to Redaxa with this address.",
       help: ["Billing question, or something not working?", "Reply to this email from the address on the account."], reply: true,
     }),
     trial_ending: (v) => ({
@@ -225,6 +246,27 @@ const IT: Words = {
       footer: "Hai ricevuto questa email perché hai iniziato una prova di Redaxa con questo indirizzo. È prevista una sola prova gratuita per persona.",
       help: ["Domande sulla fatturazione o qualcosa non funziona?", "Rispondi a questa email dall'indirizzo dell'account."], reply: true,
     }),
+    subscription_started: (v, business) => ({
+      subject: `Il tuo abbonamento a Redaxa ${v.tier} è confermato`,
+      preheader: `${v.plan}. Tre cose da provare subito.`,
+      kicker: "Abbonamento attivo",
+      h1: "È tutto pronto",
+      intro: `Il tuo abbonamento a Redaxa ${v.tier} è attivo su questo account, sul web, nell'app per Windows e nell'estensione per Chrome. Non c'è altro da configurare.`,
+      rows: [["Piano", v.plan], ["Addebitato oggi", v.chargeOnly], ["In seguito", v.renew]],
+      key: ["Si rinnova il", v.renewsOn],
+      button: b("Apri Redaxa", OPEN),
+      h2: "Tre cose da provare subito",
+      list: business
+        ? ["Aggiungi nei Termini protetti i nomi di clienti e progetti che il team non deve mai incollare in una chat: valgono per ogni membro.",
+          "Scegli una policy per categoria (avvisa, oscura o blocca l'invio nell'estensione per Chrome), così tutti seguono la stessa regola.",
+          "Invita i colleghi da Account e team. Gli amministratori vedono solo i metadati dell'attività, mai il testo dei prompt, e possono esportarli in CSV."]
+        : ["Aggiungi i nomi di clienti e progetti nei Termini protetti: ogni controllo li segnalerà.",
+          "Controlla un repository pubblico sul web, oppure analizzane uno in locale, con la cronologia Git, nell'app per Windows.",
+          "Installa l'estensione per Chrome: controlla quello che stai per inviare su ChatGPT, Claude, Gemini e Perplexity."],
+      moment: ["Gestione del piano", "Gestisci abbonamento", "Annulla o riprendi il piano da Account e team, sotto Gestisci abbonamento."],
+      footer: "Hai ricevuto questa email perché ti sei abbonato a Redaxa con questo indirizzo.",
+      help: ["Domande sulla fatturazione o qualcosa non funziona?", "Rispondi a questa email dall'indirizzo dell'account."], reply: true,
+    }),
     trial_ending: (v) => ({
       subject: `La tua prova di Redaxa finisce il ${v.endShort}`,
       preheader: `Il ${v.end} vengono addebitati ${v.charge} per ${v.plan}. Se vuoi tenere ${v.tier}, non devi fare nulla.`,
@@ -363,6 +405,27 @@ const ES: Words = {
       after: `Para quedarte con ${v.tier} no tienes que hacer nada. Para pararlo, abre Cuenta y equipo, luego Gestionar suscripción, y cancela antes del ${v.end}: no se te cobrará nada y ${v.tier} seguirá activo hasta que termine la prueba.`,
       moment: ["La prueba termina", v.endShort, `Después, ${v.charge} por ${v.plan}, salvo que canceles antes.`],
       footer: "Has recibido este correo porque has empezado una prueba de Redaxa con esta dirección. Hay una sola prueba gratuita por persona.",
+      help: ["¿Una pregunta sobre la facturación o algo no funciona?", "Responde a este correo desde la dirección de la cuenta."], reply: true,
+    }),
+    subscription_started: (v, business) => ({
+      subject: `Tu suscripción a Redaxa ${v.tier} está confirmada`,
+      preheader: `${v.plan}. Tres cosas para probar primero.`,
+      kicker: "Suscripción activa",
+      h1: "Todo listo",
+      intro: `Tu suscripción a Redaxa ${v.tier} está activa en esta cuenta, en la web, en la app para Windows y en la extensión para Chrome. No hay nada más que configurar.`,
+      rows: [["Plan", v.plan], ["Cobrado hoy", v.chargeOnly], ["Después", v.renew]],
+      key: ["Se renueva el", v.renewsOn],
+      button: b("Abrir Redaxa", OPEN),
+      h2: "Tres cosas para probar primero",
+      list: business
+        ? ["Añade en Términos protegidos los nombres de clientes y proyectos que tu equipo nunca debe pegar en un chat: se aplican a todos los miembros.",
+          "Elige una política por categoría (avisar, ocultar o bloquear el envío en la extensión para Chrome) para que todos sigan la misma regla.",
+          "Invita a tus compañeros desde Cuenta y equipo. Los administradores solo ven metadatos de la actividad, nunca el texto de los prompts, y pueden exportarlos en CSV."]
+        : ["Añade los nombres de clientes y proyectos en Términos protegidos: cada revisión los señalará.",
+          "Revisa un repositorio público en la web, o analiza uno en local, con su historial de Git, en la app para Windows.",
+          "Instala la extensión para Chrome: revisa lo que vas a enviar en ChatGPT, Claude, Gemini y Perplexity."],
+      moment: ["Gestión del plan", "Gestionar suscripción", "Cancela o reanuda el plan desde Cuenta y equipo, en Gestionar suscripción."],
+      footer: "Has recibido este correo porque te has suscrito a Redaxa con esta dirección.",
       help: ["¿Una pregunta sobre la facturación o algo no funciona?", "Responde a este correo desde la dirección de la cuenta."], reply: true,
     }),
     trial_ending: (v) => ({
@@ -505,6 +568,27 @@ const FR: Words = {
       footer: "Vous recevez cet e-mail parce que vous avez commencé un essai de Redaxa avec cette adresse. Chaque personne a droit à un seul essai gratuit.",
       help: ["Une question de facturation, ou quelque chose ne fonctionne pas ?", "Répondez à cet e-mail depuis l’adresse du compte."], reply: true,
     }),
+    subscription_started: (v, business) => ({
+      subject: `Votre abonnement Redaxa ${v.tier} est confirmé`,
+      preheader: `${v.plan}. Trois choses à essayer d’abord.`,
+      kicker: "Abonnement actif",
+      h1: "Tout est prêt",
+      intro: `Votre abonnement Redaxa ${v.tier} est actif sur ce compte, sur le web, dans l’application Windows et dans l’extension Chrome. Il n’y a rien d’autre à configurer.`,
+      rows: [["Offre", v.plan], ["Prélevé aujourd’hui", v.chargeOnly], ["Ensuite", v.renew]],
+      key: ["Renouvellement le", v.renewsOn],
+      button: b("Ouvrir Redaxa", OPEN),
+      h2: "Trois choses à essayer d’abord",
+      list: business
+        ? ["Ajoutez dans Termes protégés les noms de clients et de projets que votre équipe ne doit jamais coller dans un chat : ils s’appliquent à chaque membre.",
+          "Choisissez une règle par catégorie (avertir, masquer ou bloquer l’envoi dans l’extension Chrome) pour que tout le monde suive la même.",
+          "Invitez vos collègues depuis Compte et équipe. Les administrateurs ne voient que les métadonnées de l’activité, jamais le texte des prompts, et peuvent les exporter en CSV."]
+        : ["Ajoutez les noms de vos clients et projets dans Termes protégés : chaque vérification les signalera.",
+          "Vérifiez un dépôt public sur le web, ou analysez-en un en local, avec son historique Git, dans l’application Windows.",
+          "Installez l’extension Chrome : elle vérifie ce que vous vous apprêtez à envoyer sur ChatGPT, Claude, Gemini et Perplexity."],
+      moment: ["Gérer l’offre", "Gérer l’abonnement", "Résiliez ou réactivez l’offre depuis Compte et équipe, sous Gérer l’abonnement."],
+      footer: "Vous recevez cet e-mail parce que vous vous êtes abonné à Redaxa avec cette adresse.",
+      help: ["Une question de facturation, ou quelque chose ne fonctionne pas ?", "Répondez à cet e-mail depuis l’adresse du compte."], reply: true,
+    }),
     trial_ending: (v) => ({
       subject: `Votre essai de Redaxa se termine le ${v.endShort}`,
       preheader: `Le ${v.end}, ${v.charge} seront prélevés pour ${v.plan}. Rien à faire si vous voulez garder ${v.tier}.`,
@@ -642,7 +726,28 @@ const DE: Words = {
           "Installiere die Chrome-Erweiterung. Sie prüft, was du gleich auf ChatGPT, Claude, Gemini und Perplexity sendest."],
       after: `Um ${v.tier} zu behalten, musst du nichts tun. Zum Beenden öffnest du Konto und Team, dann Abonnement verwalten, und kündigst vor dem ${v.end}: Es wird nichts abgebucht, und ${v.tier} bleibt bis zum Ende der Testphase aktiv.`,
       moment: ["Testphase endet", v.endShort, `Danach ${v.charge} für ${v.plan}, sofern du nicht vorher kündigst.`],
-      footer: "Du erhältst diese E-Mail, weil du mit dieser Adresse eine Testphase für Redaxa gestartet haben. Pro Person gibt es eine kostenlose Testphase.",
+      footer: "Du erhältst diese E-Mail, weil du mit dieser Adresse eine Testphase für Redaxa gestartet hast. Pro Person gibt es eine kostenlose Testphase.",
+      help: ["Fragen zur Abrechnung, oder funktioniert etwas nicht?", "Antworte auf diese E-Mail von der Adresse des Kontos."], reply: true,
+    }),
+    subscription_started: (v, business) => ({
+      subject: `Dein Redaxa-${v.tier}-Abonnement ist bestätigt`,
+      preheader: `${v.plan}. Drei Dinge zum Ausprobieren.`,
+      kicker: "Abonnement aktiv",
+      h1: "Alles bereit",
+      intro: `Dein Redaxa-${v.tier}-Abonnement ist auf diesem Konto aktiv, im Web, in der Windows-App und in der Chrome-Erweiterung. Du musst nichts weiter einrichten.`,
+      rows: [["Tarif", v.plan], ["Heute abgebucht", v.chargeOnly], ["Danach", v.renew]],
+      key: ["Verlängert sich am", v.renewsOn],
+      button: b("Redaxa öffnen", OPEN),
+      h2: "Drei Dinge zum Ausprobieren",
+      list: business
+        ? ["Trag unter Geschützte Begriffe die Kunden- und Projektnamen ein, die dein Team nie in einen Chat einfügen darf. Sie gelten für jedes Mitglied.",
+          "Wähle pro Kategorie eine Richtlinie (warnen, schwärzen oder das Senden in der Chrome-Erweiterung blockieren), damit alle derselben Regel folgen.",
+          "Lade dein Team unter Konto und Team ein. Admins sehen nur Metadaten der Aktivität, nie den Text der Prompts, und können sie als CSV exportieren."]
+        : ["Trag Kunden- und Projektnamen unter Geschützte Begriffe ein, damit jede Prüfung sie markiert.",
+          "Prüfe ein öffentliches Repository im Web oder analysiere eines lokal mit seinem Git-Verlauf in der Windows-App.",
+          "Installiere die Chrome-Erweiterung. Sie prüft, was du gleich auf ChatGPT, Claude, Gemini und Perplexity sendest."],
+      moment: ["Tarif verwalten", "Abonnement verwalten", "Kündige oder setze den Tarif fort unter Konto und Team, bei Abonnement verwalten."],
+      footer: "Du erhältst diese E-Mail, weil du Redaxa mit dieser Adresse abonniert hast.",
       help: ["Fragen zur Abrechnung, oder funktioniert etwas nicht?", "Antworte auf diese E-Mail von der Adresse des Kontos."], reply: true,
     }),
     trial_ending: (v) => ({

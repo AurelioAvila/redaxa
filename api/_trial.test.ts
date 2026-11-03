@@ -584,7 +584,7 @@ resetDb(); clearMails();
   const base = { to: "x@example.test", firstName: "Ana", plan: "business", interval: "yearly", seats: 3, days: 3, trialEnd, renewsOn: trialEnd + 365 * 86_400, endedOn: trialEnd,
     charge: { amount: 22200, currency: "eur" }, renew: { amount: 44970, currency: "eur", taxExclusive: true }, failure: "expired_card" as const };
   for (const lang of Object.keys(TRIAL_WORDS) as Array<keyof typeof TRIAL_WORDS>) {
-    for (const kind of ["trial_started", "trial_ending", "trial_paid", "payment_failed", "trial_ended", "trial_rejected", "checkout_failed", "payment_reversed"] as const) {
+    for (const kind of ["trial_started", "subscription_started", "trial_ending", "trial_paid", "payment_failed", "trial_ended", "trial_rejected", "checkout_failed", "payment_reversed"] as const) {
       const mail = trialMail(kind, { ...base, lang });
       for (const part of [mail.subject, mail.text, mail.html]) {
         assert.doesNotMatch(part, /\bundefined\b|\bnull\b|NaN|\$\{|\{[a-z]+\}/, `${lang}/${kind}`);

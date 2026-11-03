@@ -182,6 +182,15 @@ async function announceSubscription(userId: string, subscription: Stripe.Subscri
       // The first charge as Stripe will take it, coupon and tax included.
       await mail("trial_started", userId, subscription, `redaxa-trial-started/${subscription.id}`, { charge: await upcomingCharge(subscription.id) });
     } else {
+      if (!trialing) {
+        // What the first invoice really took (a once-only coupon included); the renewal comes from the Price.
+        const invoiceId = typeof subscription.latest_invoice === "string" ? subscription.latest_invoice : subscription.latest_invoice?.id;
+        const paid = invoiceId ? await stripe.invoices.retrieve(invoiceId).catch(() => null) : null;
+        await mail("subscription_started", userId, subscription, `redaxa-subscription/${subscription.id}`, {
+          charge: paid && paid.amount_paid > 0 ? { amount: paid.amount_paid, currency: paid.currency } : null,
+          renewsOn: item?.current_period_end ?? null,
+        });
+      } else {
       // During a trial the meaningful date is the first charge, not a renewal;
       // trial_end carries it, and the period end carries the other case.
       const dateSeconds = trialing ? subscription.trial_end : item?.current_period_end;
@@ -205,6 +214,7 @@ async function announceSubscription(userId: string, subscription: Stripe.Subscri
         trialing,
         appUrl: appUrl(),
       }, `redaxa-subscription/${subscription.id}`);
+      }
     }
     await notifyOwnerOfSale(email, subscription.metadata.plan ?? null, interval, trialing, `redaxa-sale/${subscription.id}`);
   } catch (error) {
