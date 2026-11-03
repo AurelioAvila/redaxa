@@ -35,7 +35,7 @@ async function fixture({url='https://redaxa.example/dashboard.html',email=null,p
   let location=new URL(url);
   const context=vm.createContext({URL,URLSearchParams,Error,Event,CustomEvent:Event,console,
     mode:'signin',currentEmail:null,accountActive:false,config:null,latestAccount:null,webAppUrl:'https://redaxa.example',
-    restoreTheme(){},installDesktopTitlebar(){},installStylesheet(){},isTauri:()=>false,
+    L:text=>text,restoreTheme(){},installDesktopTitlebar(){},installStylesheet(){},isTauri:()=>false,
     accountControls:()=>controls,installDialog:()=>dialog,loadConfig:async()=>({configured:true}),loadSession:async()=>email,
     refreshEntitlement:async()=>{},showStripeReturn:async()=>{},mountSubscriptionPanel:()=>()=>{},loadProfilePhoto:async()=>{},publishAccountState(){},accountPlanLabel:()=>'',
     localStorage:{getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value),removeItem:key=>storage.delete(key)},

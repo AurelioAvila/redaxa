@@ -207,7 +207,7 @@ function accountControls(): { trigger: HTMLAnchorElement; login: HTMLAnchorEleme
   const trigger = document.querySelector<HTMLAnchorElement>(".small-btn")!;
   const outerParent = trigger.parentElement!;
   trigger.href = "#account";
-  trigger.textContent = "Create account";
+  trigger.textContent = L("Create account");
   // Previously "Create account" was the only visible entry point -- an
   // already-registered user had no obvious way in and had to click through
   // to the signup dialog just to find the small "Already have an account?"
@@ -217,7 +217,7 @@ function accountControls(): { trigger: HTMLAnchorElement; login: HTMLAnchorEleme
   const login = document.createElement("a");
   login.className = "small-btn ghost";
   login.href = "#account";
-  login.textContent = "Log in";
+  login.textContent = L("Log in");
   const buttonRow = document.createElement("div");
   buttonRow.className = "ps-auth-buttons";
   trigger.insertAdjacentElement("beforebegin", buttonRow);
@@ -230,7 +230,7 @@ function accountControls(): { trigger: HTMLAnchorElement; login: HTMLAnchorEleme
   const dashboard = document.createElement("a");
   dashboard.className = "small-btn";
   dashboard.href = "/dashboard.html";
-  dashboard.textContent = "Dashboard";
+  dashboard.textContent = L("Dashboard");
   // The desktop app serves the workspace as index.html, so test the page
   // itself rather than its path.
   if (!document.body.matches(".redaxa-workspace,.repository-page")) buttonRow.append(dashboard);
@@ -404,6 +404,83 @@ export const subscriptionCopyByLanguage: Record<SubLanguage, Record<string, stri
 const subLanguage = (): SubLanguage => { const l = (typeof document !== "undefined" ? document.documentElement.lang : "en").slice(0, 2); return (["en", "it", "es", "fr", "de"] as const).includes(l as SubLanguage) ? l as SubLanguage : "en"; };
 const subWords = (): Record<string, string> => subscriptionCopyByLanguage[subLanguage()];
 const subFill = (text: string, values: Record<string, string | number>): string => text.replace(/\{(\w+)\}/g, (_, key: string) => String(values[key] ?? ""));
+/** Sign-in dialog copy for the languages the rest of the app speaks, keyed by the English text; anything not listed stays English. */
+const authCopy: Record<string, readonly [string, string, string, string]> = {
+  "Create your account": ["Crea il tuo account", "Crea tu cuenta", "Créez votre compte", "Erstelle dein Konto"],
+  "Eligible new subscribers can try Redaxa free for 3 days. Prompt text is processed by Redaxa's scanner without being stored or logged.": ["I nuovi abbonati idonei possono provare Redaxa gratis per 3 giorni. Il testo dei prompt viene elaborato dallo scanner di Redaxa senza essere salvato né registrato.", "Los nuevos suscriptores que cumplan los requisitos pueden probar Redaxa gratis durante 3 días. El texto de los prompts lo procesa el analizador de Redaxa sin almacenarse ni registrarse.", "Les nouveaux abonnés éligibles peuvent essayer Redaxa gratuitement pendant 3 jours. Le texte des prompts est traité par l’analyseur de Redaxa sans être stocké ni journalisé.", "Berechtigte neue Abonnenten können Redaxa 3 Tage kostenlos testen. Der Prompt-Text wird vom Redaxa-Scanner verarbeitet, ohne gespeichert oder protokolliert zu werden."],
+  "First name (optional)": ["Nome (facoltativo)", "Nombre (opcional)", "Prénom (facultatif)", "Vorname (optional)"],
+  "Email": ["E-mail", "Correo electrónico", "E-mail", "E-Mail"],
+  "Password": ["Password", "Contraseña", "Mot de passe", "Passwort"],
+  "Forgot password?": ["Password dimenticata?", "¿Olvidaste tu contraseña?", "Mot de passe oublié\u00a0?", "Passwort vergessen?"],
+  "Show": ["Mostra", "Mostrar", "Afficher", "Anzeigen"],
+  "Hide": ["Nascondi", "Ocultar", "Masquer", "Verbergen"],
+  "Confirm password": ["Conferma la password", "Confirma la contraseña", "Confirmez le mot de passe", "Passwort bestätigen"],
+  "Remember me on this device": ["Ricordami su questo dispositivo", "Recordarme en este dispositivo", "Se souvenir de moi sur cet appareil", "Auf diesem Gerät angemeldet bleiben"],
+  "Create account": ["Crea account", "Crear cuenta", "Créer un compte", "Konto erstellen"],
+  "Log in": ["Accedi", "Iniciar sesión", "Se connecter", "Anmelden"],
+  "Dashboard": ["Dashboard", "Panel", "Tableau de bord", "Dashboard"],
+  "Already have an account? Sign in": ["Hai già un account? Accedi", "¿Ya tienes una cuenta? Inicia sesión", "Vous avez déjà un compte\u00a0? Connectez-vous", "Du hast schon ein Konto? Melde dich an"],
+  "Already use Frame Witness? Sign in with the same email and password.": ["Usi già Frame Witness? Accedi con la stessa email e la stessa password.", "¿Ya usas Frame Witness? Inicia sesión con el mismo correo y la misma contraseña.", "Vous utilisez déjà Frame Witness\u00a0? Connectez-vous avec la même adresse e-mail et le même mot de passe.", "Du nutzt schon Frame Witness? Melde dich mit derselben E-Mail-Adresse und demselben Passwort an."],
+  "Resend confirmation email": ["Invia di nuovo l’email di conferma", "Reenviar el correo de confirmación", "Renvoyer l’e-mail de confirmation", "Bestätigungs-E-Mail erneut senden"],
+  "Terms": ["Termini di servizio", "Términos del servicio", "Conditions d’utilisation", "Nutzungsbedingungen"],
+  "Privacy Policy": ["Informativa sulla privacy", "Política de privacidad", "Politique de confidentialité", "Datenschutzerklärung"],
+  "By creating an account you agree to our {terms} and {privacy}.": ["Creando un account accetti i nostri {terms} e l’{privacy}.", "Al crear una cuenta aceptas nuestros {terms} y nuestra {privacy}.", "En créant un compte, vous acceptez nos {terms} et notre {privacy}.", "Mit der Erstellung eines Kontos stimmst du unseren {terms} und der {privacy} zu."],
+  "Close account dialog": ["Chiudi la finestra dell’account", "Cerrar el cuadro de la cuenta", "Fermer la fenêtre du compte", "Kontofenster schließen"],
+  "Reset your password": ["Reimposta la password", "Restablece tu contraseña", "Réinitialisez votre mot de passe", "Setze dein Passwort zurück"],
+  "Welcome back": ["Bentornato", "Te damos la bienvenida de nuevo", "Content de vous revoir", "Willkommen zurück"],
+  "Use a password with at least 12 characters. We will send a verification email.": ["Usa una password di almeno 12 caratteri. Ti invieremo un’email di verifica.", "Usa una contraseña de al menos 12 caracteres. Te enviaremos un correo de verificación.", "Utilisez un mot de passe d’au moins 12 caractères. Nous vous enverrons un e-mail de vérification.", "Verwende ein Passwort mit mindestens 12 Zeichen. Wir senden dir eine Bestätigungs-E-Mail."],
+  "We will email you a secure link to choose a new password.": ["Ti invieremo via email un link sicuro per scegliere una nuova password.", "Te enviaremos por correo un enlace seguro para elegir una nueva contraseña.", "Nous vous enverrons par e-mail un lien sécurisé pour choisir un nouveau mot de passe.", "Wir senden dir einen sicheren Link per E-Mail, mit dem du ein neues Passwort wählen kannst."],
+  "Sign in to continue with your private workspace.": ["Accedi per continuare nel tuo spazio di lavoro privato.", "Inicia sesión para continuar en tu espacio de trabajo privado.", "Connectez-vous pour continuer dans votre espace de travail privé.", "Melde dich an, um mit deinem privaten Arbeitsbereich fortzufahren."],
+  "Send reset link": ["Invia il link di reimpostazione", "Enviar enlace de restablecimiento", "Envoyer le lien de réinitialisation", "Link zum Zurücksetzen senden"],
+  "Sign in": ["Accedi", "Iniciar sesión", "Se connecter", "Anmelden"],
+  "Back to sign in": ["Torna all’accesso", "Volver a iniciar sesión", "Retour à la connexion", "Zurück zur Anmeldung"],
+  "New here? Create an account": ["Prima volta qui? Crea un account", "¿Eres nuevo? Crea una cuenta", "Première visite\u00a0? Créez un compte", "Neu hier? Erstelle ein Konto"],
+  "Choose a new password": ["Scegli una nuova password", "Elige una nueva contraseña", "Choisissez un nouveau mot de passe", "Wähle ein neues Passwort"],
+  "Use at least 12 characters. Every device signed in to your account will be signed out.": ["Usa almeno 12 caratteri. Tutti i dispositivi collegati al tuo account verranno disconnessi.", "Usa al menos 12 caracteres. Se cerrará la sesión en todos los dispositivos conectados a tu cuenta.", "Utilisez au moins 12 caractères. Tous les appareils connectés à votre compte seront déconnectés.", "Verwende mindestens 12 Zeichen. Alle Geräte, auf denen du angemeldet bist, werden abgemeldet."],
+  "Use a password with at least 12 characters.": ["Usa una password di almeno 12 caratteri.", "Usa una contraseña de al menos 12 caracteres.", "Utilisez un mot de passe d’au moins 12 caractères.", "Verwende ein Passwort mit mindestens 12 Zeichen."],
+  "Set the new password": ["Imposta la nuova password", "Establecer la nueva contraseña", "Enregistrer le nouveau mot de passe", "Neues Passwort festlegen"],
+  "Confirm your email": ["Conferma la tua email", "Confirma tu correo electrónico", "Confirmez votre e-mail", "Bestätige deine E-Mail-Adresse"],
+  "Select Confirm email to finish creating your Redaxa account. Then sign in with your password.": ["Seleziona «Conferma email» per completare la creazione del tuo account Redaxa. Poi accedi con la tua password.", "Selecciona «Confirmar correo» para terminar de crear tu cuenta de Redaxa. Después inicia sesión con tu contraseña.", "Sélectionnez «\u00a0Confirmer l’e-mail\u00a0» pour terminer la création de votre compte Redaxa. Connectez-vous ensuite avec votre mot de passe.", "Wähle „E-Mail bestätigen“, um dein Redaxa-Konto fertig einzurichten. Melde dich danach mit deinem Passwort an."],
+  "Confirm email": ["Conferma email", "Confirmar correo", "Confirmer l’e-mail", "E-Mail bestätigen"],
+  "That reset link is incomplete. Request a new one below.": ["Questo link di reimpostazione è incompleto. Richiedine uno nuovo qui sotto.", "Ese enlace de restablecimiento está incompleto. Solicita uno nuevo más abajo.", "Ce lien de réinitialisation est incomplet. Demandez-en un nouveau ci-dessous.", "Dieser Link zum Zurücksetzen ist unvollständig. Fordere unten einen neuen an."],
+  "That confirmation link is incomplete. Enter your email and resend the confirmation.": ["Questo link di conferma è incompleto. Inserisci la tua email e invia di nuovo la conferma.", "Ese enlace de confirmación está incompleto. Introduce tu correo y reenvía la confirmación.", "Ce lien de confirmation est incomplet. Saisissez votre adresse e-mail et renvoyez la confirmation.", "Dieser Bestätigungslink ist unvollständig. Gib deine E-Mail-Adresse ein und sende die Bestätigung erneut."],
+  "Account created. Check your email for a confirmation link, then sign in here.": ["Account creato. Controlla la tua email per il link di conferma, poi accedi qui.", "Cuenta creada. Revisa tu correo para encontrar el enlace de confirmación y luego inicia sesión aquí.", "Compte créé. Consultez votre e-mail pour le lien de confirmation, puis connectez-vous ici.", "Konto erstellt. Sieh in deinem Postfach nach dem Bestätigungslink und melde dich dann hier an."],
+  "Please sign in again to continue.": ["Accedi di nuovo per continuare.", "Inicia sesión de nuevo para continuar.", "Reconnectez-vous pour continuer.", "Melde dich erneut an, um fortzufahren."],
+  "Sign in to manage your subscription.": ["Accedi per gestire il tuo abbonamento.", "Inicia sesión para gestionar tu suscripción.", "Connectez-vous pour gérer votre abonnement.", "Melde dich an, um dein Abonnement zu verwalten."],
+  "Email confirmed. Sign in with your password to continue.": ["Email confermata. Accedi con la tua password per continuare.", "Correo confirmado. Inicia sesión con tu contraseña para continuar.", "E-mail confirmé. Connectez-vous avec votre mot de passe pour continuer.", "E-Mail bestätigt. Melde dich mit deinem Passwort an, um fortzufahren."],
+  "Password changed and other devices signed out. Sign in with the new password.": ["Password cambiata e altri dispositivi disconnessi. Accedi con la nuova password.", "Contraseña cambiada y sesión cerrada en los demás dispositivos. Inicia sesión con la nueva contraseña.", "Mot de passe modifié et autres appareils déconnectés. Connectez-vous avec le nouveau mot de passe.", "Passwort geändert, andere Geräte abgemeldet. Melde dich mit dem neuen Passwort an."],
+  "Password changed. Sign in with the new one.": ["Password cambiata. Accedi con quella nuova.", "Contraseña cambiada. Inicia sesión con la nueva.", "Mot de passe modifié. Connectez-vous avec le nouveau.", "Passwort geändert. Melde dich mit dem neuen an."],
+  "If that account exists, a password-reset link is on its way.": ["Se l’account esiste, un link per reimpostare la password è in arrivo.", "Si la cuenta existe, el enlace para restablecer la contraseña está en camino.", "Si le compte existe, un lien de réinitialisation du mot de passe est en route.", "Wenn das Konto existiert, ist ein Link zum Zurücksetzen des Passworts unterwegs."],
+  "If that account exists and isn't confirmed yet, a new confirmation email is on its way.": ["Se l’account esiste e non è ancora confermato, una nuova email di conferma è in arrivo.", "Si la cuenta existe y aún no está confirmada, un nuevo correo de confirmación está en camino.", "Si le compte existe et n’est pas encore confirmé, un nouvel e-mail de confirmation est en route.", "Wenn das Konto existiert und noch nicht bestätigt ist, ist eine neue Bestätigungs-E-Mail unterwegs."],
+  "We could not resend that email. Please try again shortly.": ["Non siamo riusciti a reinviare l’email. Riprova tra poco.", "No pudimos reenviar ese correo. Vuelve a intentarlo en unos minutos.", "Nous n’avons pas pu renvoyer cet e-mail. Réessayez dans un instant.", "Wir konnten die E-Mail nicht erneut senden. Versuche es gleich noch einmal."],
+  "Enter your email address first.": ["Inserisci prima il tuo indirizzo email.", "Introduce primero tu dirección de correo electrónico.", "Saisissez d’abord votre adresse e-mail.", "Gib zuerst deine E-Mail-Adresse ein."],
+  "Account setup is being completed. Please try again shortly.": ["La configurazione degli account è in fase di completamento. Riprova tra poco.", "Se está terminando de configurar las cuentas. Vuelve a intentarlo en unos minutos.", "La configuration des comptes est en cours de finalisation. Réessayez dans un instant.", "Die Kontoeinrichtung wird gerade abgeschlossen. Versuche es gleich noch einmal."],
+  "Account setup is not configured yet.": ["La configurazione degli account non è ancora completa.", "Las cuentas aún no están configuradas.", "Les comptes ne sont pas encore configurés.", "Die Konten sind noch nicht eingerichtet."],
+  "Passwords do not match.": ["Le password non coincidono.", "Las contraseñas no coinciden.", "Les mots de passe ne correspondent pas.", "Die Passwörter stimmen nicht überein."],
+  "Signed in successfully.": ["Accesso effettuato.", "Sesión iniciada.", "Connexion réussie.", "Erfolgreich angemeldet."],
+  "Create an account first to choose a plan.": ["Crea prima un account per scegliere un piano.", "Crea primero una cuenta para elegir un plan.", "Créez d’abord un compte pour choisir une offre.", "Erstelle zuerst ein Konto, um einen Tarif zu wählen."],
+  "Verification link received. Sign in with your own email and password to continue.": ["Link di verifica ricevuto. Accedi con la tua email e la tua password per continuare.", "Enlace de verificación recibido. Inicia sesión con tu correo y tu contraseña para continuar.", "Lien de vérification reçu. Connectez-vous avec votre adresse e-mail et votre mot de passe pour continuer.", "Bestätigungslink empfangen. Melde dich mit deiner E-Mail-Adresse und deinem Passwort an, um fortzufahren."],
+  "Create an account or sign in to review this team invitation.": ["Crea un account o accedi per vedere questo invito al team.", "Crea una cuenta o inicia sesión para revisar esta invitación al equipo.", "Créez un compte ou connectez-vous pour consulter cette invitation d’équipe.", "Erstelle ein Konto oder melde dich an, um diese Team-Einladung anzusehen."],
+  "Creating account…": ["Creazione dell’account…", "Creando la cuenta…", "Création du compte…", "Konto wird erstellt…"],
+  "Signing in…": ["Accesso in corso…", "Iniciando sesión…", "Connexion…", "Anmeldung läuft…"],
+  "Confirming…": ["Conferma in corso…", "Confirmando…", "Confirmation…", "Wird bestätigt…"],
+  "Saving…": ["Salvataggio…", "Guardando…", "Enregistrement…", "Wird gespeichert…"],
+  "Sending link…": ["Invio del link…", "Enviando el enlace…", "Envoi du lien…", "Link wird gesendet…"],
+  "Sending…": ["Invio…", "Enviando…", "Envoi…", "Wird gesendet…"],
+  "Resend available in {time}": ["Nuovo invio disponibile tra {time}", "Reenvío disponible en {time}", "Renvoi possible dans {time}", "Erneut senden möglich in {time}"],
+  "Too many attempts. Please wait a few minutes and try again.": ["Troppi tentativi. Attendi qualche minuto e riprova.", "Demasiados intentos. Espera unos minutos y vuelve a intentarlo.", "Trop de tentatives. Patientez quelques minutes, puis réessayez.", "Zu viele Versuche. Warte ein paar Minuten und versuche es erneut."],
+  "Too many sign-up emails right now. Please wait a few minutes and try again.": ["Ora ci sono troppe email di registrazione. Attendi qualche minuto e riprova.", "Hay demasiados correos de registro en este momento. Espera unos minutos y vuelve a intentarlo.", "Trop d’e-mails d’inscription en ce moment. Patientez quelques minutes, puis réessayez.", "Gerade werden zu viele Registrierungs-E-Mails gesendet. Warte ein paar Minuten und versuche es erneut."],
+  "Enter a valid email address.": ["Inserisci un indirizzo email valido.", "Introduce una dirección de correo electrónico válida.", "Saisissez une adresse e-mail valide.", "Gib eine gültige E-Mail-Adresse ein."],
+  "Enter a valid email and a password of at least 12 characters.": ["Inserisci un’email valida e una password di almeno 12 caratteri.", "Introduce un correo válido y una contraseña de al menos 12 caracteres.", "Saisissez une adresse e-mail valide et un mot de passe d’au moins 12 caractères.", "Gib eine gültige E-Mail-Adresse und ein Passwort mit mindestens 12 Zeichen ein."],
+  "We could not create that account.": ["Non siamo riusciti a creare quell’account.", "No pudimos crear esa cuenta.", "Nous n’avons pas pu créer ce compte.", "Wir konnten dieses Konto nicht erstellen."],
+  "We could not complete that request.": ["Non siamo riusciti a completare la richiesta.", "No pudimos completar la solicitud.", "Nous n’avons pas pu traiter cette demande.", "Wir konnten die Anfrage nicht abschließen."],
+};
+const L = (text: string, values: Record<string, string> = {}): string => {
+  const index = ["it", "es", "fr", "de"].indexOf(subLanguage());
+  const row = authCopy[text];
+  return subFill(index >= 0 && row ? row[index] : text, values);
+};
+
 const subPlural = (text: string, n: number): string => subFill(text.split("|")[n === 1 ? 0 : 1] ?? text, { n });
 const subDate = (iso: string | null): string => {
   const time = iso ? Date.parse(iso) : NaN;
@@ -662,28 +739,29 @@ function installDialog(): {
   const backdrop = document.createElement("div");
   backdrop.className = "ps-auth-backdrop";
   backdrop.innerHTML = `<section class="ps-auth-dialog" role="dialog" aria-modal="true" aria-labelledby="ps-auth-title">
-    <button class="ps-auth-close" type="button" aria-label="Close account dialog">×</button>
-    <h2 id="ps-auth-title">Create your account</h2><p id="ps-auth-description">Eligible new subscribers can try Redaxa free for 3 days. Prompt text is processed by Redaxa's scanner without being stored or logged.</p>
+    <button class="ps-auth-close" type="button" aria-label="${L("Close account dialog")}">×</button>
+    <h2 id="ps-auth-title">${L("Create your account")}</h2><p id="ps-auth-description">${L("Eligible new subscribers can try Redaxa free for 3 days. Prompt text is processed by Redaxa's scanner without being stored or logged.")}</p>
     <form>
     <div id="ps-auth-register-fields">
-      <label class="ps-auth-field">First name (optional)<input id="ps-auth-first-name" type="text" autocomplete="given-name"></label>
+      <label class="ps-auth-field">${L("First name (optional)")}<input id="ps-auth-first-name" type="text" autocomplete="given-name"></label>
     </div>
-    <label class="ps-auth-field">Email<input id="ps-auth-email" name="email" type="email" autocomplete="username" required></label>
+    <label class="ps-auth-field">${L("Email")}<input id="ps-auth-email" name="email" type="email" autocomplete="username" required></label>
     <!-- Explicit for=: a label's implicit target is its first labelable
          descendant, which here was the "Forgot password?" button, leaving the
          password input with no accessible name at all. -->
     <label class="ps-auth-field" id="ps-auth-password-field" for="ps-auth-password">
-      <div class="ps-auth-field-head">Password<button type="button" class="ps-auth-forgot" id="ps-auth-forgot" hidden>Forgot password?</button></div>
-      <div class="ps-auth-pw-wrap"><input id="ps-auth-password" name="password" type="password" autocomplete="new-password" minlength="12" required><button type="button" class="ps-auth-toggle-pw" data-for="ps-auth-password">Show</button></div>
+      <div class="ps-auth-field-head">${L("Password")}<button type="button" class="ps-auth-forgot" id="ps-auth-forgot" hidden>${L("Forgot password?")}</button></div>
+      <div class="ps-auth-pw-wrap"><input id="ps-auth-password" name="password" type="password" autocomplete="new-password" minlength="12" required><button type="button" class="ps-auth-toggle-pw" data-for="ps-auth-password">${L("Show")}</button></div>
     </label>
-    <label class="ps-auth-field" id="ps-auth-confirm-password-field">Confirm password
-      <div class="ps-auth-pw-wrap"><input id="ps-auth-confirm-password" name="confirm-password" type="password" autocomplete="new-password" minlength="12"><button type="button" class="ps-auth-toggle-pw" data-for="ps-auth-confirm-password">Show</button></div>
+    <label class="ps-auth-field" id="ps-auth-confirm-password-field">${L("Confirm password")}
+      <div class="ps-auth-pw-wrap"><input id="ps-auth-confirm-password" name="confirm-password" type="password" autocomplete="new-password" minlength="12"><button type="button" class="ps-auth-toggle-pw" data-for="ps-auth-confirm-password">${L("Show")}</button></div>
     </label>
-    <label class="ps-auth-remember" id="ps-auth-remember-row" hidden><input type="checkbox" id="ps-auth-remember" checked> Remember me on this device</label>
-    <button class="ps-auth-submit" type="submit">Create account</button></form>
-    <p class="ps-auth-message" role="status"></p><p class="ps-auth-switch"><button class="ps-auth-link" type="button">Already have an account? Sign in</button></p>
-    <p class="ps-auth-switch" id="ps-auth-resend-row" hidden><button class="ps-auth-link" type="button" id="ps-auth-resend">Resend confirmation email</button></p>
-    <p class="ps-auth-legal" id="ps-auth-legal">By creating an account you agree to our <a href="/terms.html" target="_blank" rel="noopener">Terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</p></section>`;
+    <label class="ps-auth-remember" id="ps-auth-remember-row" hidden><input type="checkbox" id="ps-auth-remember" checked> ${L("Remember me on this device")}</label>
+    <button class="ps-auth-submit" type="submit">${L("Create account")}</button></form>
+    <p class="ps-auth-message" role="status"></p><p class="ps-auth-switch"><button class="ps-auth-link" type="button">${L("Already have an account? Sign in")}</button></p>
+    <p class="ps-auth-switch" id="ps-auth-fw" hidden>${L("Already use Frame Witness? Sign in with the same email and password.")}</p>
+    <p class="ps-auth-switch" id="ps-auth-resend-row" hidden><button class="ps-auth-link" type="button" id="ps-auth-resend">${L("Resend confirmation email")}</button></p>
+    <p class="ps-auth-legal" id="ps-auth-legal">${L("By creating an account you agree to our {terms} and {privacy}.", { terms: `<a href="/terms.html" target="_blank" rel="noopener">${L("Terms")}</a>`, privacy: `<a href="/privacy.html" target="_blank" rel="noopener">${L("Privacy Policy")}</a>` })}</p></section>`;
   document.body.append(backdrop);
   return {
     backdrop, form: backdrop.querySelector("form")!, title: backdrop.querySelector("#ps-auth-title")!, description: backdrop.querySelector("#ps-auth-description")!,
@@ -840,7 +918,7 @@ async function boot(): Promise<void> {
   let confirmHash: string | null = null;
   const show = (): void => { dialog.backdrop.classList.add("open"); dialog.email.focus(); };
   const close = (): void => dialog.backdrop.classList.remove("open");
-  const setMessage = (message: string, error = false): void => { dialog.message.textContent = message; dialog.message.classList.toggle("error", error); };
+  const setMessage = (message: string, error = false): void => { dialog.message.textContent = L(message); dialog.message.classList.toggle("error", error); };
   const setMode = (nextMode: typeof mode): void => {
     mode = nextMode; setMessage("");
     recoveryToken = null; recoveryHash = null; confirmHash = null;
@@ -848,8 +926,8 @@ async function boot(): Promise<void> {
     dialog.email.closest("label")?.removeAttribute("hidden");
     dialog.email.required = true;
     const signup = mode === "signup"; const recovery = mode === "recovery";
-    dialog.title.textContent = signup ? "Create your account" : recovery ? "Reset your password" : "Welcome back";
-    dialog.description.textContent = signup ? "Use a password with at least 12 characters. We will send a verification email." : recovery ? "We will email you a secure link to choose a new password." : "Sign in to continue with your private workspace.";
+    dialog.title.textContent = L(signup ? "Create your account" : recovery ? "Reset your password" : "Welcome back");
+    dialog.description.textContent = L(signup ? "Use a password with at least 12 characters. We will send a verification email." : recovery ? "We will email you a secure link to choose a new password." : "Sign in to continue with your private workspace.");
     dialog.registerFields.hidden = !signup;
     dialog.firstName.required = false;
     dialog.passwordField.hidden = recovery; dialog.password.required = !recovery; dialog.password.autocomplete = signup ? "new-password" : "current-password";
@@ -857,10 +935,11 @@ async function boot(): Promise<void> {
     dialog.legal.hidden = !signup;
     dialog.rememberRow.hidden = mode !== "signin";
     dialog.resendRow.hidden = !signup;
+    dialog.backdrop.querySelector<HTMLElement>("#ps-auth-fw")!.hidden = !signup;
     if (signup) resendCooldownTicker();
     dialog.forgot.hidden = mode !== "signin";
-    dialog.submit.textContent = signup ? "Create account" : recovery ? "Send reset link" : "Sign in";
-    dialog.switcher.textContent = signup ? "Already have an account? Sign in" : recovery ? "Back to sign in" : "New here? Create an account";
+    dialog.submit.textContent = L(signup ? "Create account" : recovery ? "Send reset link" : "Sign in");
+    dialog.switcher.textContent = L(signup ? "Already have an account? Sign in" : recovery ? "Back to sign in" : "New here? Create an account");
   };
   const renderAccount = (email: string | null): void => {
     currentEmail = email;
@@ -952,8 +1031,8 @@ async function boot(): Promise<void> {
     } else if (recovering) {
       setMode("recovery");
       recoveryHash = hash;
-      dialog.title.textContent = "Choose a new password";
-      dialog.description.textContent = "Use at least 12 characters. Every device signed in to your account will be signed out.";
+      dialog.title.textContent = L("Choose a new password");
+      dialog.description.textContent = L("Use at least 12 characters. Every device signed in to your account will be signed out.");
       dialog.email.closest("label")?.setAttribute("hidden", "hidden");
       dialog.email.required = false;
       dialog.passwordField.hidden = false;
@@ -961,21 +1040,21 @@ async function boot(): Promise<void> {
       dialog.password.value = "";
       dialog.password.autocomplete = "new-password";
       dialog.password.minLength = 12;
-      dialog.submit.textContent = "Set the new password";
+      dialog.submit.textContent = L("Set the new password");
       dialog.switcher.hidden = true;
       show();
     } else {
       setMode("signin");
       confirmHash = hash;
-      dialog.title.textContent = "Confirm your email";
-      dialog.description.textContent = "Select Confirm email to finish creating your Redaxa account. Then sign in with your password.";
+      dialog.title.textContent = L("Confirm your email");
+      dialog.description.textContent = L("Select Confirm email to finish creating your Redaxa account. Then sign in with your password.");
       dialog.email.closest("label")?.setAttribute("hidden", "hidden");
       dialog.email.required = false;
       dialog.passwordField.hidden = true;
       dialog.password.required = false;
       dialog.rememberRow.hidden = true;
       dialog.forgot.hidden = true;
-      dialog.submit.textContent = "Confirm email";
+      dialog.submit.textContent = L("Confirm email");
       dialog.switcher.hidden = true;
       show();
     }
@@ -992,8 +1071,8 @@ async function boot(): Promise<void> {
     if (hashParams.get("type") === "recovery" && hashAccessToken) {
       // Keep the recovery bearer solely for the explicit password submission.
       setMode("recovery");
-      dialog.title.textContent = "Choose a new password";
-      dialog.description.textContent = "Use a password with at least 12 characters.";
+      dialog.title.textContent = L("Choose a new password");
+      dialog.description.textContent = L("Use a password with at least 12 characters.");
       // The dialog exposes a wrapper for the password fields but not for the
       // email one, so this reaches for its label rather than adding a field
       // to the shape for a single screen.
@@ -1004,7 +1083,7 @@ async function boot(): Promise<void> {
       dialog.password.value = "";
       dialog.password.autocomplete = "new-password";
       dialog.password.minLength = 12;
-      dialog.submit.textContent = "Set the new password";
+      dialog.submit.textContent = L("Set the new password");
       dialog.switcher.hidden = true;
       recoveryToken = hashAccessToken;
       show();
@@ -1223,7 +1302,7 @@ async function boot(): Promise<void> {
     if (!input) return;
     const showing = input.type === "text";
     input.type = showing ? "password" : "text";
-    toggle.textContent = showing ? "Show" : "Hide";
+    toggle.textContent = showing ? L("Show") : L("Hide");
   });
   // One free manual resend right after the automatic signup email, then a
   // 600s cooldown per email before another is allowed -- tracked client-side
@@ -1239,11 +1318,11 @@ async function boot(): Promise<void> {
     const remaining = Math.ceil((availableAt - Date.now()) / 1000);
     if (remaining > 0) {
       dialog.resend.disabled = true;
-      dialog.resend.textContent = `Resend available in ${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, "0")}`;
+      dialog.resend.textContent = L("Resend available in {time}", { time: `${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, "0")}` });
       window.setTimeout(resendCooldownTicker, 1000);
     } else {
       dialog.resend.disabled = false;
-      dialog.resend.textContent = "Resend confirmation email";
+      dialog.resend.textContent = L("Resend confirmation email");
     }
   };
   dialog.resend.addEventListener("click", async () => {
@@ -1253,7 +1332,7 @@ async function boot(): Promise<void> {
     const key = email.toLowerCase();
     if ((cooldowns[key] ?? 0) > Date.now()) { resendCooldownTicker(); return; }
     dialog.resend.disabled = true;
-    dialog.resend.textContent = "Sending…";
+    dialog.resend.textContent = L("Sending…");
     try {
       await apiRequest("/api/auth/signup", { email, resend: true, emailRedirectTo: authRedirect() });
       setMessage("If that account exists and isn't confirmed yet, a new confirmation email is on its way.");
@@ -1272,7 +1351,7 @@ async function boot(): Promise<void> {
     try {
       if (mode === "signup") {
         if (dialog.password.value !== dialog.confirmPassword.value) { setMessage("Passwords do not match.", true); dialog.submit.disabled = false; return; }
-        dialog.submit.textContent = "Creating account…";
+        dialog.submit.textContent = L("Creating account…");
         await apiRequest("/api/auth/signup", {
           email: dialog.email.value.trim(), password: dialog.password.value, emailRedirectTo: authRedirect(),
           firstName: dialog.firstName.value.trim()
@@ -1280,10 +1359,10 @@ async function boot(): Promise<void> {
         // Stays in signup mode (not switched to signin) so the resend
         // option -- which only makes sense right after registering -- is
         // right there instead of requiring a trip to the login screen.
-        setMessage("Account created. Check your email for a confirmation link, then sign in here.");
+        setMessage(`${L("Account created. Check your email for a confirmation link, then sign in here.")} ${L("Already use Frame Witness? Sign in with the same email and password.")}`);
         resendCooldownTicker();
       } else if (mode === "signin") {
-        dialog.submit.textContent = "Signing in…";
+        dialog.submit.textContent = L("Signing in…");
         const payload = await apiRequest("/api/auth/signin", { email: dialog.email.value.trim(), password: dialog.password.value, remember: dialog.remember.checked }) as
           { email?: string; access_token?: string; refresh_token?: string; expires_in?: number };
         const email = payload.email ?? dialog.email.value.trim();
@@ -1295,7 +1374,7 @@ async function boot(): Promise<void> {
         else { setMessage("Signed in successfully."); window.setTimeout(close, 700); }
       } else if (confirmHash) {
         const hash = confirmHash;
-        dialog.submit.textContent = "Confirming…";
+        dialog.submit.textContent = L("Confirming…");
         const payload = await apiRequest("/api/auth/signup", { confirm: hash }) as { email?: string };
         dialog.submit.textContent = restingLabel;
         setMode("signin");
@@ -1303,7 +1382,7 @@ async function boot(): Promise<void> {
         setMessage("Email confirmed. Sign in with your password to continue.");
         dialog.password.focus();
       } else if (recoveryHash) {
-        dialog.submit.textContent = "Saving…";
+        dialog.submit.textContent = L("Saving…");
         // Kept until the server accepts it: a rejected password does not spend the link.
         await apiRequest("/api/auth/recover?action=finish", { token_hash: recoveryHash, password: dialog.password.value });
         dialog.submit.textContent = restingLabel;
@@ -1316,7 +1395,7 @@ async function boot(): Promise<void> {
         // spend the same token twice.
         const token = recoveryToken;
         recoveryToken = null;
-        dialog.submit.textContent = "Saving…";
+        dialog.submit.textContent = L("Saving…");
         await apiRequest("/api/auth/recover?action=finish", {
           access_token: token,
           password: dialog.password.value,
@@ -1326,7 +1405,7 @@ async function boot(): Promise<void> {
         setMode("signin");
         setMessage("Password changed. Sign in with the new one.");
       } else {
-        dialog.submit.textContent = "Sending link…";
+        dialog.submit.textContent = L("Sending link…");
         await apiRequest("/api/auth/recover", { email: dialog.email.value.trim(), redirect_to: authRedirect() });
         dialog.submit.textContent = restingLabel;
         setMessage("If that account exists, a password-reset link is on its way.");
