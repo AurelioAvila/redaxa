@@ -156,7 +156,7 @@ process.env.CHECKOUT_CONSENT = "required";
   assert.match(shown.body, /Pro — Jährlich/);
   assert.match(shown.body, /3-tägigen kostenlosen Test/);
   assert.match(shown.body, /<script src="\/checkout\.js" defer><\/script>/);
-  assert.doesNotMatch(shown.body, /<script>/, "no inline script (CSP)");
+  assert.equal((shown.body.match(/<script\b[^>]*>/gi) ?? []).filter((tag) => !/\bsrc=/i.test(tag)).length, 0, "no inline script (CSP)");
   assert.equal((await page("forged-token-forged-token-forged-token-forged")).statusCode, 410);
   assert.equal((await page(undefined)).statusCode, 410);
 
