@@ -467,8 +467,9 @@ resetDb(); clearMails(); cancelled.length = 0;
   assert.ok(mails().some((m) => m.includes("Your seven-day Redaxa trial has started")), "the legacy email, unchanged");
 }
 
-// --- A disputed or fully refunded payment ends the plan at once. Signed
-// fixture events, checked by the real signature code, as Stripe sends them.
+// --- A dispute holds the plan (off, renewals paused) until it closes: won
+// gives it back, lost ends it like a full refund. Signed fixture events,
+// checked by the real signature code, as Stripe sends them.
 async function deliverSigned(type: string, object: unknown, secret = "whsec_dummy") {
   s.webhooks.constructEvent = realConstructEvent;
   const payload = JSON.stringify({ id: `evt_${Math.random().toString(36).slice(2)}`, object: "event", type, data: { object } });
@@ -482,38 +483,99 @@ resetDb(); clearMails(); cancelled.length = 0;
 {
   const savedInvoices = s.invoices.retrieve;
   // Charge -> payment intent -> the invoice it paid -> that invoice's subscription.
-  const paidBy: Record<string, string> = { pi_v: "in_v", pi_w: "in_w", pi_dup: "in_dup" };
+  const paidBy: Record<string, string> = { pi_v: "in_v", pi_w: "in_w", pi_dup: "in_dup", pi_y: "in_y", pi_z: "in_z" };
   s.invoicePayments.list = async (params: { payment: { payment_intent: string } }) => ({ data: paidBy[params.payment.payment_intent] ? [{ invoice: paidBy[params.payment.payment_intent] }] : [] });
   s.invoices.retrieve = async (id: string) => ({ id, parent: { subscription_details: { subscription: id.replace("in_", "sub_") } } });
   s.charges.retrieve = async (id: string) => ({ id, payment_intent: id.replace("ch_", "pi_") });
   const plain = (userId: string, extra: Row = {}) => ({ redaxa_user_id: userId, plan: "personal", interval: "monthly", seats: "1", lang: "en", ...extra });
+  // Stripe's disputes as they stand now (the webhook re-reads them), and the updates it makes.
+  const standing = new Map<string, string>();
+  s.disputes.list = async (params: { charge: string }) => ({ data: standing.has(params.charge) ? [{ id: `dp_${params.charge.slice(3)}`, charge: params.charge, status: standing.get(params.charge) }] : [] });
+  const updates: Array<{ id: string; pause: unknown; mark: unknown }> = [];
+  s.subscriptions.update = async (id: string, params: { pause_collection: unknown; metadata: Record<string, string> }) => {
+    updates.push({ id, pause: params.pause_collection, mark: params.metadata.redaxa_dispute });
+    const sub = subscriptions.get(id)!;
+    const metadata = { ...sub.metadata, ...params.metadata };
+    for (const key of Object.keys(metadata)) if (metadata[key] === "") delete metadata[key];
+    return Object.assign(sub, { metadata, pause_collection: params.pause_collection || null });
+  };
+  const status = (userId: string) => db.accounts.get(userId)!.subscription_status as string;
 
   newUser("user-v", "v@example.test", { has_used_trial: true });
   await syncSubscription(subscription("sub_v", "user-v", { status: "active", metadata: plain("user-v") }));
-  assert.equal(db.accounts.get("user-v")!.subscription_status, "active");
-  const dispute = { id: "dp_v", object: "dispute", charge: "ch_v", payment_intent: null, amount: 799, currency: "eur", reason: "fraudulent" };
+  assert.equal(status("user-v"), "active");
+  const dispute = { id: "dp_v", object: "dispute", charge: "ch_v", payment_intent: null, amount: 799, currency: "eur", reason: "fraudulent", status: "needs_response" };
 
   // A forged delivery is refused and changes nothing.
+  standing.set("ch_v", "needs_response");
   assert.equal((await deliverSigned("charge.dispute.created", dispute, "whsec_forged")).statusCode, 400);
-  assert.equal(cancelled.length, 0);
+  assert.equal(updates.length + cancelled.length, 0);
 
-  // Disputed: cancelled at once, plan off, one neutral notice.
+  // Created: the plan is off and renewals are paused, nothing cancelled, nobody mailed.
   assert.equal((await deliverSigned("charge.dispute.created", dispute)).statusCode, 200);
-  assert.deepEqual(cancelled, [{ id: "sub_v", comment: "payment_reversed" }]);
-  assert.equal(db.accounts.get("user-v")!.subscription_status, "canceled");
-  assert.equal(db.accounts.get("user-v")!.current_period_end, null);
+  assert.deepEqual(updates, [{ id: "sub_v", pause: { behavior: "void" }, mark: "ch_v" }]);
+  assert.equal(status("user-v"), "paused");
+  assert.deepEqual(trial.stateOf(status("user-v")), { state: "blocked", blockedReason: "payment_failed" }, "the apps show the plan paused");
+  assert.equal(cancelled.length, 0);
+  assert.equal(mails().length, 0);
+  // Stripe's echo of that update, a redelivery and a late invoice keep it held.
+  await deliverSigned("customer.subscription.updated", subscriptions.get("sub_v"));
+  await deliverSigned("charge.dispute.created", dispute);
+  await deliverSigned("invoice.paid", { id: "in_late", billing_reason: "subscription_cycle", amount_paid: 799, currency: "eur", parent: { subscription_details: { subscription: "sub_v" } }, lines: { data: [] } });
+  assert.equal(status("user-v"), "paused");
+  assert.equal(updates.length, 1);
+
+  // Won: the pause and the mark go, the plan is back, the same subscription bills on.
+  standing.set("ch_v", "won");
+  assert.equal((await deliverSigned("charge.dispute.closed", { ...dispute, status: "won" })).statusCode, 200);
+  assert.deepEqual(updates[1], { id: "sub_v", pause: "", mark: "" });
+  assert.equal(status("user-v"), "active");
+  assert.equal(subscriptions.get("sub_v")!.pause_collection, null);
+  assert.equal(subscriptions.get("sub_v")!.metadata.redaxa_dispute, undefined);
+  // The creation delivered again after the win (retries, out of order) changes nothing.
+  await deliverSigned("charge.dispute.created", dispute);
+  assert.equal(status("user-v"), "active");
+  assert.equal(updates.length, 2);
+  assert.equal(cancelled.length + mails().length, 0);
+
+  // Created, then lost: held, then cancelled for good with the one neutral notice.
+  newUser("user-y", "y@example.test", { has_used_trial: true });
+  await syncSubscription(subscription("sub_y", "user-y", { status: "active", metadata: plain("user-y") }));
+  const lostDispute = { ...dispute, id: "dp_y", charge: "ch_y" };
+  standing.set("ch_y", "needs_response");
+  await deliverSigned("charge.dispute.created", lostDispute);
+  assert.equal(status("user-y"), "paused");
+  standing.set("ch_y", "lost");
+  assert.equal((await deliverSigned("charge.dispute.closed", { ...lostDispute, status: "lost" })).statusCode, 200);
+  assert.deepEqual(cancelled, [{ id: "sub_y", comment: "payment_reversed" }]);
+  assert.equal(status("user-y"), "canceled");
+  assert.equal(db.accounts.get("user-y")!.current_period_end, null);
   const notice = mails().filter((m) => m.startsWith("Your Pro plan has ended, Giulia."));
   assert.equal(notice.length, 1, mails().join("\n----\n"));
   assert.match(notice[0], /Amount reversed: €7\.99/);
   assert.match(notice[0], /Subscription: Cancelled/);
   assert.doesNotMatch(notice[0], /refund/i, "no refund language, ever");
-  // Stripe's own deletion, a late invoice and the same dispute again leave it off, untold.
-  await deliverSigned("customer.subscription.deleted", subscriptions.get("sub_v"));
-  await deliverSigned("invoice.paid", { id: "in_late", billing_reason: "subscription_cycle", amount_paid: 799, currency: "eur", parent: { subscription_details: { subscription: "sub_v" } }, lines: { data: [] } });
-  await deliverSigned("charge.dispute.created", dispute);
-  assert.equal(db.accounts.get("user-v")!.subscription_status, "canceled");
+  // Stripe's own deletion, a late invoice and both dispute events again leave it off, untold.
+  await deliverSigned("customer.subscription.deleted", subscriptions.get("sub_y"));
+  await deliverSigned("invoice.paid", { id: "in_late_y", billing_reason: "subscription_cycle", amount_paid: 799, currency: "eur", parent: { subscription_details: { subscription: "sub_y" } }, lines: { data: [] } });
+  await deliverSigned("charge.dispute.created", lostDispute);
+  await deliverSigned("charge.dispute.closed", { ...lostDispute, status: "lost" });
+  assert.equal(status("user-y"), "canceled");
   assert.equal(cancelled.length, 1);
   assert.equal(mails().length, 1);
+
+  // Closed (won) delivered before created: neither touches the running plan.
+  newUser("user-z", "z@example.test", { has_used_trial: true });
+  await syncSubscription(subscription("sub_z", "user-z", { status: "active", metadata: plain("user-z") }));
+  standing.set("ch_z", "won");
+  const updatesBefore = updates.length;
+  await deliverSigned("charge.dispute.closed", { ...dispute, id: "dp_z", charge: "ch_z", status: "won" });
+  await deliverSigned("charge.dispute.created", { ...dispute, id: "dp_z", charge: "ch_z" });
+  assert.equal(status("user-z"), "active");
+  assert.equal(updates.length, updatesBefore, "no pause for a dispute already won");
+  // A dispute Stripe does not list yet is retried, not guessed.
+  assert.equal((await deliverSigned("charge.dispute.created", { ...dispute, id: "dp_new", charge: "ch_z" })).statusCode, 500);
+  assert.equal(status("user-z"), "active");
 
   // Refunds: a partial one leaves the plan running; a full one ends it, told in the checkout's language.
   clearMails(); cancelled.length = 0;
@@ -537,11 +599,12 @@ resetDb(); clearMails(); cancelled.length = 0;
   await deliverSigned("charge.dispute.created", { ...dispute, id: "dp_tip", charge: "ch_tip", payment_intent: "pi_tip", amount: 300 });
   assert.equal(cancelled.length, 0);
 
-  // An older duplicate subscription is cancelled; the plan the account runs on now is kept, nobody is told.
+  // A lost dispute on an older duplicate cancels it; the plan the account runs on now is kept, nobody is told.
   newUser("user-x", "x@example.test", { has_used_trial: true });
   await syncSubscription(subscription("sub_x", "user-x", { status: "active", metadata: plain("user-x") }));
   subscription("sub_dup", "user-x", { status: "active", metadata: plain("user-x") });
-  await deliverSigned("charge.dispute.created", { ...dispute, id: "dp_dup", charge: "ch_dup", payment_intent: "pi_dup" });
+  standing.set("ch_dup", "lost");
+  await deliverSigned("charge.dispute.closed", { ...dispute, id: "dp_dup", charge: "ch_dup", payment_intent: "pi_dup", status: "lost" });
   assert.deepEqual(cancelled, [{ id: "sub_dup", comment: "payment_reversed" }]);
   assert.equal(db.accounts.get("user-x")!.stripe_subscription_id, "sub_x");
   assert.equal(db.accounts.get("user-x")!.subscription_status, "active");
