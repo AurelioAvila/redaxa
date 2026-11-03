@@ -53,7 +53,7 @@ pub fn texts(language: &str) -> Texts {
             background: "Im Hintergrund weiterlaufen",
             exit: format!("{n} beenden"),
             title: format!("{n} läuft im Hintergrund"),
-            notice: format!("{n} läuft im Infobereich neben der Uhr weiter. Klicken Sie auf das Symbol, um es wieder zu öffnen, oder wählen Sie „{n} beenden“, um es zu schließen. Den Hintergrundbetrieb können Sie im Menü des Symbols ausschalten."),
+            notice: format!("{n} läuft im Infobereich neben der Uhr weiter. Klicke auf das Symbol, um es wieder zu öffnen, oder wähle „{n} beenden“, um es zu schließen. Den Hintergrundbetrieb kannst du im Menü des Symbols ausschalten."),
         },
         "pt" => Texts {
             open: format!("Abrir {n}"),

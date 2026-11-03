@@ -650,7 +650,7 @@ const DE: Words = {
       preheader: `Am ${v.end} werden ${v.charge} für ${v.plan} abgebucht. Um ${v.tier} zu behalten, musst du nichts tun.`,
       kicker: "Testphase endet",
       h1: `Deine Testphase endet am ${v.endShort}`,
-      intro: `Deine Testphase für Redaxa ${v.tier} endet am ${v.end}. Dann beginnt der Tarif ${v.plan}, und ${v.charge} werden von der hinterlegten Zahlungsmethode abgebucht. Um ${v.tier} zu behalten, musst du nichts tun. Andernfalls kündige vorher, dann wird nichts abgebucht.`,
+      intro: `Deine Testphase für Redaxa ${v.tier} endet am ${v.end}. Dann beginnt der Tarif ${v.plan}, und ${v.charge} werden von der hinterlegten Zahlungsmethode abgebucht. Um ${v.tier} zu behalten, musst du nichts tun. Andernfalls kündigst du vorher, dann wird nichts abgebucht.`,
       rows: [["Tarif", v.plan], ["Wann", v.end]],
       key: ["Erste Abbuchung", v.chargeOnly],
       button: b("Tarif ansehen", PLANS),
