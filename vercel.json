@@ -8,7 +8,8 @@
     },
     { "source": "/api/billing/subscription", "destination": "/api/billing?action=subscription" },
     { "source": "/api/billing/subscription/cancel", "destination": "/api/billing?action=subscription-cancel" },
-    { "source": "/api/billing/subscription/resume", "destination": "/api/billing?action=subscription-resume" }
+    { "source": "/api/billing/subscription/resume", "destination": "/api/billing?action=subscription-resume" },
+    { "source": "/checkout", "destination": "/api/billing?action=consent" }
   ],
   "redirects": [
     {

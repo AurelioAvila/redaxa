@@ -34,6 +34,8 @@ export type TrialMailInput = {
   renewsOn?: number | null;
   failure?: FailureKey | null;
   endedOn?: number | null;
+  /** The subscription carries a consent_id from the Terms box on /checkout. */
+  consented?: boolean;
 };
 
 type Lines = {
@@ -46,6 +48,8 @@ type Lines = {
 type Words = {
   locale: string;
   frame: Omit<EmailFrame, "write"> & { writeOr: string; writeTo: string };
+  /** Under the first email of a subscription that went through the Terms box on /checkout. */
+  consented: string;
   monthly: string; yearly: string; seats: string; perMonth: string; perYear: string; taxExclusive: string; planPrice: string;
   failures: Record<FailureKey, string>;
   mail: Record<TrialMailKind, (v: Record<string, string>, business: boolean) => Lines>;
@@ -59,6 +63,7 @@ const b = (label: string, target: [string, string]): [string, string] => [label,
 
 const EN: Words = {
   locale: "en-GB",
+  consented: "Before paying, you agreed to the Terms and asked for immediate access to this digital content, accepting that your 14-day right of withdrawal ends once access starts.",
   frame: { lang: "en", writeOr: "Or write to", writeTo: "Write to", never: "Never send a password or an API key by email.", privacy: "Privacy", terms: "Terms", support: "Support" },
   monthly: "Monthly", yearly: "Yearly", seats: "{n} users", perMonth: "{amount} a month", perYear: "{amount} a year", taxExclusive: "excl. VAT", planPrice: "the plan's price",
   failures: { insufficient_funds: "insufficient funds", card_declined: "the card was declined", expired_card: "the card has expired", authentication_required: "the bank asked for a confirmation that was not completed", processing_error: "a processing error at the bank", generic: "the payment was not accepted" },
@@ -220,6 +225,7 @@ const EN: Words = {
 
 const IT: Words = {
   locale: "it-IT",
+  consented: "Prima del pagamento hai accettato i Termini e chiesto di accedere subito a questo contenuto digitale, sapendo che il diritto di recesso di 14 giorni termina quando inizia l’accesso.",
   frame: { lang: "it", writeOr: "Oppure scrivi a", writeTo: "Scrivi a", never: "Non inviare mai una password o una chiave API via email.", privacy: "Privacy", terms: "Termini", support: "Assistenza" },
   monthly: "Mensile", yearly: "Annuale", seats: "{n} utenti", perMonth: "{amount} al mese", perYear: "{amount} all'anno", taxExclusive: "IVA esclusa", planPrice: "il prezzo del piano",
   failures: { insufficient_funds: "fondi insufficienti", card_declined: "la carta è stata rifiutata", expired_card: "la carta è scaduta", authentication_required: "la banca ha chiesto una conferma che non è stata completata", processing_error: "un errore di elaborazione della banca", generic: "il pagamento non è stato accettato" },
@@ -381,6 +387,7 @@ const IT: Words = {
 
 const ES: Words = {
   locale: "es-ES",
+  consented: "Antes de pagar, aceptaste los Términos y pediste acceso inmediato a este contenido digital, sabiendo que tu derecho de desistimiento de 14 días termina en cuanto empieza el acceso.",
   frame: { lang: "es", writeOr: "O escribe a", writeTo: "Escribe a", never: "No envíes nunca una contraseña ni una clave API por correo.", privacy: "Privacidad", terms: "Términos", support: "Soporte" },
   monthly: "Mensual", yearly: "Anual", seats: "{n} usuarios", perMonth: "{amount} al mes", perYear: "{amount} al año", taxExclusive: "sin IVA", planPrice: "el precio del plan",
   failures: { insufficient_funds: "fondos insuficientes", card_declined: "la tarjeta fue rechazada", expired_card: "la tarjeta ha caducado", authentication_required: "el banco pidió una confirmación que no se completó", processing_error: "un error de procesamiento del banco", generic: "el pago no fue aceptado" },
@@ -542,6 +549,7 @@ const ES: Words = {
 
 const FR: Words = {
   locale: "fr-FR",
+  consented: "Avant le paiement, vous avez accepté les Conditions d’utilisation et demandé l’accès immédiat à ce contenu numérique, en reconnaissant perdre votre droit de rétractation de 14 jours dès le début de l’accès.",
   frame: { lang: "fr", writeOr: "Ou écrivez à", writeTo: "Écrivez à", never: "N’envoyez jamais de mot de passe ni de clé API par e-mail.", privacy: "Confidentialité", terms: "Conditions", support: "Assistance" },
   monthly: "Mensuel", yearly: "Annuel", seats: "{n} utilisateurs", perMonth: "{amount} par mois", perYear: "{amount} par an", taxExclusive: "HT", planPrice: "le prix de l’offre",
   failures: { insufficient_funds: "fonds insuffisants", card_declined: "la carte a été refusée", expired_card: "la carte a expiré", authentication_required: "la banque a demandé une confirmation qui n’a pas été effectuée", processing_error: "une erreur de traitement à la banque", generic: "le paiement n’a pas été accepté" },
@@ -703,6 +711,7 @@ const FR: Words = {
 
 const DE: Words = {
   locale: "de-DE",
+  consented: "Vor der Zahlung hast du den Nutzungsbedingungen zugestimmt und ausdrücklich verlangt, dass der Zugang zu diesen digitalen Inhalten sofort beginnt; dir war bekannt, dass dein 14-tägiges Widerrufsrecht damit erlischt.",
   frame: { lang: "de", writeOr: "Oder schreib an", writeTo: "Schreib an", never: "Sende niemals ein Passwort oder einen API-Schlüssel per E-Mail.", privacy: "Datenschutz", terms: "Bedingungen", support: "Support" },
   monthly: "Monatlich", yearly: "Jährlich", seats: "{n} Nutzer", perMonth: "{amount} pro Monat", perYear: "{amount} pro Jahr", taxExclusive: "zzgl. MwSt.", planPrice: "der Tarifpreis",
   failures: { insufficient_funds: "keine ausreichende Deckung", card_declined: "die Karte wurde abgelehnt", expired_card: "die Karte ist abgelaufen", authentication_required: "die Bank hat eine Bestätigung verlangt, die nicht abgeschlossen wurde", processing_error: "ein Verarbeitungsfehler bei der Bank", generic: "die Zahlung wurde nicht akzeptiert" },
@@ -920,6 +929,7 @@ export function trialMail(kind: TrialMailKind, input: TrialMailInput): { subject
   blocks.push({ button: { href: l.button[1], label: l.button[0] } });
   if (l.h2 && l.list) blocks.push({ h2: l.h2 }, { list: l.list, numbered: true });
   if (l.after) blocks.push({ p: l.after, muted: true });
+  if (input.consented && (kind === "trial_started" || kind === "subscription_started")) blocks.push({ p: w.consented, muted: true });
   if (l.moment && l.moment[1]) blocks.push({ moment: { kicker: l.moment[0], big: l.moment[1], text: l.moment[2] }, text: `${l.moment[0]}: ${l.moment[1]}. ${l.moment[2]}` });
   return renderEmail({
     subject: l.subject,

@@ -630,7 +630,7 @@ resetDb(); clearMails();
   const cron = response();
   await billing({ method: "GET", headers: { "x-vercel-cron-schedule": "0 7 * * *", authorization: "Bearer cron-fixture-secret-0123456789" } }, cron as any);
   assert.equal(cron.statusCode, 200, JSON.stringify(cron.body));
-  assert.deepEqual(cron.body, { due: 1, sent: 1, recovery: { failed: 0, sent: 0 } });
+  assert.deepEqual(cron.body, { due: 1, sent: 1, recovery: { failed: 0, sent: 0 }, consentsPurged: true });
   assert.equal(db.claims[0].reminded_for, new Date(trialEnd * 1000).toISOString());
   const reminder = mails().find((m) => m.startsWith("Deine Testphase endet am 17. Oktober, Giulia."));
   assert.ok(reminder, mails().join("\n----\n"));
