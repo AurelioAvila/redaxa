@@ -15,8 +15,8 @@ import type { Language } from "./_trial.js";
  * it is unset the API creates the Stripe session directly, as before.
  */
 
-/** The version of what the buyer accepts: the box text ("I agree to the
- *  Terms.", owner decision of 4 November 2026) with the terms.html it links to.
+/** The version of what the buyer accepts: the box text (owner decision of
+ *  4 November 2026: the Terms and immediate access) with the terms.html it links to.
  *  Stored on every consent row and in the session metadata; a new value makes
  *  a page that is already open ask for the tick again (409 on submit). */
 export const TERMS_VERSION = "2026-11-04";
@@ -127,7 +127,7 @@ const EN: Copy = {
   trial: "Starts with a {days}-day free trial. Nothing is charged today.", now: "The subscription starts today and is charged today.",
   price: "Stripe’s secure checkout page shows the final price before you pay.",
   before: "I agree to the ", terms: "Terms",
-  after: ".",
+  after: " and want access now, ending my 14-day right of withdrawal.",
   cta: "Continue to secure checkout", back: "Back to plans",
   expiredTitle: "This checkout link has expired", expired: "Go back to Redaxa and choose your plan again. Nothing has been charged.",
   errors: {
@@ -150,7 +150,7 @@ const COPY: Record<Language, Copy> = {
     trial: "Inizia con {days} giorni di prova gratuita. Oggi non paghi nulla.", now: "L’abbonamento parte oggi e viene addebitato oggi.",
     price: "La pagina di pagamento sicura di Stripe mostra il prezzo finale prima che tu paghi.",
     before: "Accetto i ", terms: "Termini",
-    after: ".",
+    after: " e voglio accedere subito, perdendo così il mio diritto di recesso di 14 giorni.",
     cta: "Continua al pagamento sicuro", back: "Torna ai piani",
     expiredTitle: "Questo link di pagamento è scaduto", expired: "Torna su Redaxa e scegli di nuovo il piano. Non ti è stato addebitato nulla.",
     errors: {
@@ -170,7 +170,7 @@ const COPY: Record<Language, Copy> = {
     trial: "Empieza con {days} días de prueba gratis. Hoy no se te cobra nada.", now: "La suscripción empieza hoy y se cobra hoy.",
     price: "La página de pago segura de Stripe muestra el precio final antes de que pagues.",
     before: "Acepto los ", terms: "Términos",
-    after: ".",
+    after: " y quiero acceder ya, con lo que termina mi derecho de desistimiento de 14 días.",
     cta: "Continuar al pago seguro", back: "Volver a los planes",
     expiredTitle: "Este enlace de pago ha caducado", expired: "Vuelve a Redaxa y elige tu plan de nuevo. No se te ha cobrado nada.",
     errors: {
@@ -190,7 +190,7 @@ const COPY: Record<Language, Copy> = {
     trial: "Commence par {days} jours d’essai gratuit. Rien n’est prélevé aujourd’hui.", now: "L’abonnement commence et est prélevé aujourd’hui.",
     price: "La page de paiement sécurisée de Stripe affiche le prix final avant le paiement.",
     before: "J’accepte les ", terms: "Conditions d’utilisation",
-    after: ".",
+    after: " et je veux l’accès immédiat, ce qui met fin à mon droit de rétractation de 14 jours.",
     cta: "Continuer vers le paiement sécurisé", back: "Retour aux offres",
     expiredTitle: "Ce lien de paiement a expiré", expired: "Revenez sur Redaxa et choisissez à nouveau votre offre. Rien n’a été prélevé.",
     errors: {
@@ -210,7 +210,7 @@ const COPY: Record<Language, Copy> = {
     trial: "Beginnt mit einem {days}-tägigen kostenlosen Test. Heute wird nichts berechnet.", now: "Das Abo beginnt heute und wird heute berechnet.",
     price: "Den Endpreis siehst du vor dem Bezahlen auf der sicheren Kassenseite von Stripe.",
     before: "Ich stimme den ", terms: "Nutzungsbedingungen",
-    after: " zu.",
+    after: " zu und möchte sofort Zugang – damit endet mein 14-tägiges Widerrufsrecht.",
     cta: "Weiter zur sicheren Kasse", back: "Zurück zu den Tarifen",
     expiredTitle: "Dieser Bezahllink ist abgelaufen", expired: "Geh zurück zu Redaxa und wähle deinen Tarif erneut. Es wurde nichts berechnet.",
     errors: {

@@ -43,13 +43,13 @@ assert.equal(consent.consentCutoff(Date.parse("2026-11-03T10:00:00Z")), "2025-10
 // The version stored on every row: the box text below with the terms.html it links to.
 assert.equal(consent.TERMS_VERSION, "2026-11-04");
 
-// --- The box says exactly what the owner approved (4 Nov 2026), in every language, and nothing more.
+// --- The box says exactly what the owner approved (4 Nov 2026): one line, the Terms and immediate access.
 const box = (lang: keyof typeof consent.CONSENT_COPY) => { const c = consent.CONSENT_COPY[lang]; return `${c.before}${c.terms}${c.after}`; };
-assert.equal(box("en"), "I agree to the Terms.");
-assert.equal(box("de"), "Ich stimme den Nutzungsbedingungen zu.");
-assert.equal(box("it"), "Accetto i Termini.");
-assert.equal(box("es"), "Acepto los Términos.");
-assert.equal(box("fr"), "J’accepte les Conditions d’utilisation.");
+assert.equal(box("en"), "I agree to the Terms and want access now, ending my 14-day right of withdrawal.");
+assert.equal(box("de"), "Ich stimme den Nutzungsbedingungen zu und möchte sofort Zugang – damit endet mein 14-tägiges Widerrufsrecht.");
+assert.equal(box("it"), "Accetto i Termini e voglio accedere subito, perdendo così il mio diritto di recesso di 14 giorni.");
+assert.equal(box("es"), "Acepto los Términos y quiero acceder ya, con lo que termina mi derecho de desistimiento de 14 días.");
+assert.equal(box("fr"), "J’accepte les Conditions d’utilisation et je veux l’accès immédiat, ce qui met fin à mon droit de rétractation de 14 jours.");
 const keys = (value: object): string[] => Object.entries(value).flatMap(([k, v]) => typeof v === "object" ? keys(v).map((x) => `${k}.${x}`) : [k]).sort();
 for (const lang of Object.keys(consent.CONSENT_COPY) as Array<keyof typeof consent.CONSENT_COPY>) {
   assert.deepEqual(keys(consent.CONSENT_COPY[lang]), keys(consent.CONSENT_COPY.en), lang);
@@ -150,7 +150,7 @@ process.env.CHECKOUT_CONSENT = "required";
   assert.equal(shown.statusCode, 200);
   assert.equal(shown.headers["cache-control"], "no-store");
   assert.match(shown.body, /<html lang="de">/);
-  assert.match(shown.body, /<span>Ich stimme den <a href="[^"]+\/terms\.html" target="_blank" rel="noopener">Nutzungsbedingungen<\/a> zu\.<\/span><\/label>/);
+  assert.match(shown.body, /<span>Ich stimme den <a href="[^"]+\/terms\.html" target="_blank" rel="noopener">Nutzungsbedingungen<\/a> zu und möchte sofort Zugang – damit endet mein 14-tägiges Widerrufsrecht\.<\/span><\/label>/);
   assert.match(shown.body, /<label class="consent" id="consent-box"><input type="checkbox" name="agree" value="yes" id="agree" aria-describedby="consent-error">/);
   assert.match(shown.body, /Pro — Jährlich/);
   assert.match(shown.body, /3-tägigen kostenlosen Test/);
