@@ -3,7 +3,7 @@ import Stripe from "stripe";
 import { accountFor, appUrl, claimStripeEvent, completeStripeEvent, patchAccount, stripe, supabaseUserById, userForCustomer } from "./_billing.js";
 import { formatChargedAmount, notifyOwnerOfSale, sendSubscriptionEmail } from "./_email.js";
 import {
-  TRIAL_REJECTED, cancelRefusedTrial, cardFingerprint, claimTrial, endedDuringTrial, endsTrial, invoiceSubscriptionId,
+  DISPUTE_MARK, TRIAL_REJECTED, cancelRefusedTrial, cardFingerprint, claimTrial, endedDuringTrial, endsTrial, invoiceSubscriptionId,
   isLive, isOurTrial, language, ownsAccount, recordedStatus, upcomingCharge,
 } from "./_trial.js";
 import { sendTrialMail, type FailureKey, type TrialMailInput, type TrialMailKind } from "./_trial-email.js";
@@ -271,10 +271,9 @@ async function subscriptionOfCharge(charge: string | Stripe.Charge, paymentInten
 }
 
 /**
- * A subscription payment that was disputed, or refunded in full: the
+ * A subscription payment refunded in full, or a dispute lost: the
  * subscription is cancelled at once (no final invoice, no proration), the
- * plan is switched off and the customer is told in neutral words. Before
- * this, a reversed payment changed nothing and the plan ran on.
+ * plan is switched off and the customer is told in neutral words.
  *
  * Idempotent: the event claim runs it once; a retry after a failure writes
  * the same account row and finds the subscription already cancelled. The
@@ -302,6 +301,58 @@ async function reversePayment(subscriptionId: string, reversed: { amount: number
   }
   console.log(`redaxa payment reversed (${reason}): subscription ${subscription.id} cancelled${current ? ", plan off" : ""}`);
   if (current) await mail("payment_reversed", userId, subscription, `redaxa-payment-reversed/${subscription.id}`, { charge: reversed });
+}
+
+/** Dispute statuses that leave the payment with us. Anything else not lost
+ *  (needs_response, under_review, the warning_* inquiries, a status Stripe
+ *  adds later) counts as open, so access is held rather than given. */
+const DISPUTE_CLEARED = new Set(["won", "warning_closed", "prevented"]);
+
+/** Where the disputes on this charge stand now, read from Stripe rather than
+ *  from the event, so retries and events delivered out of order (closed
+ *  before created) land on the same answer. A key without Disputes read
+ *  falls back to the event's own dispute. */
+async function disputeOutcome(dispute: Stripe.Dispute): Promise<"open" | "lost" | "cleared"> {
+  const charge = typeof dispute.charge === "string" ? dispute.charge : dispute.charge.id;
+  let all: Stripe.Dispute[] = [dispute];
+  try {
+    all = (await stripe.disputes.list({ charge, limit: 100 })).data;
+    if (!all.some((d) => d.id === dispute.id)) throw new Error("DISPUTE_NOT_LISTED_YET");
+  } catch (error) {
+    if ((error as { type?: string }).type !== "StripePermissionError") throw error;
+    console.error("redaxa: the Stripe key cannot read disputes; using the event's own status");
+  }
+  if (all.some((d) => d.status === "lost")) return "lost";
+  return all.every((d) => DISPUTE_CLEARED.has(d.status)) ? "cleared" : "open";
+}
+
+/**
+ * A disputed subscription payment. While the dispute is open the plan is off
+ * and renewals are paused (pause_collection, reversible, accepted under
+ * Managed Payments), marked on the subscription so every later sync keeps it
+ * off. Won: the pause and the mark go and the plan comes back by itself.
+ * Lost: cancelled for good, as for a full refund. Nothing is mailed while it
+ * is open or when it is won; the lost case sends the payment-reversed notice.
+ */
+async function settleDispute(dispute: Stripe.Dispute): Promise<void> {
+  const subscriptionId = await subscriptionOfCharge(dispute.charge, dispute.payment_intent);
+  if (!subscriptionId) return;
+  const outcome = await disputeOutcome(dispute);
+  if (outcome === "lost") {
+    await reversePayment(subscriptionId, { amount: dispute.amount, currency: dispute.currency }, "dispute lost");
+    return;
+  }
+  let subscription = await stripe.subscriptions.retrieve(subscriptionId);
+  if (!isLive(subscription.status)) return; // ended already: nothing to hold or give back
+  const marked = Boolean(subscription.metadata?.[DISPUTE_MARK]);
+  if (outcome === "open" && (!marked || !subscription.pause_collection)) {
+    const charge = typeof dispute.charge === "string" ? dispute.charge : dispute.charge.id;
+    subscription = await stripe.subscriptions.update(subscription.id, { pause_collection: { behavior: "void" }, metadata: { [DISPUTE_MARK]: charge } });
+  } else if (outcome === "cleared" && marked) {
+    subscription = await stripe.subscriptions.update(subscription.id, { pause_collection: "", metadata: { [DISPUTE_MARK]: "" } });
+  }
+  await syncSubscription(subscription);
+  console.log(`redaxa dispute ${dispute.id}: ${outcome}, subscription ${subscription.id} ${outcome === "open" ? "held" : "running"}`);
 }
 
 export default async function handler(request: WebhookRequest, response: ResponseLike): Promise<void> {
@@ -356,10 +407,8 @@ export default async function handler(request: WebhookRequest, response: Respons
       // invoice processed after the payment recovered must not lock out a
       // paying account, and an invoice for another product changes nothing.
       await handleInvoice(event.type, event.data.object as Stripe.Invoice);
-    } else if (event.type === "charge.dispute.created") {
-      const dispute = event.data.object as Stripe.Dispute;
-      const subscriptionId = await subscriptionOfCharge(dispute.charge, dispute.payment_intent);
-      if (subscriptionId) await reversePayment(subscriptionId, { amount: dispute.amount, currency: dispute.currency }, "dispute");
+    } else if (event.type === "charge.dispute.created" || event.type === "charge.dispute.closed") {
+      await settleDispute(event.data.object as Stripe.Dispute);
     } else if (event.type === "charge.refunded") {
       // Only a full refund ends the plan; a partial one leaves it running.
       const charge = event.data.object as Stripe.Charge;

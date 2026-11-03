@@ -76,10 +76,18 @@ export function isOurTrial(subscription: Pick<SubscriptionLike, "metadata">): bo
   return mark === TRIAL_MARK || mark === LEGACY_TRIAL_MARK;
 }
 
+/** Subscription metadata key set while a payment of the subscription is
+ *  disputed (stripe-webhook.ts): the value is the disputed charge. */
+export const DISPUTE_MARK = "redaxa_dispute";
+
 /** The status written to the account: a refused trial stays recognisable
- *  whatever order its cancellation events arrive in. */
+ *  whatever order its cancellation events arrive in, and a subscription held
+ *  for an open dispute reads as paused (no access, no second checkout, the
+ *  plan comes back if the dispute is won) although Stripe still calls it
+ *  active with its collection paused. */
 export function recordedStatus(subscription: SubscriptionLike): string {
-  return subscription.cancellation_details?.comment === TRIAL_REJECTED ? TRIAL_REJECTED : subscription.status;
+  if (subscription.cancellation_details?.comment === TRIAL_REJECTED) return TRIAL_REJECTED;
+  return subscription.metadata?.[DISPUTE_MARK] && isLive(subscription.status) ? "paused" : subscription.status;
 }
 
 /** Statuses of a subscription that still exists and could bill. */
