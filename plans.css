@@ -172,6 +172,8 @@ html:is(:not([data-theme]), [data-theme="paper"]) .plans-page, html:is(:not([dat
 .compare-table td:nth-child(3), .compare-table .cmp-featured { background: color-mix(in srgb, var(--theme-accent) 7%, transparent); color: var(--theme-text); }
 .compare-table .cmp-yes { width: 16px; height: 16px; fill: none; stroke: var(--theme-accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vertical-align: middle; }
 .compare-table .cmp-cell-no { color: var(--theme-muted); }
+/* Phones: fit all three plans in view instead of hiding Pro and Business off-screen. */
+@media (max-width: 640px) { .compare-table { min-width: 0; font-size: 12px; } .compare-table th, .compare-table td { padding: 10px 6px; } .compare-table th[scope="row"], .compare-table thead th:first-child { width: 34%; padding-left: 12px; } }
 
 .trust-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 /* Five statements: three over two, every row full. */
