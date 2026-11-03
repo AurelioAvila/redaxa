@@ -62,7 +62,7 @@ const WORDS = {
   es: {
     // The extension's store name in this language (browser-extension/_locales; checked by site-pages.test.mjs).
     eyebrow: "Redaxa – Oculta datos personales y claves API en ChatGPT, Claude, Gemini",
-    title: "Datos sensibles y ChatGPT: ocúltalos antes de enviar | Redaxa",
+    title: "Datos sensibles y ChatGPT: ocúltalos antes de enviar",
     description: "Redaxa revisa el prompt antes de que llegue a ChatGPT, Claude, Gemini o Perplexity y oculta claves API, contraseñas y datos personales. Revisiones gratuitas en tu dispositivo.",
     h1: "Oculta datos personales y claves API<br>antes de compartir un prompt",
     lead: "Antes de que tus datos personales lleguen a ChatGPT, deja que Redaxa revise el texto: correos, teléfonos, IBAN, tarjetas, claves API y contraseñas se señalan y se sustituyen en una versión con los datos ocultos. Tú decides qué se envía.",
@@ -101,7 +101,7 @@ const WORDS = {
   fr: {
     // The extension's store name in this language (browser-extension/_locales; checked by site-pages.test.mjs).
     eyebrow: "Redaxa – Masquez clés API et données personnelles : ChatGPT, Claude, Gemini",
-    title: "Données sensibles et ChatGPT : masquez-les avant l’envoi | Redaxa",
+    title: "Données sensibles et ChatGPT : masquez-les avant l’envoi",
     description: "Redaxa vérifie le prompt avant qu’il n’arrive à ChatGPT, Claude, Gemini ou Perplexity et masque clés API, mots de passe et données personnelles. Vérifications gratuites sur votre appareil.",
     h1: "Masquez données personnelles et clés API<br>avant de partager un prompt",
     lead: "Avant que vos données personnelles n’arrivent dans ChatGPT, laissez Redaxa vérifier le texte : e-mails, numéros de téléphone, IBAN, cartes, clés API et mots de passe sont signalés et remplacés dans une version masquée. C’est vous qui décidez de ce qui part.",

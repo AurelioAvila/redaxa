@@ -15,7 +15,7 @@ const fill = (n, seed = "RedaxaDocsSampleNotReal") => seed.repeat(Math.ceil(n / 
 const b64url = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
 const jwt = (payload) => [b64url({ alg: "HS256", typ: "JWT" }), b64url(payload), fill(43, "RedaxaDocsSampleSignatureNotReal")].join(".");
 
-export const UPDATED = "2026-10-15";
+export const UPDATED = "2026-11-03";
 
 export const CATEGORIES = {
   credentials: { name: "Credentials and secrets", blurb: "Keys, tokens, passwords and private keys: leaking one can hand over an account or a system." },
@@ -70,7 +70,7 @@ export const DETECTORS = [
   {
     slug: "openai-api-key", category: "credentials", name: "OpenAI API keys",
     title: "OpenAI API Key Leaked? How sk-proj- Keys Are Detected",
-    description: "How Redaxa treats OpenAI-style keys (sk-proj-, sk-) in prompts and repositories, why a bare sk- key is not attributed to OpenAI, and what to do after a leak.",
+    description: "How Redaxa treats OpenAI-style keys (sk-proj-, sk-) in prompts and repos, why a bare sk- key is not tied to OpenAI, and what to do after a leak.",
     h1: "OpenAI API keys (sk-proj- and sk-)",
     intro: "OpenAI project keys start with sk-proj-. Older and other providers' keys also start with sk-, so Redaxa only names OpenAI when the prefix or the surrounding assignment supports it, and says how sure it is.",
     format: "<code>sk-</code> followed by at least 16 letters, digits, hyphens or underscores. <code>sk-proj-</code> is attributed to OpenAI as probable; a plain <code>sk-</code> key is attributed only when it is assigned to <code>OPENAI_API_KEY</code>.",
@@ -126,7 +126,7 @@ export const DETECTORS = [
   {
     slug: "supabase-keys", category: "credentials", name: "Supabase keys",
     title: "Is the Supabase Anon Key Public? Secret vs Publishable Keys",
-    description: "How Redaxa treats Supabase keys: sb_secret_ and service_role tokens are flagged, sb_publishable_ and anon tokens are recognised as public. Exact engine output.",
+    description: "How Redaxa treats Supabase keys: sb_secret_ and service_role tokens are flagged, sb_publishable_ and anon tokens are public. Exact engine output.",
     h1: "Supabase keys: secret, publishable, anon and service_role",
     intro: "Supabase ships one key that is meant to be public and one that bypasses Row Level Security. Mixing them up in a prompt or a repository is a common mistake, so Redaxa reads the prefix and, for legacy JWT keys, the role claim.",
     format: "New-style keys: <code>sb_secret_</code> and <code>sb_publishable_</code> followed by at least 20 characters. Legacy keys are JWTs: Redaxa decodes the payload (without verifying the signature) and looks at <code>iss</code> and <code>role</code>.",
@@ -367,7 +367,7 @@ export const DETECTORS = [
   {
     slug: "email-address", category: "personal", name: "Email addresses",
     title: "Email Addresses in AI Prompts: Detection and Redaction",
-    description: "How Redaxa finds email addresses in prompts and repositories, why git@github.com is not one, and how example.com addresses are treated in repository checks.",
+    description: "How Redaxa finds email addresses in prompts and repos, why git@github.com is not one, and how example.com addresses are treated in repository checks.",
     h1: "Email addresses",
     intro: "An email address is the identifier that most often rides along in a pasted thread or log. Redaxa matches complete addresses only, so fragments and SSH remotes are not mistaken for mailboxes.",
     format: "A complete address: a local part, <code>@</code>, and a domain whose last label has at least two letters, within the length limits of RFC 5321.",
@@ -404,7 +404,7 @@ export const DETECTORS = [
   {
     slug: "personal-name", category: "personal", name: "Personal names",
     title: "Names in AI Prompts: What Automatic Detection Can Do",
-    description: "Redaxa flags a personal name only right after a greeting (Dear, Hi, Hello, Hey). Here is exactly what that catches, what it misses, and what to use instead.",
+    description: "Redaxa flags a personal name only right after a greeting (Dear, Hi, Hello, Hey). What that catches, what it misses, and what to use instead.",
     h1: "Personal names",
     intro: "Detecting names reliably needs to know which words are names, and a pattern cannot. Redaxa flags a name only in the one place where it is almost certainly a person: right after a greeting. For everything else, use protected terms.",
     format: "<code>Dear</code>, <code>Hi</code>, <code>Hello</code> or <code>Hey</code>, then one or two capitalised words, then a comma or colon. Generic salutations (team, all, everyone, there, sir, madam and similar) are skipped.",
@@ -476,7 +476,7 @@ export const DETECTORS = [
   {
     slug: "uk-national-insurance-number", category: "personal", name: "UK National Insurance numbers",
     title: "UK National Insurance Number Detection (NINO)",
-    description: "How Redaxa recognises UK National Insurance numbers, which prefixes it rejects because HMRC never issues them, and why the QQ 12 34 56 C example is skipped.",
+    description: "How Redaxa recognises UK National Insurance numbers, which prefixes it rejects because HMRC never issues them, and why QQ 12 34 56 C is skipped.",
     h1: "UK National Insurance numbers",
     intro: "A National Insurance number follows rules about which letters can appear where. Redaxa applies them, which removes most false matches and also skips the specimen HMRC prints in its guidance.",
     format: "Two letters, six digits (spaces allowed between pairs) and a final letter A, B, C or D. Neither prefix letter can be D, F, I, Q, U or V; the second cannot be O; the prefixes BG, GB, KN, NK, NT, TN and ZZ are never issued.",
@@ -511,7 +511,7 @@ export const DETECTORS = [
   {
     slug: "payment-card-number", category: "financial", name: "Payment card numbers",
     title: "Card Numbers in Prompts: Luhn-Checked Detection",
-    description: "How Redaxa detects payment card numbers with a Luhn check, why 13-digit timestamps are skipped, and why test cards like 4242 4242 4242 4242 are still flagged.",
+    description: "How Redaxa detects card numbers with a Luhn check, why 13-digit timestamps are skipped, and why test cards like 4242 4242 4242 4242 are still flagged.",
     h1: "Payment card numbers",
     intro: "A card number must pass the Luhn checksum, which rules out most random digit runs. Redaxa runs that check on every candidate before flagging it.",
     format: "13 to 19 digits starting with 2 to 6, with optional spaces or hyphens, that pass the Luhn check (ISO/IEC 7812).",
