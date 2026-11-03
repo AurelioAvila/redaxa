@@ -136,6 +136,8 @@ const expired: string[] = [];
 const cancelled: Array<{ id: string; comment?: string }> = [];
 const subscriptions = new Map<string, Row>();
 const s = stripe as any;
+// The real signature check, kept for the signed fixture events below (deliver() stubs it).
+const realConstructEvent = s.webhooks.constructEvent.bind(s.webhooks);
 s.checkout.sessions.create = async (params: Row) => { sessions.push(params); return { url: "https://checkout.stripe.test/fixture" }; };
 s.customers.create = async () => ({ id: "cus_fixture" });
 const listed = { open: [] as Row[], complete: [] as Row[] };
@@ -465,6 +467,88 @@ resetDb(); clearMails(); cancelled.length = 0;
   assert.ok(mails().some((m) => m.includes("Your seven-day Redaxa trial has started")), "the legacy email, unchanged");
 }
 
+// --- A disputed or fully refunded payment ends the plan at once. Signed
+// fixture events, checked by the real signature code, as Stripe sends them.
+async function deliverSigned(type: string, object: unknown, secret = "whsec_dummy") {
+  s.webhooks.constructEvent = realConstructEvent;
+  const payload = JSON.stringify({ id: `evt_${Math.random().toString(36).slice(2)}`, object: "event", type, data: { object } });
+  const signature = s.webhooks.generateTestHeaderString({ payload, secret });
+  const req = Object.assign(Readable.from([Buffer.from(payload)]), { method: "POST", headers: { "stripe-signature": signature } });
+  const res = response();
+  await webhook(req as any, res as any);
+  return res;
+}
+resetDb(); clearMails(); cancelled.length = 0;
+{
+  const savedInvoices = s.invoices.retrieve;
+  // Charge -> payment intent -> the invoice it paid -> that invoice's subscription.
+  const paidBy: Record<string, string> = { pi_v: "in_v", pi_w: "in_w", pi_dup: "in_dup" };
+  s.invoicePayments.list = async (params: { payment: { payment_intent: string } }) => ({ data: paidBy[params.payment.payment_intent] ? [{ invoice: paidBy[params.payment.payment_intent] }] : [] });
+  s.invoices.retrieve = async (id: string) => ({ id, parent: { subscription_details: { subscription: id.replace("in_", "sub_") } } });
+  s.charges.retrieve = async (id: string) => ({ id, payment_intent: id.replace("ch_", "pi_") });
+  const plain = (userId: string, extra: Row = {}) => ({ redaxa_user_id: userId, plan: "personal", interval: "monthly", seats: "1", lang: "en", ...extra });
+
+  newUser("user-v", "v@example.test", { has_used_trial: true });
+  await syncSubscription(subscription("sub_v", "user-v", { status: "active", metadata: plain("user-v") }));
+  assert.equal(db.accounts.get("user-v")!.subscription_status, "active");
+  const dispute = { id: "dp_v", object: "dispute", charge: "ch_v", payment_intent: null, amount: 799, currency: "eur", reason: "fraudulent" };
+
+  // A forged delivery is refused and changes nothing.
+  assert.equal((await deliverSigned("charge.dispute.created", dispute, "whsec_forged")).statusCode, 400);
+  assert.equal(cancelled.length, 0);
+
+  // Disputed: cancelled at once, plan off, one neutral notice.
+  assert.equal((await deliverSigned("charge.dispute.created", dispute)).statusCode, 200);
+  assert.deepEqual(cancelled, [{ id: "sub_v", comment: "payment_reversed" }]);
+  assert.equal(db.accounts.get("user-v")!.subscription_status, "canceled");
+  assert.equal(db.accounts.get("user-v")!.current_period_end, null);
+  const notice = mails().filter((m) => m.startsWith("Your Pro plan has ended, Giulia."));
+  assert.equal(notice.length, 1, mails().join("\n----\n"));
+  assert.match(notice[0], /Amount reversed: €7\.99/);
+  assert.match(notice[0], /Subscription: Cancelled/);
+  assert.doesNotMatch(notice[0], /refund/i, "no refund language, ever");
+  // Stripe's own deletion, a late invoice and the same dispute again leave it off, untold.
+  await deliverSigned("customer.subscription.deleted", subscriptions.get("sub_v"));
+  await deliverSigned("invoice.paid", { id: "in_late", billing_reason: "subscription_cycle", amount_paid: 799, currency: "eur", parent: { subscription_details: { subscription: "sub_v" } }, lines: { data: [] } });
+  await deliverSigned("charge.dispute.created", dispute);
+  assert.equal(db.accounts.get("user-v")!.subscription_status, "canceled");
+  assert.equal(cancelled.length, 1);
+  assert.equal(mails().length, 1);
+
+  // Refunds: a partial one leaves the plan running; a full one ends it, told in the checkout's language.
+  clearMails(); cancelled.length = 0;
+  newUser("user-w", "w@example.test", { has_used_trial: true });
+  await syncSubscription(subscription("sub_w", "user-w", { status: "active", metadata: plain("user-w", { plan: "business", interval: "yearly", seats: "2", lang: "de" }),
+    items: { data: [{ quantity: 2, current_period_end: trialEnd + 365 * 86_400, price: { unit_amount: 14990, currency: "eur", tax_behavior: "exclusive", recurring: { interval: "year" } } }] } }));
+  const charge = { id: "ch_w", object: "charge", payment_intent: "pi_w", amount: 29980, currency: "eur" };
+  await deliverSigned("charge.refunded", { ...charge, refunded: false, amount_refunded: 5000 });
+  assert.equal(cancelled.length, 0);
+  assert.equal(db.accounts.get("user-w")!.subscription_status, "active");
+  await deliverSigned("charge.refunded", { ...charge, refunded: true, amount_refunded: 29980 });
+  assert.deepEqual(cancelled, [{ id: "sub_w", comment: "payment_reversed" }]);
+  assert.equal(db.accounts.get("user-w")!.subscription_status, "canceled");
+  const de = mails().find((m) => m.startsWith("Dein Tarif Business ist beendet, Giulia."));
+  assert.ok(de, mails().join("\n----\n"));
+  assert.match(de!, /Rückgängig gemachter Betrag: 299,80\s€/);
+  assert.match(de!, /Tarif: Business — Jährlich, 2 Nutzer/);
+
+  // A payment that settled no Redaxa subscription (a tip, another product) changes nothing.
+  clearMails(); cancelled.length = 0;
+  await deliverSigned("charge.dispute.created", { ...dispute, id: "dp_tip", charge: "ch_tip", payment_intent: "pi_tip", amount: 300 });
+  assert.equal(cancelled.length, 0);
+
+  // An older duplicate subscription is cancelled; the plan the account runs on now is kept, nobody is told.
+  newUser("user-x", "x@example.test", { has_used_trial: true });
+  await syncSubscription(subscription("sub_x", "user-x", { status: "active", metadata: plain("user-x") }));
+  subscription("sub_dup", "user-x", { status: "active", metadata: plain("user-x") });
+  await deliverSigned("charge.dispute.created", { ...dispute, id: "dp_dup", charge: "ch_dup", payment_intent: "pi_dup" });
+  assert.deepEqual(cancelled, [{ id: "sub_dup", comment: "payment_reversed" }]);
+  assert.equal(db.accounts.get("user-x")!.stripe_subscription_id, "sub_x");
+  assert.equal(db.accounts.get("user-x")!.subscription_status, "active");
+  assert.equal(mails().length, 0);
+  s.invoices.retrieve = savedInvoices;
+}
+
 // --- The reminder a day before the end: only with the cron secret, once.
 resetDb(); clearMails();
 {
@@ -485,7 +569,7 @@ resetDb(); clearMails();
   assert.equal(cron.statusCode, 200, JSON.stringify(cron.body));
   assert.deepEqual(cron.body, { due: 1, sent: 1, recovery: { failed: 0, sent: 0 } });
   assert.equal(db.claims[0].reminded_for, new Date(trialEnd * 1000).toISOString());
-  const reminder = mails().find((m) => m.startsWith("Ihre Testphase endet am 17. Oktober, Giulia."));
+  const reminder = mails().find((m) => m.startsWith("Deine Testphase endet am 17. Oktober, Giulia."));
   assert.ok(reminder, mails().join("\n----\n"));
   assert.match(reminder!, /Tarif: Pro — Jährlich/);
   assert.equal((await sendTrialReminders()).due, 0, "reminded once");
@@ -500,7 +584,7 @@ resetDb(); clearMails();
   const base = { to: "x@example.test", firstName: "Ana", plan: "business", interval: "yearly", seats: 3, days: 3, trialEnd, renewsOn: trialEnd + 365 * 86_400, endedOn: trialEnd,
     charge: { amount: 22200, currency: "eur" }, renew: { amount: 44970, currency: "eur", taxExclusive: true }, failure: "expired_card" as const };
   for (const lang of Object.keys(TRIAL_WORDS) as Array<keyof typeof TRIAL_WORDS>) {
-    for (const kind of ["trial_started", "trial_ending", "trial_paid", "payment_failed", "trial_ended", "trial_rejected", "checkout_failed"] as const) {
+    for (const kind of ["trial_started", "trial_ending", "trial_paid", "payment_failed", "trial_ended", "trial_rejected", "checkout_failed", "payment_reversed"] as const) {
       const mail = trialMail(kind, { ...base, lang });
       for (const part of [mail.subject, mail.text, mail.html]) {
         assert.doesNotMatch(part, /\bundefined\b|\bnull\b|NaN|\$\{|\{[a-z]+\}/, `${lang}/${kind}`);
