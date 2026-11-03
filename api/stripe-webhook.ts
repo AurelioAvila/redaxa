@@ -240,6 +240,60 @@ async function handleInvoice(type: string, invoice: Stripe.Invoice): Promise<voi
   }
 }
 
+/** Cancellation comment Stripe keeps on a subscription ended because a
+ *  payment for it was disputed or refunded in full: the record of why. */
+export const PAYMENT_REVERSED = "payment_reversed";
+
+/** The subscription a charge paid for, through the invoice it settled; null
+ *  for a payment that settled no subscription invoice (a tip, another product). */
+async function subscriptionOfCharge(charge: string | Stripe.Charge, paymentIntent: string | Stripe.PaymentIntent | null): Promise<string | null> {
+  let intent = typeof paymentIntent === "string" ? paymentIntent : paymentIntent?.id ?? null;
+  if (!intent) {
+    const full = typeof charge === "string" ? await stripe.charges.retrieve(charge) : charge;
+    intent = typeof full.payment_intent === "string" ? full.payment_intent : full.payment_intent?.id ?? null;
+  }
+  if (!intent) return null;
+  const payments = await stripe.invoicePayments.list({ payment: { type: "payment_intent", payment_intent: intent }, limit: 1 });
+  const ref = payments.data[0]?.invoice;
+  if (!ref) return null;
+  const invoice = typeof ref === "string" ? await stripe.invoices.retrieve(ref) : ref;
+  return "deleted" in invoice && invoice.deleted ? null : invoiceSubscriptionId(invoice as Stripe.Invoice);
+}
+
+/**
+ * A subscription payment that was disputed, or refunded in full: the
+ * subscription is cancelled at once (no final invoice, no proration), the
+ * plan is switched off and the customer is told in neutral words. Before
+ * this, a reversed payment changed nothing and the plan ran on.
+ *
+ * Idempotent: the event claim runs it once; a retry after a failure writes
+ * the same account row and finds the subscription already cancelled. The
+ * account is switched off first, so a failure before Stripe answers leaves
+ * nothing half done. Told once: only the reversal that ended a live plan
+ * mails. A reversal on an old subscription never ends a newer one the
+ * account holds.
+ */
+async function reversePayment(subscriptionId: string, reversed: { amount: number; currency: string }, reason: string): Promise<void> {
+  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+  const userId = await resolveUser(subscription);
+  if (!userId) return;
+  const account = await accountFor(userId);
+  // The plan the account runs on now; an older, duplicate subscription is
+  // cancelled below but its owner keeps the plan and hears nothing.
+  const current = account?.stripe_subscription_id === subscription.id;
+  if (current && account.subscription_status !== "canceled") {
+    await patchAccount(userId, { subscription_status: "canceled", cancel_at_period_end: false, current_period_end: null, checkout_lock_at: null });
+  }
+  if (!isLive(subscription.status)) return;
+  try {
+    await stripe.subscriptions.cancel(subscription.id, { cancellation_details: { comment: PAYMENT_REVERSED } });
+  } catch (error) {
+    if ((await stripe.subscriptions.retrieve(subscription.id)).status !== "canceled") throw error;
+  }
+  console.log(`redaxa payment reversed (${reason}): subscription ${subscription.id} cancelled${current ? ", plan off" : ""}`);
+  if (current) await mail("payment_reversed", userId, subscription, `redaxa-payment-reversed/${subscription.id}`, { charge: reversed });
+}
+
 export default async function handler(request: WebhookRequest, response: ResponseLike): Promise<void> {
   if (request.method !== "POST") { response.setHeader("Allow", "POST"); response.status(405).end(); return; }
   const signatureHeader = request.headers["stripe-signature"];
@@ -281,7 +335,9 @@ export default async function handler(request: WebhookRequest, response: Respons
           await patchAccount(userId, { subscription_status: status === TRIAL_REJECTED ? TRIAL_REJECTED : "canceled", cancel_at_period_end: false, current_period_end: null, checkout_lock_at: null });
         }
         // An account deletion sends its own confirmation; the account is gone.
-        if (isOurTrial(subscription) && status !== TRIAL_REJECTED && subscription.cancellation_details?.comment !== ACCOUNT_DELETED && endedDuringTrial(subscription)) {
+        // A reversed payment sends its own notice too.
+        const comment = subscription.cancellation_details?.comment;
+        if (isOurTrial(subscription) && status !== TRIAL_REJECTED && comment !== ACCOUNT_DELETED && comment !== PAYMENT_REVERSED && endedDuringTrial(subscription)) {
           await mail("trial_ended", userId, subscription, `redaxa-trial-ended/${subscription.id}`, { endedOn: subscription.ended_at ?? subscription.trial_end ?? null });
         }
       }
@@ -290,6 +346,17 @@ export default async function handler(request: WebhookRequest, response: Respons
       // invoice processed after the payment recovered must not lock out a
       // paying account, and an invoice for another product changes nothing.
       await handleInvoice(event.type, event.data.object as Stripe.Invoice);
+    } else if (event.type === "charge.dispute.created") {
+      const dispute = event.data.object as Stripe.Dispute;
+      const subscriptionId = await subscriptionOfCharge(dispute.charge, dispute.payment_intent);
+      if (subscriptionId) await reversePayment(subscriptionId, { amount: dispute.amount, currency: dispute.currency }, "dispute");
+    } else if (event.type === "charge.refunded") {
+      // Only a full refund ends the plan; a partial one leaves it running.
+      const charge = event.data.object as Stripe.Charge;
+      if (charge.refunded) {
+        const subscriptionId = await subscriptionOfCharge(charge, charge.payment_intent);
+        if (subscriptionId) await reversePayment(subscriptionId, { amount: charge.amount_refunded, currency: charge.currency }, "refund");
+      }
     }
     await completeStripeEvent(event.id);
     response.status(200).json({ received: true });

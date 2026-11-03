@@ -363,4 +363,109 @@ export function choiceCopy(lang: Lang, input: { interval: "monthly" | "yearly"; 
   };
 }
 
+
+// ---------------------------------------------------------------------------
+// Back from Stripe: Checkout returns to /?checkout=success|cancelled (with the
+// checkout's `lang`), the billing portal to /?billing=managed (api/billing.ts).
+// auth.ts draws the notice; what it says is decided here.
+
+export type StripeReturn = "success" | "cancelled" | "managed";
+type ReturnWords = {
+  pendingTitle: string; pending: string; signedOut: string; slow: string;
+  trialTitle: string; trial: string; activeTitle: string; active: string;
+  stepsTitle: string; workspace: string; windows: string; extension: string; sameEmail: string;
+  cancelledTitle: string; cancelled: string; seePlans: string;
+  managedTitle: string; managed: string; dismiss: string;
+};
+// French keeps a no-break space before : ; ! ?; German speaks to the reader as "du".
+export const RETURN_COPY: Record<Lang, ReturnWords> = {
+  en: {
+    pendingTitle: "Thank you, your checkout is complete", pending: "We’re confirming your plan with Stripe. It usually takes a few seconds.",
+    signedOut: "Sign in with the email you used at checkout to see your plan. A confirmation email is on its way.",
+    slow: "Your plan is still being confirmed. Refresh this page in a minute; a confirmation email is on its way.",
+    trialTitle: "Your {plan} trial has started", trial: "Free until {date}. Nothing is charged before then, and you can cancel any time from Manage subscription.",
+    activeTitle: "Redaxa {plan} is active", active: "Thank you! Your plan is on, and a confirmation email is on its way.",
+    stepsTitle: "Next steps", workspace: "Open your workspace", windows: "Download the Windows app", extension: "Add the Chrome extension",
+    sameEmail: "In the app and the extension, sign in with the same email: your plan follows your account.",
+    cancelledTitle: "Checkout cancelled", cancelled: "Nothing was charged. Choose a plan whenever you’re ready.", seePlans: "See plans",
+    managedTitle: "Back from billing", managed: "Changes to your payment method or subscription can take a few seconds to show here.", dismiss: "Dismiss",
+  },
+  it: {
+    pendingTitle: "Grazie, l’acquisto è completato", pending: "Stiamo confermando il tuo piano con Stripe: di solito bastano pochi secondi.",
+    signedOut: "Accedi con l’email usata per il pagamento per vedere il tuo piano. È in arrivo un’email di conferma.",
+    slow: "Il piano è ancora in fase di conferma. Aggiorna la pagina tra un minuto; è in arrivo un’email di conferma.",
+    trialTitle: "La tua prova di {plan} è iniziata", trial: "Gratis fino al {date}. Prima di allora non ti viene addebitato nulla e puoi annullare quando vuoi da Gestisci abbonamento.",
+    activeTitle: "Redaxa {plan} è attivo", active: "Grazie! Il tuo piano è attivo ed è in arrivo un’email di conferma.",
+    stepsTitle: "Prossimi passi", workspace: "Apri il tuo spazio di lavoro", windows: "Scarica l’app per Windows", extension: "Aggiungi l’estensione per Chrome",
+    sameEmail: "Nell’app e nell’estensione accedi con la stessa email: il piano segue il tuo account.",
+    cancelledTitle: "Acquisto annullato", cancelled: "Non è stato addebitato nulla. Scegli un piano quando vuoi.", seePlans: "Vedi i piani",
+    managedTitle: "Di nuovo su Redaxa", managed: "Le modifiche al metodo di pagamento o all’abbonamento possono richiedere qualche secondo per comparire qui.", dismiss: "Chiudi",
+  },
+  es: {
+    pendingTitle: "Gracias, la compra se ha completado", pending: "Estamos confirmando tu plan con Stripe; suele tardar unos segundos.",
+    signedOut: "Inicia sesión con el correo que usaste en el pago para ver tu plan. Te llegará un correo de confirmación.",
+    slow: "Tu plan aún se está confirmando. Actualiza la página en un minuto; te llegará un correo de confirmación.",
+    trialTitle: "Tu prueba de {plan} ha empezado", trial: "Gratis hasta el {date}. No se te cobra nada antes y puedes cancelar cuando quieras desde Gestionar suscripción.",
+    activeTitle: "Redaxa {plan} está activo", active: "¡Gracias! Tu plan está activo y te llegará un correo de confirmación.",
+    stepsTitle: "Próximos pasos", workspace: "Abrir tu espacio de trabajo", windows: "Descargar la app para Windows", extension: "Añadir la extensión para Chrome",
+    sameEmail: "En la app y en la extensión, inicia sesión con el mismo correo: tu plan va con tu cuenta.",
+    cancelledTitle: "Compra cancelada", cancelled: "No se ha cobrado nada. Elige un plan cuando quieras.", seePlans: "Ver los planes",
+    managedTitle: "De vuelta en Redaxa", managed: "Los cambios en el método de pago o en la suscripción pueden tardar unos segundos en aparecer aquí.", dismiss: "Cerrar",
+  },
+  fr: {
+    pendingTitle: "Merci, votre achat est terminé", pending: "Nous confirmons votre offre avec Stripe. Cela prend généralement quelques secondes.",
+    signedOut: "Connectez-vous avec l’adresse e-mail utilisée pour le paiement pour voir votre offre. Un e-mail de confirmation est en route.",
+    slow: "Votre offre est encore en cours de confirmation. Actualisez la page dans une minute ; un e-mail de confirmation est en route.",
+    trialTitle: "Votre essai de {plan} a commencé", trial: "Gratuit jusqu’au {date}. Rien n’est prélevé d’ici là, et vous pouvez annuler à tout moment depuis Gérer l’abonnement.",
+    activeTitle: "Redaxa {plan} est actif", active: "Merci ! Votre offre est active et un e-mail de confirmation est en route.",
+    stepsTitle: "Prochaines étapes", workspace: "Ouvrir votre espace de travail", windows: "Télécharger l’application Windows", extension: "Ajouter l’extension Chrome",
+    sameEmail: "Dans l’application et l’extension, connectez-vous avec la même adresse e-mail : votre offre suit votre compte.",
+    cancelledTitle: "Achat annulé", cancelled: "Rien n’a été prélevé. Choisissez une offre quand vous le souhaitez.", seePlans: "Voir les offres",
+    managedTitle: "De retour sur Redaxa", managed: "Les modifications du moyen de paiement ou de l’abonnement peuvent mettre quelques secondes à apparaître ici.", dismiss: "Fermer",
+  },
+  de: {
+    pendingTitle: "Danke, dein Kauf ist abgeschlossen", pending: "Wir bestätigen deinen Tarif gerade mit Stripe. Das dauert meist nur ein paar Sekunden.",
+    signedOut: "Melde dich mit der E-Mail-Adresse an, die du beim Bezahlen verwendet hast, um deinen Tarif zu sehen. Eine Bestätigung per E-Mail ist unterwegs.",
+    slow: "Dein Tarif wird noch bestätigt. Lade die Seite in einer Minute neu; eine Bestätigung per E-Mail ist unterwegs.",
+    trialTitle: "Deine Testphase für {plan} hat begonnen", trial: "Kostenlos bis zum {date}. Bis dahin wird nichts abgebucht, und du kannst jederzeit unter „Abonnement verwalten“ kündigen.",
+    activeTitle: "Redaxa {plan} ist aktiv", active: "Danke! Dein Tarif ist aktiv, und eine Bestätigung per E-Mail ist unterwegs.",
+    stepsTitle: "Nächste Schritte", workspace: "Arbeitsbereich öffnen", windows: "Windows-App herunterladen", extension: "Chrome-Erweiterung hinzufügen",
+    sameEmail: "Melde dich in der App und in der Erweiterung mit derselben E-Mail-Adresse an: Dein Tarif gehört zu deinem Konto.",
+    cancelledTitle: "Kauf abgebrochen", cancelled: "Es wurde nichts abgebucht. Wähle einen Tarif, wann immer du so weit bist.", seePlans: "Tarife ansehen",
+    managedTitle: "Zurück bei Redaxa", managed: "Änderungen an Zahlungsmethode oder Abonnement können ein paar Sekunden brauchen, bis sie hier erscheinen.", dismiss: "Schließen",
+  },
+};
+
+/** Which return this address is, and the language to say it in (the
+ *  checkout's, else the workspace's saved one, else the page's). */
+export function readStripeReturn(search: string, fallbackLang: string): { kind: StripeReturn; lang: Lang } | null {
+  const params = new URLSearchParams(search);
+  const checkout = params.get("checkout");
+  const kind: StripeReturn | null = checkout === "success" || checkout === "cancelled" ? checkout : params.get("billing") === "managed" ? "managed" : null;
+  if (!kind) return null;
+  const known = (value: string | null): Lang | null => (["en", "it", "es", "fr", "de"] as const).find((l) => l === value?.slice(0, 2)) ?? null;
+  return { kind, lang: known(params.get("lang")) ?? known(fallbackLang) ?? "en" };
+}
+
+/** The same address without the return parameters, so a reload or a shared link does not repeat the notice. */
+export function withoutStripeReturn(href: string): string {
+  const url = new URL(href);
+  for (const key of ["checkout", "billing", "lang"]) url.searchParams.delete(key);
+  return url.pathname + url.search + url.hash;
+}
+
+/** Title and text of the notice. `settled` turns true once the page has stopped
+ *  waiting for the webhook to record the plan. */
+export function returnView(kind: StripeReturn, lang: Lang, input: { signedIn: boolean; billing: Pick<BillingView, "state" | "plan" | "trialEndsAt"> | null; settled: boolean }): { title: string; text: string; confirmed: boolean } {
+  const w = RETURN_COPY[lang];
+  if (kind === "cancelled") return { title: w.cancelledTitle, text: w.cancelled, confirmed: false };
+  if (kind === "managed") return { title: w.managedTitle, text: w.managed, confirmed: false };
+  const plan = input.billing?.plan === "business" ? "Business" : "Pro";
+  if (input.billing?.state === "trialing" && input.billing.trialEndsAt) {
+    return { title: fill(w.trialTitle, { plan }), text: fill(w.trial, { date: longDay(input.billing.trialEndsAt, lang) }), confirmed: true };
+  }
+  if (input.billing?.state === "trialing" || input.billing?.state === "active") return { title: fill(w.activeTitle, { plan }), text: w.active, confirmed: true };
+  return { title: w.pendingTitle, text: !input.signedIn ? w.signedOut : input.settled ? w.slow : w.pending, confirmed: false };
+}
+
 export { fill as fillTrial };

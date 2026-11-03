@@ -3,7 +3,7 @@ import { restoreTheme } from "./themes.js";
 import { installDesktopTitlebar } from "./desktop.js";
 import { track } from "./growth.js";
 import type { Finding } from "./scanner.js";
-import { loadPrices, parseBilling, type BillingView } from "./trial.js";
+import { RETURN_COPY, loadPrices, parseBilling, readStripeReturn, returnView, withoutStripeReturn, type BillingView } from "./trial.js";
 
 type AuthConfig = { configured: boolean };
 type DesktopSession = { email: string; access_token: string; refresh_token: string; expires_at: number };
@@ -775,6 +775,51 @@ async function refreshEntitlement(): Promise<void> {
   } catch { accountActive = false; publishAccountState(null); }
 }
 
+/* ---------- Back from Stripe ----------
+ * Checkout and the billing portal send the customer back here with
+ * ?checkout=success|cancelled or ?billing=managed. Says what happened (copy
+ * in trial.ts), waits for the webhook to record the plan, then the address
+ * loses the parameters so a reload or a shared link does not repeat it. */
+function savedLanguage(): string {
+  try { return String(JSON.parse(localStorage.getItem("redaxa.personal-preferences.v1") ?? "{}")?.language ?? ""); } catch { return ""; }
+}
+async function showStripeReturn(): Promise<void> {
+  const found = readStripeReturn(location.search, savedLanguage() || document.documentElement.lang);
+  if (!found) return;
+  history.replaceState(history.state, "", withoutStripeReturn(location.href));
+  const { kind, lang } = found;
+  const w = RETURN_COPY[lang];
+  const esc = (value: string): string => value.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+  const box = document.createElement("section");
+  box.className = `ps-return${kind === "success" ? "" : " is-quiet"}`;
+  box.lang = lang;
+  box.tabIndex = -1;
+  box.setAttribute("aria-labelledby", "ps-return-title");
+  const next = kind === "success"
+    ? `<h3>${esc(w.stepsTitle)}</h3><ul><li><a href="/dashboard.html">${esc(w.workspace)}</a></li><li><a href="https://dl.pctweaker.app/redaxa/Redaxa-Setup.exe">${esc(w.windows)}</a></li><li><a href="https://chromewebstore.google.com/detail/redaxa/clkobbjoaegkgnmkibjghlboeoplpmok" target="_blank" rel="noopener">${esc(w.extension)}</a></li></ul><p>${esc(w.sameEmail)}</p>`
+    : kind === "cancelled" ? `<p><a href="/dashboard.html#plans">${esc(w.seePlans)}</a></p>` : "";
+  box.innerHTML = `<h2 id="ps-return-title"></h2><p class="ps-return-text" role="status"></p>${next}<button type="button" class="ps-return-close" aria-label="${esc(w.dismiss)}">×</button>`;
+  box.querySelector(".ps-return-close")!.addEventListener("click", () => box.remove());
+  const paint = (settled: boolean): boolean => {
+    const view = returnView(kind, lang, { signedIn: Boolean(currentEmail), billing: latestAccount?.billing ?? null, settled });
+    box.querySelector("h2")!.textContent = view.title;
+    box.querySelector(".ps-return-text")!.textContent = view.text;
+    return view.confirmed;
+  };
+  let confirmed = paint(false);
+  (document.querySelector("main") ?? document.body).prepend(box);
+  box.focus();
+  if (!currentEmail || kind === "cancelled") return;
+  // The webhook usually lands within seconds of the redirect; ask a few times, then say it is still on its way.
+  for (let attempt = 0; attempt < (kind === "success" ? 8 : 2) && !confirmed; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 2500));
+    await refreshEntitlement();
+    if (!box.isConnected) return;
+    confirmed = kind === "success" && paint(false);
+  }
+  if (kind === "success" && !confirmed) paint(true);
+}
+
 async function boot(): Promise<void> {
   restoreTheme();
   installDesktopTitlebar();
@@ -828,6 +873,7 @@ async function boot(): Promise<void> {
   currentEmail = await loadSession();
   renderAccount(currentEmail);
   await refreshEntitlement();
+  void showStripeReturn();
   config = await configReady;
 
   // Persist an invitation through signup, but joining always requires reviewing

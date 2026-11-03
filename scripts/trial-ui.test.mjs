@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { TRIAL_BANNER, TRIAL_UI, chargeDate, choiceCopy, keepArrow, longDay, parseBilling, parsePrices, planView } from "../dist/trial.js";
+import { RETURN_COPY, TRIAL_BANNER, TRIAL_UI, chargeDate, choiceCopy, keepArrow, longDay, parseBilling, parsePrices, planView, readStripeReturn, returnView, withoutStripeReturn } from "../dist/trial.js";
 
 // What the plan cards say under "Start 3-day free trial" and "Subscribe now",
 // from Stripe's price and the server's offer; never a number of its own.
@@ -102,8 +102,32 @@ for (const phrase of ["3-day free trial", "prova gratuita di 3 giorni", "prueba 
 assert.doesNotMatch(source("dashboard.ts"), /(prova gratuita|prueba gratuita|essai gratuit|kostenlose[nr]? Testphase|(?<!3-day )free trial)\./, "no fallback sentence without its length");
 // French typography: a no-break space before : ; ! ? and a straight apostrophe never appears.
 const flat = (o) => Object.values(o).flatMap((v) => typeof v === "string" ? [v] : flat(v));
-for (const text of [...flat(TRIAL_UI.fr), ...flat(TRIAL_BANNER.fr)]) {
+for (const text of [...flat(TRIAL_UI.fr), ...flat(TRIAL_BANNER.fr), ...flat(RETURN_COPY.fr)]) {
   assert.doesNotMatch(text, /\S [:;!?]/u, `fr: regular space before punctuation in "${text}"`);
   assert.doesNotMatch(text, /\p{L}'\p{L}/u, `fr: straight apostrophe in "${text}"`);
 }
+// Back from Stripe: which return, in which language, and what the notice says.
+assert.deepEqual(readStripeReturn("?checkout=success&lang=de", "en"), { kind: "success", lang: "de" });
+assert.deepEqual(readStripeReturn("?checkout=cancelled", "it-IT"), { kind: "cancelled", lang: "it" }, "no lang: the workspace's");
+assert.deepEqual(readStripeReturn("?billing=managed&lang=xx", "pt"), { kind: "managed", lang: "en" });
+assert.equal(readStripeReturn("?checkout=maybe", "en"), null);
+assert.equal(readStripeReturn("", "en"), null);
+assert.equal(withoutStripeReturn("https://redaxa.getcertsprint.com/?checkout=success&lang=fr&ref=x#plans"), "/?ref=x#plans");
+assert.equal(withoutStripeReturn("https://redaxa.getcertsprint.com/?billing=managed"), "/");
+const trialing = { state: "trialing", plan: "business", trialEndsAt: "2026-11-06T10:00:00Z" };
+let back = returnView("success", "en", { signedIn: true, billing: trialing, settled: false });
+assert.equal(back.title, "Your Business trial has started");
+assert.equal(back.text, "Free until 6 November 2026. Nothing is charged before then, and you can cancel any time from Manage subscription.");
+assert.equal(back.confirmed, true);
+back = returnView("success", "de", { signedIn: true, billing: { state: "active", plan: "personal", trialEndsAt: null }, settled: false });
+assert.equal(back.title, "Redaxa Pro ist aktiv");
+assert.equal(returnView("success", "en", { signedIn: true, billing: { state: "none", plan: null, trialEndsAt: null }, settled: false }).text, RETURN_COPY.en.pending, "the webhook has not landed yet");
+assert.equal(returnView("success", "en", { signedIn: true, billing: null, settled: true }).text, RETURN_COPY.en.slow);
+assert.equal(returnView("success", "it", { signedIn: false, billing: null, settled: false }).text, RETURN_COPY.it.signedOut);
+assert.equal(returnView("cancelled", "es", { signedIn: true, billing: trialing, settled: false }).title, "Compra cancelada", "cancelled never claims a plan");
+for (const lang of Object.keys(RETURN_COPY)) {
+  assert.deepEqual(Object.keys(RETURN_COPY[lang]).sort(), Object.keys(RETURN_COPY.en).sort(), `${lang}: every line translated`);
+  for (const text of flat(RETURN_COPY[lang])) assert.doesNotMatch(text, /refund|rimbors|reembols|rembours|Rückerstatt|illustrat/i, `${lang}: ${text}`);
+}
+assert.doesNotMatch(flat(RETURN_COPY.de).join(" "), /\b(Sie|Ihr|Ihre|Ihnen)\b/, "German speaks as du");
 console.log("Trial screens: choice lines from Stripe prices and the offer, five languages, server clock, defensive account parsing, no 7-day promise anywhere passed.");

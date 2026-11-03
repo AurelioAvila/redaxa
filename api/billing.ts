@@ -329,8 +329,9 @@ export default async function handler(request: RequestLike, response: ResponseLi
           metadata
         },
         metadata,
-        success_url: `${billingAppUrl(request)}/?checkout=success`,
-        cancel_url: `${billingAppUrl(request)}/?checkout=cancelled`
+        // The page reads these to confirm the purchase in the checkout's language.
+        success_url: `${billingAppUrl(request)}/?checkout=success${lang ? `&lang=${lang}` : ""}`,
+        cancel_url: `${billingAppUrl(request)}/?checkout=cancelled${lang ? `&lang=${lang}` : ""}`
       }, { idempotencyKey: `ps-checkout-${user.id}-${Date.now()}` });
       response.status(200).json({ url: session.url, trial: Boolean(trial), trialDays: trial?.days ?? null });
     } catch (error) {
