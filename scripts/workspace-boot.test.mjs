@@ -18,7 +18,7 @@ const controls = {account:{classList:{toggle(_name,value){this.open=value;}}},tr
 let resolveSession;
 let checkingPlan = false;
 const root = {removeAttribute(name){this[name]=false;}};
-const context = vm.createContext({restoreTheme(){},installDesktopTitlebar(){},installStylesheet(){},isTauri:()=>true,
+const context = vm.createContext({L:text=>text,restoreTheme(){},installDesktopTitlebar(){},installStylesheet(){},isTauri:()=>true,
   accountControls:()=>controls,installDialog:()=>({}),loadConfig:()=>new Promise(()=>{}),
   loadSession:()=>new Promise(resolve=>{resolveSession=resolve;}),
   refreshEntitlement:()=>{checkingPlan=true;return new Promise(()=>{});},loadProfilePhoto:async()=>{},
