@@ -1,9 +1,11 @@
-import { DESKTOP_ORIGINS, accountFor, effectiveEntitlement, patchAccount, billingAppUrl, corsHeaders, parseJson, releaseCheckout, requireUser, reserveCheckout, saveCustomer, stripe, supabaseUserById } from "./_billing.js";
-import { clientIp, rateLimited } from "./_rateLimit.js";
+import { randomUUID } from "node:crypto";
+import { DESKTOP_ORIGINS, accountFor, appUrl, effectiveEntitlement, patchAccount, billingAppUrl, corsHeaders, parseJson, releaseCheckout, requireUser, reserveCheckout, saveCustomer, stripe, supabaseService, supabaseUserById, type BillingUser } from "./_billing.js";
+import { clientAddress, clientIp, rateLimited } from "./_rateLimit.js";
+import { TERMS_VERSION, attachSession, consentPage, consentRequired, openIntent, purgeConsents, recordConsent, sealIntent, userAgentFamily, type ConsentRow, type PageError, type PageInput } from "./_consent.js";
 import { promoCheckout, promoState } from "./_promo.js";
 import {
   LEGACY_TRIAL_DAYS, LEGACY_TRIAL_MARK, LANGUAGES, TRIAL_DAYS, TRIAL_MARK, dueReminders, isLive, isOurTrial, markReminded, publicPrices,
-  legacyTrialEligible, trialEligible, upcomingCharge, language as languageOf,
+  legacyTrialEligible, trialEligible, upcomingCharge, language as languageOf, type Language,
 } from "./_trial.js";
 import { sendCheckoutRecovery } from "./_checkout-recovery.js";
 import { sendTrialMail } from "./_trial-email.js";
@@ -12,7 +14,7 @@ import { notifyOwnerOfCancellation } from "./_email.js";
 import type Stripe from "stripe";
 
 type RequestLike = { method?: string; body?: unknown; query?: Record<string, string | string[] | undefined>; headers?: Record<string, string | string[] | undefined> };
-type ResponseLike = { setHeader(name: string, value: string | string[]): void; status(code: number): ResponseLike; json(value: unknown): void; end(): void };
+type ResponseLike = { setHeader(name: string, value: string | string[]): void; status(code: number): ResponseLike; json(value: unknown): void; end(body?: string): void };
 
 // Consolidated with the portal action (Vercel's Hobby plan caps a deployment
 // at 12 serverless functions): ?action=portal opens the Stripe billing
@@ -212,13 +214,16 @@ export default async function handler(request: RequestLike, response: ResponseLi
       const reminders = await sendTrialReminders();
       // Never in the way of the reminders: a failure here is logged and the sweep reports null.
       const recovery = await sendCheckoutRecovery().catch((error: unknown) => { console.error("checkout recovery sweep failed:", String(error).slice(0, 300)); return null; });
-      response.status(200).json({ ...reminders, recovery });
+      // Purchase consent rows end after 13 months (privacy.html).
+      const consentsPurged = await purgeConsents(supabaseService).catch(() => false);
+      response.status(200).json({ ...reminders, recovery, consentsPurged });
     } catch (error) {
       console.error("trial reminder sweep failed:", String(error).slice(0, 300));
       response.status(500).json({ error: "Reminder sweep failed." });
     }
     return;
   }
+  if (action === "consent") { await consentAction(request, response); return; }
   if (request.method !== "POST") { response.setHeader("Allow", "POST"); response.status(405).end(); return; }
 
   if (action === "portal") {
@@ -259,87 +264,27 @@ export default async function handler(request: RequestLike, response: ResponseLi
       response.status(409).json({ error: "The free trial is not available for this account. Subscribe now instead.", code: "trial_unavailable" });
       return;
     }
-
-    let account;
-    try {
-      account = await reserveCheckout(user.id);
-    } catch (error) {
-      // Changing one's mind (Subscribe now, back, Start trial) is the normal
-      // path for clients that offer the choice: the checkout still open is
-      // closed and replaced, so only the latest one can be paid. Clients from
-      // before the choice keep the ten-minute wait they know.
-      if (!(error instanceof Error && error.message === "CHECKOUT_IN_PROGRESS") || startTrial === undefined) throw error;
-      await releaseCheckout(user.id);
-      account = await reserveCheckout(user.id);
+    // The Windows app 0.5.5 and older: the only client that calls from the
+    // desktop app's origin without `language`, which arrived with the choice in 0.6.0.
+    const origin = Array.isArray(request.headers?.origin) ? request.headers.origin[0] : request.headers?.origin;
+    const oldApp = body.language === undefined && DESKTOP_ORIGINS.has(origin ?? "");
+    const purchase: Purchase = { user, plan, interval, seats, price, startTrial, lang, oldApp, app: billingAppUrl(request) };
+    if (consentRequired()) {
+      // Our Terms box comes first (api/_consent.ts). Every client opens the
+      // returned url, so the apps already installed show it without a release.
+      await accountReady(user.id);
+      const token = sealIntent({ ...purchase, user: user.id, email: user.email });
+      response.status(200).json({ url: `${purchase.app}/checkout?t=${token}`, consent: true });
+      return;
     }
-    let customerId = account.stripe_customer_id;
-    try {
-      if (customerId) await closeEarlierCheckouts(customerId, user.id, account.stripe_subscription_id);
-      if (!customerId) {
-        const customer = await stripe.customers.create({ email: user.email, metadata: { redaxa_user_id: user.id } }, { idempotencyKey: `ps-customer-${user.id}` });
-        customerId = customer.id;
-        await saveCustomer(user.id, customerId);
-      }
-      // No choice sent: a page that could not read the offer (it shows one
-      // "Go Pro" button) or the Windows app 0.5.5 and older, which never
-      // offers one. An eligible new subscriber still gets the trial, always
-      // under the one-per-person rule: the mark makes the webhook claim it
-      // against the account, the mailbox and the card. It lasts three days,
-      // like every other trial, except for that old app, whose screens and
-      // terms promise seven: it is the only client that calls from the
-      // desktop app's origin without `language`, which arrived with the
-      // choice in 0.6.0.
-      const automatic = startTrial === undefined && await legacyTrialEligible(user.id, user.email, account);
-      const origin = Array.isArray(request.headers?.origin) ? request.headers.origin[0] : request.headers?.origin;
-      const oldApp = body.language === undefined && DESKTOP_ORIGINS.has(origin ?? "");
-      const trial = startTrial === true || (automatic && !oldApp)
-        ? { days: TRIAL_DAYS, mark: TRIAL_MARK }
-        : automatic ? { days: LEGACY_TRIAL_DAYS, mark: LEGACY_TRIAL_MARK } : null;
-      // The discount follows the plan resolved above and the server's clock.
-      // A once-only coupon skips the trial's zero invoice and comes off the
-      // first paid one (checked on Stripe test clocks, 10 and 14 Oct 2026).
-      const promo = promoCheckout(process.env, Date.now(), plan, interval, seats);
-      const metadata = {
-        redaxa_user_id: user.id, plan, interval, seats: String(seats),
-        ...(promo ? { promo_id: promo.id } : {}),
-        ...(trial?.mark ? { trial: trial.mark } : {}),
-        ...(lang ? { lang } : {}),
-      };
-      const session = await stripe.checkout.sessions.create({
-        customer: customerId,
-        mode: "subscription",
-        // Not passing payment_method_types: this Stripe account has Managed
-        // Payments on (the newer default), which rejects an explicit list
-        // and picks methods itself.
-        line_items: [{ price, quantity: seats }],
-        // The full billing address, not only the country Managed Payments asks
-        // for in most of Europe: more for Stripe's fraud screening to match, so
-        // fewer genuine buyers blocked. Accepted with Managed Payments.
-        billing_address_collection: "required",
-        // Checkout refuses promotion codes alongside a discount.
-        ...(promo
-          ? { discounts: [{ coupon: promo.coupon }], ...(promo.expiresAt ? { expires_at: promo.expiresAt } : {}) }
-          : { allow_promotion_codes: interval === "monthly" }),
-        // A card or another recurring method before the trial starts; with
-        // none left at the end, the subscription cancels itself unpaid.
-        ...(trial?.mark ? { payment_method_collection: "always" as const } : {}),
-        subscription_data: {
-          trial_period_days: trial?.days,
-          ...(trial?.mark ? { trial_settings: { end_behavior: { missing_payment_method: "cancel" as const } } } : {}),
-          metadata
-        },
-        metadata,
-        // The page reads these to confirm the purchase in the checkout's language.
-        success_url: `${billingAppUrl(request)}/?checkout=success${lang ? `&lang=${lang}` : ""}`,
-        cancel_url: `${billingAppUrl(request)}/?checkout=cancelled${lang ? `&lang=${lang}` : ""}`
-      }, { idempotencyKey: `ps-checkout-${user.id}-${Date.now()}` });
-      response.status(200).json({ url: session.url, trial: Boolean(trial), trialDays: trial?.days ?? null });
-    } catch (error) {
-      await releaseCheckout(user.id);
-      throw error;
-    }
+    const session = await createSession(purchase);
+    response.status(200).json({ url: session.url, trial: Boolean(session.trial), trialDays: session.trial?.days ?? null });
   } catch (error) {
     const message = error instanceof Error ? error.message : "CHECKOUT_ERROR";
+    if (message === "TRIAL_UNAVAILABLE") {
+      response.status(409).json({ error: "The free trial is not available for this account. Subscribe now instead.", code: "trial_unavailable" });
+      return;
+    }
     // An unpaid, paused or incomplete subscription still exists and can bill:
     // a second one would charge twice once the card is fixed. The customer
     // settles the first one in Manage billing instead.
@@ -354,5 +299,162 @@ export default async function handler(request: RequestLike, response: ResponseLi
     const status = message === "UNAUTHORIZED" ? 401 : message === "ACTIVE_SUBSCRIPTION" ? 409 : message === "CHECKOUT_IN_PROGRESS" ? 429 : 500;
     if (status === 500) console.error("billing checkout error:", error);
     response.status(status).json({ error: status === 500 ? "We could not start checkout. Please try again." : message });
+  }
+}
+
+type Purchase = {
+  user: BillingUser; plan: "personal" | "business"; interval: "monthly" | "yearly"; seats: number; price: string;
+  startTrial?: boolean; lang: Language | null; oldApp: boolean; app: string;
+};
+
+/** Before the Terms page: the refusals the apps already handle (manage
+ *  billing, active plan) come back to them now, not after the tick. */
+async function accountReady(userId: string): Promise<void> {
+  try {
+    await reserveCheckout(userId);
+  } catch (error) {
+    // Someone else's checkout is being prepared: the Terms page will say so.
+    if (error instanceof Error && error.message === "CHECKOUT_IN_PROGRESS") return;
+    throw error;
+  }
+  await releaseCheckout(userId);
+}
+
+/**
+ * The one place a Redaxa Checkout Session is created. With the consent switch
+ * on it refuses to run without a consent row, and writes that row before the
+ * session exists. Throws the codes both callers map to their own answers.
+ */
+async function createSession(p: Purchase, consent?: ConsentRow): Promise<{ id: string; url: string | null; trial: { days: number; mark: string } | null }> {
+  if (consentRequired() && !consent) throw new Error("CONSENT_REQUIRED");
+  // Time has passed since the plan button: someone may have used the trial meanwhile.
+  if (consent && p.startTrial === true && !(await trialEligible(p.user.id, p.user.email, await accountFor(p.user.id)))) throw new Error("TRIAL_UNAVAILABLE");
+  let account;
+  try {
+    account = await reserveCheckout(p.user.id);
+  } catch (error) {
+    // Changing one's mind (Subscribe now, back, Start trial) is the normal
+    // path for clients that offer the choice: the checkout still open is
+    // closed and replaced, so only the latest one can be paid. Clients from
+    // before the choice keep the ten-minute wait they know.
+    if (!(error instanceof Error && error.message === "CHECKOUT_IN_PROGRESS") || p.startTrial === undefined) throw error;
+    await releaseCheckout(p.user.id);
+    account = await reserveCheckout(p.user.id);
+  }
+  let customerId = account.stripe_customer_id;
+  try {
+    if (customerId) await closeEarlierCheckouts(customerId, p.user.id, account.stripe_subscription_id);
+    if (!customerId) {
+      const customer = await stripe.customers.create({ email: p.user.email, metadata: { redaxa_user_id: p.user.id } }, { idempotencyKey: `ps-customer-${p.user.id}` });
+      customerId = customer.id;
+      await saveCustomer(p.user.id, customerId);
+    }
+    // No choice sent: a page that could not read the offer (it shows one
+    // "Go Pro" button) or the Windows app 0.5.5 and older, which never
+    // offers one. An eligible new subscriber still gets the trial, always
+    // under the one-per-person rule: the mark makes the webhook claim it
+    // against the account, the mailbox and the card. It lasts three days,
+    // like every other trial, except for that old app, whose screens and
+    // terms promise seven.
+    const automatic = p.startTrial === undefined && await legacyTrialEligible(p.user.id, p.user.email, account);
+    const trial = p.startTrial === true || (automatic && !p.oldApp)
+      ? { days: TRIAL_DAYS, mark: TRIAL_MARK }
+      : automatic ? { days: LEGACY_TRIAL_DAYS, mark: LEGACY_TRIAL_MARK } : null;
+    // The discount follows the plan resolved above and the server's clock.
+    // A once-only coupon skips the trial's zero invoice and comes off the
+    // first paid one (checked on Stripe test clocks, 10 and 14 Oct 2026).
+    const promo = promoCheckout(process.env, Date.now(), p.plan, p.interval, p.seats);
+    const metadata = {
+      redaxa_user_id: p.user.id, plan: p.plan, interval: p.interval, seats: String(p.seats),
+      ...(promo ? { promo_id: promo.id } : {}),
+      ...(trial?.mark ? { trial: trial.mark } : {}),
+      ...(p.lang ? { lang: p.lang } : {}),
+      // What the customer ticked on /checkout: the row in checkout_consents, and the Terms it named.
+      ...(consent ? { terms_version: consent.terms_version, consent_id: consent.id } : {}),
+    };
+    if (consent) await recordConsent(supabaseService, consent);
+    const session = await stripe.checkout.sessions.create({
+      customer: customerId,
+      mode: "subscription",
+      // Not passing payment_method_types: this Stripe account has Managed
+      // Payments on (the newer default), which rejects an explicit list
+      // and picks methods itself.
+      line_items: [{ price: p.price, quantity: p.seats }],
+      // The full billing address, not only the country Managed Payments asks
+      // for in most of Europe: more for Stripe's fraud screening to match, so
+      // fewer genuine buyers blocked. Accepted with Managed Payments.
+      billing_address_collection: "required",
+      // Checkout refuses promotion codes alongside a discount.
+      ...(promo
+        ? { discounts: [{ coupon: promo.coupon }], ...(promo.expiresAt ? { expires_at: promo.expiresAt } : {}) }
+        : { allow_promotion_codes: p.interval === "monthly" }),
+      // A card or another recurring method before the trial starts; with
+      // none left at the end, the subscription cancels itself unpaid.
+      ...(trial?.mark ? { payment_method_collection: "always" as const } : {}),
+      subscription_data: {
+        trial_period_days: trial?.days,
+        ...(trial?.mark ? { trial_settings: { end_behavior: { missing_payment_method: "cancel" as const } } } : {}),
+        metadata
+      },
+      metadata,
+      // The page reads these to confirm the purchase in the checkout's language.
+      success_url: `${p.app}/?checkout=success${p.lang ? `&lang=${p.lang}` : ""}`,
+      cancel_url: `${p.app}/?checkout=cancelled${p.lang ? `&lang=${p.lang}` : ""}`
+    }, { idempotencyKey: `ps-checkout-${p.user.id}-${Date.now()}` });
+    if (consent) await attachSession(supabaseService, consent.id, session.id);
+    return { id: session.id, url: session.url, trial };
+  } catch (error) {
+    await releaseCheckout(p.user.id);
+    throw error;
+  }
+}
+
+const first = (value: string | string[] | undefined): string | undefined => Array.isArray(value) ? value[0] : value;
+
+/** A form post arrives parsed by Vercel; a raw string or buffer is parsed here. */
+function formOf(body: unknown): Record<string, unknown> {
+  if (typeof body === "string" || body instanceof Uint8Array) return Object.fromEntries(new URLSearchParams(String(body)));
+  return body && typeof body === "object" && !Array.isArray(body) ? body as Record<string, unknown> : {};
+}
+
+/** GET and POST /checkout (vercel.json): the Terms box, then Stripe. */
+async function consentAction(request: RequestLike, response: ResponseLike): Promise<void> {
+  response.setHeader("Cache-Control", "no-store");
+  response.setHeader("Content-Type", "text/html; charset=utf-8");
+  const page = (status: number, input: PageInput): void => response.status(status).end(consentPage(input));
+  if (request.method === "GET") {
+    const token = first(request.query?.t);
+    const intent = openIntent(token);
+    page(intent ? 200 : 410, { lang: intent?.lang ?? null, token, intent, trialDays: TRIAL_DAYS });
+    return;
+  }
+  if (request.method !== "POST") { response.setHeader("Allow", "GET, POST"); response.status(405).end(); return; }
+  const form = formOf(request.body);
+  const token = typeof form.t === "string" ? form.t : undefined;
+  const intent = openIntent(token);
+  if (!intent) { page(410, { lang: null }); return; }
+  const show = (status: number, error: PageError): void => page(status, { lang: intent.lang, token, intent, trialDays: TRIAL_DAYS, error });
+  // Our own pages only: the sealed link already stops forged requests, this stops a foreign page relaying one.
+  const origin = first(request.headers?.origin);
+  if (origin && origin !== billingAppUrl(request) && origin !== appUrl()) { show(403, "generic"); return; }
+  if (form.agree !== "yes") { show(422, "consent"); return; }
+  if (form.terms !== TERMS_VERSION) { show(409, "terms"); return; }
+  if (rateLimited(`checkout:user:${intent.user}`, 10, 15 * 60_000) || rateLimited(`checkout:ip:${clientIp(request.headers)}`, 30, 15 * 60_000)) { show(429, "too_many"); return; }
+  const price = priceFor(intent.plan, intent.interval);
+  if (!price) { show(500, "generic"); return; }
+  try {
+    const session = await createSession({ ...intent, user: { id: intent.user, email: intent.email }, price }, {
+      id: randomUUID(), user_id: intent.user, plan: intent.plan, billing_interval: intent.interval, seats: intent.seats,
+      terms_version: TERMS_VERSION, ip: clientAddress(request.headers), user_agent_family: userAgentFamily(first(request.headers?.["user-agent"])),
+    });
+    if (!session.url) throw new Error("CHECKOUT_ERROR");
+    response.setHeader("Location", session.url);
+    response.status(303).end();
+  } catch (error) {
+    const code = error instanceof Error ? error.message : "";
+    const mapped: PageError = code === "TRIAL_UNAVAILABLE" ? "trial_unavailable" : code === "CHECKOUT_COMPLETING" ? "payment_processing"
+      : code === "BILLING_ACTION_REQUIRED" ? "manage_billing" : code === "ACTIVE_SUBSCRIPTION" ? "active" : code === "CHECKOUT_IN_PROGRESS" ? "busy" : "generic";
+    if (mapped === "generic") console.error("consent checkout error:", error);
+    show(mapped === "generic" ? 500 : mapped === "busy" ? 429 : 409, mapped);
   }
 }

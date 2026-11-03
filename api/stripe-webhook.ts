@@ -143,6 +143,7 @@ async function mail(kind: TrialMailKind, userId: string, subscription: Stripe.Su
       days: trialDays,
       trialEnd: subscription.trial_end ?? null,
       renew: price?.unit_amount != null ? { amount: price.unit_amount * (item?.quantity ?? 1), currency: price.currency, taxExclusive: price.tax_behavior !== "inclusive" /* unspecified = the account default, exclusive */ } : null,
+      consented: Boolean(subscription.metadata.consent_id),
       ...extra,
     }, key);
   } catch (error) {

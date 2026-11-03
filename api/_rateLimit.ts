@@ -69,12 +69,17 @@ export function keyedHash(value: string): string {
   return createHmac("sha256", process.env.SUPABASE_SERVICE_ROLE_KEY ?? "").update(value).digest("base64url");
 }
 
-/** A keyed hash of the caller's IP address, never the address itself: every
- *  use is a rate-limit key, and the shared counters live in the database. */
-export function clientIp(headers: Record<string, string | string[] | undefined> | undefined): string {
+/** The caller's IP address as Vercel reports it. Stored only in the purchase
+ *  consent record (privacy.html); everything else uses clientIp below. */
+export function clientAddress(headers: Record<string, string | string[] | undefined> | undefined): string {
   const forwarded = headers?.["x-forwarded-for"];
   const value = Array.isArray(forwarded) ? forwarded[0] : forwarded;
   const real = headers?.["x-real-ip"];
-  const address = (value ? value.split(",")[0]?.trim() : Array.isArray(real) ? real[0] : real) || "unknown";
-  return keyedHash(address);
+  return (value ? value.split(",")[0]?.trim() : Array.isArray(real) ? real[0] : real) || "unknown";
+}
+
+/** A keyed hash of the caller's IP address, never the address itself: every
+ *  use is a rate-limit key, and the shared counters live in the database. */
+export function clientIp(headers: Record<string, string | string[] | undefined> | undefined): string {
+  return keyedHash(clientAddress(headers));
 }
