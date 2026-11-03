@@ -20,7 +20,7 @@ assert.equal(nbsp(copy.trialLine), "Free for 3 days, then €3.99 for the first 
 assert.equal(copy.nowLine, "Or subscribe now: €3.99 today, no trial.", "the offer is the first payment either way");
 copy = choiceCopy("de", { interval: "yearly", price: team, promo: null, trialDays: 3, date });
 assert.equal(copy.trialLabel, "3 Tage kostenlos testen");
-assert.equal(nbsp(copy.trialLine), "3 Tage kostenlos, danach 149,90 € pro Nutzer und Jahr ab dem 17. Oktober 2026. Wenn Sie vorher kündigen, zahlen Sie nichts.");
+assert.equal(nbsp(copy.trialLine), "3 Tage kostenlos, danach 149,90 € pro Nutzer und Jahr ab dem 17. Oktober 2026. Wenn du vorher kündigst, zahlst du nichts.");
 assert.equal(nbsp(copy.nowLine), "Oder jetzt abonnieren: 149,90 € pro Nutzer heute, ohne Testphase.");
 assert.ok(!/ \d{4}/.test(copy.trialLine.match(/\d+\.[^.]*\d{4}/)?.[0] ?? ""), "the date never breaks across lines");
 // Without a price from Stripe the lines that would quote one are left out, not guessed.
