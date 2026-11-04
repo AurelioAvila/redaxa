@@ -24,7 +24,7 @@ const WORDS = {
     // The extension's store name in this language (browser-extension/_locales; checked by site-pages.test.mjs).
     eyebrow: "Redaxa – Oscura dati personali e chiavi API per ChatGPT, Claude, Gemini",
     title: "Dati sensibili e ChatGPT: oscurali prima dell’invio | Redaxa",
-    description: "Redaxa controlla il prompt prima che arrivi a ChatGPT, Claude, Gemini o Perplexity e oscura chiavi API, password e dati personali. Controlli gratuiti sul tuo dispositivo.",
+    description: "Redaxa controlla il prompt prima dell’invio a ChatGPT, Claude, Gemini o Perplexity e oscura chiavi API, password e dati personali. Gratis e in locale.",
     h1: "Oscura dati personali e chiavi API<br>prima di condividere un prompt",
     lead: "Prima di inserire dati sensibili su ChatGPT, lascia che Redaxa controlli il testo: email, numeri di telefono, IBAN, carte, chiavi API e password vengono segnalati e sostituiti in una versione oscurata. Decidi tu cosa inviare.",
     ctaExt: "Aggiungi l’estensione per Chrome", ctaExtNote: "Gratis, senza account e senza limite giornaliero: i controlli gratuiti dell’estensione avvengono nel browser e il testo resta sul tuo dispositivo.",
@@ -63,7 +63,7 @@ const WORDS = {
     // The extension's store name in this language (browser-extension/_locales; checked by site-pages.test.mjs).
     eyebrow: "Redaxa – Oculta datos personales y claves API en ChatGPT, Claude, Gemini",
     title: "Datos sensibles y ChatGPT: ocúltalos antes de enviar",
-    description: "Redaxa revisa el prompt antes de que llegue a ChatGPT, Claude, Gemini o Perplexity y oculta claves API, contraseñas y datos personales. Revisiones gratuitas en tu dispositivo.",
+    description: "Redaxa revisa el prompt antes de enviarlo a ChatGPT, Claude, Gemini o Perplexity y oculta claves API, contraseñas y datos personales. Gratis y en local.",
     h1: "Oculta datos personales y claves API<br>antes de compartir un prompt",
     lead: "Antes de que tus datos personales lleguen a ChatGPT, deja que Redaxa revise el texto: correos, teléfonos, IBAN, tarjetas, claves API y contraseñas se señalan y se sustituyen en una versión con los datos ocultos. Tú decides qué se envía.",
     ctaExt: "Añadir la extensión para Chrome", ctaExtNote: "Gratis, sin cuenta y sin límite diario: las revisiones gratuitas de la extensión se hacen en el navegador y el texto no sale de tu dispositivo.",
@@ -102,7 +102,7 @@ const WORDS = {
     // The extension's store name in this language (browser-extension/_locales; checked by site-pages.test.mjs).
     eyebrow: "Redaxa – Masquez clés API et données personnelles : ChatGPT, Claude, Gemini",
     title: "Données sensibles et ChatGPT : masquez-les avant l’envoi",
-    description: "Redaxa vérifie le prompt avant qu’il n’arrive à ChatGPT, Claude, Gemini ou Perplexity et masque clés API, mots de passe et données personnelles. Vérifications gratuites sur votre appareil.",
+    description: "Redaxa vérifie le prompt avant son envoi à ChatGPT, Claude, Gemini ou Perplexity et masque clés API, mots de passe et données personnelles. Gratuit, en local.",
     h1: "Masquez données personnelles et clés API<br>avant de partager un prompt",
     lead: "Avant que vos données personnelles n’arrivent dans ChatGPT, laissez Redaxa vérifier le texte : e-mails, numéros de téléphone, IBAN, cartes, clés API et mots de passe sont signalés et remplacés dans une version masquée. C’est vous qui décidez de ce qui part.",
     ctaExt: "Ajouter l’extension Chrome", ctaExtNote: "Gratuite, sans compte et sans limite quotidienne : les vérifications gratuites de l’extension ont lieu dans le navigateur et le texte reste sur votre appareil.",
