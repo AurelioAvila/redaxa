@@ -7,8 +7,8 @@ if ($env:PROCESSOR_ARCHITECTURE -ne 'AMD64' -and $env:PROCESSOR_ARCHITEW6432 -ne
 $packageArgs = @{
   packageName    = $env:ChocolateyPackageName
   fileType       = 'exe'
-  url64bit       = 'https://github.com/AurelioAvila/redaxa/releases/download/v0.6.19/Redaxa_0.6.19_x64-setup.exe'
-  checksum64     = '3dab216692eeea475ca311e4809ffa3f8c75d70f55b93e0aa7c7e6b3c62cf66a'
+  url64bit       = 'https://github.com/AurelioAvila/redaxa/releases/download/v0.6.20/Redaxa_0.6.20_x64-setup.exe'
+  checksum64     = '26baa800afbb9123a1b08c2364a356f83e94fcbb6ac1de4087093ecd7d0e2dd5'
   checksumType64 = 'sha256'
   silentArgs     = '/S'
   validExitCodes = @(0)

@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>redaxa</id>
-    <version>0.6.19</version>
+    <version>0.6.20</version>
     <title>Redaxa</title>
     <authors>Aurelio Avila</authors>
     <owners>AurelioAvila</owners>
@@ -19,8 +19,8 @@ Eligible Windows plans also include focused reviews of public GitHub repositorie
 
 The application is proprietary. Its viewable repository does not grant an open-source license.
 
-This package downloads the official signed Windows x64 installer for version 0.6.19. Installation is machine-wide and requires administrator access. Microsoft Edge WebView2 Runtime is supplied as a shared prerequisite. The package does not request prompt checks, repository scans or changes to the browser.</description>
-    <releaseNotes>Routine maintenance update. https://github.com/AurelioAvila/redaxa/releases/tag/v0.6.19</releaseNotes>
+This package downloads the official signed Windows x64 installer for version 0.6.20. Installation is machine-wide and requires administrator access. Microsoft Edge WebView2 Runtime is supplied as a shared prerequisite. The package does not request prompt checks, repository scans or changes to the browser.</description>
+    <releaseNotes>Routine maintenance update. https://github.com/AurelioAvila/redaxa/releases/tag/v0.6.20</releaseNotes>
     <copyright>2026 Aurelio Avila</copyright>
     <tags>redaxa prompt-redaction pii privacy credentials security windows admin</tags>
     <packageSourceUrl>https://github.com/AurelioAvila/redaxa/tree/main/packaging/chocolatey</packageSourceUrl>
