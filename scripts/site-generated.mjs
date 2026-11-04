@@ -138,6 +138,8 @@ export function renderLlms({ app, version, trust, faq, trial }, extra = {}) {
     "",
     `- [Redact personal data and secrets before an AI prompt: example, detectors, where checks run, limits](${ORIGIN}/redact-sensitive-data-before-ai.html)`,
     `- [How to stop API keys leaking into AI prompts](${ORIGIN}/stop-api-keys-leaking-into-ai-prompts.html)`,
+    `- [I pasted an API key into ChatGPT: what to do now](${ORIGIN}/i-pasted-an-api-key-into-chatgpt.html)`,
+    `- [I committed an API key to GitHub: what to do](${ORIGIN}/i-committed-an-api-key-to-github.html)`,
     `- [PII redaction browser extension: what runs on your device](${ORIGIN}/pii-redaction-browser-extension.html)`,
     `- [How to redact sensitive data before ChatGPT](${ORIGIN}/redact-sensitive-data-before-chatgpt.html)`,
     `- [Check a public GitHub repository for leaked API keys](${ORIGIN}/check-public-github-repo-for-leaked-api-keys.html)`,
