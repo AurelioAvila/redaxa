@@ -35,7 +35,7 @@ for (const file of [...detectors.files, ...languages.files]) {
   writeFileSync(resolve(output, file.path), file.html);
 }
 // Sitemaps by silo: pages and guides are maintained by hand, the generated ones follow their generator.
-writeFileSync(resolve(output, "sitemap-detectors.xml"), urlset(detectors.files.map((f) => ({ loc: f.url, lastmod: detectors.updated }))));
+writeFileSync(resolve(output, "sitemap-detectors.xml"), urlset(detectors.files.map((f) => ({ loc: f.url, lastmod: f.updated ?? detectors.updated }))));
 writeFileSync(resolve(output, "sitemap-languages.xml"), urlset(languages.files.map((f) => ({ loc: f.url, lastmod: detectors.updated }))));
 writeFileSync(resolve(output, "sitemap.xml"), sitemapIndex(output, ["sitemap-pages.xml", "sitemap-guides.xml", "sitemap-detectors.xml", "sitemap-languages.xml"]));
 const { llms, full } = renderLlms(facts, {

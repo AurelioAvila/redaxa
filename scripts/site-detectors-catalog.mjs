@@ -47,6 +47,12 @@ export const DETECTORS = [
       { text: "Generate a ghp_ token under Settings", why: "The prefix alone, without the token body, is ordinary text." },
     ],
     fp: [],
+    updated: "2026-11-05",
+    details: [
+      "<strong>Why the prefixes exist.</strong> GitHub's engineering team added the <code>gh</code> prefix plus a type letter and an underscore (<code>ghp_</code>, <code>gho_</code>, <code>ghu_</code>, <code>ghs_</code>, <code>ghr_</code>) so tokens can be recognised by scanners; the older 40-character hex tokens looked like any SHA hash. The article expects the prefix alone to bring the false-positive rate of secret scanning down to about 0.5%, and says the underscore also makes a double-click select the whole token.",
+      "<strong>A checksum is built in.</strong> The last 6 characters of these tokens hold a Base62-encoded 32-bit CRC32 checksum, which lets a scanner reject a made-up string offline. The article describes this as the starting design and notes that details may change, so Redaxa does not check the checksum: it reports any value with the right prefix and body length, and it skips obvious placeholders.",
+      "<strong>Who else is looking.</strong> Because the format is public, anyone scraping public code can find these tokens the same way. If one was ever in a public commit, treat it as exposed even if you deleted the file a minute later, and revoke it before cleaning history.",
+    ],
     after: "Revoke the token on GitHub (Settings, Developer settings, Personal access tokens, or the app's own settings), create a new one with the narrowest scopes and expiry you can, and only then clean the value out of code and history.",
     sources: [
       { name: "GitHub blog: Behind GitHub's new authentication token formats", url: "https://github.blog/engineering/platform-security/behind-githubs-new-authentication-token-formats/" },
@@ -99,8 +105,16 @@ export const DETECTORS = [
     repoPath: ".env.production",
     near: [{ text: "ANTHROPIC_API_KEY=sk-ant-api03-" + "x".repeat(40), why: "A run of x after the prefix is a placeholder, so it is not reported as an Anthropic key. Because the value still contains digits (api03), the configuration-value rule flags it: a placeholder that is cheap to dismiss." }],
     fp: [],
+    updated: "2026-11-05",
+    details: [
+      "<strong>What Anthropic documents.</strong> The key is a static <code>sk-ant-api...</code> secret (the docs' own example is <code>sk-ant-api03-...</code>), sent as <code>Authorization: Bearer &lt;key&gt;</code> or in the legacy <code>x-api-key</code> header. The official SDKs read it from the <code>ANTHROPIC_API_KEY</code> environment variable, which is why that name is the first thing to look for in a pasted shell session, <code>.env</code> file or CI log.",
+      "<strong>Three key types.</strong> Personal keys act as you, service account keys act as a service account, and workspace keys (now legacy) belong to the workspace alone. Personal and service account keys stop working when the user or service account is removed from the organization; a workspace key does not, so an old workspace key is the one most likely to outlive its owner.",
+      "<strong>Disable or delete.</strong> In the Claude Console, Disable is reversible (the key can be re-enabled); Delete is permanent and the key is archived. Anthropic's guidance is to disable or delete any key you suspect has leaked. Our advice: disable first if you need a minute to deploy the replacement, then delete it, so nobody can switch an exposed key back on by mistake.",
+      "<strong>Expiry is set once.</strong> When a key is created you pick a preset of 3 hours, 1 day, one week or 30 days, a custom duration, or Never; it cannot be changed afterwards, and a key that has expired returns a 401 authentication error and cannot be reactivated. A short expiry limits how long a leaked key stays useful, but Anthropic is explicit that it does not replace keeping keys in a secrets manager.",
+      "<strong>Keep it out of browsers.</strong> Anthropic tells developers to call the API from their own back end, because anyone who loads a web page can read a key that sits in that page's code. For production workloads on AWS, Google Cloud or Azure, Workload Identity Federation exchanges a short-lived token instead, so there is no <code>sk-ant-api...</code> string to leak.",
+    ],
     after: "Disable or delete the key in the Claude Console (API keys), create a replacement, and review usage and spend for the period the key was exposed.",
-    sources: [{ name: "Claude Docs: Authentication", url: "https://platform.claude.com/docs/en/manage-claude/authentication" }],
+    sources: [{ name: "Claude Docs: Authentication (key types, Disable and Delete, expiration)", url: "https://platform.claude.com/docs/en/manage-claude/authentication" }],
   },
   {
     slug: "stripe-keys", category: "credentials", name: "Stripe keys and webhook secrets",
