@@ -169,27 +169,29 @@ ${p.repo.test.map((v) => `<li>Same value in <code>${esc(v.path)}</code>: ${v.dis
 <p class="note">Values are always shown masked in repository reports. No key is ever tested against its provider.</p></section>` : "";
   const near = p.near.length ? `<section><h2>What it does not flag</h2><ul>${p.near.map((n) => `<li><code>${esc(n.text)}</code>: ${n.labels.length ? `not flagged as ${esc(p.mainLabel)}; ${shown(n.labels)}` : shown([])}. ${esc(n.why)}</li>`).join("")}</ul></section>` : "";
   const fp = p.fp.length ? `<section><h2>Known false positives</h2><p>Text that is harmless but still flagged today. Listed so you can recognise it, not hidden.</p><ul>${p.fp.map((n) => `<li><code>${esc(n.text)}</code>: ${shown(n.labels)}. ${esc(n.why)}</li>`).join("")}</ul></section>` : "";
-  const after = `<section><h2>${p.category === "credentials" ? "If it already leaked" : "What to do"}</h2><p>${esc(p.after)}</p>${guidance.map((g) => `<p>What Redaxa adds to every finding of this kind: <em>${esc(g)}</em></p>`).join("")}${docs.length ? `<p>Official guidance: ${docs.map((d) => `<a href="${esc(d)}" rel="noopener">${esc(new URL(d).hostname)}</a>`).join(", ")}.</p>` : ""}</section>`;
+  const after = `<section><h2>${p.category === "credentials" ? "If it already leaked" : "What to do"}</h2><p>${esc(p.after)}</p>${guidance.map((g) => `<p>What Redaxa adds to every finding of this kind: <em>${esc(g)}</em></p>`).join("")}${docs.length ? `<p>Official guidance: ${docs.map((d) => `<a href="${esc(d)}" rel="noopener">${esc(new URL(d).hostname)}</a>`).join(", ")}.</p>` : ""}${p.category === "credentials" ? `<p>Step by step: <a href="/i-pasted-an-api-key-into-chatgpt.html">pasted a key into ChatGPT</a>, or <a href="/i-committed-an-api-key-to-github.html">committed one to GitHub</a>.</p>` : ""}</section>`;
   const cta = p.category === "custom"
     ? `<section><h2>Set up your list</h2><p>Add your terms in the <a href="/dashboard.html">web workspace</a> under Protected terms, or in the Windows app. ${esc(facts.trial.short)} <a href="/#pricing">See plans</a>.</p></section>`
     : `<section><h2>Check before you paste</h2><p>The free Chrome extension runs this check inside ChatGPT, Claude, Gemini and Perplexity before a message is sent, on your device and with no daily limit. On the web you get 5 free prompt checks a day with no account.</p><a class="button" href="${CWS}">Add the Chrome extension</a><a class="button ghost" href="/#scanner">Try a free web check</a>${p.category === "credentials" ? `<p>Worried it is already in your code? <a href="/github.html">Check a public GitHub repository free</a> (3 checks a day).</p>` : ""}</section>`;
   const related = all.filter((o) => o.category === p.category && o.slug !== p.slug);
   const rel = `<section><h2>Related</h2><ul>${related.map((o) => `<li><a href="/detectors/${o.slug}.html">${esc(o.name)}</a></li>`).join("")}<li><a href="/detectors/">Everything Redaxa detects</a></li></ul></section>`;
   const sources = `<section><h2>Sources</h2><ul><li>Redaxa engine: <a href="${SOURCE}${p.sha}/scanner.ts#L${p.ruleLine}">scanner.ts line ${p.ruleLine}</a>${p.contextLines.filter((c) => c.line).map((c) => `, <a href="${SOURCE}${p.sha}/credential-context.ts#L${c.line}">credential-context.ts line ${c.line}</a> (${esc(c.service)})`).join("")}. Every output on this page was produced by that code when the page was built.</li>${p.sources.map((s) => `<li><a href="${esc(s.url)}" rel="noopener">${esc(s.name)}</a></li>`).join("")}</ul></section>`;
+  const updated = p.updated ?? UPDATED;
+  const more = p.details ? `<section><h2>Key format, rotation and exposure</h2><ul>${p.details.map((d) => `<li>${d}</li>`).join("")}</ul></section>` : "";
   const body = `<nav class="crumbs" aria-label="Breadcrumb"><a href="/">Redaxa</a> › <a href="/detectors/">Detection reference</a> › ${esc(p.name)}</nav>
-<p class="label">Detection reference · ${esc(cat.name)} · Updated ${UPDATED}</p>
+<p class="label">Detection reference · ${esc(cat.name)} · Updated ${updated}</p>
 <h1>${esc(p.h1)}</h1>
 <p class="lead">${esc(p.intro)}</p>
 <section><h2>At a glance</h2>${glance}</section>
 <section><h2>What it looks like</h2><p>${p.format}</p>${examples}
 <p class="note">${p.examples.some((e) => e.exampleNote) ? p.examples.map((e) => e.exampleNote).filter(Boolean).map(esc).join(" ") + " " : ""}All values on this page are synthetic or published specimens; none is a working credential or a real person's data.</p></section>
-${repo}${near}${fp}${after}${cta}${rel}${sources}`;
+${more}${repo}${near}${fp}${after}${cta}${rel}${sources}`;
   const graph = [
     ORG,
-    { "@type": "TechArticle", "@id": `${url}#article`, headline: p.h1, description: p.description, url, inLanguage: "en", datePublished: UPDATED, dateModified: UPDATED, author: AUTHOR, publisher: { "@id": `${ORIGIN}/#organization` }, isPartOf: { "@type": "WebSite", "@id": `${ORIGIN}/#website`, name: "Redaxa", url: `${ORIGIN}/` }, about: p.name, mainEntityOfPage: url },
+    { "@type": "TechArticle", "@id": `${url}#article`, headline: p.h1, description: p.description, url, inLanguage: "en", datePublished: UPDATED, dateModified: updated, author: AUTHOR, publisher: { "@id": `${ORIGIN}/#organization` }, isPartOf: { "@type": "WebSite", "@id": `${ORIGIN}/#website`, name: "Redaxa", url: `${ORIGIN}/` }, about: p.name, mainEntityOfPage: url },
     crumbs([["Redaxa", `${ORIGIN}/`], ["Detection reference", `${ORIGIN}/detectors/`], [p.name, url]]),
   ];
-  return { path: `detectors/${p.slug}.html`, url, html: pageShell({ title: `${p.title} | Redaxa`.length <= 60 ? `${p.title} | Redaxa` : p.title, description: p.description, url, graph, body }) };
+  return { path: `detectors/${p.slug}.html`, url, updated, html: pageShell({ title: `${p.title} | Redaxa`.length <= 60 ? `${p.title} | Redaxa` : p.title, description: p.description, url, graph, body }) };
 }
 
 function hub(pages, facts) {
