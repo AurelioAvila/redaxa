@@ -1,13 +1,13 @@
 {
   "redaxa": {
-    "version": "0.6.20",
-    "tag": "v0.6.20",
-    "published": "2026-11-04T10:44:16Z",
-    "file": "Redaxa_0.6.20_x64-setup.exe",
-    "size": 34702352,
-    "sha256": "26baa800afbb9123a1b08c2364a356f83e94fcbb6ac1de4087093ecd7d0e2dd5",
-    "download": "https://dl.pctweaker.app/redaxa/v0.6.20/Redaxa_0.6.20_x64-setup.exe",
-    "releasePage": "https://github.com/AurelioAvila/redaxa/releases/tag/v0.6.20",
+    "version": "0.6.21",
+    "tag": "v0.6.21",
+    "published": "2026-11-06T11:35:20Z",
+    "file": "Redaxa_0.6.21_x64-setup.exe",
+    "size": 34682808,
+    "sha256": "f2a86d39d6d82eb03c0338c781222283f63e553bddb42256178ccc590cfc5428",
+    "download": "https://dl.pctweaker.app/redaxa/v0.6.21/Redaxa_0.6.21_x64-setup.exe",
+    "releasePage": "https://github.com/AurelioAvila/redaxa/releases/tag/v0.6.21",
     "signature": {
       "status": "Valid",
       "signer": "Aurelio Avila",
