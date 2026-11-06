@@ -34,9 +34,9 @@
   </Company_Info>
   <Program_Info>
     <Program_Name>Redaxa</Program_Name>
-    <Program_Version>0.6.20</Program_Version>
+    <Program_Version>0.6.21</Program_Version>
     <Program_Release_Month>11</Program_Release_Month>
-    <Program_Release_Day>4</Program_Release_Day>
+    <Program_Release_Day>6</Program_Release_Day>
     <Program_Release_Year>2026</Program_Release_Year>
     <Program_Cost_Dollars></Program_Cost_Dollars>
     <Program_Cost_Other_Code></Program_Cost_Other_Code>
@@ -47,9 +47,9 @@
     <Program_OS_Support>WinOther</Program_OS_Support>
     <Program_Language>English</Program_Language>
     <File_Info>
-      <File_Size_Bytes>34702352</File_Size_Bytes>
-      <File_Size_K>33889.02</File_Size_K>
-      <File_Size_MB>33.09</File_Size_MB>
+      <File_Size_Bytes>34682808</File_Size_Bytes>
+      <File_Size_K>33869.93</File_Size_K>
+      <File_Size_MB>33.08</File_Size_MB>
     </File_Info>
     <Expire_Info>
       <Has_Expire_Info>N</Has_Expire_Info>
@@ -60,7 +60,7 @@
       <Expire_Day></Expire_Day>
       <Expire_Year></Expire_Year>
     </Expire_Info>
-    <Program_Change_Info>The sign-in dialog now follows the app&apos;s language (Italian, Spanish, French or German), and the German text uses the informal du throughout.</Program_Change_Info>
+    <Program_Change_Info>Routine maintenance update.</Program_Change_Info>
     <Program_Category_Class>Security &amp; Privacy::Other</Program_Category_Class>
     <Program_Specific_Category></Program_Specific_Category>
     <Program_System_Requirements>Windows 10/11 x64; internet for accounts, updates and supported online features.</Program_System_Requirements>
@@ -84,7 +84,7 @@
       <Application_XML_File_URL>https://raw.githubusercontent.com/AurelioAvila/redaxa/main/docs/pad.xml</Application_XML_File_URL>
     </Application_URLs>
     <Download_URLs>
-      <Primary_Download_URL>https://github.com/AurelioAvila/redaxa/releases/download/v0.6.20/Redaxa_0.6.20_x64-setup.exe</Primary_Download_URL>
+      <Primary_Download_URL>https://github.com/AurelioAvila/redaxa/releases/download/v0.6.21/Redaxa_0.6.21_x64-setup.exe</Primary_Download_URL>
       <Secondary_Download_URL></Secondary_Download_URL>
       <Additional_Download_URL_1></Additional_Download_URL_1>
       <Additional_Download_URL_2></Additional_Download_URL_2>
