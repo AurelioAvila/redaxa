@@ -58,6 +58,7 @@ const WORDS = {
     winget: "Oppure con winget:",
     moreTitle: "Approfondimenti (in inglese)",
     footer: "Informativa privacy e termini (in inglese)",
+    sameDev: "Dallo stesso sviluppatore:", sameDevNotes: ["ottimizzazioni di Windows reversibili", "test di pratica per certificazioni IT", "report di sicurezza dei siti web per agenzie", "recupero forense di foto e video", "statistiche YouTube per Windows"],
   },
   es: {
     // The extension's store name in this language (browser-extension/_locales; checked by site-pages.test.mjs).
@@ -97,6 +98,7 @@ const WORDS = {
     winget: "O con winget:",
     moreTitle: "Más información (en inglés)",
     footer: "Política de privacidad y términos (en inglés)",
+    sameDev: "Del mismo desarrollador:", sameDevNotes: ["ajustes de Windows reversibles", "exámenes de práctica para certificaciones de TI", "informes de seguridad web para agencias", "recuperación forense de fotos y vídeos", "estadísticas de YouTube para Windows"],
   },
   fr: {
     // The extension's store name in this language (browser-extension/_locales; checked by site-pages.test.mjs).
@@ -136,6 +138,7 @@ const WORDS = {
     winget: "Ou avec winget :",
     moreTitle: "Pour aller plus loin (en anglais)",
     footer: "Politique de confidentialité et conditions (en anglais)",
+    sameDev: "Du même développeur :", sameDevNotes: ["réglages Windows réversibles", "examens blancs pour certifications informatiques", "rapports de sécurité de sites web pour agences", "récupération forensique de photos et vidéos", "statistiques YouTube pour Windows"],
   },
   de: {
     // The extension's store name in this language (browser-extension/_locales; checked by site-pages.test.mjs).
@@ -175,9 +178,11 @@ const WORDS = {
     winget: "Oder mit winget:",
     moreTitle: "Mehr dazu (auf Englisch)",
     footer: "Datenschutzerklärung und Bedingungen (auf Englisch)",
+    sameDev: "Vom selben Entwickler:", sameDevNotes: ["Windows-Tweaks mit Rückgängig-Funktion", "Übungstests für IT-Zertifizierungen", "Website-Sicherheitsberichte für Agenturen", "forensische Foto- und Videowiederherstellung", "YouTube-Statistiken für Windows"],
   },
 };
 
+const SAME_DEV = [["PC Tweaker", "https://pctweaker.app/"], ["CertSprint", "https://getcertsprint.com/"], ["Glarion", "https://glarion.app/"], ["Frame Witness", "https://framewitness.pages.dev/"], ["Redexa Social", "https://redexa.getcertsprint.com/"]];
 const CSS = ".langs{float:right;font-size:.9rem}.langs a{margin-left:10px}.plans{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.plan{border:1px solid #e3dfd5;border-radius:14px;padding:18px}.plan h3{margin:.1em 0}.price{font-size:1.5rem;font-weight:700;color:#1b1724;margin:.2em 0}.plan ul{padding-left:1.1em;font-size:.95rem}.faq h3{margin-bottom:.2em}@media(max-width:760px){.plans{grid-template-columns:1fr}.langs{float:none;display:block;margin-top:6px}}";
 
 /** Language switcher and hreflang alternates shared by / and the localized pages. */
@@ -228,6 +233,7 @@ export async function buildLanguages(root, facts) {
 <section><h2>${esc(w.verifyTitle)}</h2><p>${w.verify(facts.trust)}</p><p>${esc(w.winget)} <code>winget install --id AurelioAvila.Redaxa --exact</code></p></section>
 <section><h2>${esc(w.moreTitle)}</h2><ul><li><a href="/redact-sensitive-data-before-ai.html" hreflang="en">Redact personal data and secrets before an AI prompt</a></li><li><a href="/detectors/" hreflang="en">What Redaxa detects</a></li><li><a href="/redact-sensitive-data-before-chatgpt.html" hreflang="en">How to redact sensitive data before ChatGPT</a></li><li><a href="/pii-redaction-browser-extension.html" hreflang="en">PII redaction browser extension</a></li><li><a href="/github.html" hreflang="en">Public repository check</a></li></ul></section>
 <p class="note"><a href="/privacy.html" hreflang="en">${esc(w.footer)}</a> · © 2026 Redaxa · Aurelio Avila</p>
+<p class="note">${esc(w.sameDev)} ${SAME_DEV.map(([n, u], i) => `<a href="${u}">${n}</a> (${esc(w.sameDevNotes[i])})`).join(" · ")}</p>
 <script src="/lang-pref.js" defer></script><script src="/cf-beacon.js" defer></script>`;
     const graph = [
       { "@type": "Organization", "@id": `${ORIGIN}/#organization`, name: "Redaxa", url: `${ORIGIN}/`, logo: `${ORIGIN}/outputs/redaxa-mark-128.png` },
